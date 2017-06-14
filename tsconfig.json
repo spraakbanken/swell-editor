@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "outDir": "./dist/",
+        "sourceMap": false,
+        "noImplicitAny": true,
+        "module": "commonjs",
+        "target": "es5",
+        "jsx": "react"
+    },
+    "files": [
+        "./node_modules/@types/webpack-env/index.d.ts",
+        "./declarations.d.ts",
+        "./src/index.tsx"
+    ],
+    "exclude": [
+        "node_modules"
+    ]
+}

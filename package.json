@@ -1,0 +1,38 @@
+{
+  "name": "react-redux-hot-module-reloading-webpack-typescript-boiler",
+  "version": "0.1.0",
+  "description": "Hot Module Reloading with React and Redux using TypeScript",
+  "main": "./dist/bundle.js",
+  "dependencies": {
+    "bootstrap": "^3.3.7",
+    "react": "^15.3.2",
+    "react-bootstrap": "^0.31.0",
+    "react-dom": "^15.3.2",
+    "react-redux": "^5.0.5",
+    "redux": "^3.6.0",
+    "redux-logger": "^3.0.6"
+  },
+  "devDependencies": {
+    "@types/react": "^15.0.6",
+    "@types/react-bootstrap": "0.0.49",
+    "@types/react-dom": "^0.14.22",
+    "@types/react-hot-loader": "^3.0.1",
+    "@types/react-redux": "^4.4.43",
+    "@types/redux-logger": "^3.0.0",
+    "@types/webpack-env": "^1.13.0",
+    "awesome-typescript-loader": "^3.0.3",
+    "css-loader": "^0.28.1",
+    "file-loader": "^0.11.1",
+    "react-hot-loader": "^3.0.0-beta.7",
+    "redux-devtools-extension": "^2.13.2",
+    "source-map-loader": "^0.1.5",
+    "style-loader": "^0.17.0",
+    "typescript": "^2.1.5",
+    "url-loader": "^0.5.8",
+    "webpack": "^2.2.1",
+    "webpack-dev-server": "^2.3.0"
+  },
+  "scripts": {
+    "start": "webpack-dev-server"
+  }
+}
