@@ -9,10 +9,13 @@ import { Provider } from 'react-redux'
 
 const store = createStore(
   app_reducer,
-  composeWithDevTools(applyMiddleware(createLogger())));
+  composeWithDevTools(applyMiddleware(createLogger({
+    actionTransformer: (action) => ({ type: action.type, ...action.payload })
+  })))
+);
 
 function send_tick() {
-  store.dispatch(tickAction());
+  store.dispatch(tickAction({}));
 }
 
 window.setInterval(send_tick, 60000);
