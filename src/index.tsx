@@ -1,7 +1,8 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 import { AppContainer } from "react-hot-loader";
-import { App, app_reducer, tickAction } from "./App";
+import { App, app_reducer } from "./App";
+import { tickAction } from "./Widgets";
 import { createStore, applyMiddleware } from 'redux'
 import { createLogger } from 'redux-logger'
 import { composeWithDevTools } from 'redux-devtools-extension'
@@ -30,14 +31,18 @@ ReactDOM.render(
   rootEl
 );
 
+console.log('index.tsx update')
+
 declare const module: any;
 declare function require(module_name: string): any;
 
 if (module.hot) {
-  module.hot.accept("./App", () => {
-    const nextRootReducer = require('./App').app_reducer;
+  module.hot.accept(['./App', './Widgets', './State', './connect'], () => {
+    console.log('Updating roots...')
+    const App = require('./App')
+    const nextRootReducer = App.app_reducer;
     store.replaceReducer(nextRootReducer);
-    const NextApp = require("./App").App;
+    const NextApp = App.App;
     ReactDOM.render(
       <AppContainer>
         <Provider store={store}>

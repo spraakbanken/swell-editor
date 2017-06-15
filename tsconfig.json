@@ -11,7 +11,7 @@
     "files": [
         "./node_modules/@types/webpack-env/index.d.ts",
         "./declarations.d.ts",
-        "./src/index.tsx"
+        "./src/**/*"
     ],
     "exclude": [
         "node_modules"
