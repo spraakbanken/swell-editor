@@ -2,11 +2,6 @@ import * as CodeMirror from "codemirror";
 
 console.log('Reload')
 
-export interface Norm {
-  original: string[],
-  spans: Span[],
-}
-
 export interface SpanData {
   readonly links: number[],
   readonly labels: string[],
@@ -39,12 +34,19 @@ export function check_invariant(spans: Span[]): Span[] {
   const texts = spans.map(s => s.text)
   for (let i = 0; i < spans.length; i++) {
     const text = spans[i].text
-    if (!text.match(/^\w(.|\n)*\s$/)) {
+    if (!text.match(/^\S(.|\n)*\s$/)) {
       if (i == 0 && text.match(/\s$/)) {
         // ok: first token does not need to start on a word,
         // but cannot be empty
       } else {
         throw new Error('Invariant violated on span ' + i + ' ' + text)
+      }
+    }
+  }
+  for (let i = 0; i < spans.length; i++) {
+    for (let j = 0; j < spans.length; j++) {
+      if (spans[i].data.links.some((x) => spans[j].data.links.some((y) => x == y)) && i != j) {
+        throw new Error('Links not injective on indicies ' + i + ' and ' + j)
       }
     }
   }
@@ -86,6 +88,25 @@ export function cursor<S>(f: ((prev: S | null, me: S, next: S | null) => (S | nu
   }
 }
 
+// this breaks one span if it matches exactly to the original
+export function auto_revert(spans: Span[], original: string[]): Span[] {
+  return cursor<Span>((prev, me, next) => {
+    if (me.text == me.data.links.map((i) => original[i]).join('')) {
+      const reverted_spans: Span[] = me.data.links.map((i) => ({
+        text: original[i],
+        data: {
+          links: [i],
+          labels: []
+        }
+      }))
+      return [prev].concat(reverted_spans, [next])
+    } else {
+      return null
+    }
+  })(spans)
+}
+
+
 // shuffles initial whitespace from a token to the previous one
 const move_whitespace: (spans: Span[]) => Span[] =
   cursor<Span>((prev, me, next) => {
@@ -117,7 +138,7 @@ const remove_empty: (spans: Span[]) => Span[] =
 // merge tokens which have no final whitespace with next token
 const merge_no_final_whitespace: (spans: Span[]) => Span[] =
   cursor<Span>((prev, me, next) => {
-    if (me.text.match(/\w$/) && next) {
+    if (me.text.match(/\S$/) && next) {
       const new_me_next = {
         text: [me, next].map(s => s.text).join(''),
         data: merge_data([me, next])
@@ -155,12 +176,32 @@ export function span_index(spans: Span[], index: number): [number, number] {
   throw new Error('Out of bounds')
 }
 
+export function spans_with_offsets(spans: Span[]): [Span, number][] {
+  const out: [Span, number][] = []
+  let passed = 0
+  for (let i = 0; i < spans.length; i++) {
+    out.push([spans[i], passed])
+    const w = spans[i].text.length
+    passed += w
+  }
+  return out
+}
+
 
 
 
 // properties?
 
-const example_text = `De väder var inte fint.`
+const example_text = `En dag jag vaknade @@@ när larmet på min telefon ringde. De väder var inte fint.
+Det var mycket kult ute med regn. Jag bara dricker te med två broad.
+
+Min bussen går åtta i sju. Jag se min bus när jag borjade springer snabbt som bussen går. Jag var trott
+som jag springed så mycket. Han är inte trevlig för mig efter jag missade @@@ bus.`
+
+const cm_orig = CodeMirror(document.body, {
+  value: example_text,
+  readOnly: true
+})
 
 const cm = CodeMirror(document.body, {
   value: example_text,
@@ -171,8 +212,16 @@ const cm = CodeMirror(document.body, {
   }
 });
 
+const cm_diff = CodeMirror(document.body, {
+  value: example_text,
+  readOnly: true
+})
+
+cm.focus()
+
 let cm_spans = identity_spans(example_text)
 console.log(cm_spans.map(({text}) => text))
+const orig_text: string[] = cm_spans.map(x => x.text)
 
 /*
 for (const t of ["change", "changes", "beforeChange", "cursorActivity", "update", "mousedown", "dblclick", "touchstart", "contextmenu", "keydown", "keypress", "keyup", "cut", "copy", "paste", "dragstart", "dragenter", "dragover", "dragleave", "drop"]) {
@@ -193,8 +242,27 @@ cm.on('cursorActivity', (_: CodeMirror.Editor) => {
   const index = cm.getDoc().indexFromPos(cursor)
   const [span, i] = span_index(cm_spans, cm.getDoc().indexFromPos(cursor));
   console.log(cursor, index, span, i, cm_spans[span], cm_spans[span].data.links)
-
+  cm_orig.getDoc().getAllMarks().map((m) => m.clear())
+  for (const linked of cm_spans[span].data.links) {
+    // todo: refactor ;)
+    const start = orig_text.slice(0, linked).reduce((n, s) => n + s.length, 0)
+    const linked_text = orig_text[linked]
+    const stop = start + linked_text.length
+    const conv = (off: number) => cm_orig.getDoc().posFromIndex(off)
+    cm_orig.getDoc().markText(conv(start), conv(stop), {
+      css: 'color: #33f'
+    })
+  }
 })
+
+function whitespace_start(s: string): number {
+  const m = s.match(/\s*$/)
+  if (m) {
+    return m.index || s.length
+  } else {
+    return s.length
+  }
+}
 
 cm.on('beforeChange', (_, change) => {
   // need to do this /beforeChange/ (not after),
@@ -203,8 +271,58 @@ cm.on('beforeChange', (_, change) => {
   console.log('beforeChange', change.origin, change)
   const from = cm.getDoc().indexFromPos(change.from)
   const to = cm.getDoc().indexFromPos(change.to)
-  cm_spans = modify(cm_spans, from, to, change.text.join('\n'))
+  cm_spans = auto_revert(modify(cm_spans, from, to, change.text.join('\n')), orig_text)
   console.log(cm_spans.map(({text}) => text))
+
+  cm_diff.getDoc().getAllMarks().map((m) => m.clear())
+  cm_diff.setValue(example_text)
+  const rev_links: Map<number, Span | null> = new Map();
+  for (const span of cm_spans) {
+    let maxlink = -1
+    for (const link of span.data.links) {
+      maxlink = Math.max(link, maxlink)
+      rev_links.set(link, null)
+    }
+    if (maxlink != -1) {
+      rev_links.set(maxlink, span)
+    }
+  }
+  const q: {offset: number, width: number, replace: string}[] = []
+  let p: number = 0
+  let i: number = 0
+  for (const w of orig_text) {
+    if (rev_links.has(i)) {
+      let replace = ""
+      const span = rev_links.get(i)
+      if (span) {
+        replace = span.text
+      }
+      if (replace != w) {
+        replace = replace.slice(0, whitespace_start(replace))
+        q.push({
+          offset: p,
+          width: whitespace_start(w), // NOTE: must strip last whitespace here
+          replace
+        })
+      }
+    }
+    i += 1;
+    p += w.length;
+  }
+  // todo: missing (unlinked) words
+  q.sort((a, b) => b.offset - a.offset)
+  for (const {offset, width, replace} of q) {
+    const conv = (off: number) => cm_diff.getDoc().posFromIndex(off)
+    if (replace) {
+      cm_diff.getDoc().replaceRange(replace, conv(offset+width))
+      cm_diff.getDoc().markText(conv(offset+width), conv(offset+width+replace.length), {
+        css: 'color: #090'
+      })
+    }
+    cm_diff.getDoc().markText(conv(offset), conv(offset+width), {
+      css: 'color: #d00; text-decoration: line-through;'
+    })
+  }
 })
 
 /*
