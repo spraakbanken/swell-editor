@@ -59,8 +59,8 @@ function flatten<A>(xss: A[][]): A[] {
 
 // index-based, use CodeMirror's doc.posFromIndex and doc.indexFromPos to convert
 export function modify(spans: Span[], from: number, to: number, text: string): Span[] {
-  const [from_span, from_ix] = span_index(spans, from)
-  let [to_span, to_ix] = span_index(spans, to - 1)
+  const [from_span, from_ix] = span_from_offset(spans, from)
+  let [to_span, to_ix] = span_from_offset(spans, to - 1)
   const before = spans.slice(0, from_span)
   const after = spans.slice(to_span + 1)
   const pre = spans[from_span].text.slice(0, from_ix)
@@ -164,13 +164,17 @@ function cleanup_after_raw_modifications(spans: Span[]): Span[] {
   return new_spans
 }
 
-export function span_index(spans: Span[], index: number): [number, number] {
+export function span_offset(spans: Span[], index: number): number {
+  return spans.slice(0, index).reduce((x, s: Span) => x + s.text.length, 0)
+}
+
+export function span_from_offset(spans: Span[], offset: number): [number, number] {
   let passed = 0
   for (let i = 0; i < spans.length; i++) {
     const w = spans[i].text.length
     passed += w
-    if (passed > index) {
-      return [i, index - passed + w]
+    if (passed > offset) {
+      return [i, offset - passed + w]
     }
   }
   throw new Error('Out of bounds')
@@ -204,12 +208,7 @@ const cm_orig = CodeMirror(document.body, {
 })
 
 const cm = CodeMirror(document.body, {
-  value: example_text,
-  extraKeys: {
-    "Ctrl-X": () => {
-      console.log('c-x')
-    }
-  }
+  value: example_text
 });
 
 const cm_diff = CodeMirror(document.body, {
@@ -230,17 +229,67 @@ for (const t of ["change", "changes", "beforeChange", "cursorActivity", "update"
 */
 
 // disable a bunch of "complicated" events for now
-for (const t of ["cut", "copy", "paste", "dragover", "drop", "dragenter", "dragleave", "dragstart"]) {
+for (const t of ["copy", "dragover", "drop", "dragenter", "dragleave", "dragstart"]) {
   (cm.on as any)(t, (_cm: CodeMirror.Editor, evt: Event) => {
     console.log('Preventing', evt)
     evt.preventDefault()
   })
 }
 
+(cm.on as any)('cut', (_cm: CodeMirror.Editor, evt: Event) => {
+  console.log('cut', evt)
+  evt.preventDefault()
+  const sels = cm.getDoc().listSelections()
+  if (sels) {
+    const {anchor, head} = sels[0]
+    const a = cm.getDoc().indexFromPos(anchor)
+    const b = cm.getDoc().indexFromPos(head)
+    const from = span_from_offset(cm_spans, Math.min(a, b))[0]
+    const to = span_from_offset(cm_spans, Math.max(a, b))[0]
+    const conv = (off: number) => cm.getDoc().posFromIndex(off)
+    cm.getDoc().getAllMarks().map((m) => m.clear())
+    cm.getDoc().markText(conv(span_offset(cm_spans, from)), conv(span_offset(cm_spans, to) + whitespace_start(cm_spans[to].text)), {
+      css: 'border-bottom: 1px dotted #aaa; border-top: 1px dotted #aaa; background: #ddd'
+    })
+  }
+});
+
+(cm.on as any)('paste', (_cm: CodeMirror.Editor, evt: Event) => {
+  console.log('paste', evt)
+  evt.preventDefault()
+  cm.getDoc().getAllMarks().map((m) => {
+    const mark = m.find()
+    const from = span_from_offset(cm_spans, cm.getDoc().indexFromPos(mark.from as any as CodeMirror.Position))[0]
+    const to = span_from_offset(cm_spans, cm.getDoc().indexFromPos(mark.to as any as CodeMirror.Position))[0]
+    const here = span_from_offset(cm_spans, cm.getDoc().indexFromPos(cm.getDoc().getCursor()))[0]
+    console.log(from, to, here)
+    if (here < from) {
+      // monster edit
+      const conv = (off: number) => cm.getDoc().posFromIndex(off)
+      cm.operation(() => {
+        const from_pos = conv(span_offset(cm_spans, from))
+        const to_pos = conv(span_offset(cm_spans, to) + cm_spans[to].text.length)
+        const here_pos = conv(span_offset(cm_spans, here))
+        const text = cm.getDoc().getRange(from_pos, to_pos)
+        cm.getDoc().replaceRange('', from_pos, to_pos, 'custom_paste')
+        cm.getDoc().replaceRange(text, here_pos, undefined, 'custom_paste')
+      })
+      // todo: continue here, what to do about this mess?
+      // would be nice with some proper alignment visualisation here to help
+      cm_spans = cm_spans.slice(0, here).concat(cm_spans.slice(from, to), cm_spans.slice(here, from), cm_spans.slice(to))
+      // don't know what to do about undo
+    } else if (here > to) {
+      // monster edit
+      // TODO
+
+    }
+  })
+})
+
 cm.on('cursorActivity', (_: CodeMirror.Editor) => {
   const cursor = cm.getDoc().getCursor()
   const index = cm.getDoc().indexFromPos(cursor)
-  const [span, i] = span_index(cm_spans, cm.getDoc().indexFromPos(cursor));
+  const [span, i] = span_from_offset(cm_spans, cm.getDoc().indexFromPos(cursor));
   console.log(cursor, index, span, i, cm_spans[span], cm_spans[span].data.links)
   cm_orig.getDoc().getAllMarks().map((m) => m.clear())
   for (const linked of cm_spans[span].data.links) {
@@ -269,59 +318,61 @@ cm.on('beforeChange', (_, change) => {
   // otherwise indexFromPos does not work anymore
   // since the position might be removed
   console.log('beforeChange', change.origin, change)
-  const from = cm.getDoc().indexFromPos(change.from)
-  const to = cm.getDoc().indexFromPos(change.to)
-  cm_spans = auto_revert(modify(cm_spans, from, to, change.text.join('\n')), orig_text)
-  console.log(cm_spans.map(({text}) => text))
+  if (change.origin != 'custom_paste') {
+    const from = cm.getDoc().indexFromPos(change.from)
+    const to = cm.getDoc().indexFromPos(change.to)
+    cm_spans = auto_revert(modify(cm_spans, from, to, change.text.join('\n')), orig_text)
+    console.log(cm_spans.map(({text}) => text))
 
-  cm_diff.getDoc().getAllMarks().map((m) => m.clear())
-  cm_diff.setValue(example_text)
-  const rev_links: Map<number, Span | null> = new Map();
-  for (const span of cm_spans) {
-    let maxlink = -1
-    for (const link of span.data.links) {
-      maxlink = Math.max(link, maxlink)
-      rev_links.set(link, null)
-    }
-    if (maxlink != -1) {
-      rev_links.set(maxlink, span)
-    }
-  }
-  const q: {offset: number, width: number, replace: string}[] = []
-  let p: number = 0
-  let i: number = 0
-  for (const w of orig_text) {
-    if (rev_links.has(i)) {
-      let replace = ""
-      const span = rev_links.get(i)
-      if (span) {
-        replace = span.text
+    cm_diff.getDoc().getAllMarks().map((m) => m.clear())
+    cm_diff.setValue(example_text)
+    const rev_links: Map<number, Span | null> = new Map();
+    for (const span of cm_spans) {
+      let maxlink = -1
+      for (const link of span.data.links) {
+        maxlink = Math.max(link, maxlink)
+        rev_links.set(link, null)
       }
-      if (replace != w) {
-        replace = replace.slice(0, whitespace_start(replace))
-        q.push({
-          offset: p,
-          width: whitespace_start(w), // NOTE: must strip last whitespace here
-          replace
+      if (maxlink != -1) {
+        rev_links.set(maxlink, span)
+      }
+    }
+    const q: {offset: number, width: number, replace: string}[] = []
+    let p: number = 0
+    let i: number = 0
+    for (const w of orig_text) {
+      if (rev_links.has(i)) {
+        let replace = ""
+        const span = rev_links.get(i)
+        if (span) {
+          replace = span.text
+        }
+        if (replace != w) {
+          replace = replace.slice(0, whitespace_start(replace))
+          q.push({
+            offset: p,
+            width: whitespace_start(w), // NOTE: must strip last whitespace here
+            replace
+          })
+        }
+      }
+      i += 1;
+      p += w.length;
+    }
+    // todo: missing (unlinked) words
+    q.sort((a, b) => b.offset - a.offset)
+    for (const {offset, width, replace} of q) {
+      const conv = (off: number) => cm_diff.getDoc().posFromIndex(off)
+      if (replace) {
+        cm_diff.getDoc().replaceRange(replace, conv(offset+width))
+        cm_diff.getDoc().markText(conv(offset+width), conv(offset+width+replace.length), {
+          css: 'color: #090'
         })
       }
-    }
-    i += 1;
-    p += w.length;
-  }
-  // todo: missing (unlinked) words
-  q.sort((a, b) => b.offset - a.offset)
-  for (const {offset, width, replace} of q) {
-    const conv = (off: number) => cm_diff.getDoc().posFromIndex(off)
-    if (replace) {
-      cm_diff.getDoc().replaceRange(replace, conv(offset+width))
-      cm_diff.getDoc().markText(conv(offset+width), conv(offset+width+replace.length), {
-        css: 'color: #090'
+      cm_diff.getDoc().markText(conv(offset), conv(offset+width), {
+        css: 'color: #d00; text-decoration: line-through;'
       })
     }
-    cm_diff.getDoc().markText(conv(offset), conv(offset+width), {
-      css: 'color: #d00; text-decoration: line-through;'
-    })
   }
 })
 
