@@ -30,7 +30,7 @@ export function identity_spans(original: string): Span[] {
   }))
 }
 
-export function check_invariant(spans: Span[]): Span[] {
+export function check_invariant(spans: Span[]): void {
   const texts = spans.map(s => s.text)
   for (let i = 0; i < spans.length; i++) {
     const text = spans[i].text
@@ -50,11 +50,28 @@ export function check_invariant(spans: Span[]): Span[] {
       }
     }
   }
-  return spans
 }
 
 function flatten<A>(xss: A[][]): A[] {
   return ([] as any).concat(...xss)
+}
+
+// for slicing and rearranging arrays. to is exclusive
+function splitAt<A>(xs: A[], from: number, to: number=from+1): [A[], A[], A[]] {
+  return [xs.slice(0, from), xs.slice(from, to), xs.slice(to)]
+}
+
+function swap_slices<A>(xs: A[], from1: number, to1: number, from2: number, to2: number): A[] {
+  if (from2 < from1) {
+    return swap_slices(xs, from2, to2, from1, to1)
+  } else if (from2 < to1 || to2 < to1) {
+    console.log('one is contained in the other: cannot do anything')
+    return xs // one is contained in the other: cannot do anything
+  } else {
+    const [before2, seg2, after2] = splitAt(xs, from2, to2)
+    const [before1, seg1, between] = splitAt(before2, from1, to1)
+    return flatten([before1, seg2, between, seg1, after2])
+  }
 }
 
 // index-based, use CodeMirror's doc.posFromIndex and doc.indexFromPos to convert
@@ -196,11 +213,13 @@ export function spans_with_offsets(spans: Span[]): [Span, number][] {
 
 // properties?
 
-const example_text = `En dag jag vaknade @@@ när larmet på min telefon ringde. De väder var inte fint.
+const example_text2 = `En dag jag vaknade @@@ när larmet på min telefon ringde. De väder var inte fint.
 Det var mycket kult ute med regn. Jag bara dricker te med två broad.
 
 Min bussen går åtta i sju. Jag se min bus när jag borjade springer snabbt som bussen går. Jag var trott
 som jag springed så mycket. Han är inte trevlig för mig efter jag missade @@@ bus.`
+
+const example_text = `En dag jag vaknade @@@ när larmet på min telefon ringde. De väder var inte fint.`
 
 const cm_orig = CodeMirror(document.body, {
   value: example_text,
@@ -254,35 +273,29 @@ for (const t of ["copy", "dragover", "drop", "dragenter", "dragleave", "dragstar
   }
 });
 
+console.log(swap_slices([0,1,2,3,4], 2, 3, 0, 0));
+
 (cm.on as any)('paste', (_cm: CodeMirror.Editor, evt: Event) => {
   console.log('paste', evt)
   evt.preventDefault()
   cm.getDoc().getAllMarks().map((m) => {
     const mark = m.find()
-    const from = span_from_offset(cm_spans, cm.getDoc().indexFromPos(mark.from as any as CodeMirror.Position))[0]
-    const to = span_from_offset(cm_spans, cm.getDoc().indexFromPos(mark.to as any as CodeMirror.Position))[0]
-    const here = span_from_offset(cm_spans, cm.getDoc().indexFromPos(cm.getDoc().getCursor()))[0]
-    console.log(from, to, here)
-    if (here < from) {
-      // monster edit
-      const conv = (off: number) => cm.getDoc().posFromIndex(off)
-      cm.operation(() => {
-        const from_pos = conv(span_offset(cm_spans, from))
-        const to_pos = conv(span_offset(cm_spans, to) + cm_spans[to].text.length)
-        const here_pos = conv(span_offset(cm_spans, here))
-        const text = cm.getDoc().getRange(from_pos, to_pos)
-        cm.getDoc().replaceRange('', from_pos, to_pos, 'custom_paste')
-        cm.getDoc().replaceRange(text, here_pos, undefined, 'custom_paste')
-      })
-      // todo: continue here, what to do about this mess?
-      // would be nice with some proper alignment visualisation here to help
-      cm_spans = cm_spans.slice(0, here).concat(cm_spans.slice(from, to), cm_spans.slice(here, from), cm_spans.slice(to))
-      // don't know what to do about undo
-    } else if (here > to) {
-      // monster edit
-      // TODO
-
+    const span_from_pos = (pos: CodeMirror.Position) => span_from_offset(cm_spans, cm.getDoc().indexFromPos(pos))[0]
+    const from = span_from_pos(mark.from as any)
+    const to = span_from_pos(mark.to as any)
+    const cursor = cm.getDoc().getCursor()
+    let here = span_from_pos(cursor)
+    if (here > to) {
+      here++
     }
+    console.log(from, to, here)
+    console.log(cm_spans.map(({text}) => text))
+    cm_spans = swap_slices(cm_spans, from, to + 1, here, here)
+    check_invariant(cm_spans)
+    console.log(cm_spans.map(({text}) => text))
+    const upd = cm_spans.map(s => s.text).join('')
+    cm.getDoc().setValue(upd.slice(0, upd.length - 1))
+    cm.getDoc().setSelection(cursor, cursor)
   })
 })
 
@@ -318,7 +331,15 @@ cm.on('beforeChange', (_, change) => {
   // otherwise indexFromPos does not work anymore
   // since the position might be removed
   console.log('beforeChange', change.origin, change)
-  if (change.origin != 'custom_paste') {
+
+  if (change.origin == 'undo') {
+    console.log('undo')
+    // we will do our undos ourselves
+    change.cancel();
+    return
+  }
+
+  if (change.origin != 'custom_paste' && change.origin != 'setValue') {
     const from = cm.getDoc().indexFromPos(change.from)
     const to = cm.getDoc().indexFromPos(change.to)
     cm_spans = auto_revert(modify(cm_spans, from, to, change.text.join('\n')), orig_text)
@@ -341,25 +362,22 @@ cm.on('beforeChange', (_, change) => {
     let p: number = 0
     let i: number = 0
     for (const w of orig_text) {
-      if (rev_links.has(i)) {
-        let replace = ""
-        const span = rev_links.get(i)
-        if (span) {
-          replace = span.text
-        }
-        if (replace != w) {
-          replace = replace.slice(0, whitespace_start(replace))
-          q.push({
-            offset: p,
-            width: whitespace_start(w), // NOTE: must strip last whitespace here
-            replace
-          })
-        }
+      let replace = ""
+      const span = rev_links.get(i)
+      if (span) {
+        replace = span.text
+      }
+      if (replace != w) {
+        replace = replace.slice(0, whitespace_start(replace))
+        q.push({
+          offset: p,
+          width: whitespace_start(w),
+          replace
+        })
       }
       i += 1;
       p += w.length;
     }
-    // todo: missing (unlinked) words
     q.sort((a, b) => b.offset - a.offset)
     for (const {offset, width, replace} of q) {
       const conv = (off: number) => cm_diff.getDoc().posFromIndex(off)
@@ -376,44 +394,6 @@ cm.on('beforeChange', (_, change) => {
   }
 })
 
-/*
-// old twiddlings about well-behaved cut
-interface CutState {
-  from: CodeMirror.Position,
-  to: CodeMirror.Position,
-  text: string,
-  mark: CodeMirror.TextMarker
-}
-
-function cutState(from: CodeMirror.Position, to: CodeMirror.Position): CutState {
-  const text = cm.getDoc().getRange(from, to)
-  cm.getDoc().replaceRange(text, from, undefined, 'cutState')
-  const mark = cm.getDoc().markText(from, to, {
-    clearOnEnter: true,
-    readOnly: true,
-    css: 'color: #f33'
-  })
-  return {from, to, text, mark}
-}
-
-let cut_state : CutState | null = null;
-
-cm.on('beforeChange', (_, change) => {
-  console.log('beforeChange', change.origin, change);
-  if (change.origin == 'cut') {
-    change.cancel();
-  }
-  if (change.origin == 'undo') {
-    // we will do our undos ourselves
-    change.cancel();
-  }
-});
-
-cm.on('change', (_, change) => {
-  console.log('change', change.origin, change)
-})
-*/
-
 // Tests
 
 // test cursor
@@ -422,6 +402,53 @@ for (let i = 0; i < 100; i++) {
   const arr2 = cursor((prev, me, next) => [prev, me, next])(arr)
   if (arr.some((x, i) => arr2[i] != x)) {
     throw new Error('cursor identity failed')
+  }
+}
+
+// test splitAt
+for (let i = 0; i < 100; i++) {
+  const arr = randomString(i, 'xyz').split('')
+  const a = Math.floor(Math.random() * arr.length)
+  const b = Math.floor(Math.random() * (arr.length + 1))
+  const [start, stop] = [a, b].sort((x, y) => x - y)
+  const [prev, mid, after] = splitAt(arr, start, stop)
+  const arr2 = flatten([prev, mid, after])
+  if (arr.some((x, i) => arr2[i] != x)) {
+    throw new Error('splitAt identity failed')
+  }
+}
+
+// test swapSlices
+for (let n = 0; n < 100; n++) {
+  const a = Math.floor(Math.random() * n)
+  const b = Math.floor(Math.random() * n)
+  const c = Math.floor(Math.random() * n)
+  const d = Math.floor(Math.random() * (n + 1))
+  const [f1, t1, f2, t2] = [a, b, c, d].sort((x, y) => x - y)
+  const arr: number[] = []
+  for (let i = 0; i < n; i++) {
+    arr.push(i)
+  }
+  const arr2: number[] = swap_slices(arr, f1, t1, f2, t2)
+  const arr3: number[] = []
+  let f2c = f2
+  let t1c = t1
+  let f1c = f1
+  for (let i = 0; i < f1; i++) { arr3.push(i) }
+  for (let i = 0; i < t2 - f2; i++) { arr3.push(f2c++) }
+  for (let i = 0; i < f2 - t1; i++) { arr3.push(t1c++) }
+  for (let i = 0; i < t1 - f1; i++) { arr3.push(f1c++) }
+  for (let i = t2; i < n; i++) { arr3.push(i) }
+  if (arr.length != arr2.length) {
+    throw new Error('swapSlices spec failed')
+  }
+  if (arr2.length != arr3.length) {
+    throw new Error('swapSlices spec failed')
+  }
+  for (let i = 0; i < n; i++) {
+    if (arr2[i] != arr3[i]) {
+      throw new Error('swapSlices spec failed')
+    }
   }
 }
 
@@ -462,8 +489,7 @@ for (let i = 0; i < 100; i++) {
   const repl = randomString(Math.random() * i, 'xyz \n')
   const a = Math.floor(Math.random() * i)
   const b = Math.floor(Math.random() * (i + 1))
-  const start = Math.min(a, b)
-  const stop = Math.max(a, b)
+  const [start, stop] = [a, b].sort((x, y) => x - y)
   //console.group('test input')
   //console.log([str])
   //console.log([repl])
