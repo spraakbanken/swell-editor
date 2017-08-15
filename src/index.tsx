@@ -39,6 +39,7 @@ const cm_diff = CodeMirror(document.body, {
 
 
 // how should word movement be shown here? Check monotonicity? Maybe that can help in reverting too
+// move functionality to Spans.ts
 function draw_diff() {
   cm_diff.getDoc().getAllMarks().map((m) => m.clear())
   /*
@@ -185,7 +186,7 @@ function paste() {
     }
     console.log(from, to, here)
     console.log(cm_spans.map(({text}) => text))
-    set_cm_spans(Spans.swap_slices(cm_spans, from, to + 1, here, here))
+    set_cm_spans(Spans.rearrange(cm_spans, from, to, here))
     update_from_cm_spans()
   })
 }

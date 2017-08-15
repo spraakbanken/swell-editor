@@ -4,6 +4,7 @@ console.log('Reload Spans')
 export interface SpanData {
   readonly links: number[],
   readonly labels: string[],
+  readonly moved: boolean
 }
 
 export interface Span {
@@ -16,6 +17,7 @@ export function merge_data(spans: Span[]): SpanData {
   return {
     links: flatten(spans.map(s => s.data.links)),
     labels: flatten(spans.map(s => s.data.labels)),
+    moved: spans.some(s => s.data.moved)
   }
 }
 
@@ -26,14 +28,14 @@ export function identity_spans(original: string): Span[] {
     text: s,
     data: {
       links: [i],
-      labels: []
+      labels: [],
+      moved: false
     }
   }))
 }
 
 /** Checks the invariants for spans */
 export function check_invariant(spans: Span[]): void {
-  const texts = spans.map(s => s.text)
   for (let i = 0; i < spans.length; i++) {
     const text = spans[i].text
     if (!text.match(/^\S(.|\n)*\s$/)) {
@@ -41,15 +43,25 @@ export function check_invariant(spans: Span[]): void {
         // ok: first token does not need to start on a word,
         // but cannot be empty
       } else {
-        throw new Error('Invariant violated on span ' + i + ' ' + text)
+        throw new Error('Content invariant violated on span ' + i + ' ' + text)
       }
     }
   }
   for (let i = 0; i < spans.length; i++) {
     for (let j = 0; j < spans.length; j++) {
       if (spans[i].data.links.some((x) => spans[j].data.links.some((y) => x == y)) && i != j) {
-        throw new Error('Links not injective on indicies ' + i + ' and ' + j)
+        throw new Error('Links injectivity invariant broken on indicies ' + i + ' and ' + j)
       }
+    }
+  }
+  let last = -1
+  for (let i = 0; i < spans.length; i++) {
+    const span = spans[i]
+    if (!span.data.moved && span.data.links) {
+      if (last > Math.min(...span.data.links)) {
+        throw new Error('Link increase invariant broken on index ' + i)
+      }
+      last = Math.max(...span.data.links)
     }
   }
 }
@@ -60,24 +72,37 @@ function flatten<A>(xss: A[][]): A[] {
 }
 
 /** Slicing and rearranging arrays. The to paramater is /exclusive/ */
-function splitAt<A>(xs: A[], from: number, to: number=from+1): [A[], A[], A[]] {
-  return [xs.slice(0, from), xs.slice(from, to), xs.slice(to)]
+function splitAt<A>(xs: A[], start: number, end: number=start+1): [A[], A[], A[]] {
+  return [xs.slice(0, start), xs.slice(start, end), xs.slice(end)]
 }
 
-export function swap_slices<A>(xs: A[], from1: number, to1: number, from2: number, to2: number): A[] {
-  if (from2 < from1) {
-    return swap_slices(xs, from2, to2, from1, to1)
-  } else if (from2 < to1 || to2 < to1) {
+function swap_slices<A>(xs: A[], begin1: number, end1: number, begin2: number, end2: number): A[] {
+  if (begin2 < begin1) {
+    return swap_slices(xs, begin2, end2, begin1, end1)
+  } else if (begin2 < end1 || end2 < end1) {
     console.log('one is contained in the other: cannot do anything')
-    return xs // one is contained in the other: cannot do anything
+    return xs
   } else {
-    const [before2, seg2, after2] = splitAt(xs, from2, to2)
-    const [before1, seg1, between] = splitAt(before2, from1, to1)
+    const [before2, seg2, after2] = splitAt(xs, begin2, end2)
+    const [before1, seg1, between] = splitAt(before2, begin1, end1)
     return flatten([before1, seg2, between, seg1, after2])
   }
 }
 
-/** Replace the text at some position, merging the spans it touces upon.
+/** Moves a slice of the spans and puts it at a new destination (marking them as moved).
+
+Indexes are spans, not offsets.
+*/
+export function rearrange(spans: Span[], begin: number, end: number, destination: number): Span[] {
+  const [before, seg, after] = splitAt(spans, begin, end + 1)
+  function mark_moved(span: Span): Span {
+    return {...span, data: {...span.data, moved: true}}
+  }
+  const marked_spans = flatten([before, seg.map(mark_moved), after])
+  return swap_slices(marked_spans, begin, end + 1, destination, destination)
+}
+
+/** Replace the text at some position, merging the spans it touches upon.
 
 Positions are offsets from the beginning of text.
 (use CodeMirror's doc.posFromIndex and doc.indexFromPos to convert */
@@ -97,6 +122,8 @@ export function modify(spans: Span[], from: number, to: number, text: string): S
 
 /** Modify the spans using a sliding window of width one.
 
+Goes through the array backwards in case the size changes.
+
 Return null for no change.
 */
 export function cursor<S>(f: ((prev: S | null, me: S, next: S | null) => (S | null)[] | null)): (spans: S[]) => S[] {
@@ -113,15 +140,20 @@ export function cursor<S>(f: ((prev: S | null, me: S, next: S | null) => (S | nu
   }
 }
 
-/** Reverts a span if it matches the original exactly. */
+/** Reverts a span if it matches the original exactly.
+
+Only performed when this breaks up a span into many. */
 export function auto_revert(spans: Span[], original: string[]): Span[] {
   return cursor<Span>((prev, me, next) => {
-    if (me.text == me.data.links.map((i) => original[i]).join('')) {
+    if (me.data.links.length > 1 &&
+        !me.data.moved &&
+        me.text == me.data.links.map((i) => original[i]).join('')) {
       const reverted_spans: Span[] = me.data.links.map((i) => ({
         text: original[i],
         data: {
           links: [i],
-          labels: []
+          labels: [],
+          moved: false
         }
       }))
       return [prev].concat(reverted_spans, [next])
@@ -160,7 +192,7 @@ const remove_empty: (spans: Span[]) => Span[] =
     }
   })
 
-/** merge tokens which have no final whitespace with next token */
+/** Merge tokens which have no final whitespace with next token */
 const merge_no_final_whitespace: (spans: Span[]) => Span[] =
   cursor<Span>((prev, me, next) => {
     if (me.text.match(/\S$/) && next) {
@@ -174,7 +206,7 @@ const merge_no_final_whitespace: (spans: Span[]) => Span[] =
     }
   })
 
-/** Clean up after brutal modifications */
+/** Clean up after modifications */
 function cleanup_after_raw_modifications(spans: Span[]): Span[] {
   const new_spans = merge_no_final_whitespace(remove_empty(move_whitespace(spans)))
   //console.group('cleanup_after_raw_modifications')
@@ -266,8 +298,8 @@ for (let n = 0; n < 100; n++) {
   }
 }
 
-export function dummy_span(text: string) {
-  return {text, data: {links: [], labels: []}}
+function dummy_span(text: string) {
+  return {text, data: {links: [], labels: [], moved: false}}
 }
 
 // isolated test cases that have failed before
