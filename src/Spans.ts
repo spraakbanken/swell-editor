@@ -1,4 +1,6 @@
 
+
+
 console.log('Reload Spans')
 
 export interface SpanData {
@@ -34,8 +36,8 @@ export function identity_spans(original: string): Span[] {
   }))
 }
 
-/** Checks the invariants for spans */
-export function check_invariant(spans: Span[]): void {
+/** Checks the invariants for spans, returns empty string if OK */
+export function check_invariant(spans: Span[]): string {
   for (let i = 0; i < spans.length; i++) {
     const text = spans[i].text
     if (!text.match(/^\S(.|\n)*\s$/)) {
@@ -43,14 +45,14 @@ export function check_invariant(spans: Span[]): void {
         // ok: first token does not need to start on a word,
         // but cannot be empty
       } else {
-        throw new Error('Content invariant violated on span ' + i + ' ' + text)
+        return 'Content invariant violated on span ' + i + ' ' + text
       }
     }
   }
   for (let i = 0; i < spans.length; i++) {
     for (let j = 0; j < spans.length; j++) {
       if (spans[i].data.links.some((x) => spans[j].data.links.some((y) => x == y)) && i != j) {
-        throw new Error('Links injectivity invariant broken on indicies ' + i + ' and ' + j)
+        return 'Links injectivity invariant broken on indicies ' + i + ' and ' + j
       }
     }
   }
@@ -59,11 +61,12 @@ export function check_invariant(spans: Span[]): void {
     const span = spans[i]
     if (!span.data.moved && span.data.links) {
       if (last > Math.min(...span.data.links)) {
-        throw new Error('Link increase invariant broken on index ' + i)
+        return 'Link increase invariant broken on index ' + i
       }
       last = Math.max(...span.data.links)
     }
   }
+  return ''
 }
 
 /** Flatten an array of arrays */
@@ -81,6 +84,7 @@ function swap_slices<A>(xs: A[], begin1: number, end1: number, begin2: number, e
     return swap_slices(xs, begin2, end2, begin1, end1)
   } else if (begin2 < end1 || end2 < end1) {
     console.log('one is contained in the other: cannot do anything')
+    console.log(begin1, end1, begin2, end2)
     return xs
   } else {
     const [before2, seg2, after2] = splitAt(xs, begin2, end2)
@@ -142,7 +146,7 @@ export function cursor<S>(f: ((prev: S | null, me: S, next: S | null) => (S | nu
 
 /** Reverts a span if it matches the original exactly.
 
-Only performed when this breaks up a span into many. */
+Only performed when this breaks up a span into many, and they are not moved */
 export function auto_revert(spans: Span[], original: string[]): Span[] {
   return cursor<Span>((prev, me, next) => {
     if (me.data.links.length > 1 &&
@@ -218,8 +222,18 @@ function cleanup_after_raw_modifications(spans: Span[]): Span[] {
   if (len != new_len) {
     throw new Error('Internal error: length modified')
   }
-  check_invariant(new_spans)
+  //check_invariant(new_spans)
   return new_spans
+}
+
+/** The total text length */
+export function text_length(spans: Span[]): number {
+  return text(spans).length
+}
+
+/** The text */
+export function text(spans: Span[]): string {
+  return spans.map(s => s.text).join('')
 }
 
 /** The offset in the modified text for a span at an index. */
