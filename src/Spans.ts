@@ -14,9 +14,14 @@ export function merge_spans(spans: Span[], text: string): Span {
   return {
     text: text,
     labels: flatten(spans.map(s => s.labels)),
-    links: links,
+    links: numsort(links),
     moved: spans.some(s => s.moved) || !contiguous(links)
   }
+}
+
+/** Numeric sort */
+export function numsort(xs: number[]): number[] {
+  return xs.slice().sort((u,v) => u - v)
 }
 
 /** Tokenizes text on whitespace */
@@ -37,6 +42,10 @@ export function init(tokens: string[]): Span[] {
   }))
 }
 
+export function increases(xs: number[]): boolean {
+  return xs.every((v, i) => i == 0 || v > xs[i-1])
+}
+
 export function contiguous(xs: number[]): boolean {
   return xs.every((x, i) => i == 0 || xs[i-1] == x - 1)
 }
@@ -50,7 +59,7 @@ export function check_invariant(spans: Span[]): string {
         // ok: first token does not need to start on a word,
         // but cannot be empty
       } else {
-        return 'Content invariant violated on span ' + i + ': ' + text
+        return 'Content invariant violated at index ' + i + ': ' + text
       }
     }
   }
@@ -59,43 +68,37 @@ export function check_invariant(spans: Span[]): string {
     if (!span.moved && !contiguous(span.links)) {
       return 'Links not contiguous on unmoved span at index ' + i
     }
+    if (!increases(span.links)) {
+      return 'Links not sorted at index ' + i
+    }
+    if (span.moved && span.links.length == 0) {
+      return 'Span moved but without links at index ' + i
+    }
   }
   for (let i = 0; i < spans.length; i++) {
     for (let j = 0; j < spans.length; j++) {
       if (spans[i].links.some((x) => spans[j].links.some((y) => x == y)) && i != j) {
-        return 'Links injectivity invariant broken on indicies ' + i + ' and ' + j
+        return 'Links injectivity invariant broken at indicies ' + i + ' and ' + j
       }
     }
   }
-  let last = -1
-  for (let i = 0; i < spans.length; i++) {
-    const span = spans[i]
-    if (!span.moved && span.links) {
-      if (last > Math.min(...span.links)) {
-        return 'Link increase invariant broken on index ' + i
-      }
-      last = Math.max(...span.links)
-    }
-  }
-  for (let i = 0; i < spans.length; i++) {
-    const span = spans[i]
-    if (span.moved && span.links.length == 0) {
-      return 'Span moved but without links on index ' + i
-    }
+  if (!increases(flatten(spans.filter(s => !s.moved).map(s => s.links)))) {
+    return 'Links not increasing'
   }
   return '' // all ok!
 }
 
 /** Flatten an array of arrays */
-function flatten<A>(xss: A[][]): A[] {
+export function flatten<A>(xss: A[][]): A[] {
   return ([] as any).concat(...xss)
 }
 
+/** Split an array into two pieces */
 function splitAt<A>(xs: A[], i: number): [A[], A[]] {
   return [xs.slice(0, i), xs.slice(i)]
 }
 
-/** Slicing and rearranging arrays. The to paramater is /exclusive/ */
+/** Split an array into three pieces */
 function splitAt3<A>(xs: A[], start: number, end: number): [A[], A[], A[]] {
   const [ab,c] = splitAt(xs, end)
   const [a,b] = splitAt(ab, start)

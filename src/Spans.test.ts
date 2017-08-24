@@ -14,8 +14,7 @@ function increasing(arr: number[][]): number[][] {
 
 describe('increasing', () => {
   jsc.property('increases', jsc.array(jsc.array(jsc.integer)), arr => {
-    const flat = ([] as number[]).concat(...increasing(arr))
-    return flat.every((v, i) => i == 0 || v > flat[i-1])
+    return Spans.increases(Spans.flatten(increasing(arr)))
   })
 
   jsc.property('preserves lengths', jsc.array(jsc.array(jsc.integer)), arr =>
@@ -36,12 +35,8 @@ function permute<A>(xs: A[]): jsc.Generator<A[]> {
   })
 }
 
-function sort(xs: number[]): number[] {
-  return xs.slice().sort((u,v) => u - v)
-}
-
 function array_set_eq(xs: number[], ys: number[]): boolean {
-  return isEqual(sort(xs), sort(ys))
+  return isEqual(Spans.numsort(xs), Spans.numsort(ys))
 }
 
 describe('permute', () =>
@@ -129,7 +124,7 @@ function show(x: any): string {
 }
 
 function check(spans: Spans.Span[], info: any=undefined): boolean {
-  return eq('', Spans.check_invariant(spans), info)
+  return eq('', Spans.check_invariant(spans), [spans, info])
 }
 
 function eq<A>(l: A, r: A, info: any=undefined) {
@@ -168,9 +163,9 @@ describe("Spans", () => {
   })
 
   jsc.property("modify", arb_spans, jsc.asciistring, jsc.nat, jsc.nat, (spans, text, i, j) => {
-    const [a,b] = sort([i,j].map((c) => c % (Spans.text_length(spans) - 1)))
+    const [a,b] = Spans.numsort([i,j].map((c) => c % (Spans.text_length(spans) - 1)))
     const mods = Spans.modify(spans, a, b, text)
-    return check(mods) &&
+    return check(mods, {spans:spans, text:text, i:i, j:j}) &&
       eq(Spans.text_length(spans) - (b - a), Spans.text_length(mods) - text.length) &&
       eq(Spans.text(spans).slice(0,a) + text + Spans.text(spans).slice(b), Spans.text(mods))
   })
@@ -183,7 +178,7 @@ describe("Spans", () => {
     })
 
     jsc.property("spec", arb_spans, replicate(3, jsc.nat), jsc.bool, (spans, ixs, side) => {
-      const jxs = sort(ixs.map((i) => i % spans.length))
+      const jxs = Spans.numsort(ixs.map((i) => i % spans.length))
       let a,b,d
       if (side) {
         [a,b,d] = jxs
@@ -210,7 +205,7 @@ describe("Spans", () => {
     )
 
     jsc.property("modify", jsc.asciinestring, jsc.asciinestring, replicate(2, jsc.nat), (s, text, ixs) => {
-      const [a,b] = sort(ixs.map((i) => i % s.length))
+      const [a,b] = Spans.numsort(ixs.map((i) => i % s.length))
       const spans = Spans.identity_spans(s)
       const mods = Spans.modify(spans, a, b, text)
       return check(mods) && eq(s.slice(0, a) + text + s.slice(b) + ' ', Spans.text(mods))
@@ -219,7 +214,7 @@ describe("Spans", () => {
 
   describe("auto_revert", () => {
     jsc.property("modify", jsc.asciinestring, replicate(2, jsc.nat), (s, ixs) => {
-      const [a,b] = sort(ixs.map((i) => i % s.length))
+      const [a,b] = Spans.numsort(ixs.map((i) => i % s.length))
       const spans = Spans.identity_spans(s)
       const tokens = spans.map(s => s.text)
       const text = s.slice(a, b)
