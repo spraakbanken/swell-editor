@@ -1,6 +1,4 @@
 
-
-
 console.log('Reload Spans')
 
 export interface SpanData {
@@ -23,10 +21,17 @@ export function merge_data(spans: Span[]): SpanData {
   }
 }
 
+/** Tokenizes text on whitespace */
+export function tokenize(s: string): string[] {
+  return (s + ' ').match(/\S*\s+/g) || []
+}
+
 /** Makes spans from an original text by tokenizing it and assumes no changes */
-export function identity_spans(original: string): Span[] {
-  const segments = (original + ' ').match(/\S*\s+/g) || []
-  return segments.map((s, i) => ({
+export const identity_spans: (s: string) => Span[] = (s) => init(tokenize(s))
+
+/** Makes spans from tokens */
+export function init(tokens: string[]): Span[] {
+  return tokens.map((s, i) => ({
     text: s,
     data: {
       links: [i],
@@ -74,36 +79,30 @@ function flatten<A>(xss: A[][]): A[] {
   return ([] as any).concat(...xss)
 }
 
-/** Slicing and rearranging arrays. The to paramater is /exclusive/ */
-function splitAt<A>(xs: A[], start: number, end: number=start+1): [A[], A[], A[]] {
-  return [xs.slice(0, start), xs.slice(start, end), xs.slice(end)]
+function splitAt<A>(xs: A[], i: number): [A[], A[]] {
+  return [xs.slice(0, i), xs.slice(i)]
 }
 
-function swap_slices<A>(xs: A[], begin1: number, end1: number, begin2: number, end2: number): A[] {
-  if (begin2 < begin1) {
-    return swap_slices(xs, begin2, end2, begin1, end1)
-  } else if (begin2 < end1 || end2 < end1) {
-    console.log('one is contained in the other: cannot do anything')
-    console.log(begin1, end1, begin2, end2)
-    return xs
-  } else {
-    const [before2, seg2, after2] = splitAt(xs, begin2, end2)
-    const [before1, seg1, between] = splitAt(before2, begin1, end1)
-    return flatten([before1, seg2, between, seg1, after2])
-  }
+/** Slicing and rearranging arrays. The to paramater is /exclusive/ */
+function splitAt3<A>(xs: A[], start: number, end: number): [A[], A[], A[]] {
+  const [ab,c] = splitAt(xs, end)
+  const [a,b] = splitAt(ab, start)
+  return [a,b,c]
 }
 
 /** Moves a slice of the spans and puts it at a new destination (marking them as moved).
 
 Indexes are spans, not offsets.
 */
-export function rearrange(spans: Span[], begin: number, end: number, destination: number): Span[] {
-  const [before, seg, after] = splitAt(spans, begin, end + 1)
+export function rearrange(spans: Span[], begin: number, end: number, dest: number): Span[] {
+  const bumped_end = end + 1
+  const [before, seg, after] = splitAt3(spans, begin, bumped_end)
   function mark_moved(span: Span): Span {
     return {...span, data: {...span.data, moved: true}}
   }
-  const marked_spans = flatten([before, seg.map(mark_moved), after])
-  return swap_slices(marked_spans, begin, end + 1, destination, destination)
+  const mod_dest = dest - (dest >= bumped_end ? bumped_end - begin : 0)
+  const [a,b] = splitAt(flatten([before, after]), mod_dest)
+  return flatten([a, seg.map(mark_moved), b])
 }
 
 /** Replace the text at some position, merging the spans it touches upon.
@@ -113,13 +112,12 @@ Positions are offsets from the beginning of text.
 export function modify(spans: Span[], from: number, to: number, text: string): Span[] {
   const [from_span, from_ix] = span_from_offset(spans, from)
   let [to_span, to_ix] = span_from_offset(spans, to - 1)
-  const before = spans.slice(0, from_span)
-  const after = spans.slice(to_span + 1)
-  const pre = spans[from_span].text.slice(0, from_ix)
-  const post = spans[to_span].text.slice(to_ix + 1)
+  const [before, seg, after] = splitAt3<Span>(spans, from_span, to_span+1)
+  const pre = seg.length > 0 ? seg[0].text.slice(0, from_ix) : ""
+  const post = seg.length > 0 ? seg[seg.length - 1].text.slice(to_ix + 1) : ""
   const new_span: Span = {
     text: pre + text + post,
-    data: merge_data(spans.slice(from_span, to_span+1))
+    data: merge_data(seg)
   }
   return cleanup_after_raw_modifications(flatten([before, [new_span], after]))
 }
@@ -252,116 +250,5 @@ export function span_from_offset(spans: Span[], offset: number): [number, number
     }
   }
   throw new Error('Out of bounds')
-}
-
-// Tests
-
-// test cursor
-for (let i = 0; i < 100; i++) {
-  const arr = randomString(i, 'xyz').split('')
-  const arr2 = cursor((prev, me, next) => [prev, me, next])(arr)
-  if (arr.some((x, i) => arr2[i] != x)) {
-    throw new Error('cursor identity failed')
-  }
-}
-
-// test splitAt
-for (let i = 0; i < 100; i++) {
-  const arr = randomString(i, 'xyz').split('')
-  const a = Math.floor(Math.random() * arr.length)
-  const b = Math.floor(Math.random() * (arr.length + 1))
-  const [start, stop] = [a, b].sort((x, y) => x - y)
-  const [prev, mid, after] = splitAt(arr, start, stop)
-  const arr2 = flatten([prev, mid, after])
-  if (arr.some((x, i) => arr2[i] != x)) {
-    throw new Error('splitAt identity failed')
-  }
-}
-
-// test swapSlices
-for (let n = 0; n < 100; n++) {
-  const a = Math.floor(Math.random() * n)
-  const b = Math.floor(Math.random() * n)
-  const c = Math.floor(Math.random() * n)
-  const d = Math.floor(Math.random() * (n + 1))
-  const [f1, t1, f2, t2] = [a, b, c, d].sort((x, y) => x - y)
-  const arr: number[] = []
-  for (let i = 0; i < n; i++) {
-    arr.push(i)
-  }
-  const arr2: number[] = swap_slices(arr, f1, t1, f2, t2)
-  const arr3: number[] = []
-  let f2c = f2
-  let t1c = t1
-  let f1c = f1
-  for (let i = 0; i < f1; i++) { arr3.push(i) }
-  for (let i = 0; i < t2 - f2; i++) { arr3.push(f2c++) }
-  for (let i = 0; i < f2 - t1; i++) { arr3.push(t1c++) }
-  for (let i = 0; i < t1 - f1; i++) { arr3.push(f1c++) }
-  for (let i = t2; i < n; i++) { arr3.push(i) }
-  if (arr.length != arr2.length) {
-    throw new Error('swapSlices spec failed')
-  }
-  if (arr2.length != arr3.length) {
-    throw new Error('swapSlices spec failed')
-  }
-  for (let i = 0; i < n; i++) {
-    if (arr2[i] != arr3[i]) {
-      throw new Error('swapSlices spec failed')
-    }
-  }
-}
-
-function dummy_span(text: string) {
-  return {text, data: {links: [], labels: [], moved: false}}
-}
-
-// isolated test cases that have failed before
-cleanup_after_raw_modifications([' ', 'x', 'ad  '].map(dummy_span))
-modify(identity_spans(' ad  '), 1, 1, 'x').map(s => s.text)
-modify(identity_spans('c  ed '), 0, 3, 'z  ').map(s => s.text)
-
-/*
-for (let i = 0; i < 9; i++) {
-  console.log(span_index([exspan('text '), exspan('abcdef ')], i))
-}
-
-console.log(modify(['text '].map(exspan), 1, 3, 'ES').map(s => s.text))
-for (let i = 1; i < 11; i++) {
-  console.log(modify(['abc ', 'defg ', 'hi '].map(exspan), 1, i, 'X Y').map(s => s.text))
-}
-
-for (let i = 12; i < 24; i++) {
-  console.log(modify(identity_spans('På min telefon. Det väder var inte fint'), 12, i, '').map(s => s.text))
-}
-*/
-
-function randomString(n: number, alphabet: string): string {
-  const r = []
-  for (let i = 0; i < n; i++) {
-    r.push(alphabet[Math.floor(Math.random()*alphabet.length)])
-  }
-  return r.join('')
-}
-
-for (let i = 0; i < 100; i++) {
-  const str = randomString(i, 'abcde \n')
-  const repl = randomString(Math.random() * i, 'xyz \n')
-  const a = Math.floor(Math.random() * i)
-  const b = Math.floor(Math.random() * (i + 1))
-  const [start, stop] = [a, b].sort((x, y) => x - y)
-  //console.group('test input')
-  //console.log([str])
-  //console.log([repl])
-  //console.log(start, stop)
-  //console.groupEnd()
-  const new_spans = modify(identity_spans(str), start, stop, repl)
-  const new_text = new_spans.map(s => s.text).join('')
-  const target = str.slice(0, start) + repl + str.slice(stop) + ' '
-  //console.log('target', [target])
-  //console.log('new_text', [new_text])
-  if (target != new_text) {
-    throw new Error('Test case failed: ' + target + ' != ' + new_text)
-  }
 }
 

@@ -134,6 +134,12 @@ function eq<A>(l: A, r: A, info: any=undefined) {
   return b
 }
 
+function assert_eq<A>(l: A, r: A, info: any=undefined) {
+  if (!eq(l, r, info)) {
+    throw new Error('assert_eq')
+  }
+}
+
 function replicate<A>(n: number, g: jsc.Arbitrary<A>): jsc.Arbitrary<A[]> {
   const gs = [] as jsc.Arbitrary<A>[]
   for(let i=0; i<n; ++i) {
@@ -160,24 +166,33 @@ describe("Spans", () => {
       eq(Spans.text(spans).slice(0,a) + text + Spans.text(spans).slice(b), Spans.text(mods))
   })
 
-  jsc.property("rearrange", arb_spans, replicate(3, jsc.nat), jsc.bool, (spans, ixs, side) => {
-    const jxs = sort(ixs.map((i) => i % spans.length))
-    let a,b,d
-    if (side) {
-      [a,b,d] = jxs
-    } else {
-      [d,a,b] = jxs
-    }
-    if (d == a || d == b) {
-      return true
-    } else {
-      const mods = Spans.rearrange(spans, a, b, d)
-      const w = b - a
-      const set_moved = spans.slice(a,b).map((s: Spans.Span) => ({...s, data: {...s.data, moved: true}}))
-      return check(mods) &&
-        eq(Spans.text_length(mods), Spans.text_length(spans)) &&
-        eq(set_moved, d < a ? mods.slice(d,d+w) : mods.slice(d-w-1,d-1))
-    }
+  describe('rearrange', () => {
+    it('rearranges', () => {
+      const spans = Spans.identity_spans('a b c d e f')
+      assert_eq(Spans.text(Spans.rearrange(spans, 0, 1, 4)), 'c d a b e f ')
+      assert_eq(Spans.text(Spans.rearrange(spans, 3, 4, 1)), 'a d e b c f ')
+    })
+
+    jsc.property("spec", arb_spans, replicate(3, jsc.nat), jsc.bool, (spans, ixs, side) => {
+      const jxs = sort(ixs.map((i) => i % spans.length))
+      let a,b,d
+      if (side) {
+        [a,b,d] = jxs
+      } else {
+        [d,a,b] = jxs
+      }
+      if (d == a || d == b) {
+        return true
+      } else {
+        const mods = Spans.rearrange(spans, a, b, d)
+        const w = b - a
+        const set_moved = spans.slice(a,b).map((s: Spans.Span) => ({...s, data: {...s.data, moved: true}}))
+        return check(mods) &&
+          eq(Spans.text_length(mods), Spans.text_length(spans)) &&
+          eq(set_moved, d < a ? mods.slice(d,d+w) : mods.slice(d-w-1,d-1),
+            [a,b,d, spans, mods, set_moved])
+      }
+    })
   })
 
   describe("identity_spans", () => {
