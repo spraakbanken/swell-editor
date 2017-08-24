@@ -66,7 +66,13 @@ export function check_invariant(spans: Span[]): string {
       last = Math.max(...span.links)
     }
   }
-  return ''
+  for (let i = 0; i < spans.length; i++) {
+    const span = spans[i]
+    if (span.moved && span.links.length == 0) {
+      return 'Span moved but without links on index ' + i
+    }
+  }
+  return '' // all ok!
 }
 
 /** Flatten an array of arrays */
@@ -93,7 +99,7 @@ export function rearrange(spans: Span[], begin: number, end: number, dest: numbe
   const bumped_end = end + 1
   const [before, seg, after] = splitAt3(spans, begin, bumped_end)
   function mark_moved(span: Span): Span {
-    return {...span, moved: true}
+    return {...span, moved: span.links.length > 0}
   }
   const mod_dest = dest - (dest >= bumped_end ? bumped_end - begin : 0)
   const [a,b] = splitAt(flatten([before, after]), mod_dest)

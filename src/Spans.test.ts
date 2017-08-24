@@ -182,7 +182,7 @@ describe("Spans", () => {
       } else {
         const mods = Spans.rearrange(spans, a, b, d)
         const w = b - a
-        const set_moved = spans.slice(a,b).map((s: Spans.Span) => ({...s, moved: true}))
+        const set_moved = spans.slice(a,b).map((s: Spans.Span) => ({...s, moved: s.links.length > 0}))
         return check(mods) &&
           eq(Spans.text_length(mods), Spans.text_length(spans)) &&
           eq(set_moved, d < a ? mods.slice(d,d+w) : mods.slice(d-w-1,d-1),
