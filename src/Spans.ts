@@ -1,23 +1,20 @@
 
 console.log('Reload Spans')
 
-export interface SpanData {
+export interface Span {
+  readonly text: string,
   readonly links: number[],
   readonly labels: string[],
   readonly moved: boolean
 }
 
-export interface Span {
-  readonly text: string,
-  readonly data: SpanData,
-}
-
 /** Combine all data from several spans */
-export function merge_data(spans: Span[]): SpanData {
+export function merge_spans(spans: Span[], text: string): Span {
   return {
-    links: flatten(spans.map(s => s.data.links)),
-    labels: flatten(spans.map(s => s.data.labels)),
-    moved: spans.some(s => s.data.moved)
+    text: text,
+    links: flatten(spans.map(s => s.links)),
+    labels: flatten(spans.map(s => s.labels)),
+    moved: spans.some(s => s.moved)
   }
 }
 
@@ -33,11 +30,9 @@ export const identity_spans: (s: string) => Span[] = (s) => init(tokenize(s))
 export function init(tokens: string[]): Span[] {
   return tokens.map((s, i) => ({
     text: s,
-    data: {
-      links: [i],
-      labels: [],
-      moved: false
-    }
+    links: [i],
+    labels: [],
+    moved: false
   }))
 }
 
@@ -56,7 +51,7 @@ export function check_invariant(spans: Span[]): string {
   }
   for (let i = 0; i < spans.length; i++) {
     for (let j = 0; j < spans.length; j++) {
-      if (spans[i].data.links.some((x) => spans[j].data.links.some((y) => x == y)) && i != j) {
+      if (spans[i].links.some((x) => spans[j].links.some((y) => x == y)) && i != j) {
         return 'Links injectivity invariant broken on indicies ' + i + ' and ' + j
       }
     }
@@ -64,11 +59,11 @@ export function check_invariant(spans: Span[]): string {
   let last = -1
   for (let i = 0; i < spans.length; i++) {
     const span = spans[i]
-    if (!span.data.moved && span.data.links) {
-      if (last > Math.min(...span.data.links)) {
+    if (!span.moved && span.links) {
+      if (last > Math.min(...span.links)) {
         return 'Link increase invariant broken on index ' + i
       }
-      last = Math.max(...span.data.links)
+      last = Math.max(...span.links)
     }
   }
   return ''
@@ -98,7 +93,7 @@ export function rearrange(spans: Span[], begin: number, end: number, dest: numbe
   const bumped_end = end + 1
   const [before, seg, after] = splitAt3(spans, begin, bumped_end)
   function mark_moved(span: Span): Span {
-    return {...span, data: {...span.data, moved: true}}
+    return {...span, moved: true}
   }
   const mod_dest = dest - (dest >= bumped_end ? bumped_end - begin : 0)
   const [a,b] = splitAt(flatten([before, after]), mod_dest)
@@ -115,10 +110,7 @@ export function modify(spans: Span[], from: number, to: number, text: string): S
   const [before, seg, after] = splitAt3<Span>(spans, from_span, to_span+1)
   const pre = seg.length > 0 ? seg[0].text.slice(0, from_ix) : ""
   const post = seg.length > 0 ? seg[seg.length - 1].text.slice(to_ix + 1) : ""
-  const new_span: Span = {
-    text: pre + text + post,
-    data: merge_data(seg)
-  }
+  const new_span: Span = merge_spans(seg, pre + text + post)
   return cleanup_after_raw_modifications(flatten([before, [new_span], after]))
 }
 
@@ -147,16 +139,14 @@ export function cursor<S>(f: ((prev: S | null, me: S, next: S | null) => (S | nu
 Only performed when this breaks up a span into many, and they are not moved */
 export function auto_revert(spans: Span[], original: string[]): Span[] {
   return cursor<Span>((prev, me, next) => {
-    if (me.data.links.length > 1 &&
-        !me.data.moved &&
-        me.text == me.data.links.map((i) => original[i]).join('')) {
-      const reverted_spans: Span[] = me.data.links.map((i) => ({
+    if (me.links.length > 1 &&
+        !me.moved &&
+        me.text == me.links.map((i) => original[i]).join('')) {
+      const reverted_spans: Span[] = me.links.map((i) => ({
         text: original[i],
-        data: {
-          links: [i],
-          labels: [],
-          moved: false
-        }
+        links: [i],
+        labels: [],
+        moved: false
       }))
       return [prev].concat(reverted_spans, [next])
     } else {
@@ -187,7 +177,7 @@ const move_whitespace: (spans: Span[]) => Span[] =
 const remove_empty: (spans: Span[]) => Span[] =
   cursor<Span>((prev, me, next) => {
     if (me.text.length == 0) {
-      //console.debug('Removing span with data:', me.data)
+      //console.debug('Removing span with data:', me)
       return [prev, next]
     } else {
       return null // no change
@@ -198,10 +188,7 @@ const remove_empty: (spans: Span[]) => Span[] =
 const merge_no_final_whitespace: (spans: Span[]) => Span[] =
   cursor<Span>((prev, me, next) => {
     if (me.text.match(/\S$/) && next) {
-      const new_me_next = {
-        text: [me, next].map(s => s.text).join(''),
-        data: merge_data([me, next])
-      }
+      const new_me_next = merge_spans([me, next], text([me, next]))
       return [prev, new_me_next]
     } else {
       return null // no change

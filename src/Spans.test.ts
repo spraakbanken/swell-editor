@@ -79,13 +79,11 @@ const gen_spans: jsc.Generator<Spans.Span[]> = jsc.generator.bless(
       }
     })
     return texts.map((t, i) => ({
-        text: t,
-        data: {
-          links: links_moves[i].first,
-          moved: links_moves[i].second,
-          labels: jsc.small(jsc.array(gen_text)).generator(size)
-        }
-      }))
+      text: t,
+      links: links_moves[i].first,
+      moved: links_moves[i].second,
+      labels: jsc.small(jsc.array(gen_text)).generator(size)
+    }))
   })
 
 const shrink_mid_string: jsc.Shrink<string> = jsc.shrink.bless<string>((s) => {
@@ -107,11 +105,9 @@ const arb_spans: jsc.Arbitrary<Spans.Span[]> =
     shrink: jsc.shrink.nearray(
       shrink_record({
         text: shrink_mid_string,
-        data: shrink_record({
-          labels: jsc.shrink.array(shrink_mid_string),
-          links: jsc.shrink.nearray(jsc.shrink.noop),
-          moved: jsc.shrink.noop
-        })
+        labels: jsc.shrink.array(shrink_mid_string),
+        links: jsc.shrink.nearray(jsc.shrink.noop),
+        moved: jsc.shrink.noop
       }))
     })
 
@@ -186,7 +182,7 @@ describe("Spans", () => {
       } else {
         const mods = Spans.rearrange(spans, a, b, d)
         const w = b - a
-        const set_moved = spans.slice(a,b).map((s: Spans.Span) => ({...s, data: {...s.data, moved: true}}))
+        const set_moved = spans.slice(a,b).map((s: Spans.Span) => ({...s, moved: true}))
         return check(mods) &&
           eq(Spans.text_length(mods), Spans.text_length(spans)) &&
           eq(set_moved, d < a ? mods.slice(d,d+w) : mods.slice(d-w-1,d-1),
