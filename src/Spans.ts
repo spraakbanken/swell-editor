@@ -177,7 +177,6 @@ const move_whitespace: (spans: Span[]) => Span[] =
 const remove_empty: (spans: Span[]) => Span[] =
   cursor<Span>((prev, me, next) => {
     if (me.text.length == 0) {
-      //console.debug('Removing span with data:', me)
       return [prev, next]
     } else {
       return null // no change
@@ -198,10 +197,6 @@ const merge_no_final_whitespace: (spans: Span[]) => Span[] =
 /** Clean up after modifications */
 function cleanup_after_raw_modifications(spans: Span[]): Span[] {
   const new_spans = merge_no_final_whitespace(remove_empty(move_whitespace(spans)))
-  //console.group('cleanup_after_raw_modifications')
-  //console.log('old', spans.map(x => x.text))
-  //console.log('new', new_spans.map(x => x.text))
-  //console.groupEnd()
   const len = spans.reduce((n, s) => n + s.text.length, 0)
   const new_len = new_spans.reduce((n, s) => n + s.text.length, 0)
   if (len != new_len) {
