@@ -81,7 +81,7 @@ const gen_spans: jsc.Generator<Spans.Span[]> = jsc.generator.bless(
     return texts.map((t, i) => ({
       text: t,
       links: links_moves[i].first,
-      moved: links_moves[i].second,
+      moved: links_moves[i].second || !Spans.contiguous(links_moves[i].first),
       labels: jsc.small(jsc.array(gen_text)).generator(size)
     }))
   })
@@ -98,6 +98,19 @@ function shrink_record<T>(shr: { [P in keyof T]: jsc.Shrink<T[P]> }): jsc.Shrink
   return (jsc as any).shrink.record(shr)
 }
 
+function shrink_array_ends<T>(): jsc.Shrink<T[]> {
+  return jsc.shrink.bless(
+    (arr: T[]) => {
+      if (arr.length < 2) {
+        return []
+      } else {
+        return [arr.slice(1), arr.slice(0,arr.length-2)]
+      }
+    })
+}
+
+
+
 const arb_spans: jsc.Arbitrary<Spans.Span[]> =
   jsc.bless({
     generator: gen_spans,
@@ -106,7 +119,7 @@ const arb_spans: jsc.Arbitrary<Spans.Span[]> =
       shrink_record({
         text: shrink_mid_string,
         labels: jsc.shrink.array(shrink_mid_string),
-        links: jsc.shrink.nearray(jsc.shrink.noop),
+        links: shrink_array_ends<number>(),
         moved: jsc.shrink.noop
       }))
     })

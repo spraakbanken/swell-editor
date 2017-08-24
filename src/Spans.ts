@@ -10,11 +10,12 @@ export interface Span {
 
 /** Combine all data from several spans */
 export function merge_spans(spans: Span[], text: string): Span {
+  const links = flatten(spans.map(s => s.links))
   return {
     text: text,
-    links: flatten(spans.map(s => s.links)),
     labels: flatten(spans.map(s => s.labels)),
-    moved: spans.some(s => s.moved)
+    links: links,
+    moved: spans.some(s => s.moved) || !contiguous(links)
   }
 }
 
@@ -36,6 +37,10 @@ export function init(tokens: string[]): Span[] {
   }))
 }
 
+export function contiguous(xs: number[]): boolean {
+  return xs.every((x, i) => i == 0 || xs[i-1] == x - 1)
+}
+
 /** Checks the invariants for spans, returns empty string if OK */
 export function check_invariant(spans: Span[]): string {
   for (let i = 0; i < spans.length; i++) {
@@ -45,8 +50,14 @@ export function check_invariant(spans: Span[]): string {
         // ok: first token does not need to start on a word,
         // but cannot be empty
       } else {
-        return 'Content invariant violated on span ' + i + ' ' + text
+        return 'Content invariant violated on span ' + i + ': ' + text
       }
+    }
+  }
+  for (let i = 0; i < spans.length; i++) {
+    const span = spans[i]
+    if (!span.moved && !contiguous(span.links)) {
+      return 'Links not contiguous on unmoved span at index ' + i
     }
   }
   for (let i = 0; i < spans.length; i++) {
