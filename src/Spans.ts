@@ -254,3 +254,88 @@ export function span_from_offset(spans: Span[], offset: number): [number, number
   throw new Error('Out of bounds')
 }
 
+export type Diff
+  = { kind: 'Unchanged', now: string }
+  | { kind: 'Edited', now: string, source: string }
+  | { kind: 'Dropped', now: string, source: string, ids: number[] }
+  | { kind: 'Dragged', source: string, id: number }
+  | { kind: 'Inserted', now: string }
+  | { kind: 'Deleted', source: string }
+
+function Unchanged(now: string): Diff {
+  return { kind: 'Unchanged', now }
+}
+
+function Edited(now: string, source: string): Diff {
+  if (now == source) {
+    return Unchanged(now)
+  } else {
+    return { kind: 'Edited', now, source }
+  }
+}
+
+function Dropped(now: string, source: string, ids: number[]): Diff {
+  return { kind: 'Dropped', now , source, ids }
+}
+
+function Dragged(source: string, id: number): Diff {
+  return { kind: 'Dragged', source, id }
+}
+
+function Inserted(now: string): Diff {
+  return { kind: 'Inserted', now }
+}
+
+function Deleted(source: string): Diff {
+  return { kind: 'Deleted', source }
+}
+
+/**
+This is a translation of this algorithm:
+
+diff (Span text [] false : spans)    ss = Inserted text : diff spans ss
+diff (Span text links false : spans) ss0@((s,j):ss)
+  | j == links[0]        = edited text (concatMap s (take links.length ss0))
+                         : diff spans (drop links.length ss0)
+  | j `elem` unlinked    = Dragged s (Span text links false : spans) ss
+  | j `notElem` unlinked = Deleted s (Span text links false : spans) ss
+diff (Span text links true : spans) ss = Dropped text (concatMap (! unlinked) links) : diff spans ss
+diff [] ss = map (Deleted . fst) ss
+*/
+export function calculate_diff(spans: Span[], tokens: string[]): Diff[] {
+  const moved = new Map<number, {}>()
+  spans.map((s, i) => {
+    if (s.moved) {
+      s.links.map(j => moved.set(j, {}))
+    }
+  })
+  let i = 0
+  let j = 0
+  const out: Diff[] = []
+  while (i < spans.length) {
+    const span = spans[i]
+    if (span.links.length == 0) {
+      out.push(Inserted(span.text))
+      i++
+    } else if (span.moved) {
+      out.push(Dropped(span.text, span.links.map((t) => tokens[t]).join(''),
+                                  span.links.map((t) => t)))
+      i++
+    } else if (j == span.links[0]) {
+      out.push(Edited(span.text, span.links.map((t) => tokens[t]).join('')))
+      i++
+      j+=span.links.length
+    } else {
+      const u = moved.get(j)
+      if (u) {
+        out.push(Dragged(tokens[j], j))
+        j++
+      } else {
+        out.push(Deleted(tokens[j]))
+        j++
+      }
+    }
+  }
+  return out.concat(tokens.slice(j).map(Deleted))
+}
+

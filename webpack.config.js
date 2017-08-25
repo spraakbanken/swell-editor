@@ -3,7 +3,7 @@ const path = require("path");
 
 module.exports = {
     entry: [
-        "react-hot-loader/patch",
+        //"react-hot-loader/patch",
         "./src/index.tsx",
     ],
     output: {

@@ -222,5 +222,12 @@ describe("Spans", () => {
       return check(mods) && eq(spans, mods)
     })
   })
+
+  // Test this by making a DSL of API calls and check:
+  //  - that it can be reverted
+  //  - that the invariant always holds
+  //  - that the diff describes the original and target string
+
+  // describe("diff", () => {
 })
 

@@ -37,64 +37,8 @@ const cm_diff = CodeMirror(document.body, {
   readOnly: true
 })
 
-
-// how should word movement be shown here? Check monotonicity? Maybe that can help in reverting too
-// move functionality to Spans.ts
-function draw_diff() {
-  cm_diff.getDoc().getAllMarks().map((m) => m.clear())
-  /*
-  cm_diff.setValue(cm_spans.map(s => s.data.links.join(',')).join(' '))
-  */
-  cm_diff.setValue(example_text)
-  const rev_links: Map<number, Span | null> = new Map();
-  for (const span of cm_spans) {
-    let maxlink = -1
-    for (const link of span.data.links) {
-      maxlink = Math.max(link, maxlink)
-      rev_links.set(link, null)
-    }
-    if (maxlink != -1) {
-      rev_links.set(maxlink, span)
-    }
-  }
-  const q: {offset: number, width: number, replace: string}[] = []
-  let p: number = 0
-  let i: number = 0
-  for (const w of orig_text) {
-    let replace = ""
-    const span = rev_links.get(i)
-    if (span) {
-      replace = span.text
-    }
-    if (replace != w) {
-      replace = replace.slice(0, whitespace_start(replace))
-      q.push({
-        offset: p,
-        width: whitespace_start(w),
-        replace
-      })
-    }
-    i += 1;
-    p += w.length;
-  }
-  q.sort((a, b) => b.offset - a.offset)
-  for (const {offset, width, replace} of q) {
-    const conv = (off: number) => cm_diff.getDoc().posFromIndex(off)
-    if (replace) {
-      cm_diff.getDoc().replaceRange(replace, conv(offset+width))
-      cm_diff.getDoc().markText(conv(offset+width), conv(offset+width+replace.length), {
-        css: 'color: #090'
-      })
-    }
-    cm_diff.getDoc().markText(conv(offset), conv(offset+width), {
-      css: 'color: #d00; text-decoration: line-through;'
-    })
-  }
-}
-
-let cm_spans = Spans.identity_spans(example_text)
-console.log(cm_spans.map(({text}) => text))
-const orig_text: string[] = cm_spans.map(x => x.text)
+const tokens = Spans.tokenize(example_text)
+let cm_spans = Spans.init(tokens)
 let hist: {past: Span[][], future: Span[][]} = {
   past: [],
   future: []
@@ -123,6 +67,62 @@ function redo() {
     update_from_cm_spans()
   }
 }
+
+function wsplit(s: string): [string, string] {
+  const m = s.match(/^(.*?)(\s*)$/)
+  if (m && m.length == 3) {
+    return [m[1], m[2]]
+  }
+  return [s, ''] // unreachable (the regexp matches any string)
+}
+
+const draw_diff = () => cm_diff.operation(() => {
+  // TODO: Renumber all ids so they are contiguous and monotone
+  const diff_doc = cm_diff.getDoc()
+  diff_doc.setValue('')
+  diff_doc.getAllMarks().map((m) => m.clear())
+  function push(text: string, css: string = '') {
+    diff_doc.replaceSelection(text)
+    if (css) {
+      const end = diff_doc.getCursor()
+      const begin = diff_doc.posFromIndex(diff_doc.indexFromPos(end) - text.length)
+      diff_doc.markText(begin, end, {css: css})
+    }
+  }
+  Spans.calculate_diff(cm_spans, tokens).map((d) => {
+    if (d.kind == 'Unchanged') {
+      push(d.now)
+    } else if (d.kind == 'Edited') {
+      const [s, t] = wsplit(d.now)
+      push(s, 'color: #090')
+      push(d.source.trim(), 'color: #d00; text-decoration: line-through;')
+      push(t)
+    } else if (d.kind == 'Dropped') {
+      const [s, t] = wsplit(d.now)
+      push(s, 'background-color: #87ceeb')
+      push(d.ids.join(','), 'position: relative; bottom: -0.5em; font-size: 65%')
+      if (d.source != d.now) {
+        push(d.source.trim(), 'color: #d00; text-decoration: line-through;')
+      }
+      push(t)
+    } else if (d.kind == 'Dragged') {
+      const [s, t] = wsplit(d.source)
+      push(s, 'background-color: #87ceeb; text-decoration: line-through;')
+      push(d.id + '', 'position: relative; bottom: -0.5em; font-size: 65%')
+      push(t)
+    } else if (d.kind == 'Inserted') {
+      const [s, t] = wsplit(d.now)
+      push(s, 'color: #090')
+      push(t)
+    } else if (d.kind == 'Deleted') {
+      const [s, t] = wsplit(d.source)
+      push(s, 'color: #d00; text-decoration: line-through;')
+      push(t)
+    } else {
+      const d2: never = d
+    }
+  })
+})
 
 
 /*
@@ -205,10 +205,10 @@ cm.on('cursorActivity', (_: CodeMirror.Editor) => {
   const [span, i] = Spans.span_from_offset(cm_spans, cm.getDoc().indexFromPos(cursor));
   //console.log(cursor, index, span, i, cm_spans[span], cm_spans[span].data.links)
   cm_orig.getDoc().getAllMarks().map((m) => m.clear())
-  for (const linked of cm_spans[span].data.links) {
+  for (const linked of cm_spans[span].links) {
     // todo: refactor ;)
-    const start = orig_text.slice(0, linked).reduce((n, s) => n + s.length, 0)
-    const linked_text = orig_text[linked]
+    const start = tokens.slice(0, linked).reduce((n, s) => n + s.length, 0)
+    const linked_text = tokens[linked]
     const stop = start + linked_text.length
     const conv = (off: number) => cm_orig.getDoc().posFromIndex(off)
     cm_orig.getDoc().markText(conv(start), conv(stop), {
@@ -251,7 +251,7 @@ cm.on('beforeChange', (_, change) => {
   } else if (change.origin != 'setValue') {
     const from = cm.getDoc().indexFromPos(change.from)
     const to = cm.getDoc().indexFromPos(change.to)
-    set_cm_spans(Spans.auto_revert(Spans.modify(cm_spans, from, to, change.text.join('\n')), orig_text))
+    set_cm_spans(Spans.auto_revert(Spans.modify(cm_spans, from, to, change.text.join('\n')), tokens))
     console.log(cm_spans.map(({text}) => text))
   }
 
