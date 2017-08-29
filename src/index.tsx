@@ -3,7 +3,7 @@
 Right now we use the cut word part of the CM state using a CM mark
 
 */
-import * as CodeMirror from "codemirror";
+import * as CodeMirror from "codemirror"
 import * as Spans from "./Spans"
 import { Span } from "./Spans"
 
@@ -67,6 +67,60 @@ function redo() {
     update_from_cm_spans()
   }
 }
+
+function index_from_offset(xs: string[], offset: number): number | null {
+  let p = 0
+  for (let i=0; i<xs.length; i++) {
+    p += xs[i].length
+    if (p > offset) {
+      return i
+    }
+  }
+  return null
+}
+
+function remove_marks_by_class(codemirror: CodeMirror.Editor, name: string) {
+  codemirror.getDoc().getAllMarks().map((m) => {
+    if ((m as CodeMirror.TextMarkerOptions).className == name) {
+      m.clear();
+    }
+  })
+}
+
+// When I hover a word in the source text, the corresponding word is highlighted
+// in the target text
+cm_orig.getWrapperElement().onmousemove = (e : MouseEvent) => {
+  const coord = cm_orig.coordsChar({left: e.pageX, top: e.pageY})
+  remove_marks_by_class(cm, 'MouseHoverMatch')
+  if (!('outside' in coord as any)) {
+    const i = index_from_offset(tokens, cm_orig.getDoc().indexFromPos(coord))
+    if (i != null) {
+      const p = cm_spans.findIndex(s => s.links.some(j => j == i))
+      if (p > -1) {
+        const from = cm.getDoc().posFromIndex(Spans.span_offset(cm_spans, p))
+        const to = cm.getDoc().posFromIndex(Spans.span_offset(cm_spans, p) + cm_spans[p].text.length)
+        cm.getDoc().markText(from, to, { className: 'MouseHoverMatch' })
+      }
+    }
+  }
+}
+
+// When I hover a word in the target text, the corresponding words in the source
+// text are highlighted
+cm.getWrapperElement().onmousemove = (e : MouseEvent) => {
+  const coord = cm.coordsChar({left: e.pageX, top: e.pageY})
+  remove_marks_by_class(cm_orig, 'MouseHoverMatch')
+  if (!('outside' in coord as any)) {
+    const [i, _] = Spans.span_from_offset(cm_spans, cm_orig.getDoc().indexFromPos(coord))
+    for (const p of cm_spans[i].links) {
+      const start = tokens.slice(0,p).join('').length
+      const from = cm_orig.getDoc().posFromIndex(start)
+      const to = cm_orig.getDoc().posFromIndex(start + tokens[p].length)
+      cm_orig.getDoc().markText(from, to, { className: 'MouseHoverMatch' })
+    }
+  }
+}
+// TODO: Highlights words to and from the diff as well
 
 function wsplit(s: string): [string, string] {
   const m = s.match(/^(.*?)(\s*)$/)
@@ -160,9 +214,9 @@ function cut() {
     const from = Spans.span_from_offset(cm_spans, Math.min(a, b))[0]
     const to = Spans.span_from_offset(cm_spans, Math.max(a, b))[0]
     const conv = (off: number) => cm.getDoc().posFromIndex(off)
-    cm.getDoc().getAllMarks().map((m) => m.clear())
+    remove_marks_by_class(cm, 'cut')
     cm.getDoc().markText(conv(Spans.span_offset(cm_spans, from)), conv(Spans.span_offset(cm_spans, to) + whitespace_start(cm_spans[to].text)), {
-      css: 'border-bottom: 1px dotted #aaa; border-top: 1px dotted #aaa; background: #ddd'
+      className: 'cut'
     })
   }
 }
@@ -204,7 +258,7 @@ cm.on('cursorActivity', (_: CodeMirror.Editor) => {
   const index = cm.getDoc().indexFromPos(cursor)
   const [span, i] = Spans.span_from_offset(cm_spans, cm.getDoc().indexFromPos(cursor));
   //console.log(cursor, index, span, i, cm_spans[span], cm_spans[span].data.links)
-  cm_orig.getDoc().getAllMarks().map((m) => m.clear())
+  remove_marks_by_class(cm_orig, 'CursorMatch')
   for (const linked of cm_spans[span].links) {
     // todo: refactor ;)
     const start = tokens.slice(0, linked).reduce((n, s) => n + s.length, 0)
@@ -212,7 +266,7 @@ cm.on('cursorActivity', (_: CodeMirror.Editor) => {
     const stop = start + linked_text.length
     const conv = (off: number) => cm_orig.getDoc().posFromIndex(off)
     cm_orig.getDoc().markText(conv(start), conv(stop), {
-      css: 'color: #33f'
+      className: 'CursorMatch'
     })
   }
 })
