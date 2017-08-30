@@ -9,7 +9,6 @@
     },
     "files": [
         "./node_modules/@types/**/*.d.ts",
-        "./declarations.d.ts",
         "./src/**/*"
     ],
     "exclude": [
