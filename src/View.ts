@@ -8,8 +8,12 @@ import { Editor } from "codemirror"
 import * as Spans from "./Spans"
 import { Span } from "./Spans"
 import { draw_diff } from "./ViewDiff"
-import { h, init } from "snabbdom"
-import snabbdomClass from 'snabbdom/modules/class'
+
+//import { h, init } from "snabbdom"
+//import snabbdomClass from 'snabbdom/modules/class'
+
+declare function require(module_name: string): any
+const format: (xml_string: string) => string = require('prettify-xml')
 
 interface Editors {
   readonly cm_orig: Editor,
@@ -53,6 +57,8 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
   const cm_orig = CodeMirror(element, { lineWrapping: true, readOnly: true })
   const cm_main = CodeMirror(element, { lineWrapping: true, extraKeys: history_keys })
   const cm_diff = CodeMirror(element, { lineWrapping: true, readOnly: true })
+  const cm_xml = CodeMirror(element, { lineWrapping: false, readOnly: true, mode: 'xml' })
+  cm_xml.getWrapperElement().className += ' xml_editor'
 
   let spans = state.now.spans
   let tokens = state.now.tokens
@@ -71,7 +77,9 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
   }
   /** Updates all views but cm_main */
   function partial_update_view() {
-    draw_diff(Spans.calculate_diff(spans, tokens), cm_diff)
+    const diff = Spans.calculate_diff(spans, tokens)
+    draw_diff(diff, cm_diff)
+    cm_xml.getDoc().setValue(format(new XMLSerializer().serializeToString(Spans.export_to_xml(diff))))
   }
 
   cm_main.focus()

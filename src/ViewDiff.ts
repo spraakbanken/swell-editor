@@ -29,14 +29,16 @@ export const draw_diff = (diff: Spans.Diff[], editor: CodeMirror.Editor) => edit
     } else if (d.kind == 'Edited') {
       const [s, t] = whitespace_split(d.now)
       push(s, 'color: #090')
-      push(d.source.trim(), 'color: #d00; text-decoration: line-through;')
+      push(d.source.join('').trim(), 'color: #d00; text-decoration: line-through;')
       push(t)
     } else if (d.kind == 'Dropped') {
       const [s, t] = whitespace_split(d.now)
       push(s, 'background-color: #87ceeb')
-      push(d.ids.join(','), 'position: relative; bottom: -0.5em; font-size: 65%')
-      if (d.source != d.now) {
-        push(d.source.trim(), 'color: #d00; text-decoration: line-through;')
+      const ids = d.source_and_ids.map(([_, id]) => id)
+      const source = d.source_and_ids.map(([s, _]) => s).join('')
+      push(ids.join(','), 'position: relative; bottom: -0.5em; font-size: 65%')
+      if (source != d.now) {
+        push(source.trim(), 'color: #d00; text-decoration: line-through;')
       }
       push(t)
     } else if (d.kind == 'Dragged') {

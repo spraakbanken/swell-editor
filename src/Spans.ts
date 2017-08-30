@@ -1,3 +1,4 @@
+import { isArray } from "lodash"
 
 console.log('Reload Spans')
 
@@ -255,27 +256,27 @@ export function span_from_offset(spans: Span[], offset: number): [number, number
 }
 
 export type Diff
-  = { kind: 'Unchanged', now: string }
-  | { kind: 'Edited', now: string, source: string }
-  | { kind: 'Dropped', now: string, source: string, ids: number[] }
+  = { kind: 'Unchanged', source: string }
+  | { kind: 'Edited', now: string, source: string[] }
+  | { kind: 'Dropped', now: string, source_and_ids: [string, number][] }
   | { kind: 'Dragged', source: string, id: number }
   | { kind: 'Inserted', now: string }
   | { kind: 'Deleted', source: string }
 
-function Unchanged(now: string): Diff {
-  return { kind: 'Unchanged', now }
+function Unchanged(source: string): Diff {
+  return { kind: 'Unchanged', source }
 }
 
-function Edited(now: string, source: string): Diff {
-  if (now == source) {
+function Edited(now: string, source: string[]): Diff {
+  if (now == source.join('')) {
     return Unchanged(now)
   } else {
     return { kind: 'Edited', now, source }
   }
 }
 
-function Dropped(now: string, source: string, ids: number[]): Diff {
-  return { kind: 'Dropped', now , source, ids }
+function Dropped(now: string, source_and_ids: [string, number][]): Diff {
+  return { kind: 'Dropped', now , source_and_ids }
 }
 
 function Dragged(source: string, id: number): Diff {
@@ -312,30 +313,82 @@ export function calculate_diff(spans: Span[], tokens: string[]): Diff[] {
   let i = 0
   let j = 0
   const out: Diff[] = []
+  function Gone() {
+    const u = moved.get(j)
+    if (u) {
+      out.push(Dragged(tokens[j], j))
+      j++
+    } else {
+      out.push(Deleted(tokens[j]))
+      j++
+    }
+  }
   while (i < spans.length) {
     const span = spans[i]
     if (span.links.length == 0) {
       out.push(Inserted(span.text))
       i++
     } else if (span.moved) {
-      out.push(Dropped(span.text, span.links.map((t) => tokens[t]).join(''),
-                                  span.links.map((t) => t)))
+      out.push(Dropped(span.text, span.links.map((t) => [tokens[t], t] as [string, number])))
       i++
     } else if (j == span.links[0]) {
-      out.push(Edited(span.text, span.links.map((t) => tokens[t]).join('')))
+      out.push(Edited(span.text, span.links.map((t) => tokens[t])))
       i++
       j+=span.links.length
     } else {
-      const u = moved.get(j)
-      if (u) {
-        out.push(Dragged(tokens[j], j))
-        j++
-      } else {
-        out.push(Deleted(tokens[j]))
-        j++
-      }
+      Gone()
     }
   }
-  return out.concat(tokens.slice(j).map(Deleted))
+  tokens.slice(j).map(Gone)
+  return out
 }
 
+type Children = (Element | string | [string, string])[]
+
+export function export_to_xml(diff: Diff[]): Element {
+  const xml = document.implementation.createDocument(null, null, null);
+  function node(tag_name: string): (...children: Children) => Element {
+    return (...children) => {
+      const ret = xml.createElement(tag_name)
+      for (const child of children) {
+        if (typeof child === 'string') {
+          ret.appendChild(xml.createTextNode(child))
+        } else if (isArray(child)) {
+          ret.setAttribute(child[0], child[1])
+        } else {
+          ret.appendChild(child)
+        }
+      }
+      return ret
+    }
+  }
+  const h = (s: string) => ['h', s] as [string, string]
+  const id = (i: number) => ['id', i + ''] as [string, string]
+  const t = node('target')
+  const w = node('w')
+  const m = node('moved')
+  return node('corpus')(...diff.map((d) => {
+    switch (d.kind) {
+      case 'Unchanged':
+        return w(d.source)
+      case 'Edited':
+        if (d.source.length == 1) {
+          return w(h(d.now), d.source[0])
+        } else {
+          return t(h(d.now), ...d.source.map((s) => w(s)))
+        }
+      case 'Dropped':
+        if (d.source_and_ids.length == 1) {
+          return m(h(d.now), id(d.source_and_ids[0][1]))
+        } else {
+          return t(h(d.now), ...d.source_and_ids.map(x => m(id(x[1]))))
+        }
+      case 'Dragged':
+        return w(h(''), ['id', d.id + ''], d.source)
+      case 'Inserted':
+        return t(h(d.now))
+      case 'Deleted':
+        return w(h(''), d.source)
+    }
+  }))
+}

@@ -8,7 +8,9 @@
   "dependencies": {
     "bootstrap": "^3.3.7",
     "codemirror": "^5.27.2",
-    "lodash": "^4.17.4"
+    "lodash": "^4.17.4",
+    "prettify-xml": "^1.2.0",
+    "snabbdom": "^0.7.0"
   },
   "devDependencies": {
     "@types/assert": "0.0.31",
