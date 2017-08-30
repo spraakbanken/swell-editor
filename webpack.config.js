@@ -3,7 +3,6 @@ const path = require("path");
 
 module.exports = {
     entry: [
-        //"react-hot-loader/patch",
         "./src/index.tsx",
     ],
     output: {
@@ -16,27 +15,14 @@ module.exports = {
     devtool: "source-map",
 
     resolve: {
-        // Add '.ts' and '.tsx' as resolvable extensions.
-        extensions: [".webpack.js", ".web.js", ".ts", ".tsx", ".js"]
+        extensions: [".webpack.js", ".web.js", ".ts", ".js"]
     },
-
-    /*
-    plugins: [
-        new webpack.NamedModulesPlugin(),
-        new webpack.HotModuleReplacementPlugin(),
-    ],
-
-    devServer: {
-        hot: true
-    }
-    */
 
     module: {
         rules: [
             {
                 test: /\.tsx?$/,
                 loaders: [
-                    // "react-hot-loader/webpack",
                     "awesome-typescript-loader"
                 ],
                 exclude: path.resolve(__dirname, 'node_modules'),
