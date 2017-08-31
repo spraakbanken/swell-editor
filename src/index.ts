@@ -1,17 +1,14 @@
+import "codemirror/lib/codemirror.css"
 import * as CodeMirror from "codemirror"
+import "codemirror/mode/xml/xml"
 import './index.css'
 
-const root = document.getElementById('root')
+
+const root = document.getElementById('root') as HTMLElement
 
 const hash_text = window.location.hash.slice(1)
 
-const example_text2 = `En dag jag vaknade @@@ när larmet på min telefon ringde. De väder var inte fint.
-Det var mycket kult ute med regn. Jag bara dricker te med två broad.
-
-Min bussen går åtta i sju. Jag se min bus när jag borjade springer snabbt som bussen går. Jag var trott
-som jag springed så mycket. Han är inte trevlig för mig efter jag missade @@@ bus.`
-
-const example_text = hash_text || `En dag jag vaknade @@@ när larmet på min telefon ringde. De väder var inte fint.`
+const example_text = hash_text || "En dag jag vaknade när larmet på min telefon ringde. De väder var inte fint."
 
 let View = require('./View')
 
@@ -23,7 +20,6 @@ window.onhashchange = () => {
 }
 
 declare const module: any;
-declare function require(module_name: string): any;
 
 if (module.hot) {
   module.hot.accept('./View.ts', (_: any) => {

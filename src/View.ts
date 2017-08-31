@@ -48,7 +48,7 @@ export function init_data(original: string): UndoableState {
 }
 
 export function bind(element: HTMLElement, state: UndoableState): () => UndoableState {
-  while (element.lastChild && element.removeChild(element.lastChild));
+  while (element.lastChild && element.removeChild(element.lastChild)) {}
   const history_keys = {
     "Ctrl-Z": undo,
     "Ctrl-Y": redo
@@ -170,7 +170,6 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
     })
   }
 
-  /*
   // Highlights the selected token in the orig view
   cm_main.on('cursorActivity', (_: CodeMirror.Editor) => {
     const cursor = cm_main.getDoc().getCursor()
@@ -189,7 +188,7 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
       })
     }
   })
-  */
+
   cm_main.on('update', () =>  {
     const lhs = spans.map(s => s.text).join('')
     const rhs = cm_main.getDoc().getValue() + ' '

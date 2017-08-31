@@ -5,13 +5,10 @@
         "noImplicitAny": true,
         "strict": true,
         "module": "commonjs",
+        "moduleResolution": "node",
         "target": "es6"
     },
     "files": [
-        "./node_modules/@types/**/*.d.ts",
         "./src/**/*"
-    ],
-    "exclude": [
-        "node_modules"
     ]
 }

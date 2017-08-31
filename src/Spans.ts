@@ -1,7 +1,3 @@
-import { isArray } from "lodash"
-
-console.log('Reload Spans')
-
 export interface Span {
   readonly text: string,
   readonly links: number[],
@@ -19,6 +15,7 @@ export function merge_spans(spans: Span[], text: string): Span {
     moved: spans.some(s => s.moved) || !contiguous(links)
   }
 }
+
 
 /** Numeric sort */
 export function numsort(xs: number[]): number[] {
@@ -42,6 +39,7 @@ export function init(tokens: string[]): Span[] {
     moved: false
   }))
 }
+
 
 export function increases(xs: number[]): boolean {
   return xs.every((v, i) => i == 0 || v > xs[i-1])
@@ -345,26 +343,27 @@ export function calculate_diff(spans: Span[], tokens: string[]): Diff[] {
 
 type Children = (Element | string | [string, string])[]
 
-export function export_to_xml(diff: Diff[]): Element {
-  const xml = document.implementation.createDocument(null, null, null);
-  function node(tag_name: string): (...children: Children) => Element {
-    return (...children) => {
-      const ret = xml.createElement(tag_name)
-      for (const child of children) {
-        if (typeof child === 'string') {
-          ret.appendChild(xml.createTextNode(child))
-        } else if (isArray(child)) {
-          ret.setAttribute(child[0], child[1])
-        } else {
-          ret.appendChild(child)
-        }
+const xml: Document = document.implementation.createDocument(null, null, null);
+function node(tag_name: string): (...children: Children) => Element {
+  return (...children) => {
+    const ret = xml.createElement(tag_name)
+    for (const child of children) {
+      if (typeof child === 'string') {
+        ret.appendChild(xml.createTextNode(child))
+      } else if (Array.isArray(child)) {
+        ret.setAttribute(child[0], child[1])
+      } else {
+        ret.appendChild(child)
       }
-      return ret
     }
+    return ret
   }
+}
+
+export function export_to_xml(diff: Diff[]): Element {
   const h = (s: string) => ['h', s] as [string, string]
   const id = (i: number) => ['id', i + ''] as [string, string]
-  const t = node('target')
+  const t = node('g')
   const w = node('w')
   const m = node('moved')
   return node('corpus')(...diff.map((d) => {

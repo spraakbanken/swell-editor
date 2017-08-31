@@ -3,19 +3,27 @@
     <head>
         <meta charset="UTF-8" />
         <title>Normaliseringseditor</title>
-        <link rel="stylesheet" type="text/css" href="./node_modules/codemirror/lib/codemirror.css"/>
-        <link rel="stylesheet" type="text/css" href="./node_modules/bootstrap/dist/css/bootstrap.css"/>
-        <link rel="stylesheet" type="text/css" href="./node_modules/bootstrap/dist/css/bootstrap-theme.css"/>
-        <link href="https://fonts.googleapis.com/css?family=Fira+Sans" rel="stylesheet">
+        <link rel="shortcut icon" href="favicon.ico" type="image/vnd.microsoft.icon">
     </head>
     <body>
+        <h3>Normaliseringseditorsprototyp</h3>
+        Exempel:
+        <ul>
+        <li>Annoteringar över ordgränserna:
+          <a href="index.html#person nummer">särskrivning</a>,
+          <a href="index.html#Vi gick dit för att jag fick personnummer .">hjälpverb</a>,
+          <a href="index.html#De väder var inte bra">bestämdhet</a>,
+          <a href="index.html#En dag jag vaknade">ordföljd V2</a>,
+          <a href="index.html#När ländade flygplanen jag kollade ute genom fönesteret">ordföljd V2 II</a>,
+          <a href="index.html#Efter en tima gick jag till ett plats som min faster och min cousin väntade på mig där">ordföljd, lång förflyttning</a>
+        </li>
+        <li><a href="index.html#bok hyla">Fler än en annotation per länk</a></li>
+        </ul>
         <div id="root"></div>
+        <div id="footer">
+          Dan Rosén <tt><a href="mailto:dan.rosen@svenska.gu.se">dan.rosen@svenska.gu.se</a><tt>
+        </div>
 
-        <!-- Dependencies -->
-        <script src="./node_modules/codemirror/lib/codemirror.js"></script>
-        <script src="./node_modules/codemirror/mode/xml/xml.js"></script>
-
-        <!-- Main -->
-        <script src="/static/bundle.js"></script>
+        <script src="bundle.js"></script>
     </body>
 </html>

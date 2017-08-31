@@ -5,11 +5,12 @@
 .CodeMirror {
     font-family: 'Fira Sans', sans-serif;
     font-size: 16px;
-    border: 2px dotted #ccc;
-    width: 300px;
+    border: 1px solid #ddd;
+    width: 32%;
     display: inline-block;
-    margin: 10px;
-    height: 500px;
+    margin-right: 1%;
+    height: 300px;
+    min-width: 250px;
 }
 .MouseHoverMatch {
     color: #00c;
@@ -21,4 +22,18 @@
      border-bottom: 1px dotted #aaa;
      border-top: 1px dotted #aaa;
      background: #ddd
+}
+
+body {
+    font-family: 'Fira Sans', sans-serif;
+    margin: 10px;
+}
+
+#footer {
+    border-top: 1px solid #ddd;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    position: fixed;
+    width: 100%;
+    bottom: 0px;
 }

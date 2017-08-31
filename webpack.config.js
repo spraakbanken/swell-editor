@@ -1,15 +1,36 @@
 const webpack = require("webpack");
 const path = require("path");
+const ClosureCompilerPlugin = require('webpack-closure-compiler')
+const plugins = [
+   new webpack.LoaderOptionsPlugin({
+     debug: true
+   })
+]
+if (process.env.NODE_ENV === 'production') {
+    plugins.push(
+        new ClosureCompilerPlugin({
+            compiler: {
+                language_in: 'ECMASCRIPT6',
+                language_out: 'ECMASCRIPT5',
+                compilation_level: 'SIMPLE',
+                isolation_mode: 'IIFE',
+                process_common_js_modules: true,
+                assume_function_wrapper: 'true'
+            },
+            concurrency: 3,
+        })
+    );
+}
+
 
 module.exports = {
     entry: [
         "./src/index.ts",
     ],
     output: {
-        path: path.join(__dirname, 'dist'),
         filename: "bundle.js",
-        publicPath: "/static/",
     },
+    plugins: plugins,
 
     // Enable sourcemaps for debugging webpack's output.
     devtool: "source-map",
@@ -35,31 +56,10 @@ module.exports = {
             },
             {
                 test: /\.css$/,
-                use: [ 'style-loader', 'css-loader' ]
-            },
-            // http://andrejgajdos.com/setting-up-webpack-for-es6-react-sass-and-bootstrap/
-            // the url-loader uses DataUrls.
-            // the file-loader emits files.
-            {
-                test: /\.(woff|woff2)(\?v=\d+\.\d+\.\d+)?$/,
-                loader: 'url-loader?limit=10000&mimetype=application/font-woff'
-            },
-            {
-                test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/,
-                loader: 'url-loader?limit=10000&mimetype=application/octet-stream'
-            },
-            {
-                test: /\.eot(\?v=\d+\.\d+\.\d+)?$/,
-                loader: 'file-loader'
-            },
-            {
-                test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
-                loader: 'url-loader?limit=10000&mimetype=image/svg+xml'
-            },
-        ]
-    },
-
-    externals: {
-        "codemirror": "CodeMirror",
+                use: [ 'style-loader', 'css-loader' ],
+                include: [path.resolve(__dirname, "node_modules"),
+                          path.resolve(__dirname, "src")]
+            }
+          ]
     }
 };

@@ -1,3 +1,5 @@
+(global as any)['document'] = require('xmlshim')
+(global as any)['XMLSerializer'] = require('xmlshim').XMLSerializer
 
 import * as Spans from "./Spans"
 import * as jsc from "jsverify"

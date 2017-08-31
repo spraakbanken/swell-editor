@@ -9,6 +9,7 @@ function whitespace_split(s: string): [string, string] {
   return [s, ''] // unreachable (the regexp matches any string)
 }
 
+
 /** Draws a diff onto a code mirror */
 export const draw_diff = (diff: Spans.Diff[], editor: CodeMirror.Editor) => editor.operation(() => {
   // TODO: Renumber all ids so they are contiguous and monotone
