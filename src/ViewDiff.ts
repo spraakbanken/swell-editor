@@ -24,34 +24,42 @@ export const draw_diff = (diff: Spans.Diff[], editor: CodeMirror.Editor) => edit
       diff_doc.markText(begin, end, {css: css})
     }
   }
+  const m = Spans.drop_map(diff)
+  let i = 0
+  const rename_map = {} as {[x: string]: string}
+  const rename = (id: string) => {
+    if (!(id in rename_map)) {
+      rename_map[id] = ++i + ''
+    }
+    return rename_map[id]
+  }
   diff.map((d) => {
-    if (d.kind == 'Unchanged') {
+    if (d.edit == 'Unchanged') {
       push(d.source)
-    } else if (d.kind == 'Edited') {
-      const [s, t] = whitespace_split(d.now)
+    } else if (d.edit == 'Edited') {
+      const [s, t] = whitespace_split(d.target)
       push(s, 'color: #090')
       push(d.source.join('').trim(), 'color: #d00; text-decoration: line-through;')
       push(t)
-    } else if (d.kind == 'Dropped') {
-      const [s, t] = whitespace_split(d.now)
+    } else if (d.edit == 'Dropped') {
+      const [s, t] = whitespace_split(d.target)
       push(s, 'background-color: #87ceeb')
-      const ids = d.source_and_ids.map(([_, id]) => id)
-      const source = d.source_and_ids.map(([s, _]) => s).join('')
-      push(ids.join(','), 'position: relative; bottom: -0.5em; font-size: 65%')
-      if (source != d.now) {
+      const source = d.ids.map(id => m[id] || '?').join('')
+      push(d.ids.map(rename).join(','), 'position: relative; bottom: -0.5em; font-size: 65%')
+      if (source != d.target) {
         push(source.trim(), 'color: #d00; text-decoration: line-through;')
       }
       push(t)
-    } else if (d.kind == 'Dragged') {
+    } else if (d.edit == 'Dragged') {
       const [s, t] = whitespace_split(d.source)
       push(s, 'background-color: #87ceeb; text-decoration: line-through;')
-      push(d.id + '', 'position: relative; bottom: -0.5em; font-size: 65%')
+      push(rename(d.id), 'position: relative; bottom: -0.5em; font-size: 65%')
       push(t)
-    } else if (d.kind == 'Inserted') {
-      const [s, t] = whitespace_split(d.now)
+    } else if (d.edit == 'Inserted') {
+      const [s, t] = whitespace_split(d.target)
       push(s, 'color: #090')
       push(t)
-    } else if (d.kind == 'Deleted') {
+    } else if (d.edit == 'Deleted') {
       const [s, t] = whitespace_split(d.source)
       push(s, 'color: #d00; text-decoration: line-through;')
       push(t)

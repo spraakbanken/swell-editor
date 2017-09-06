@@ -15,7 +15,6 @@
     "@types/lodash": "^4.14.74",
     "@types/mocha": "^2.2.42",
     "@types/node": "^8.0.26",
-    "xmlshim": "^0.2.1",
     "assert": "^1.4.1",
     "awesome-typescript-loader": "^3.0.3",
     "css-loader": "^0.28.1",
@@ -27,15 +26,16 @@
     "style-loader": "^0.17.0",
     "ts-node": "^3.3.0",
     "typescript": "^2.1.5",
+    "uglifyjs-webpack-plugin": "^0.4.6",
     "url-loader": "^0.5.8",
     "webpack": "^2.2.1",
-    "webpack-closure-compiler": "^2.1.5",
-    "webpack-dev-server": "^2.3.0"
+    "webpack-dev-server": "^2.3.0",
+    "xmlshim": "^0.2.1"
   },
   "scripts": {
     "start": "webpack-dev-server --hot",
     "build": "NODE_ENV=production webpack",
-    "pretest": "tsc src/*test.ts --module commonjs --target es6",
+    "pretest": "tsc src/*test.ts --module commonjs --target es6 --allowUnreachableCode",
     "test": "mocha src/*test.js"
   }
 }

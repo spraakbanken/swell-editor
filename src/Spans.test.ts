@@ -1,10 +1,12 @@
-(global as any)['document'] = require('xmlshim')
-(global as any)['XMLSerializer'] = require('xmlshim').XMLSerializer
+; (global as any)['document'] = require('xmlshim')
+; (global as any)['XMLSerializer'] = require('xmlshim').XMLSerializer
+; (global as any)['DOMParser'] = require('xmlshim').DOMParser
 
+import * as Utils from "./Utils"
 import * as Spans from "./Spans"
 import * as jsc from "jsverify"
-import "mocha"
 import { isEqual } from "lodash"
+import "mocha"
 
 function increasing(arr: number[][]): number[][] {
   let s = 0
@@ -16,7 +18,7 @@ function increasing(arr: number[][]): number[][] {
 
 describe('increasing', () => {
   jsc.property('increases', jsc.array(jsc.array(jsc.integer)), arr => {
-    return Spans.increases(Spans.flatten(increasing(arr)))
+    return Utils.increases(Utils.flatten(increasing(arr)))
   })
 
   jsc.property('preserves lengths', jsc.array(jsc.array(jsc.integer)), arr =>
@@ -37,19 +39,30 @@ function permute<A>(xs: A[]): jsc.Generator<A[]> {
   })
 }
 
-function array_set_eq(xs: number[], ys: number[]): boolean {
-  return isEqual(Spans.numsort(xs), Spans.numsort(ys))
-}
-
 describe('permute', () =>
   jsc.property('permutes',
     jsc.array(jsc.integer),
-    xs => array_set_eq(xs, permute(xs)(0)))
+    xs => Utils.array_multiset_eq(xs, permute(xs)(0)))
 )
 
+function alphabet(cs: string): jsc.Arbitrary<string> {
+  return jsc.array(
+    oneof<string>(Utils.str_map(cs, c => jsc.constant(c)))
+  ).smap((ss) => ss.join(''), (s) => Utils.str_map(s, c => c))
+}
+
+function nealphabet(cs: string): jsc.Arbitrary<string> {
+  return jsc.nearray(
+    oneof<string>(Utils.str_map(cs, c => jsc.constant(c)))
+  ).smap((ss) => ss.join(''), (s) => Utils.str_map(s, c => c))
+}
+
+const pipe_text: jsc.Arbitrary<string> = alphabet('|\\ab ')
+
+const head_text: jsc.Arbitrary<string> = alphabet('|\\ab ')
+
 /** Text not starting with whitespace */
-const gen_text: jsc.Arbitrary<string> =
-  jsc.suchthat(jsc.asciinestring, s => -1 == '\n\t '.indexOf(s[0]))
+const tail_text: jsc.Arbitrary<string> = head_text.smap(s => 'a' + s, a_s => a_s.slice(1))
 
 class Pair<A,B> {
   constructor(public readonly first: A, public readonly second: B) {}
@@ -57,9 +70,8 @@ class Pair<A,B> {
 
 const gen_spans: jsc.Generator<Spans.Span[]> = jsc.generator.bless(
   (size : number) => {
-    const head = jsc.asciinestring.generator(size)
-    const rest = jsc.array(gen_text).generator(Math.pow(2,size))
-    const texts = [head].concat(rest).map((text) => text + ' ') // each text segment ends with whitespace
+    const toks = jsc.nearray(tail_text).generator(Math.pow(2,size))
+    const texts = toks.map((text) => text + ' ') // make sure each text segment ends with whitespace
     const links = increasing(texts.map(_ => jsc.small(jsc.array(jsc.integer)).generator(size)))
 
     /** indexes to move */
@@ -78,8 +90,8 @@ const gen_spans: jsc.Generator<Spans.Span[]> = jsc.generator.bless(
     return texts.map((t, i) => ({
       text: t,
       links: links_moves[i].first,
-      moved: links_moves[i].second || !Spans.contiguous(links_moves[i].first),
-      labels: jsc.small(jsc.array(gen_text)).generator(size)
+      moved: links_moves[i].second || !Utils.contiguous(links_moves[i].first),
+      labels: jsc.small(jsc.array(tail_text)).generator(size)
     }))
   })
 
@@ -91,8 +103,17 @@ const shrink_mid_string: jsc.Shrink<string> = jsc.shrink.bless<string>((s) => {
   return smaller
 })
 
+
 function shrink_record<T>(shr: { [P in keyof T]: jsc.Shrink<T[P]> }): jsc.Shrink<T> {
   return (jsc as any).shrink.record(shr)
+}
+
+function oneof<T>(gs: jsc.Arbitrary<T>[]): jsc.Arbitrary<T> {
+  return (jsc as any).oneof(gs)
+}
+
+function record<T>(shr: { [P in keyof T]: jsc.Arbitrary<T[P]> }): jsc.Arbitrary<T> {
+  return (jsc as any).record(shr)
 }
 
 function shrink_array_ends<T>(): jsc.Shrink<T[]> {
@@ -106,7 +127,26 @@ function shrink_array_ends<T>(): jsc.Shrink<T[]> {
     })
 }
 
-
+function shrink_nats(): jsc.Shrink<number[]> {
+  return jsc.shrink.bless(
+    (xs: number[]) => {
+      const out = [] as number[][]
+      if (xs.some(x => x > 100)) {
+        out.push(xs.map(x => x > 100 ? x - 100 : x))
+      }
+      if (xs.some(x => x > 10)) {
+        out.push(xs.map(x => x > 10 ? x - 10 : x))
+      }
+      if (xs.some(x => x > 0)) {
+        out.push(xs.map(x => Math.abs(x - 1)))
+      }
+      if (xs.length >= 2) {
+        out.push(xs.slice(1))
+        out.push(xs.slice(0,xs.length - 2))
+      }
+      return out
+    })
+}
 
 const arb_spans: jsc.Arbitrary<Spans.Span[]> =
   jsc.bless({
@@ -116,14 +156,10 @@ const arb_spans: jsc.Arbitrary<Spans.Span[]> =
       shrink_record({
         text: shrink_mid_string,
         labels: jsc.shrink.array(shrink_mid_string),
-        links: shrink_array_ends<number>(),
+        links: shrink_nats(),
         moved: jsc.shrink.noop
       }))
     })
-
-function show(x: any): string {
-  return JSON.stringify(x, undefined, 2)
-}
 
 function check(spans: Spans.Span[], info: any=undefined): boolean {
   return eq('', Spans.check_invariant(spans), [spans, info])
@@ -132,9 +168,9 @@ function check(spans: Spans.Span[], info: any=undefined): boolean {
 function eq<A>(l: A, r: A, info: any=undefined) {
   const b = isEqual(l, r)
   if (!b) {
-    console.log(show(l), "!=", show(r))
+    console.log(Utils.show(l), "!=", Utils.show(r))
     if (info) {
-      console.log(show(info))
+      console.log(Utils.show(info))
     }
   }
   return b
@@ -154,6 +190,56 @@ function replicate<A>(n: number, g: jsc.Arbitrary<A>): jsc.Arbitrary<A[]> {
   return jsc.tuple(gs) as jsc.Arbitrary<A[]>
 }
 
+const LaxDiff: jsc.Arbitrary<Spans.LaxDiff> =
+  record({
+    edit: alphabet('Abcd'),
+    target: oneof([alphabet(':\| a1'), jsc.constant(undefined)]),
+    ids: oneof([jsc.nearray(nealphabet('1234567890')), jsc.constant(undefined)]),
+  })
+
+type Rearrange = { kind: 'Rearrange', ixs: number[], side: boolean }
+type Modify = { kind: 'Modify', ixs: number[], text: string }
+type Api = Rearrange | Modify
+//  Revert part of this API?
+
+const Rearrange: jsc.Arbitrary<Rearrange> =
+  record({
+    kind: jsc.constant('Rearrange' as 'Rearrange'),
+    ixs: replicate(3, jsc.nat),
+    side: jsc.bool
+  })
+
+const Modify: jsc.Arbitrary<Modify> =
+  record({
+    kind: jsc.constant('Modify' as 'Modify'),
+    ixs: replicate(2, jsc.nat),
+    text: jsc.asciistring
+  })
+
+const Call: jsc.Arbitrary<Api> = jsc.either(Rearrange, Modify)
+const Calls: jsc.Arbitrary<Api[]> = jsc.array(Call)
+
+function restrictRearrange(spans: Spans.Span[], r: Rearrange): {begin: number, end: number, dest: number} | null {
+  const jxs = Utils.numsort(r.ixs.map((i) => i % spans.length))
+  let begin, end, dest: number
+  if (r.side) {
+    [begin,end,dest] = jxs
+  } else {
+    [dest,begin,end] = jxs
+  }
+  if (dest == begin || dest == end) {
+    return null
+  } else {
+    return {begin, end, dest}
+  }
+}
+
+// FIX: fail graciously if spans.length == 0
+function restrictModify(spans: Spans.Span[], r: Modify): {begin: number, end: number} {
+  const [begin, end] = Utils.numsort(r.ixs.map((i) => i % spans.length))
+  return {begin, end}
+}
+
 describe("Spans", () => {
   jsc.property("generator conforms to invariant", arb_spans, (spans) => {
     return check(spans)
@@ -164,12 +250,12 @@ describe("Spans", () => {
     return (shrunk == undefined) || check(shrunk)
   })
 
-  jsc.property("modify", arb_spans, jsc.asciistring, jsc.nat, jsc.nat, (spans, text, i, j) => {
-    const [a,b] = Spans.numsort([i,j].map((c) => c % (Spans.text_length(spans) - 1)))
-    const mods = Spans.modify(spans, a, b, text)
-    return check(mods, {spans:spans, text:text, i:i, j:j}) &&
-      eq(Spans.text_length(spans) - (b - a), Spans.text_length(mods) - text.length) &&
-      eq(Spans.text(spans).slice(0,a) + text + Spans.text(spans).slice(b), Spans.text(mods))
+  jsc.property("modify", arb_spans, Modify, (spans, m) => {
+    const {begin, end} = restrictModify(spans, m)
+    const mods = Spans.modify(spans, begin, end, m.text)
+    const info = {spans, mods, text:m.text, begin, end}
+    return check(mods, info) &&
+      eq(Utils.ltrim(Spans.text(spans).slice(0,begin) + m.text + Spans.text(spans).slice(end)), Spans.text(mods), info)
   })
 
   describe('rearrange', () => {
@@ -179,57 +265,96 @@ describe("Spans", () => {
       assert_eq(Spans.text(Spans.rearrange(spans, 3, 4, 1)), 'a d e b c f ')
     })
 
-    jsc.property("spec", arb_spans, replicate(3, jsc.nat), jsc.bool, (spans, ixs, side) => {
-      const jxs = Spans.numsort(ixs.map((i) => i % spans.length))
-      let a,b,d
-      if (side) {
-        [a,b,d] = jxs
-      } else {
-        [d,a,b] = jxs
-      }
-      if (d == a || d == b) {
+    jsc.property("spec", arb_spans, Rearrange, (spans, m) => {
+      const r = restrictRearrange(spans, m)
+      if (!r) {
         return true
       } else {
-        const mods = Spans.rearrange(spans, a, b, d)
-        const w = b - a
-        const set_moved = spans.slice(a,b).map((s: Spans.Span) => ({...s, moved: s.links.length > 0}))
-        return check(mods) &&
-          eq(Spans.text_length(mods), Spans.text_length(spans)) &&
-          eq(set_moved, d < a ? mods.slice(d,d+w) : mods.slice(d-w-1,d-1),
-            [a,b,d, spans, mods, set_moved])
+        const {begin, dest, end} = r
+        const mods = Spans.rearrange(spans, begin, end, dest)
+        const w = end - begin
+        const set_moved = spans.slice(begin,end).map((s: Spans.Span) => ({...s, moved: s.links.length > 0}))
+        const info = {begin, end, dest, spans, mods, set_moved}
+        return check(mods, info) &&
+          eq(Spans.text_length(mods), Spans.text_length(spans), info) &&
+          eq(set_moved, dest < begin ? mods.slice(dest,dest+w) : mods.slice(dest-w-1,dest-1), info)
       }
     })
   })
 
   describe("identity_spans", () => {
-    jsc.property("invariant", jsc.asciinestring, (s) =>
-      check(Spans.identity_spans(s))
+    jsc.property("invariant", jsc.asciistring, (s) =>
+      check(Spans.identity_spans(s), s)
     )
 
-    jsc.property("modify", jsc.asciinestring, jsc.asciinestring, replicate(2, jsc.nat), (s, text, ixs) => {
-      const [a,b] = Spans.numsort(ixs.map((i) => i % s.length))
+    jsc.property("modify", tail_text, Modify, (s, m) => {
       const spans = Spans.identity_spans(s)
-      const mods = Spans.modify(spans, a, b, text)
-      return check(mods) && eq(s.slice(0, a) + text + s.slice(b) + ' ', Spans.text(mods))
+      const {begin, end} = restrictModify(spans, m)
+      const mods = Spans.modify(spans, begin, end, m.text)
+      return check(mods) && eq(Utils.ltrim(s.slice(0, begin) + m.text + s.slice(end) + ' '), Spans.text(mods))
     })
   })
 
   describe("auto_revert", () => {
-    jsc.property("modify", jsc.asciinestring, replicate(2, jsc.nat), (s, ixs) => {
-      const [a,b] = Spans.numsort(ixs.map((i) => i % s.length))
+    jsc.property("identity modify", tail_text, Modify, (s, m) => {
       const spans = Spans.identity_spans(s)
       const tokens = spans.map(s => s.text)
-      const text = s.slice(a, b)
-      const mods = Spans.auto_revert(Spans.modify(spans, a, b, text), tokens)
+      const {begin, end} = restrictModify(spans, m)
+      const text = s.slice(begin, end)
+      const mods = Spans.auto_revert(Spans.modify(spans, begin, end, text), tokens)
       return check(mods) && eq(spans, mods)
     })
   })
 
-  // Test this by making a DSL of API calls and check:
-  //  - that it can be reverted
-  //  - that the invariant always holds
-  //  - that the diff describes the original and target string
+  describe("escape_pipe", () => {
+    jsc.property("invertible", pipe_text, (x) =>
+      eq(x, Utils.unescape_pipe(Utils.escape_pipe(x)), Utils.escape_pipe(x))
+    )
+  })
 
-  // describe("diff", () => {
+  describe("pipesep", () => {
+    jsc.property("invertible", jsc.array(pipe_text), (xs: string[]) => {
+      const ps = Utils.pipesep(xs)
+      const us = Utils.pipeunsep(ps)
+      const info = {xs, ps, us}
+      return eq(true, Utils.shallow_array_eq(xs, us), info)
+    })
+  })
+
+  describe("pretty_lax", () => {
+    jsc.property("invertible", LaxDiff, (d: Spans.LaxDiff) => {
+      const pd = Spans.pretty_lax(d)
+      const d2 = Spans.parse_lax(pd)
+      return eq(true, isEqual(d, d2), {d, pd, d2})
+    })
+  })
+
+  describe("diff", () => {
+    jsc.property("invertible", arb_spans, jsc.nearray(nealphabet('|\\ab')), (spans, tokens) => {
+      const max = Utils.flatten(spans.map(s => s.links)).reduce((x,y) => Math.max(x,y), 0)
+      const tokens2 = Utils.cycle(max + 1, tokens)
+      const spans2 = spans.map(s => ({...s, labels: []}))
+      const diff = Spans.calculate_diff(spans, tokens2)
+      const res = Spans.diff_to_spans(diff)
+      const info = {} // {spans2, tokens2, diff, res}
+      return eq(true, isEqual({spans: spans2, tokens: tokens2}, res), info)
+    })
+  })
+
+  describe("xml diff", () => {
+    jsc.property("invertible", arb_spans, jsc.nearray(nealphabet('|\\ab')), (spans, tokens) => {
+      const max = Utils.flatten(spans.map(s => s.links)).reduce((x,y) => Math.max(x,y), 0)
+      const tokens2 = Utils.cycle(max + 1, tokens)
+      const spans2 = spans.map(s => ({...s, labels: []}))
+      const diff = Spans.calculate_diff(spans, tokens2)
+      const xml = Spans.diff_to_xml(diff)
+      const xml_string = new XMLSerializer().serializeToString(xml)
+      const diff2 = Spans.xml_to_diff(xml_string)
+      const res = Spans.diff_to_spans(diff2)
+      const info = {} // {spans2, tokens2, diff, diff2, res}
+      return eq(true, isEqual({spans: spans2, tokens: tokens2}, res), info)
+    })
+  })
+
 })
 

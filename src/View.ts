@@ -6,8 +6,10 @@ Right now we use the cut word part of the CM state using a CM mark
 import * as CodeMirror from "codemirror"
 import { Editor } from "codemirror"
 import * as Spans from "./Spans"
+import * as Utils from "./Utils"
 import { Span } from "./Spans"
 import { draw_diff } from "./ViewDiff"
+import { log, debug } from "./dev"
 
 //import { h, init } from "snabbdom"
 //import snabbdomClass from 'snabbdom/modules/class'
@@ -53,11 +55,12 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
     "Ctrl-Z": undo,
     "Ctrl-Y": redo
   }
+  console.log('debug', debug)
 
   const cm_orig = CodeMirror(element, { lineWrapping: true, readOnly: true })
   const cm_main = CodeMirror(element, { lineWrapping: true, extraKeys: history_keys })
   const cm_diff = CodeMirror(element, { lineWrapping: true, readOnly: true })
-  const cm_xml = CodeMirror(element, { lineWrapping: false, readOnly: true, mode: 'xml' })
+  const cm_xml = CodeMirror(element, { lineWrapping: false, mode: 'xml' })
   cm_xml.getWrapperElement().className += ' xml_editor'
 
   let spans = state.now.spans
@@ -67,11 +70,12 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
 
   /** Updates all views, run this when the state is completely new */
   function update_view() {
-    console.log(spans.map(({text}) => text))
+    log(spans.map(({text}) => text))
     const cursor = cm_main.getDoc().getCursor()
     const upd = spans.map(s => s.text).join('')
     cm_orig.getDoc().setValue(tokens.join(''))
     cm_main.getDoc().setValue(upd.slice(0, upd.length - 1))
+    log('cm_main value:', cm_main.getDoc().getValue())
     cm_main.getDoc().setSelection(cursor, cursor)
     partial_update_view()
   }
@@ -79,14 +83,42 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
   function partial_update_view() {
     const diff = Spans.calculate_diff(spans, tokens)
     draw_diff(diff, cm_diff)
-    cm_xml.getDoc().setValue(format(new XMLSerializer().serializeToString(Spans.export_to_xml(diff))))
+    const pretty_xml = format(new XMLSerializer().serializeToString(Spans.diff_to_xml(diff)))
+    if (pretty_xml != cm_xml.getDoc().getValue()) {
+      const cursor = cm_xml.getDoc().getCursor()
+      cm_xml.getDoc().setValue(pretty_xml)
+      cm_xml.getDoc().setSelection(cursor, cursor)
+    }
   }
+
+  cm_xml.on('change', () => {
+    try {
+      const diff = Spans.xml_to_diff(cm_xml.getDoc().getValue())
+      const res = Spans.diff_to_spans(diff)
+      console.log('xml change to', res)
+      past = past.concat([{spans, tokens}])
+      spans = res.spans
+      tokens = res.tokens
+      future = [] as State[]
+      update_view()
+    } catch (e) {
+      console.log(e)
+    }
+  })
 
   cm_main.focus()
   update_view()
 
   function set_spans(new_spans : Span[]) {
-    Spans.check_invariant(new_spans)
+    log('set_spans', new_spans)
+    if (new_spans.length == 0) {
+      log('not updating to empty spans')
+      // update_view will be run on('change')
+      return
+    }
+    if (debug) {
+      Spans.check_invariant(new_spans)
+    }
     past = past.concat([{spans, tokens}])
     spans = new_spans
     future = [] as State[]
@@ -113,19 +145,19 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
   // disable a bunch of "complicated" events for now
   for (const t of ["copy", "dragenter"]) {
     (cm_main.on as any)(t, (_cm_main: CodeMirror.Editor, evt: Event) => {
-      console.log('Preventing', evt)
+      log('Preventing', evt)
       evt.preventDefault()
     })
   }
 
   (cm_main.on as any)('cut', (_cm_main: CodeMirror.Editor, evt: Event) => {
-    console.log('cut', evt)
+    log('cut', evt)
     evt.preventDefault()
     cut()
   });
 
   (cm_main.on as any)('dragstart', (_cm_main: CodeMirror.Editor, evt: Event) => {
-    console.log('cut dragstart', evt)
+    log('cut dragstart', evt)
     // no prevent default
     cut()
   });
@@ -140,14 +172,16 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
       const to = Spans.span_from_offset(spans, Math.max(a, b))[0]
       const conv = (off: number) => cm_main.getDoc().posFromIndex(off)
       remove_marks_by_class(cm_main, 'cut')
-      cm_main.getDoc().markText(conv(Spans.span_offset(spans, from)), conv(Spans.span_offset(spans, to) + whitespace_start(spans[to].text)), {
-        className: 'cut'
-      })
+      cm_main.getDoc().markText(
+        conv(Spans.span_offset(spans, from)),
+        conv(Spans.span_offset(spans, to) + whitespace_start(spans[to].text)), {
+          className: 'cut'
+        })
     }
   }
 
   (cm_main.on as any)('paste', (_cm_main: CodeMirror.Editor, evt: Event) => {
-    console.log('paste', evt)
+    log('paste', evt)
     evt.preventDefault()
     paste()
   })
@@ -163,19 +197,20 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
       if (here > to) {
         here++
       }
-      console.log(from, to, here)
-      console.log(spans.map(({text}) => text))
+      log(from, to, here)
+      log(spans.map(({text}) => text))
       set_spans(Spans.rearrange(spans, from, to, here))
       update_view()
     })
   }
 
   // Highlights the selected token in the orig view
+  // FIXME: This crashes if the span cannot be found (can happen when the xml is edited)
   cm_main.on('cursorActivity', (_: CodeMirror.Editor) => {
     const cursor = cm_main.getDoc().getCursor()
     const index = cm_main.getDoc().indexFromPos(cursor)
     const [span, i] = Spans.span_from_offset(spans, cm_main.getDoc().indexFromPos(cursor));
-    //console.log(cursor, index, span, i, spans[span], spans[span].data.links)
+    //log(cursor, index, span, i, spans[span], spans[span].data.links)
     remove_marks_by_class(cm_orig, 'CursorMatch')
     for (const linked of spans[span].links) {
       // todo: refactor ;)
@@ -189,28 +224,34 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
     }
   })
 
-  cm_main.on('update', () =>  {
+  // invariant check
+  cm_main.on('update', () => {
     const lhs = spans.map(s => s.text).join('')
     const rhs = cm_main.getDoc().getValue() + ' '
-    console.log('update', lhs, rhs)
-    if (lhs != rhs) {
-      throw new Error('Editor and internal state out of sync: "' + lhs + '" and "' + rhs + '"')
+    log('update', Utils.show({lhs, rhs}))
+    if (rhs != lhs && (Utils.ltrim(rhs) == lhs || Utils.ltrim(rhs) == '')) {
+      // everything deleted! just update view
+      cm_main.getDoc().setValue(lhs.slice(0, lhs.length - 1))
+      update_view()
+    } else if (lhs != rhs) {
+      log("Editor and internal state out of sync:", {lhs, rhs})
     }
   })
+
 
   cm_main.on('beforeChange', (_, change) => {
     // need to do this /beforeChange/ (not after),
     // otherwise indexFromPos does not work anymore
     // since the position might be removed
-    console.log('beforeChange', change.origin, change)
+    log('beforeChange', change.origin, change)
 
     if (change.origin == 'undo') {
-      console.log('undo')
+      log('undo')
       // we will do our undos ourselves
       change.cancel();
       undo();
     } else if (change.origin == 'redo') {
-      console.log('redo')
+      log('redo')
       // we will do our undos ourselves
       change.cancel();
       redo();
@@ -225,7 +266,7 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
       const to = cm_main.getDoc().indexFromPos(change.to)
       set_spans(Spans.auto_revert(Spans.modify(spans, from, to, change.text.join('\n')), tokens))
       partial_update_view()
-      console.log(spans.map(({text}) => text))
+      log(spans.map(({text}) => text))
     }
   })
 
@@ -299,7 +340,7 @@ cm.getWrapperElement().onmousemove = (e : MouseEvent) => {
 
 /*
 for (const t of ["change", "changes", "beforeChange", "cursorActivity", "update", "mousedown", "dblclick", "touchstart", "contextmenu", "keydown", "keypress", "keyup", "cut", "copy", "paste", "dragstart", "dragenter", "dragover", "dragleave", "drop"]) {
-  cm.on(t, (_cm: CodeMirror.Editor, ...args: any[]) => console.log(t, ...args))
+  cm.on(t, (_cm: CodeMirror.Editor, ...args: any[]) => log(t, ...args))
 }
 */
 

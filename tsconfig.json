@@ -6,7 +6,8 @@
         "strict": true,
         "module": "commonjs",
         "moduleResolution": "node",
-        "target": "es6"
+        "allowUnreachableCode": true,
+        "target": "es5"
     },
     "files": [
         "./src/**/*"

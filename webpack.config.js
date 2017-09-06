@@ -1,26 +1,22 @@
 const webpack = require("webpack");
 const path = require("path");
-const ClosureCompilerPlugin = require('webpack-closure-compiler')
+const UglifyJSPlugin = require('uglifyjs-webpack-plugin')
+const production = 'NODE_ENV' in process.env && process.env.NODE_ENV === 'production'
 const plugins = [
-   new webpack.LoaderOptionsPlugin({
-     debug: true
-   })
+  new webpack.DefinePlugin({
+    Debug: JSON.stringify(!production)
+  }),
+  new webpack.LoaderOptionsPlugin({
+    debug: !production
+  })
 ]
-if (process.env.NODE_ENV === 'production') {
-    plugins.push(
-        new ClosureCompilerPlugin({
-            compiler: {
-                language_in: 'ECMASCRIPT6',
-                language_out: 'ECMASCRIPT5',
-                compilation_level: 'SIMPLE',
-                isolation_mode: 'IIFE',
-                process_common_js_modules: true,
-                assume_function_wrapper: 'true'
-            },
-            concurrency: 3,
-        })
-    );
+if (!production) {
+  plugins.push(new webpack.NamedModulesPlugin())
 }
+if (production) {
+  plugins.push(new UglifyJSPlugin())
+}
+
 
 
 module.exports = {

@@ -2,7 +2,7 @@ import "codemirror/lib/codemirror.css"
 import * as CodeMirror from "codemirror"
 import "codemirror/mode/xml/xml"
 import './index.css'
-
+import {debug} from './dev'
 
 const root = document.getElementById('root') as HTMLElement
 
@@ -21,9 +21,11 @@ window.onhashchange = () => {
 
 declare const module: any;
 
-if (module.hot) {
-  module.hot.accept('./View.ts', (_: any) => {
-    View = require('./View.ts')
-    get = View.bind(root, get())
-  })
+if (debug) {
+  if (module.hot) {
+    module.hot.accept('./View.ts', (_: any) => {
+      View = require('./View.ts')
+      get = View.bind(root, get())
+    })
+  }
 }

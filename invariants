@@ -36,3 +36,9 @@ spans without links (inserted missing words) cannot.
 
 There is no way right now to introduce text that is not linked to anything
 (i.e. totally unlinked tokens)
+
+
+Refining the invariant to no span can start with whitespace, not even
+the first. Initial whitespace on a document must be trimmed.
+(This representation allows trailing whitespace. Could make it reverse
+to allow initial whitespace)
