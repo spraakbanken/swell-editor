@@ -1,5 +1,7 @@
 import * as CodeMirror from "codemirror"
 import * as Spans from "./Spans"
+import Dmp = require("diff-match-patch")
+const dmp = new Dmp.diff_match_patch()
 
 function whitespace_split(s: string): [string, string] {
   const m = s.match(/^(.*?)(\s*)$/)
@@ -16,13 +18,29 @@ export const draw_diff = (diff: Spans.Diff[], editor: CodeMirror.Editor) => edit
   const diff_doc = editor.getDoc()
   diff_doc.setValue('')
   diff_doc.getAllMarks().map((m) => m.clear())
-  function push(text: string, css: string = '') {
+  function push(text: string, className: string = '') {
     diff_doc.replaceSelection(text)
-    if (css) {
+    if (className) {
       const end = diff_doc.getCursor()
       const begin = diff_doc.posFromIndex(diff_doc.indexFromPos(end) - text.length)
-      diff_doc.markText(begin, end, {css: css})
+      diff_doc.markText(begin, end, {className})
     }
+  }
+  function push_diff(source: string, target: string, className: string = '') {
+    const token_diff = dmp.diff_main(source, target)
+    dmp.diff_cleanupSemantic(token_diff)
+    token_diff.map(([type, text]) => {
+      switch (type) {
+        case Dmp.DIFF_INSERT:
+          push(text, 'Insert ' + className)
+          break
+        case Dmp.DIFF_DELETE:
+          push(text, 'Delete ' + className)
+          break
+        default:
+          push(text, className)
+      }
+    })
   }
   const m = Spans.drop_map(diff)
   let i = 0
@@ -37,31 +55,25 @@ export const draw_diff = (diff: Spans.Diff[], editor: CodeMirror.Editor) => edit
     if (d.edit == 'Unchanged') {
       push(d.source)
     } else if (d.edit == 'Edited') {
-      const [s, t] = whitespace_split(d.target)
-      push(s, 'color: #090')
-      push(d.source.join('').trim(), 'color: #d00; text-decoration: line-through;')
-      push(t)
+      push_diff(d.source.join(''), d.target)
     } else if (d.edit == 'Dropped') {
-      const [s, t] = whitespace_split(d.target)
-      push(s, 'background-color: #87ceeb')
+      const [target, target_ws] = whitespace_split(d.target)
       const source = d.ids.map(id => m[id] || '?').join('')
-      push(d.ids.map(rename).join(','), 'position: relative; bottom: -0.5em; font-size: 65%')
-      if (source != d.target) {
-        push(source.trim(), 'color: #d00; text-decoration: line-through;')
-      }
-      push(t)
+      push_diff(whitespace_split(source)[0], target, 'Dropped')
+      push(d.ids.map(rename).join(','), 'Subscript')
+      push(target_ws)
     } else if (d.edit == 'Dragged') {
       const [s, t] = whitespace_split(d.source)
-      push(s, 'background-color: #87ceeb; text-decoration: line-through;')
-      push(rename(d.id), 'position: relative; bottom: -0.5em; font-size: 65%')
+      push(s, 'Dragged')
+      push(rename(d.id), 'Subscript')
       push(t)
     } else if (d.edit == 'Inserted') {
       const [s, t] = whitespace_split(d.target)
-      push(s, 'color: #090')
+      push(s, 'Insert')
       push(t)
     } else if (d.edit == 'Deleted') {
       const [s, t] = whitespace_split(d.source)
-      push(s, 'color: #d00; text-decoration: line-through;')
+      push(s, 'Delete')
       push(t)
     } else {
       const d2: never = d

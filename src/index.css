@@ -1,3 +1,27 @@
+.Insert {
+    color: #090;
+}
+
+.Delete {
+    color: #d00;
+    text-decoration: line-through;
+}
+
+.Dragged {
+    background-color: #87ceeb;
+    text-decoration: line-through;
+}
+
+.Dropped {
+    background-color: #87ceeb;
+}
+
+.Subscript {
+    position: relative;
+    bottom: -0.5em;
+    font-size: 65%
+}
+
 .CodeMirror.xml_editor {
     font-family: 'Consolas', monospace;
     width: 98%;
