@@ -47,13 +47,13 @@ describe('permute', () =>
 
 function alphabet(cs: string): jsc.Arbitrary<string> {
   return jsc.array(
-    oneof<string>(Utils.str_map(cs, c => jsc.constant(c)))
+    jsc.oneof<string>(Utils.str_map(cs, c => jsc.constant(c)))
   ).smap((ss) => ss.join(''), (s) => Utils.str_map(s, c => c))
 }
 
 function nealphabet(cs: string): jsc.Arbitrary<string> {
   return jsc.nearray(
-    oneof<string>(Utils.str_map(cs, c => jsc.constant(c)))
+    jsc.oneof<string>(Utils.str_map(cs, c => jsc.constant(c)))
   ).smap((ss) => ss.join(''), (s) => Utils.str_map(s, c => c))
 }
 
@@ -103,17 +103,8 @@ const shrink_mid_string: jsc.Shrink<string> = jsc.shrink.bless<string>((s) => {
   return smaller
 })
 
-
 function shrink_record<T>(shr: { [P in keyof T]: jsc.Shrink<T[P]> }): jsc.Shrink<T> {
   return (jsc as any).shrink.record(shr)
-}
-
-function oneof<T>(gs: jsc.Arbitrary<T>[]): jsc.Arbitrary<T> {
-  return (jsc as any).oneof(gs)
-}
-
-function record<T>(shr: { [P in keyof T]: jsc.Arbitrary<T[P]> }): jsc.Arbitrary<T> {
-  return (jsc as any).record(shr)
 }
 
 function shrink_array_ends<T>(): jsc.Shrink<T[]> {
@@ -191,10 +182,10 @@ function replicate<A>(n: number, g: jsc.Arbitrary<A>): jsc.Arbitrary<A[]> {
 }
 
 const LaxDiff: jsc.Arbitrary<Spans.LaxDiff> =
-  record({
+  jsc.record({
     edit: alphabet('Abcd'),
-    target: oneof([alphabet(':\| a1'), jsc.constant(undefined)]),
-    ids: oneof([jsc.nearray(nealphabet('1234567890')), jsc.constant(undefined)]),
+    target: jsc.oneof([alphabet(':\| a1'), jsc.constant(undefined)]),
+    ids: jsc.oneof([jsc.nearray(nealphabet('1234567890')), jsc.constant(undefined)]),
   })
 
 type Rearrange = { kind: 'Rearrange', ixs: number[], side: boolean }
@@ -203,14 +194,14 @@ type Api = Rearrange | Modify
 //  Revert part of this API?
 
 const Rearrange: jsc.Arbitrary<Rearrange> =
-  record({
+  jsc.record({
     kind: jsc.constant('Rearrange' as 'Rearrange'),
     ixs: replicate(3, jsc.nat),
     side: jsc.bool
   })
 
 const Modify: jsc.Arbitrary<Modify> =
-  record({
+  jsc.record({
     kind: jsc.constant('Modify' as 'Modify'),
     ixs: replicate(2, jsc.nat),
     text: jsc.asciistring
