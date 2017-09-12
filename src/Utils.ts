@@ -1,4 +1,7 @@
 
+import Dmp = require("diff-match-patch")
+export const dmp = new Dmp.diff_match_patch()
+
 /** Compare two arrays for shallow equality */
 export function shallow_array_eq<A>(xs: A[], ys: A[]): boolean {
   return xs.length == ys.length && xs.every((x, i) => x == ys[i])

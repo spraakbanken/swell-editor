@@ -1,7 +1,6 @@
 import * as CodeMirror from "codemirror"
 import * as Spans from "./Spans"
-import Dmp = require("diff-match-patch")
-const dmp = new Dmp.diff_match_patch()
+import * as Utils from "./Utils"
 
 function whitespace_split(s: string): [string, string] {
   const m = s.match(/^(.*?)(\s*)$/)
@@ -27,15 +26,15 @@ export const draw_diff = (diff: Spans.Diff[], editor: CodeMirror.Editor) => edit
     }
   }
   function push_diff(source: string, target: string, className: string = '') {
-    const token_diff = dmp.diff_main(source, target)
-    dmp.diff_cleanupSemantic(token_diff)
+    const token_diff = Utils.dmp.diff_main(target, source)
+    Utils.dmp.diff_cleanupSemantic(token_diff)
     token_diff.map(([type, text]) => {
       switch (type) {
-        case Dmp.DIFF_INSERT:
-          push(text, 'Insert ' + className)
-          break
-        case Dmp.DIFF_DELETE:
+        case 1:
           push(text, 'Delete ' + className)
+          break
+        case -1:
+          push(text, 'Insert ' + className)
           break
         default:
           push(text, className)

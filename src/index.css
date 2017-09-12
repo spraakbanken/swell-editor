@@ -19,7 +19,8 @@
 .Subscript {
     position: relative;
     bottom: -0.5em;
-    font-size: 65%
+    font-size: 65%;
+    padding-left: 1px;
 }
 
 .CodeMirror.xml_editor {
