@@ -402,13 +402,13 @@ export function diff_to_xml(diff: Diff[]): Element {
   diff.map((d) => {
     switch (d.edit) {
       case 'Unchanged':
-        return enqueue({...d, target: d.source})
+        return enqueue(d)
       case 'Edited':
         return d.source.map((s, i) => {
           if (i == 0) {
             enqueue({edit: 'Edited', target: d.target, source: s})
           } else {
-            enqueue({edit: 'EditedContinuation', source: s, target: d.target})
+            enqueue({edit: 'EditedContinuation', source: s})
           }
         })
       case 'Deleted':
