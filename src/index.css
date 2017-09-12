@@ -74,11 +74,13 @@ body {
     margin: 10px;
 }
 
-#footer {
-    border-top: 1px solid #ddd;
-    padding-top: 5px;
-    padding-bottom: 5px;
-    position: fixed;
-    width: 100%;
-    bottom: 0px;
+.row {
+    display: flex;
+    flex-direction: row;
+}
+
+.column {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }

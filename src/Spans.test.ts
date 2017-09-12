@@ -231,6 +231,15 @@ function restrictModify(spans: Spans.Span[], r: Modify): {begin: number, end: nu
   return {begin, end}
 }
 
+describe("Utils", () => {
+  jsc.property("multi_diff", jsc.nearray(nealphabet('ab ')), alphabet('ab '), (ss, s2) => {
+    const md = Utils.multi_diff(ss, s2)
+    const info = {ss, s2, md}
+    return eq(md.map(Utils.dmp.diff_text1), ss, ['ss', info]) &&
+           eq(Utils.dmp.diff_text2(Utils.flatten(md)), s2, ['s2', info])
+  })
+})
+
 describe("Spans", () => {
   jsc.property("generator conforms to invariant", arb_spans, (spans) => {
     return check(spans)

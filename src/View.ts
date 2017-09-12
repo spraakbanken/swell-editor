@@ -8,12 +8,14 @@ import { Editor } from "codemirror"
 import * as Spans from "./Spans"
 import * as Utils from "./Utils"
 import { Span } from "./Spans"
-import { draw_diff } from "./ViewDiff"
+import * as ViewDiff from "./ViewDiff"
 import { log, debug } from "./dev"
 
-//import { h, init } from "snabbdom"
-//import snabbdomClass from 'snabbdom/modules/class'
+import * as snabbdom from "snabbdom"
+import snabbdomClass from 'snabbdom/modules/class'
+import snabbdomProps from 'snabbdom/modules/props'
 
+// no @types for prettify-xml
 declare function require(module_name: string): any
 const format: (xml_string: string) => string = require('prettify-xml')
 
@@ -60,6 +62,12 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
   const cm_orig = CodeMirror(element, { lineWrapping: true, readOnly: true })
   const cm_main = CodeMirror(element, { lineWrapping: true, extraKeys: history_keys })
   const cm_diff = CodeMirror(element, { lineWrapping: true, readOnly: true })
+
+  const patch = snabbdom.init([snabbdomClass])
+  const container = document.createElement('div')
+  element.appendChild(container)
+  let vnode = patch(container, snabbdom.h('div'))
+
   const cm_xml = CodeMirror(element, { lineWrapping: false, mode: 'xml', extraKeys: history_keys })
   cm_xml.getWrapperElement().className += ' xml_editor'
 
@@ -79,10 +87,13 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
     cm_main.getDoc().setSelection(cursor, cursor)
     partial_update_view()
   }
+
   /** Updates all views but cm_main */
   function partial_update_view() {
     const diff = Spans.calculate_diff(spans, tokens)
-    draw_diff(diff, cm_diff)
+    ViewDiff.draw_diff(diff, cm_diff)
+    const ladder = ViewDiff.ladder_diff(diff)
+    vnode = patch(vnode, ladder)
     const pretty_xml = format(new XMLSerializer().serializeToString(Spans.diff_to_xml(diff)))
     if (pretty_xml != cm_xml.getDoc().getValue()) {
       const cursor = cm_xml.getDoc().getCursor()

@@ -4,7 +4,7 @@ import {debug} from './dev'
 
 export interface Span {
   readonly text: string,
-  readonly links: number[],
+  readonly links: number[], // could retain the order in which they were glued together
   readonly labels: string[],
   readonly moved: boolean
 }
@@ -148,8 +148,7 @@ export function chop_up_insertions(spans: Span[], original: string[]): Span[] {
   return cursor<Span>((prev, me, next) => {
     if (me.links.length == 1) {
       const origin = original[me.links[0]]
-      const diff = Utils.dmp.diff_main(origin, me.text)
-      Utils.dmp.diff_cleanupEfficiency(diff)
+      const diff = Utils.token_diff(origin, me.text)
       if (diff.length == 2) {
         const [[t1, s1], [t2, s2]] = diff
         if (s1 == origin && s2.match(/\w\s$/)) {
@@ -247,13 +246,15 @@ export function span_from_offset(spans: Span[], offset: number): [number, number
   throw new Error('Out of bounds')
 }
 
+export type Dropped =  { edit: 'Dropped', target: string, ids: string[] }
+
 export type Diff
   = { edit: 'Unchanged', source: string }
   | { edit: 'Edited', target: string, source: string[] }
   | { edit: 'Deleted', source: string }
   | { edit: 'Dragged', source: string, id: string }
   // The following two are (unlike the other four) not related to a source word
-  | { edit: 'Dropped', target: string, ids: string[] }
+  | Dropped
   | { edit: 'Inserted', target: string }
 
 function Unchanged(source: string): Diff {
@@ -284,9 +285,20 @@ function Deleted(source: string): Diff {
   return { edit: 'Deleted', source }
 }
 
-export function drop_map(diff: Diff[]): {[id: string]: string} {
-  let m = {} as {[id: string]: string}
+export function drop_map(diff: Diff[]): Record<string, string> {
+  let m = {} as Record<string, string>
   diff.map((d: Diff) => d.edit == 'Dragged' && (m[d.id] = d.source))
+  return m
+}
+
+// Where in the diff was I dropped?
+export function drag_map(diff: Diff[]): Record<string, Dropped> {
+  let m = {} as Record<string, Dropped>
+  diff.map((d: Diff) => {
+    if (d.edit == 'Dropped') {
+      d.ids.map(id => m[id] = d)
+    }
+  })
   return m
 }
 
@@ -302,6 +314,8 @@ diff (Span text links false : spans) ss0@((s,j):ss)
   | j `notElem` unlinked = Deleted s (Span text links false : spans) ss
 diff (Span text links true : spans) ss = Dropped text (concatMap (! unlinked) links) : diff spans ss
 diff [] ss = map (Deleted/Dragged . fst) ss
+
+Todo: given a source position in spans or tokens, say where in the diff it ends up
 */
 export function calculate_diff(spans: Span[], tokens: string[]): Diff[] {
   const moved : {[x : number] : {}} = {}
