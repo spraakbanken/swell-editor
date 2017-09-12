@@ -60,7 +60,7 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
   const cm_orig = CodeMirror(element, { lineWrapping: true, readOnly: true })
   const cm_main = CodeMirror(element, { lineWrapping: true, extraKeys: history_keys })
   const cm_diff = CodeMirror(element, { lineWrapping: true, readOnly: true })
-  const cm_xml = CodeMirror(element, { lineWrapping: false, mode: 'xml' })
+  const cm_xml = CodeMirror(element, { lineWrapping: false, mode: 'xml', extraKeys: history_keys })
   cm_xml.getWrapperElement().className += ' xml_editor'
 
   let spans = state.now.spans
@@ -91,25 +91,10 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
     }
   }
 
-  cm_xml.on('change', () => {
-    try {
-      const diff = Spans.xml_to_diff(cm_xml.getDoc().getValue())
-      const res = Spans.diff_to_spans(diff)
-      console.log('xml change to', res)
-      past = past.concat([{spans, tokens}])
-      spans = res.spans
-      tokens = res.tokens
-      future = [] as State[]
-      update_view()
-    } catch (e) {
-      console.log(e)
-    }
-  })
-
   cm_main.focus()
   update_view()
 
-  function set_spans(new_spans : Span[]) {
+  function set_spans(new_spans : Span[], new_tokens?: string[]) {
     log('set_spans', new_spans)
     if (new_spans.length == 0) {
       log('not updating to empty spans')
@@ -121,6 +106,7 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
     }
     past = past.concat([{spans, tokens}])
     spans = new_spans
+    tokens = new_tokens || tokens
     future = [] as State[]
   }
   function undo() {
@@ -238,6 +224,31 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
     }
   })
 
+  cm_xml.on('beforeChange', (_, change) => {
+    const {origin} = change
+    console.log('beforeChange', change, origin)
+    if (origin == 'undo') {
+      change.cancel()
+      undo()
+    } else if (origin == 'redo') {
+      change.cancel()
+      redo()
+    }
+  })
+
+  cm_xml.on('change', (_, {origin}) => {
+    if (origin != 'setValue') {
+      try {
+        const diff = Spans.xml_to_diff(cm_xml.getDoc().getValue())
+        const res = Spans.diff_to_spans(diff)
+        log('xml change to', res, 'origin:', origin)
+        set_spans(res.spans, res.tokens)
+        update_view()
+      } catch (e) {
+        console.log(e)
+      }
+    }
+  })
 
   cm_main.on('beforeChange', (_, change) => {
     // need to do this /beforeChange/ (not after),
