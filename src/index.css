@@ -51,8 +51,26 @@
      background: #ddd
 }
 
+html, body {
+    height: 100%;
+    margin: 0px;
+}
+
 body {
     font-family: 'Fira Sans', sans-serif;
+}
+
+.vertical {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+}
+
+.grow {
+    flex-grow: 1;
+}
+
+.margin {
     margin: 10px;
 }
 
