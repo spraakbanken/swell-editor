@@ -242,8 +242,13 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
         const diff = Spans.xml_to_diff(cm_xml.getDoc().getValue())
         const res = Spans.diff_to_spans(diff)
         log('xml change to', res, 'origin:', origin)
-        set_spans(res.spans, res.tokens)
-        update_view()
+        const check = Spans.check_invariant(res.spans)
+        if (check != '') {
+          throw check
+        } else {
+          set_spans(res.spans, res.tokens)
+          update_view()
+        }
       } catch (e) {
         console.log(e)
       }

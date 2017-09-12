@@ -84,7 +84,7 @@ const gen_spans: jsc.Generator<Spans.Span[]> = jsc.generator.bless(
       if (dest != undefined) {
         return new Pair(links[dest], true)
       } else {
-        return new Pair(links[index], false)
+        return new Pair(permute(links[index])(size), false)
       }
     })
     return texts.map((t, i) => ({

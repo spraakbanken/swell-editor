@@ -15,7 +15,7 @@ export function merge_spans(spans: Span[], text: string): Span {
   return {
     text: text,
     labels: Utils.flatten(spans.map(s => s.labels)),
-    links: Utils.numsort(links),
+    links: links,
     moved: spans.some(s => s.moved) || !Utils.contiguous(links)
   }
 }
@@ -46,26 +46,22 @@ export function init(tokens: string[]): Span[] {
 /** Checks the invariants for spans, returns empty string if OK */
 export function check_invariant(spans: Span[]): string {
   for (let i = 0; i < spans.length; i++) {
-    const text = spans[i].text
+    const span = spans[i]
+    const {text, links, moved} = span
     if (!text.match(/^\S(.|\n)*\s$/)) {
       return 'Content invariant violated at index ' + i + ': ' + text
     }
-  }
-  for (let i = 0; i < spans.length; i++) {
-    const span = spans[i]
-    if (!span.moved && !Utils.contiguous(span.links)) {
+    if (!moved && !Utils.contiguous(links)) {
       return 'Links not contiguous on unmoved span at index ' + i
     }
-    if (!Utils.increases(span.links)) {
-      return 'Links not sorted at index ' + i
-    }
-    if (span.moved && span.links.length == 0) {
+    if (moved && links.length == 0) {
       return 'Span moved but without links at index ' + i
     }
-  }
-  for (let i = 0; i < spans.length; i++) {
+    if (links.some((x, xi) => links.some((y, yi) => x == y && xi != yi))) {
+      return 'Duplicate links on index ' + i + ' : ' + Utils.show(links)
+    }
     for (let j = 0; j < spans.length; j++) {
-      if (spans[i].links.some((x) => spans[j].links.some((y) => x == y)) && i != j) {
+      if (links.some((x) => spans[j].links.some((y) => x == y)) && i != j) {
         return 'Links injectivity invariant broken at indicies ' + i + ' and ' + j
       }
     }

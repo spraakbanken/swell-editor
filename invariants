@@ -42,3 +42,7 @@ Refining the invariant to no span can start with whitespace, not even
 the first. Initial whitespace on a document must be trimmed.
 (This representation allows trailing whitespace. Could make it reverse
 to allow initial whitespace)
+
+
+The links do not need to be sorted: it contains the order in which
+the tokens were when they were merged
