@@ -275,7 +275,12 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
     } else if (change.origin != 'setValue') {
       const from = cm_main.getDoc().indexFromPos(change.from)
       const to = cm_main.getDoc().indexFromPos(change.to)
-      set_spans(Spans.auto_revert(Spans.modify(spans, from, to, change.text.join('\n')), tokens))
+      set_spans(
+        Spans.chop_up_insertions(
+          Spans.auto_revert(
+            Spans.modify(spans, from, to, change.text.join('\n')),
+            tokens),
+          tokens))
       partial_update_view()
       log(spans.map(({text}) => text))
     }

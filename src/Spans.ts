@@ -146,6 +146,31 @@ export function auto_revert(spans: Span[], original: string[]): Span[] {
   })(spans)
 }
 
+/** If a span contains non-final whitespace, and is linked to exactly one word,
+and that word is the prefix or suffix, make this an insertion */
+export function chop_up_insertions(spans: Span[], original: string[]): Span[] {
+  return cursor<Span>((prev, me, next) => {
+    if (me.links.length == 1) {
+      const origin = original[me.links[0]]
+      const diff = Utils.dmp.diff_main(origin, me.text)
+      Utils.dmp.diff_cleanupEfficiency(diff)
+      if (diff.length == 2) {
+        const [[t1, s1], [t2, s2]] = diff
+        if (s1 == origin && s2.match(/\w\s$/)) {
+          return [prev].concat([{...me, text: origin},
+                                merge_spans([], s2),
+                                next])
+        } else if (s1.match(/\w\s$/) && s2 == origin) {
+          return [prev].concat([merge_spans([], s1),
+                                {...me, text: origin},
+                                next])
+        }
+      }
+    }
+    return null
+  })(spans)
+}
+
 
 /** Shuffles initial whitespace from a token to the previous one,
 or if it's the first span remove all its initial whitespace */
