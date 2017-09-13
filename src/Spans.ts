@@ -292,11 +292,11 @@ export function drop_map(diff: Diff[]): Record<string, string> {
 }
 
 // Where in the diff was I dropped?
-export function drag_map(diff: Diff[]): Record<string, Dropped> {
-  let m = {} as Record<string, Dropped>
-  diff.map((d: Diff) => {
+export function drag_map(diff: Diff[]): Record<string, [number, Dropped]> {
+  let m = {} as Record<string, [number, Dropped]>
+  diff.map((d: Diff, i: number) => {
     if (d.edit == 'Dropped') {
-      d.ids.map(id => m[id] = d)
+      d.ids.map(id => m[id] = [i, d])
     }
   })
   return m

@@ -74,9 +74,22 @@ body {
     margin: 10px;
 }
 
+.ladder-cell {
+    margin: 10px;
+    align-self: center;
+}
+
 .row {
     display: flex;
     flex-direction: row;
+}
+
+.relative {
+    position: relative;
+}
+
+.fixed {
+    position: fixed;
 }
 
 .column {

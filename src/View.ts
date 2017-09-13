@@ -10,10 +10,12 @@ import * as Utils from "./Utils"
 import { Span } from "./Spans"
 import * as ViewDiff from "./ViewDiff"
 import { log, debug } from "./dev"
+import * as Positions from "./Positions"
 
 import * as snabbdom from "snabbdom"
 import snabbdomClass from 'snabbdom/modules/class'
-import snabbdomProps from 'snabbdom/modules/props'
+import snabbdomStyle from 'snabbdom/modules/style'
+import snabbdomAttributes from 'snabbdom/modules/attributes'
 
 // no @types for prettify-xml
 declare function require(module_name: string): any
@@ -63,10 +65,11 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
   const cm_main = CodeMirror(element, { lineWrapping: true, extraKeys: history_keys })
   const cm_diff = CodeMirror(element, { lineWrapping: true, readOnly: true })
 
-  const patch = snabbdom.init([snabbdomClass])
+  const patch = snabbdom.init([snabbdomClass, snabbdomStyle, snabbdomAttributes])
   const container = document.createElement('div')
   element.appendChild(container)
   let vnode = patch(container, snabbdom.h('div'))
+  let pos_dict = Positions.init_pos_dict()
 
   const cm_xml = CodeMirror(element, { lineWrapping: false, mode: 'xml', extraKeys: history_keys })
   cm_xml.getWrapperElement().className += ' xml_editor'
@@ -92,14 +95,19 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
   function partial_update_view() {
     const diff = Spans.calculate_diff(spans, tokens)
     ViewDiff.draw_diff(diff, cm_diff)
-    const ladder = ViewDiff.ladder_diff(diff)
-    vnode = patch(vnode, ladder)
+    do {
+      pos_dict.modified = false
+      const ladder = ViewDiff.ladder_diff(diff, pos_dict)
+      vnode = patch(vnode, ladder)
+      log('patched', pos_dict.modified)
+    } while (pos_dict.modified)
     const pretty_xml = format(new XMLSerializer().serializeToString(Spans.diff_to_xml(diff)))
     if (pretty_xml != cm_xml.getDoc().getValue()) {
       const cursor = cm_xml.getDoc().getCursor()
       cm_xml.getDoc().setValue(pretty_xml)
       cm_xml.getDoc().setSelection(cursor, cursor)
     }
+    //log(Utils.show(spans))
   }
 
   cm_main.focus()
