@@ -20,11 +20,6 @@ const span = (t ?: string, cls: Record<string, boolean> = {}) =>
   t ? h('span', {class: {...cls, 'ladder-cell': true}}, t)
     : h('span', {class: {...cls, 'ladder-cell': true}})
 
-const aug = (id: string, v: VNode) => ({...v, data: {...v.data, hook: {
-  insert: (vn: VNode) => console.log('insert', id, vn.elm, (vn.elm as HTMLElement).offsetLeft, (vn.elm as HTMLElement).offsetTop),
-  postpatch: (_: any, vn: VNode) => console.log('postpatch', id, vn.elm, (vn.elm as HTMLElement).offsetLeft, (vn.elm as HTMLElement).offsetTop)
-}}})
-
 export function ladder_diff(diff: Spans.Diff[], pos_dict: Positions.PosDict): VNode {
   const m = Spans.drop_map(diff)
   const m2 = Spans.drag_map(diff)
@@ -38,11 +33,19 @@ export function ladder_diff(diff: Spans.Diff[], pos_dict: Positions.PosDict): VN
               links.push(['top'+i, 'bot'+i])
               return [span(d.source), span(d.source)]
             case 'Edited':
-              links.push(['top'+i, 'bot'+i])
+              // this is really like a drag + drop but at the same location
+              d.source.map((_, j) => links.push(['top'+i+'.'+j, 'bot'+i+'.'+j]))
               const s = d.source.join('')
               const t = d.target
               const td = Utils.token_diff(t, s)
-              return [deletes(td), inserts(td)]
+              return [
+                h('span', classes(['ladder-cell']),
+                  Utils.multi_diff(d.source, d.target).map((chunk, j) =>
+                    Positions.posid('top'+i+'.'+j, pos_dict, deletes(invert_diff(chunk))))),
+                h('span', classes(['ladder-cell']),
+                  Utils.multi_diff(d.source, d.target).map((chunk, j) =>
+                    Positions.posid_ignore_child('bot'+i+'.'+j, pos_dict, inserts(invert_diff(chunk)), 'Insert')))
+              ]
             case 'Deleted':
               return [span(d.source, {Delete: true}), span()]
             case 'Dragged':
@@ -50,11 +53,16 @@ export function ladder_diff(diff: Spans.Diff[], pos_dict: Positions.PosDict): VN
               const target = dropped.target
               const sources = dropped.ids.map(id => m[id] || '?')
               const my_pos = dropped.ids.indexOf(d.id)
-              links.push(['top'+i, 'bot'+drop_id])
+              links.push(['top'+i, 'bot'+drop_id+'.'+my_pos])
               return [deletes(invert_diff(Utils.multi_diff(sources, target)[my_pos])), span()]
             case 'Dropped':
               const source = d.ids.map(id => m[id] || '?').join('')
-              return [span(), inserts(Utils.token_diff(d.target, source))]
+              return [
+                span(),
+                h('span', classes(['ladder-cell']),
+                  Utils.multi_diff(d.ids.map(id => m[id] || '?'), d.target).map((chunk, j) =>
+                    Positions.posid_ignore_child('bot'+i+'.'+j, pos_dict, inserts(invert_diff(chunk)), 'Insert')))
+              ]     // shouldn't name initial adds
             case 'Inserted':
               return [span(), span(d.target, {Insert: true})]
             default:
@@ -68,14 +76,15 @@ export function ladder_diff(diff: Spans.Diff[], pos_dict: Positions.PosDict): VN
       const top_p = pos_dict.dict[top]
       const bot_p = pos_dict.dict[bot]
       if (top_p && bot_p) {
-        console.log(top, bot, top_p, bot_p)
         const x1 = top_p.left + top_p.width / 2
         const y1 = top_p.top + top_p.height
         const x2 = bot_p.left + bot_p.width / 2
-        const y2 = bot_p.top
+        const y2 = bot_p.top - 2
         return h('path', {attrs: {
-          d: "M" + x1 + " " + y1 + " L" + x2 + " " + y2,
-          stroke: "black"
+          d: ['M', x1, y1, 'C', x1, y1 + 25, x2, y2 - 25, x2, y2].join(' '),
+          stroke: "#777",
+          'stroke-width': '1.5',
+          fill: "none"
         }})
       } else {
         return null

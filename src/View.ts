@@ -99,7 +99,6 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
       pos_dict.modified = false
       const ladder = ViewDiff.ladder_diff(diff, pos_dict)
       vnode = patch(vnode, ladder)
-      log('patched', pos_dict.modified)
     } while (pos_dict.modified)
     const pretty_xml = format(new XMLSerializer().serializeToString(Spans.diff_to_xml(diff)))
     if (pretty_xml != cm_xml.getDoc().getValue()) {

@@ -79,6 +79,11 @@ body {
     align-self: center;
 }
 
+.ladder-cell > .ladder-cell {
+    margin: 0px;
+    align-self: center;
+}
+
 .row {
     display: flex;
     flex-direction: row;
