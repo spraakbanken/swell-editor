@@ -1,0 +1,16 @@
+
+modify: (begin end: Pos, inserted: Text, spans: Spans) -> Spans
+    // glues together merged words
+    // removes words completely gone
+
+rearrange: (begin end destination: Index, spans: Spans) -> Spans
+
+revert: (at: Index, spans: Spans, source: Tokens) -> Spans
+    // two versions: index in target, index in source
+
+autorevert: (spans: Spans, source: Tokens) -> Spans
+
+autoinsert: (spans: Spans, source: Tokens) -> Spans
+
+label: (spans: Spans, at: Index, k: Labels -> Labels) -> Spans
+
