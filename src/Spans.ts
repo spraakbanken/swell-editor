@@ -206,6 +206,9 @@ const merge_no_final_whitespace: (spans: Span[]) => Span[] =
     }
   })
 
+// Could relax move_whitespace but it makes it predictable that whitespace
+// always trails the token
+
 /** Clean up after modifications */
 function cleanup_after_raw_modifications(spans: Span[]): Span[] {
   const new_spans = merge_no_final_whitespace(remove_empty(move_whitespace(spans)))
@@ -216,6 +219,46 @@ function cleanup_after_raw_modifications(spans: Span[]): Span[] {
     //check_invariant(new_spans)
   }
   return new_spans
+}
+
+export function revert(i: number, spans: Span[], original: string[]): Span[] {
+  if (!spans[i].moved) {
+    const [before, _me, after] = Utils.splitAt3(spans, i, i + 1)
+    if (debug) {
+      if (_me.length != 1) {
+        throw 'revert splitAt3 messed up'
+      }
+      if (!Utils.contiguous(spans[i].links)) {
+        throw 'revert: not contiguous but not marked as moved (invariant fail)'
+      }
+    }
+    return [...before, ...spans[i].links.map(j => ({...merge_spans([], original[j]), links: [j]})), ...after]
+  } else if (spans[i].links.length == 0) {
+    // inserted word: reverting this means just deleting it
+    const [before, _me, after] = Utils.splitAt3(spans, i, i + 1)
+    return [...before, ...after]
+  } else {
+    const [before_me, _me, after_me] = Utils.splitAt3(spans, i, i + 1)
+    if (debug) {
+      if (_me.length != 1) {
+        throw 'revert splitAt3 messed up'
+      }
+    }
+    let spans_work = [...before_me, ...after_me]
+    spans[i].links.map(j => {
+      let p = 0
+      spans_work.map((span, i) => {
+        if (!span.moved && span.links.length > 0 && Utils.minimum(span.links) < j) {
+          p = i + 1
+        }
+      })
+      // place it at p
+      const [before_p, after_p] = Utils.splitAt(spans_work, p)
+      spans_work = [...before_p, {...merge_spans([], original[j]), links: [j]}, ...after_p]
+    })
+    return spans_work
+  }
+  return spans
 }
 
 /** The total text length */
@@ -253,7 +296,7 @@ export type Diff
   | { edit: 'Edited', target: string, source: string[] }
   | { edit: 'Deleted', source: string }
   | { edit: 'Dragged', source: string, id: string }
-  // The following two are (unlike the other four) not related to a source word
+  // The following two are (unlike the four above) not related to a source word
   | Dropped
   | { edit: 'Inserted', target: string }
 
@@ -351,6 +394,10 @@ export function calculate_diff(spans: Span[], tokens: string[]): Diff[] {
       j+=span.links.length
     } else {
       Gone()
+      if (j >= tokens.length) {
+        // debug
+        return out
+      }
     }
   }
   tokens.slice(j).map(Gone)

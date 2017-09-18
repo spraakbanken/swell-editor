@@ -57,7 +57,8 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
   while (element.lastChild && element.removeChild(element.lastChild)) {}
   const history_keys = {
     "Ctrl-Z": undo,
-    "Ctrl-Y": redo
+    "Ctrl-Y": redo,
+    "Ctrl-R": revert
   }
   console.log('debug', debug)
 
@@ -165,6 +166,16 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
     // no prevent default
     cut()
   });
+
+  function revert() {
+    const sels = cm_main.getDoc().listSelections()
+    if (sels) {
+      const {head} = sels[0]
+      const index = Spans.span_from_offset(spans, cm_main.getDoc().indexFromPos(head))[0]
+      set_spans(Spans.revert(index, spans, tokens))
+      update_view()
+    }
+  }
 
   function cut() {
     const sels = cm_main.getDoc().listSelections()

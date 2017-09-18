@@ -152,3 +152,8 @@ export function cycle<A>(n: number, xs: A[]): A[] {
   }
   return out
 }
+
+/** Minimum of a non-empty array */
+export function minimum(xs: number[]) {
+  return xs.reduce((x,y) => Math.min(x,y), xs[0])
+}
