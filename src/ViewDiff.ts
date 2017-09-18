@@ -27,6 +27,8 @@ export function ladder_diff(diff: Spans.Diff[], pos_dict: Positions.PosDict): VN
   return Positions.relative(
     table(
       diff.map((d, i) => {
+        // TODO: if we are only doing drag or drop and previous did as well,
+        // we don't need to start a new column, we can just push onto its parts
         function elements() {
           switch (d.edit) {
             case 'Unchanged':
@@ -34,10 +36,12 @@ export function ladder_diff(diff: Spans.Diff[], pos_dict: Positions.PosDict): VN
               return [span(d.source), span(d.source)]
             case 'Edited':
               // this is really like a drag + drop but at the same location
+              // share the code?
               d.source.map((_, j) => links.push(['top'+i+'.'+j, 'bot'+i+'.'+j]))
               const s = d.source.join('')
               const t = d.target
               const td = Utils.token_diff(t, s)
+              // todo: don't ignore children if d.source.length == 1
               return [
                 h('span', classes(['ladder-cell']),
                   Utils.multi_diff(d.source, d.target).map((chunk, j) =>
@@ -57,6 +61,7 @@ export function ladder_diff(diff: Spans.Diff[], pos_dict: Positions.PosDict): VN
               return [deletes(invert_diff(Utils.multi_diff(sources, target)[my_pos])), span()]
             case 'Dropped':
               const source = d.ids.map(id => m[id] || '?').join('')
+              // todo: don't ignore children if d.ids.length == 1
               return [
                 span(),
                 h('span', classes(['ladder-cell']),
@@ -80,8 +85,9 @@ export function ladder_diff(diff: Spans.Diff[], pos_dict: Positions.PosDict): VN
         const y1 = top_p.top + top_p.height
         const x2 = bot_p.left + bot_p.width / 2
         const y2 = bot_p.top - 2
+        const d = 35 * (-1 / (Math.abs(x1 - x2) + 1) + 1)
         return h('path', {attrs: {
-          d: ['M', x1, y1, 'C', x1, y1 + 25, x2, y2 - 25, x2, y2].join(' '),
+          d: ['M', x1, y1, 'C', x1, y1 + d, x2, y2 - d, x2, y2].join(' '),
           stroke: "#777",
           'stroke-width': '1.5',
           fill: "none"
