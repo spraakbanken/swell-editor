@@ -34,15 +34,18 @@ be out of order:
 Invariant: Only spans with links can be marked as moved:
 spans without links (inserted missing words) cannot.
 
-There is no way right now to introduce text that is not linked to anything
-(i.e. totally unlinked tokens)
-
-
 Refining the invariant to no span can start with whitespace, not even
 the first. Initial whitespace on a document must be trimmed.
-(This representation allows trailing whitespace. Could make it reverse
+(This representation allows trailing whitespace. Could reverse it
 to allow initial whitespace)
 
 
 The links do not need to be sorted: it contains the order in which
 the tokens were when they were merged
+
+There is a way to introduce text that is not linked to anything,
+chop_up_insertions: if a span contains non-final whitespace, and is linked to
+exactly one word, and that word is the prefix or suffix, make this an insertion
+
+
+
