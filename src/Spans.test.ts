@@ -232,11 +232,12 @@ function restrictModify(spans: Spans.Span[], r: Modify): {begin: number, end: nu
 }
 
 describe("Utils", () => {
-  jsc.property("multi_diff", jsc.nearray(nealphabet('ab ')), alphabet('ab '), (ss, s2) => {
-    const md = Utils.multi_diff(ss, s2)
+  jsc.property("multi_token_diff", jsc.nearray(nealphabet('ab ')), alphabet('ab '), (ss, s2) => {
+    const md = Utils.multi_token_diff(ss, s2)
     const info = {ss, s2, md}
     return eq(md.map(Utils.dmp.diff_text1), ss, ['ss', info]) &&
-           eq(Utils.dmp.diff_text2(Utils.flatten(md)), s2, ['s2', info])
+           eq(Utils.dmp.diff_text2(Utils.flatten(md)), s2, ['s2', info]) &&
+           eq(flatten(md), Utils.token_diff(ss.join(''), s2), ['flatten', info])
   })
 })
 

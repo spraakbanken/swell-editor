@@ -95,18 +95,22 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
   /** Updates all views but cm_main */
   function partial_update_view() {
     const diff = Spans.calculate_diff(spans, tokens)
-    ViewDiff.draw_diff(diff, cm_diff)
+    const rich_diff = Spans.enrichen_diff(diff)
+    ViewDiff.draw_diff(rich_diff, cm_diff)
     do {
       pos_dict.modified = false
-      const ladder = ViewDiff.ladder_diff(diff, pos_dict)
+      const ladder = ViewDiff.ladder_diff(rich_diff, pos_dict)
       vnode = patch(vnode, ladder)
     } while (pos_dict.modified)
+    /*
     const pretty_xml = format(new XMLSerializer().serializeToString(Spans.diff_to_xml(diff)))
     if (pretty_xml != cm_xml.getDoc().getValue()) {
       const cursor = cm_xml.getDoc().getCursor()
       cm_xml.getDoc().setValue(pretty_xml)
       cm_xml.getDoc().setSelection(cursor, cursor)
     }
+    cm_xml.getDoc().setValue(Utils.show({diff, rich_diff, spans}))
+    */
     //log(Utils.show(spans))
   }
 
@@ -266,6 +270,7 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
   })
 
   cm_xml.on('change', (_, {origin}) => {
+    /*
     if (origin != 'setValue') {
       try {
         const diff = Spans.xml_to_diff(cm_xml.getDoc().getValue())
@@ -282,6 +287,7 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
         console.log(e)
       }
     }
+    */
   })
 
   cm_main.on('beforeChange', (_, change) => {

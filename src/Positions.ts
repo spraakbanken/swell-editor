@@ -1,6 +1,7 @@
 
 import { h } from "snabbdom"
 import { VNode } from "snabbdom/vnode"
+import * as Utils from "./Utils"
 
 export interface Pos {
   left: number,
@@ -8,6 +9,10 @@ export interface Pos {
   width: number,
   height: number
 }
+
+export const hmid = (p: Pos) => p.left + p.width / 2
+
+export const bot = (p: Pos) => p.top + p.height
 
 const eq_pos = (p: Pos, q: Pos) => Object.getOwnPropertyNames(p).every((i: keyof Pos) => p[i] == q[i])
 
@@ -26,7 +31,8 @@ const update = (id: string, d: PosDict, x: HTMLElement) => {
     height: x.offsetHeight
   }
   if (!(id in d.dict) || !eq_pos(p, d.dict[id])) {
-    d.modified = true;
+    console.log('updating', id, 'to', Utils.show(p))
+    d.modified = true
     d.dict[id] = p
   }
 }
@@ -94,7 +100,7 @@ export function posid_ignore_child(id: string, d: PosDict, v: VNode, ignore_clas
 export function relative(n1: VNode, n2: VNode): VNode {
   return (
     h('div',
-      {style: {position: 'relative'}},
+      {style: {position: 'relative', overflow: 'overlay', 'overflow-y': 'hidden'}},
       [ n1,
         h('div', {style: {position: 'absolute', top: '0', left: '0', width: '100%', height: '100%'}}, [n2])
       ])

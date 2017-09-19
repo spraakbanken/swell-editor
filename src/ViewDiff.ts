@@ -1,17 +1,14 @@
 import * as CodeMirror from "codemirror"
 import * as Spans from "./Spans"
 import * as Utils from "./Utils"
+import { TokenDiff }  from "./Utils"
 import * as Positions from "./Positions"
 import { h } from "snabbdom"
 import { VNode } from "snabbdom/vnode"
 
-// NOTE: diff refers to two different things in this module:
-// the diff calculated by Spans.calculate_diff, and
-// diffs within tokens calculated by diff_match_patch.
-
-function table(rows: VNode[][]): VNode {
-  return h('div', {class: {row: true}, style: {height: '120px'}},
-    rows.map(row => h('div', {class: {column: true}}, row)))
+function table(cols: VNode[][]): VNode {
+  return h('div', {class: {row: true}, style: {height: '120px', 'margin-bottom': '10px'}},
+    cols.map(col => h('div', {class: {column: true}}, col)))
 }
 
 // todo: keys on VNodes
@@ -20,71 +17,133 @@ const span = (t ?: string, cls: Record<string, boolean> = {}) =>
   t ? h('span', {class: {...cls, 'ladder-cell': true}}, t)
     : h('span', {class: {...cls, 'ladder-cell': true}})
 
-export function ladder_diff(diff: Spans.Diff[], pos_dict: Positions.PosDict): VNode {
-  const m = Spans.drop_map(diff)
-  const m2 = Spans.drag_map(diff)
-  const links = [] as [string, string][]
-  return Positions.relative(
-    table(
-      diff.map((d, i) => {
-        // TODO: if we are only doing drag or drop and previous did as well,
-        // we don't need to start a new column, we can just push onto its parts
-        function elements() {
-          switch (d.edit) {
-            case 'Unchanged':
-              links.push(['top'+i, 'bot'+i])
-              return [span(d.source), span(d.source)]
-            case 'Edited':
-              // this is really like a drag + drop but at the same location
-              // share the code?
-              d.source.map((_, j) => links.push(['top'+i+'.'+j, 'bot'+i+'.'+j]))
-              const s = d.source.join('')
-              const t = d.target
-              const td = Utils.token_diff(t, s)
-              // todo: don't ignore children if d.source.length == 1
-              return [
-                h('span', classes(['ladder-cell']),
-                  Utils.multi_diff(d.source, d.target).map((chunk, j) =>
-                    Positions.posid('top'+i+'.'+j, pos_dict, deletes(invert_diff(chunk))))),
-                h('span', classes(['ladder-cell']),
-                  Utils.multi_diff(d.source, d.target).map((chunk, j) =>
-                    Positions.posid_ignore_child('bot'+i+'.'+j, pos_dict, inserts(invert_diff(chunk)), 'Insert')))
-              ]
-            case 'Deleted':
-              return [span(d.source, {Delete: true}), span()]
-            case 'Dragged':
-              const [drop_id, dropped] = m2[d.id]
-              const target = dropped.target
-              const sources = dropped.ids.map(id => m[id] || '?')
-              const my_pos = dropped.ids.indexOf(d.id)
-              links.push(['top'+i, 'bot'+drop_id+'.'+my_pos])
-              return [deletes(invert_diff(Utils.multi_diff(sources, target)[my_pos])), span()]
-            case 'Dropped':
-              const source = d.ids.map(id => m[id] || '?').join('')
-              // todo: don't ignore children if d.ids.length == 1
-              return [
-                span(),
-                h('span', classes(['ladder-cell']),
-                  Utils.multi_diff(d.ids.map(id => m[id] || '?'), d.target).map((chunk, j) =>
-                    Positions.posid_ignore_child('bot'+i+'.'+j, pos_dict, inserts(invert_diff(chunk)), 'Insert')))
-              ]     // shouldn't name initial adds
-            case 'Inserted':
-              return [span(), span(d.target, {Insert: true})]
-            default:
-              return d
+const avg = (xs: number[]) => {
+  if (xs.length == 0) {
+    return null
+  } else {
+    return xs.reduce((x,y) => x+y, 0) / xs.length
+  }
+}
+
+type Link
+  = { type: 'segment', from: string, to: string }
+  | { type: 'upper', from: string, converge: string }
+  | { type: 'lower', to: string, converge: string }
+
+export function ladder_diff(diff: Spans.RichDiff[], pos_dict: Positions.PosDict): VNode {
+  const links = [] as Link[]
+  // If we are only doing drag or drop and previous did as well,
+  // we don't need to start a new column, we can just push onto its parts
+  let last_moved = false
+  const cols = [] as [VNode[], VNode[]][]
+  const name = (vnode: VNode, prefix: string, i: number, j: number|undefined = undefined) => {
+    return Positions.posid(prefix+i+(j == undefined ? '' : '.'+j), pos_dict, vnode)
+  }
+  diff.map((d, i) => {
+    function elements(): [VNode | null, VNode | null] {
+      switch (d.edit) {
+        case 'Unchanged':
+          links.push({ type: 'segment', from: 'top'+i, to: 'bot'+i })
+          return [
+            name(span(d.source), 'top', i),
+            name(span(d.source), 'bot', i)
+          ]
+        case 'Edited':
+          if (d.target.length == 1 && d.source.length == 1) {
+            links.push({ type: 'segment', from: 'top'+i, to: 'bot'+i })
+          } else {
+            const converge = 'edit'+i
+            d.source.map((_, j) => links.push({ type: 'upper', from: 'top'+i+'.'+j, converge }))
+            d.target.map((_, j) => links.push({ type: 'lower', to: 'bot'+i+'.'+j, converge }))
           }
-        }
-        const [top, bot] = elements()
-        return [Positions.posid('top'+i, pos_dict, top), Positions.posid('bot'+i, pos_dict, bot)]
-      })),
-    h('svg', {style: {width: '100%'}}, links.map(([top, bot]) => {
-      const top_p = pos_dict.dict[top]
-      const bot_p = pos_dict.dict[bot]
-      if (top_p && bot_p) {
-        const x1 = top_p.left + top_p.width / 2
-        const y1 = top_p.top + top_p.height
-        const x2 = bot_p.left + bot_p.width / 2
-        const y2 = bot_p.top - 2
+          return [
+            name(h('span', {class: {'ladder-cell': true}}, d.source_diffs.map(deletes).map((xs, j) => name(h('span', xs), 'top', i, j))), 'top', i),
+            name(h('span', {class: {'ladder-cell': true}}, d.target_diffs.map(inserts).map((xs, j) => name(h('span', xs), 'bot', i, j))), 'bot', i)
+          ]
+        case 'Deleted':
+          return [span(d.source, {Delete: true}), null]
+        case 'Dragged':
+          links.push({type: 'upper', from: 'top'+i, converge: d.join_id})
+          return [name(h('span', {class: {'ladder-cell': true}}, deletes(d.source_diff)), 'top', i), null]
+        case 'Dropped':
+          links.push({type: 'lower', to: 'bot'+i, converge: d.join_id})
+          return [null, name(h('span', {class: {'ladder-cell': true}}, inserts(d.target_diff)), 'bot', i)]
+        case 'Inserted':
+          return [null, span(d.target, {Insert: true})]
+        default:
+          return d
+      }
+    }
+    const [top, bot] = elements().map(x => x == null ? [] : [x])
+    const moved = d.edit == 'Dragged' || d.edit == 'Dropped' || d.edit == 'Inserted' || d.edit == 'Deleted'
+    if (moved && last_moved) {
+      cols[cols.length-1][0].push(...top)
+      cols[cols.length-1][1].push(...bot)
+    } else {
+      cols.push([top, bot])
+    }
+    last_moved = moved
+  })
+  const ladder = table(cols.map(([u, d], i) => [
+    h('span', {style: {'align-self': 'center', 'display': 'flex'}}, u),
+    h('span', {style: {'align-self': 'center', 'display': 'flex'}}, d)
+  ]))
+  const m = {} as Record<string, number[]>
+  links.map(link => {
+    console.log(link)
+    if (link.type == 'upper') {
+      const c = link.converge;
+      if (link.from in pos_dict.dict) {
+        (m[c] || (m[c] = [])).push(Positions.hmid(pos_dict.dict[link.from]));
+      }
+    } else if (link.type == 'lower') {
+      const c = link.converge;
+      if (link.to in pos_dict.dict) {
+        (m[c] || (m[c] = [])).push(Positions.hmid(pos_dict.dict[link.to]));
+      }
+    }
+  })
+
+  const svg =
+    h('svg', {style: {width: '100%'}}, links.map(link => {
+      if (link.type == 'upper') {
+        const top = pos_dict.dict[link.from]
+        if (!top) return;
+        const x1 = Positions.hmid(top)
+        const y1 = Positions.bot(top)
+        const x2 = avg(m[link.converge])
+        const y2 = y1 + 30 // lol
+        const d = 15
+        if (x2 == null) return
+        return h('path', {attrs: {
+          d: ['M', x1, y1, 'Q', x1, y1 + d, x2, y2].join(' '),
+          stroke: "#777",
+          'stroke-width': '1.5',
+          fill: "none"
+        }})
+      } else if (link.type == 'lower') {
+        const bot = pos_dict.dict[link.to]
+        if (!bot) return;
+        const x1 = Positions.hmid(bot)
+        const y1 = bot.top - 2
+        const x2 = avg(m[link.converge])
+        const y2 = y1 - 30 // lol
+        const d = -15
+        if (x2 == null) return
+        return h('path', {attrs: {
+          d: ['M', x1, y1, 'Q', x1, y1 + d, x2, y2].join(' '),
+          stroke: "#777",
+          'stroke-width': '1.5',
+          fill: "none"
+        }})
+      } else if (link.type == 'segment') {
+        const top = pos_dict.dict[link.from]
+        const bot = pos_dict.dict[link.to]
+        if (!top || !bot) return;
+        const x1 = Positions.hmid(top)
+        const y1 = Positions.bot(top)
+        const x2 = Positions.hmid(bot)
+        const y2 = bot.top - 2
         const d = 35 * (-1 / (Math.abs(x1 - x2) + 1) + 1)
         return h('path', {attrs: {
           d: ['M', x1, y1, 'C', x1, y1 + d, x2, y2 - d, x2, y2].join(' '),
@@ -92,21 +151,17 @@ export function ladder_diff(diff: Spans.Diff[], pos_dict: Positions.PosDict): VN
           'stroke-width': '1.5',
           fill: "none"
         }})
-      } else {
-        return null
       }
     }).filter(x => x != null))
-  )
+  return Positions.relative(ladder, svg)
 }
 
-const invert_diff = (ds : [number, string][]) => ds.map(([i, s]) => [-i, s] as [number, string])
-
 const diff_to_spans = (rules: (string | null)[]) => (d: [number, string][]) =>
-  h('span', classes(['ladder-cell']), diff_helper(d, rules, (text, cls) => h('span', classes([cls]), text)))
+  diff_helper(d, rules, (text, cls) => h('span', classes([cls]), text))
 
-const inserts = diff_to_spans(['Insert', '', null])
+const inserts = diff_to_spans([null, '', 'Insert'])
 
-const deletes = diff_to_spans([null, '', 'Delete'])
+const deletes = diff_to_spans(['Delete', '', null])
 
 function diff_helper<A>(token_diff: [number, string][], rules: (string | null)[], cb: (text: string, className: string) => A): A[] {
   const out = [] as A[]
@@ -125,9 +180,23 @@ function classes(cls: string[]): {class: Record<string, boolean>} {
   return {class: d}
 }
 
+const diff_and_whitespace = (diff: TokenDiff) => {
+  if (diff.length == 0) {
+    return {diff, whitespace: ''}
+  } else {
+    const [type, string] = diff[diff.length - 1]
+    const [word, whitespace] = Utils.whitespace_split(string)
+    const init = diff.slice(0, diff.length-1)
+    if (word.length > 0) {
+      return {diff: [...init, [type, word]] as TokenDiff, whitespace}
+    } else {
+      return {diff: init, whitespace}
+    }
+  }
+}
+
 /** Draws a diff onto a code mirror */
-export const draw_diff = (diff: Spans.Diff[], editor: CodeMirror.Editor) => editor.operation(() => {
-  // TODO: Renumber all ids so they are contiguous and monotone
+export const draw_diff = (diff: Spans.RichDiff[], editor: CodeMirror.Editor) => editor.operation(() => {
   const diff_doc = editor.getDoc()
   diff_doc.setValue('')
   diff_doc.getAllMarks().map((m) => m.clear())
@@ -139,34 +208,32 @@ export const draw_diff = (diff: Spans.Diff[], editor: CodeMirror.Editor) => edit
       diff_doc.markText(begin, end, {className})
     }
   }
-  function push_diff(source: string, target: string, className: string = '') {
-    diff_helper(Utils.token_diff(target, source), [' Insert', '', ' Delete'], (text, cls) => push(text, className + cls))
+  function push_diff(token_diff: TokenDiff, className: string = '') {
+    diff_helper(token_diff, [' Delete', '', ' Insert'], (text, cls) => push(text, className + cls))
   }
-  const m = Spans.drop_map(diff)
-  let i = 0
   const rename_map = {} as {[x: string]: string}
-  const rename = (id: string) => {
-    if (!(id in rename_map)) {
-      rename_map[id] = ++i + ''
+  let i = 0
+  diff.map(d => {
+    if (d.edit == 'Dropped') {
+      d.ids.map(id => id in rename_map || (rename_map[id] = ++i + ''))
     }
-    return rename_map[id]
-  }
+  })
+  const rename = (id: string) => rename_map[id] || '?'
   diff.map(d => {
     if (d.edit == 'Unchanged') {
       push(d.source)
     } else if (d.edit == 'Edited') {
-      push_diff(d.source.join(''), d.target)
+      push_diff(Utils.token_diff(d.source.join(''), d.target.join('')))
     } else if (d.edit == 'Dropped') {
-      const [target, target_ws] = Utils.whitespace_split(d.target)
-      const source = d.ids.map(id => m[id] || '?').join('')
-      push_diff(Utils.whitespace_split(source)[0], target, 'Dropped')
+      const m = diff_and_whitespace(d.target_diff.filter(([t, _]) => t != -1))
+      push_diff(m.diff, 'Dropped')
       push(d.ids.map(rename).join(','), 'Subscript')
-      push(target_ws)
+      push(m.whitespace)
     } else if (d.edit == 'Dragged') {
-      const [s, t] = Utils.whitespace_split(d.source)
-      push(s, 'Dragged')
+      const m = diff_and_whitespace(d.source_diff.filter(([t, _]) => t != 1))
+      push_diff(m.diff, 'Dragged')
       push(rename(d.id), 'Subscript')
-      push(t)
+      push(m.whitespace)
     } else if (d.edit == 'Inserted') {
       const [s, t] = Utils.whitespace_split(d.target)
       push(s, 'Insert')

@@ -27,6 +27,7 @@
     font-family: 'Consolas', monospace;
     width: 98%;
     height: 600px;
+    display: none;
 }
 
 .CodeMirror {
