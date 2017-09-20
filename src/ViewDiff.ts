@@ -7,15 +7,15 @@ import { h } from "snabbdom"
 import { VNode } from "snabbdom/vnode"
 
 function table(cols: VNode[][]): VNode {
-  return h('div', {class: {row: true}, style: {height: '120px', 'margin-bottom': '10px'}},
+  return h('div', {class: {row: true, LadderOuter: true}},
     cols.map(col => h('div', {class: {column: true}}, col)))
 }
 
 // todo: keys on VNodes
 
 const span = (t ?: string, cls: Record<string, boolean> = {}) =>
-  t ? h('span', {class: {...cls, 'ladder-cell': true}}, t)
-    : h('span', {class: {...cls, 'ladder-cell': true}})
+  t ? h('span', {class: {...cls, LadderCell: true}}, t)
+    : h('span', {class: {...cls, LadderCell: true}})
 
 const avg = (xs: number[]) => {
   if (xs.length == 0) {
@@ -57,17 +57,17 @@ export function ladder_diff(diff: Spans.RichDiff[], pos_dict: Positions.PosDict)
             d.target.map((_, j) => links.push({ type: 'lower', to: 'bot'+i+'.'+j, converge }))
           }
           return [
-            name(h('span', {class: {'ladder-cell': true}}, d.source_diffs.map(deletes).map((xs, j) => name(h('span', xs), 'top', i, j))), 'top', i),
-            name(h('span', {class: {'ladder-cell': true}}, d.target_diffs.map(inserts).map((xs, j) => name(h('span', xs), 'bot', i, j))), 'bot', i)
+            name(h('span', {class: {LadderCell: true}}, d.source_diffs.map(deletes).map((xs, j) => name(h('span', xs), 'top', i, j))), 'top', i),
+            name(h('span', {class: {LadderCell: true}}, d.target_diffs.map(inserts).map((xs, j) => name(h('span', xs), 'bot', i, j))), 'bot', i)
           ]
         case 'Deleted':
           return [span(d.source, {Delete: true}), null]
         case 'Dragged':
           links.push({type: 'upper', from: 'top'+i, converge: d.join_id})
-          return [name(h('span', {class: {'ladder-cell': true}}, deletes(d.source_diff)), 'top', i), null]
+          return [name(h('span', {class: {LadderCell: true}}, deletes(d.source_diff)), 'top', i), null]
         case 'Dropped':
           links.push({type: 'lower', to: 'bot'+i, converge: d.join_id})
-          return [null, name(h('span', {class: {'ladder-cell': true}}, inserts(d.target_diff)), 'bot', i)]
+          return [null, name(h('span', {class: {LadderCell: true}}, inserts(d.target_diff)), 'bot', i)]
         case 'Inserted':
           return [null, span(d.target, {Insert: true})]
         default:
@@ -84,10 +84,10 @@ export function ladder_diff(diff: Spans.RichDiff[], pos_dict: Positions.PosDict)
     }
     last_moved = moved
   })
-  const ladder = table(cols.map(([u, d], i) => [
-    h('span', {style: {'align-self': 'center', 'display': 'flex'}}, u),
-    h('span', {style: {'align-self': 'center', 'display': 'flex'}}, d)
-  ]))
+  const ladder = Positions.posid('table', pos_dict, table(cols.map(([u, d]) => [
+    h('span', {class: {CenterCell: true}}, u),
+    h('span', {class: {CenterCell: true}}, d)
+  ])))
   const m = {} as Record<string, number[]>
   links.map(link => {
     console.log(link)
@@ -103,16 +103,18 @@ export function ladder_diff(diff: Spans.RichDiff[], pos_dict: Positions.PosDict)
       }
     }
   })
+  const table_pos = pos_dict.dict['table']
+  const ym = table_pos ? Positions.vmid(table_pos) - 2 : null
 
-  const svg =
-    h('svg', {style: {width: '100%'}}, links.map(link => {
+  const svg = ym == null ? h('span') :
+    h('svg', {class: {Width100Pct: true}}, links.map(link => {
       if (link.type == 'upper') {
         const top = pos_dict.dict[link.from]
         if (!top) return;
         const x1 = Positions.hmid(top)
         const y1 = Positions.bot(top)
         const x2 = avg(m[link.converge])
-        const y2 = y1 + 30 // lol
+        const y2 = ym
         const d = 15
         if (x2 == null) return
         return h('path', {attrs: {
@@ -127,7 +129,7 @@ export function ladder_diff(diff: Spans.RichDiff[], pos_dict: Positions.PosDict)
         const x1 = Positions.hmid(bot)
         const y1 = bot.top - 2
         const x2 = avg(m[link.converge])
-        const y2 = y1 - 30 // lol
+        const y2 = ym
         const d = -15
         if (x2 == null) return
         return h('path', {attrs: {

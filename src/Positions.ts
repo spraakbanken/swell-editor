@@ -12,6 +12,8 @@ export interface Pos {
 
 export const hmid = (p: Pos) => p.left + p.width / 2
 
+export const vmid = (p: Pos) => p.top + p.height / 2
+
 export const bot = (p: Pos) => p.top + p.height
 
 const eq_pos = (p: Pos, q: Pos) => Object.getOwnPropertyNames(p).every((i: keyof Pos) => p[i] == q[i])
@@ -100,9 +102,9 @@ export function posid_ignore_child(id: string, d: PosDict, v: VNode, ignore_clas
 export function relative(n1: VNode, n2: VNode): VNode {
   return (
     h('div',
-      {style: {position: 'relative', overflow: 'overlay', 'overflow-y': 'hidden'}},
+      {class: {RelativeOuter: true}},
       [ n1,
-        h('div', {style: {position: 'absolute', top: '0', left: '0', width: '100%', height: '100%'}}, [n2])
+        h('div', {class: {RelativeInner: true}}, [n2])
       ])
   )
 }
