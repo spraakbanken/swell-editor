@@ -33,7 +33,7 @@ const update = (id: string, d: PosDict, x: HTMLElement) => {
     height: x.offsetHeight
   }
   if (!(id in d.dict) || !eq_pos(p, d.dict[id])) {
-    console.log('updating', id, 'to', Utils.show(p))
+    //console.log('updating', id, 'to', Utils.show(p))
     d.modified = true
     d.dict[id] = p
   }
@@ -99,10 +99,10 @@ export function posid_ignore_child(id: string, d: PosDict, v: VNode, ignore_clas
   return posid(id, d, v)
 }
 
-export function relative(n1: VNode, n2: VNode): VNode {
+export function relative(n1: VNode, n2: VNode, classes: Record<string, boolean> = {}): VNode {
   return (
     h('div',
-      {class: {RelativeOuter: true}},
+      {class: {RelativeOuter: true, ...classes}},
       [ n1,
         h('div', {class: {RelativeInner: true}}, [n2])
       ])

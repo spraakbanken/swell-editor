@@ -23,7 +23,11 @@
     padding-left: 1px;
 }
 
-.CodeMirror.xml_editor {
+.CodeMirror, body {
+    font-family: 'Source Sans Pro', sans-serif;
+}
+
+.CodeMirror.cm_xml {
     font-family: 'Consolas', monospace;
     width: 98%;
     height: 600px;
@@ -31,7 +35,6 @@
 }
 
 .CodeMirror {
-    font-family: 'Fira Sans', sans-serif;
     font-size: 16px;
     border: 1px solid #ddd;
     width: 32%;
@@ -49,7 +52,7 @@
 .cut {
      border-bottom: 1px dotted #aaa;
      border-top: 1px dotted #aaa;
-     background: #ddd
+     background: #ddddd88;
 }
 
 html, body {
@@ -57,9 +60,6 @@ html, body {
     margin: 0px;
 }
 
-body {
-    font-family: 'Fira Sans', sans-serif;
-}
 
 .vertical {
     display: -webkit-flex;
@@ -77,9 +77,11 @@ body {
     margin: 10px;
 }
 
-.LadderOuter {
+.LadderTable {
     height: 120px;
     margin-bottom: 10px;
+    width: -webkit-fit-content;
+    width: fit-content;
 }
 
 .CenterCell {
@@ -93,6 +95,8 @@ body {
     margin: 5px;
     -webkit-align-self: center;
     align-self: center;
+    display: -webkit-flex;
+    display: flex;
 }
 
 .row {

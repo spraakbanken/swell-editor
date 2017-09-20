@@ -156,10 +156,11 @@ export function auto_revert(spans: Span[], original: string[]): Span[] {
 and that word is the prefix or suffix, make this an insertion */
 export function chop_up_insertions(spans: Span[], original: string[]): Span[] {
   return cursor<Span>((prev, me, next) => {
-    const m = me.text.match(/\w\s\w/)
+    const m = me.text.match(/\S\s\S/)
     if (m && m.index != undefined) {
       const [w1, w2] = Utils.stringSplitAt(me.text, m.index + 2)
       const wo = me.links.map(j => original[j]).join('')
+      console.log({wo, w1, w2})
       if (wo == w1) {
         return [prev, {...me, text: w1}, merge_spans([], w2), next]
       } else if (wo == w2) {

@@ -53,8 +53,10 @@ export function init_data(original: string): UndoableState {
   return {now: {tokens, spans}, past: [] as State[], future: [] as State[]}
 }
 
-export function bind(element: HTMLElement, state: UndoableState): () => UndoableState {
-  while (element.lastChild && element.removeChild(element.lastChild)) {}
+export function bind(root_element: HTMLElement, state: UndoableState): () => UndoableState {
+  while (root_element.lastChild) {
+    root_element.removeChild(root_element.lastChild)
+  }
   const history_keys = {
     "Ctrl-Z": undo,
     "Ctrl-Y": redo,
@@ -62,21 +64,27 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
   }
   console.log('debug', debug)
 
-  const cm_orig = CodeMirror(element, { lineWrapping: true, readOnly: true })
-  const cm_main = CodeMirror(element, { lineWrapping: true, extraKeys: history_keys })
-  const cm_diff = CodeMirror(element, { lineWrapping: true, readOnly: true })
+  const CM = (name: string, opts: CodeMirror.EditorConfiguration) => {
+    const cm = CodeMirror(root_element, {lineWrapping: true, ...opts})
+    cm.getWrapperElement().className += ' ' + name
+    return cm
+  }
+
+  const cm_orig = CM('cm_orig', {readOnly: true})
+  const cm_main = CM('cm_main', {extraKeys: history_keys})
+  const cm_diff = CM('cm_diff', {readOnly: true})
 
   const patch = snabbdom.init([snabbdomClass, snabbdomStyle, snabbdomAttributes])
   const container = document.createElement('div')
-  element.appendChild(container)
+  root_element.appendChild(container)
   let vnode = patch(container, snabbdom.h('div'))
   let pos_dict = Positions.init_pos_dict()
 
-  const cm_xml = CodeMirror(element, { lineWrapping: false, mode: 'xml', extraKeys: history_keys })
-  cm_xml.getWrapperElement().className += ' xml_editor'
+  const cm_xml = CM('cm_xml', {lineWrapping: false, mode: 'xml', extraKeys: history_keys})
 
   let spans = state.now.spans
   let tokens = state.now.tokens
+  log(JSON.stringify({spans, tokens}))
   let past = state.past.slice()
   let future = state.future.slice()
 
@@ -87,7 +95,7 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
     const upd = spans.map(s => s.text).join('')
     cm_orig.getDoc().setValue(tokens.join(''))
     cm_main.getDoc().setValue(upd.slice(0, upd.length - 1))
-    log('cm_main value:', cm_main.getDoc().getValue())
+    //log('cm_main value:', cm_main.getDoc().getValue())
     cm_main.getDoc().setSelection(cursor, cursor)
     partial_update_view()
   }
@@ -118,7 +126,7 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
   update_view()
 
   function set_spans(new_spans : Span[], new_tokens?: string[]) {
-    log('set_spans', new_spans)
+    log(JSON.stringify({spans, tokens}))
     if (new_spans.length == 0) {
       log('not updating to empty spans')
       // update_view will be run on('change')
@@ -132,6 +140,7 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
     tokens = new_tokens || tokens
     future = [] as State[]
   }
+  (window as any).set_state = (s: Span[], t: string[]) => { set_spans(s,t); update_view(); }
   function undo() {
     const new_state = past.pop()
     if (new_state) {
@@ -247,7 +256,7 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
   cm_main.on('update', () => {
     const lhs = spans.map(s => s.text).join('')
     const rhs = cm_main.getDoc().getValue() + ' '
-    log('update', Utils.show({lhs, rhs}))
+    //log('update', Utils.show({lhs, rhs}))
     if (rhs != lhs && (Utils.ltrim(rhs) == lhs || Utils.ltrim(rhs) == '')) {
       // everything deleted! just update view
       cm_main.getDoc().setValue(lhs.slice(0, lhs.length - 1))
@@ -259,7 +268,7 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
 
   cm_xml.on('beforeChange', (_, change) => {
     const {origin} = change
-    console.log('beforeChange', change, origin)
+    //console.log('beforeChange', change, origin)
     if (origin == 'undo') {
       change.cancel()
       undo()
@@ -294,7 +303,7 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
     // need to do this /beforeChange/ (not after),
     // otherwise indexFromPos does not work anymore
     // since the position might be removed
-    log('beforeChange', change.origin, change)
+    //log('beforeChange', change.origin, change)
 
     if (change.origin == 'undo') {
       log('undo')
@@ -322,7 +331,7 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
             tokens),
           tokens))
       partial_update_view()
-      log(spans.map(({text}) => text))
+      //log(spans.map(({text}) => text))
     }
   })
 

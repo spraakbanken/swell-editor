@@ -6,8 +6,8 @@ import * as Positions from "./Positions"
 import { h } from "snabbdom"
 import { VNode } from "snabbdom/vnode"
 
-function table(cols: VNode[][]): VNode {
-  return h('div', {class: {row: true, LadderOuter: true}},
+function table(cols: VNode[][], cls: Record<string, boolean> = {}): VNode {
+  return h('div', {class: {row: true, ...cls}},
     cols.map(col => h('div', {class: {column: true}}, col)))
 }
 
@@ -39,7 +39,7 @@ export function ladder_diff(diff: Spans.RichDiff[], pos_dict: Positions.PosDict)
   const name = (vnode: VNode, prefix: string, i: number, j: number|undefined = undefined) => {
     return Positions.posid(prefix+i+(j == undefined ? '' : '.'+j), pos_dict, vnode)
   }
-  diff.map((d, i) => {
+  diff.slice(0, 30).map((d, i) => {
     function elements(): [VNode | null, VNode | null] {
       switch (d.edit) {
         case 'Unchanged':
@@ -57,8 +57,8 @@ export function ladder_diff(diff: Spans.RichDiff[], pos_dict: Positions.PosDict)
             d.target.map((_, j) => links.push({ type: 'lower', to: 'bot'+i+'.'+j, converge }))
           }
           return [
-            name(h('span', {class: {LadderCell: true}}, d.source_diffs.map(deletes).map((xs, j) => name(h('span', xs), 'top', i, j))), 'top', i),
-            name(h('span', {class: {LadderCell: true}}, d.target_diffs.map(inserts).map((xs, j) => name(h('span', xs), 'bot', i, j))), 'bot', i)
+            name(h('span', {class: {CenterCell: true}}, d.source_diffs.map(deletes).map((xs, j) => name(h('span', {class: {LadderCell: true}}, xs), 'top', i, j))), 'top', i),
+            name(h('span', {class: {CenterCell: true}}, d.target_diffs.map(inserts).map((xs, j) => name(h('span', {class: {LadderCell: true}}, xs), 'bot', i, j))), 'bot', i)
           ]
         case 'Deleted':
           return [span(d.source, {Delete: true}), null]
@@ -87,10 +87,10 @@ export function ladder_diff(diff: Spans.RichDiff[], pos_dict: Positions.PosDict)
   const ladder = Positions.posid('table', pos_dict, table(cols.map(([u, d]) => [
     h('span', {class: {CenterCell: true}}, u),
     h('span', {class: {CenterCell: true}}, d)
-  ])))
+  ]), {LadderTable: true}))
   const m = {} as Record<string, number[]>
   links.map(link => {
-    console.log(link)
+    //console.log(link)
     if (link.type == 'upper') {
       const c = link.converge;
       if (link.from in pos_dict.dict) {
@@ -127,7 +127,7 @@ export function ladder_diff(diff: Spans.RichDiff[], pos_dict: Positions.PosDict)
         const bot = pos_dict.dict[link.to]
         if (!bot) return;
         const x1 = Positions.hmid(bot)
-        const y1 = bot.top - 2
+        const y1 = bot.top
         const x2 = avg(m[link.converge])
         const y2 = ym
         const d = -15
@@ -145,7 +145,7 @@ export function ladder_diff(diff: Spans.RichDiff[], pos_dict: Positions.PosDict)
         const x1 = Positions.hmid(top)
         const y1 = Positions.bot(top)
         const x2 = Positions.hmid(bot)
-        const y2 = bot.top - 2
+        const y2 = bot.top
         const d = 35 * (-1 / (Math.abs(x1 - x2) + 1) + 1)
         return h('path', {attrs: {
           d: ['M', x1, y1, 'C', x1, y1 + d, x2, y2 - d, x2, y2].join(' '),
@@ -155,7 +155,7 @@ export function ladder_diff(diff: Spans.RichDiff[], pos_dict: Positions.PosDict)
         }})
       }
     }).filter(x => x != null))
-  return Positions.relative(ladder, svg)
+  return Positions.relative(ladder, svg, {LadderRoot: true})
 }
 
 const diff_to_spans = (rules: (string | null)[]) => (d: [number, string][]) =>
