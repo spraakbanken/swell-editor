@@ -50,7 +50,7 @@ export function ladder_diff(diff: Spans.RichDiff[], pos_dict: Positions.PosDict)
           ]
         case 'Edited':
           if (d.target.length == 1 && d.source.length == 1) {
-            links.push({ type: 'segment', from: 'top'+i, to: 'bot'+i })
+            links.push({ type: 'segment', from: 'top'+i+'.0', to: 'bot'+i+'.0' })
           } else {
             const converge = 'edit'+i
             d.source.map((_, j) => links.push({ type: 'upper', from: 'top'+i+'.'+j, converge }))
