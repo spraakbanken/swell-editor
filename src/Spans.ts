@@ -160,7 +160,7 @@ export function chop_up_insertions(spans: Span[], original: string[]): Span[] {
     if (m && m.index != undefined) {
       const [w1, w2] = Utils.stringSplitAt(me.text, m.index + 2)
       const wo = me.links.map(j => original[j]).join('')
-      console.log({wo, w1, w2})
+      //console.log({wo, w1, w2})
       if (wo == w1) {
         return [prev, {...me, text: w1}, merge_spans([], w2), next]
       } else if (wo == w2) {

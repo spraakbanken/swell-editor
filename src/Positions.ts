@@ -2,6 +2,7 @@
 import { h } from "snabbdom"
 import { VNode } from "snabbdom/vnode"
 import * as Utils from "./Utils"
+import * as Classes from "./Classes"
 
 export interface Pos {
   left: number,
@@ -99,12 +100,12 @@ export function posid_ignore_child(id: string, d: PosDict, v: VNode, ignore_clas
   return posid(id, d, v)
 }
 
-export function relative(n1: VNode, n2: VNode, classes: Record<string, boolean> = {}): VNode {
+export function relative(n1: VNode, n2: VNode, classes: string[] = []): VNode {
   return (
     h('div',
-      {class: {RelativeOuter: true, ...classes}},
+      {classes: [Classes.RelativeOuter, ...classes]},
       [ n1,
-        h('div', {class: {RelativeInner: true}}, [n2])
+        h('div', {classes: [Classes.RelativeInner]}, [n2])
       ])
   )
 }

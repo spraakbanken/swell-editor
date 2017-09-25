@@ -7,13 +7,14 @@ import * as CodeMirror from "codemirror"
 import { Editor } from "codemirror"
 import * as Spans from "./Spans"
 import * as Utils from "./Utils"
+import { classes_module } from './Classes'
 import { Span } from "./Spans"
 import * as ViewDiff from "./ViewDiff"
 import { log, debug } from "./dev"
 import * as Positions from "./Positions"
+import * as typestyle from "typestyle"
 
 import * as snabbdom from "snabbdom"
-import snabbdomClass from 'snabbdom/modules/class'
 import snabbdomStyle from 'snabbdom/modules/style'
 import snabbdomAttributes from 'snabbdom/modules/attributes'
 
@@ -74,7 +75,7 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
   const cm_main = CM('cm_main', {extraKeys: history_keys})
   const cm_diff = CM('cm_diff', {readOnly: true})
 
-  const patch = snabbdom.init([snabbdomClass, snabbdomStyle, snabbdomAttributes])
+  const patch = snabbdom.init([classes_module, snabbdomStyle, snabbdomAttributes])
   const container = document.createElement('div')
   root_element.appendChild(container)
   let vnode = patch(container, snabbdom.h('div'))
@@ -105,10 +106,12 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
     const diff = Spans.calculate_diff(spans, tokens)
     const rich_diff = Spans.enrichen_diff(diff)
     ViewDiff.draw_diff(rich_diff, cm_diff)
+    typestyle.forceRenderStyles()
     do {
       pos_dict.modified = false
       const ladder = ViewDiff.ladder_diff(rich_diff, pos_dict)
       vnode = patch(vnode, ladder)
+      const elm = (vnode as any).elm
     } while (pos_dict.modified)
     /*
     const pretty_xml = format(new XMLSerializer().serializeToString(Spans.diff_to_xml(diff)))
@@ -293,7 +296,7 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
           update_view()
         }
       } catch (e) {
-        console.log(e)
+        //console.log(e)
       }
     }
     */

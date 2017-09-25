@@ -13,3 +13,11 @@ export function log (message?: any, ...args: any[]): void  {
   }
 }
 
+
+export function debug_name(name: string): {"$debugName": string} | null {
+  if (debug) {
+    return {"$debugName": name}
+  } else {
+    return null
+  }
+}

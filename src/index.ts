@@ -3,11 +3,13 @@ import * as CodeMirror from "codemirror"
 import "codemirror/mode/xml/xml"
 import './index.css'
 import {debug} from './dev'
+import * as csstips from "csstips"
+csstips.normalize()
+csstips.setupPage('#top')
 
 const root = document.getElementById('root') as HTMLElement
 
 const hash_text = window.location.hash.slice(1)
-
 
 const example_text = hash_text || "En dag jag vaknade när larmet på min telefon ringde. De väder var inte fint."
 
