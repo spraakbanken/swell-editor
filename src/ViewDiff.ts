@@ -89,7 +89,7 @@ export function ladder_diff(diff: Spans.RichDiff[], pos_dict: Positions.PosDict)
         case 'Edited':
           if (d.target.length == 1 && d.source.length == 1) {
             links.push({ type: 'segment', from: 'top'+i+'.0', to: 'bot'+i+'.0' })
-          } else {
+          } else if (d.target.length > 0 && d.source.length > 0) {
             const converge = 'edit'+i
             d.source.map((_, j) => links.push({ type: 'upper', from: 'top'+i+'.'+j, converge }))
             d.target.map((_, j) => links.push({ type: 'lower', to: 'bot'+i+'.'+j, converge }))
@@ -98,22 +98,18 @@ export function ladder_diff(diff: Spans.RichDiff[], pos_dict: Positions.PosDict)
             name(h('span', {classes: [Cell]}, d.source_diffs.map(deletes).map((xs, j) => name(h('span', {classes: [InnerCell]}, xs), 'top', i, j))), 'top', i),
             name(h('span', {classes: [Cell]}, d.target_diffs.map(inserts).map((xs, j) => name(h('span', {classes: [InnerCell]}, xs), 'bot', i, j))), 'bot', i)
           ]
-        case 'Deleted':
-          return [span(d.source, [Classes.Delete]), null]
         case 'Dragged':
           links.push({type: 'upper', from: 'top'+i, converge: d.join_id})
           return [name(h('span', {classes: [InnerCell]}, deletes(d.source_diff)), 'top', i), null]
         case 'Dropped':
           links.push({type: 'lower', to: 'bot'+i, converge: d.join_id})
           return [null, name(h('span', {classes: [InnerCell]}, inserts(d.target_diff)), 'bot', i)]
-        case 'Inserted':
-          return [null, span(d.target, [Classes.Insert])]
         default:
           return d
       }
     }
     const [top, bot] = elements().map(x => x == null ? [] : [x])
-    const moved = d.edit == 'Dragged' || d.edit == 'Dropped' || d.edit == 'Inserted' || d.edit == 'Deleted'
+    const moved = d.edit == 'Dragged' || d.edit == 'Dropped'
     if (moved && last_moved) {
       cols[cols.length-1][0].push(...top)
       cols[cols.length-1][1].push(...bot)
@@ -258,14 +254,6 @@ export const draw_diff = (diff: Spans.RichDiff[], editor: CodeMirror.Editor) => 
       push_diff(m.diff, Classes.Dragged)
       push(rename(d.id), Classes.Subscript)
       push(m.whitespace)
-    } else if (d.edit == 'Inserted') {
-      const [s, t] = Utils.whitespace_split(d.target)
-      push(s, Classes.Insert)
-      push(t)
-    } else if (d.edit == 'Deleted') {
-      const [s, t] = Utils.whitespace_split(d.source)
-      push(s, Classes.Delete)
-      push(t)
     } else {
       push(d)
     }

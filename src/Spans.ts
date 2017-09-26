@@ -312,11 +312,9 @@ export function span_from_offset(spans: Span[], offset: number): [number, number
 export type Diff
   = { edit: 'Unchanged', source: string }
   | { edit: 'Edited', target: string[], source: string[] }
-  | { edit: 'Deleted', source: string }
   | { edit: 'Dragged', source: string, id: string }
-  // The following two are (unlike the four above) not related to a source word
+  // The following (unlike the three above) is related to a source word
   | { edit: 'Dropped', target: string, ids: string[] }
-  | { edit: 'Inserted', target: string }
 
   // TODO: Make Inserted Deleted special cases of Edited?
 
@@ -331,12 +329,6 @@ export function pos_diff(diff: Diff[]): PosDiff[] {
     switch (d.edit) {
       case 'Unchanged':
         return {...d, source_pos: [s++], target_pos: [t++]}
-
-      case 'Deleted':
-        return {...d, source_pos: [], target_pos: [t++]}
-
-      case 'Inserted':
-        return {...d, source_pos: [s++], target_pos: []}
 
       case 'Edited':
         return {...d, source_pos: d.source.map(_ => s++), target_pos: d.target.map(_ => t++)}
@@ -375,14 +367,6 @@ export function revert(i: number, spans: Span[], original: string[]): Span[] {
         } else {
           return [d]
         }
-      case 'Inserted':
-        if (-1 != d.target_pos.indexOf(i)) {
-          return [] as Diff[]
-        } else {
-          return [d]
-        }
-      case 'Deleted':
-        return [d]
       case 'Unchanged':
         return [d]
     }
@@ -392,8 +376,6 @@ export function revert(i: number, spans: Span[], original: string[]): Span[] {
 
 export type RichDiff
   = { edit: 'Unchanged', source: string }
-  | { edit: 'Deleted', source: string }
-  | { edit: 'Inserted', target: string }
   // these have more information:
   | { edit: 'Edited', target: string[], source: string[], target_diffs: TokenDiff[], source_diffs: TokenDiff[] }
   | { edit: 'Dragged', source: string, id: string, rev_ids: string[], source_diff: TokenDiff, join_id: string }
@@ -442,8 +424,6 @@ export function enrichen_diff(diff: Diff[]): RichDiff[] {
   return diff.map((d: Diff) => {
     switch (d.edit) {
       case 'Unchanged':
-      case 'Deleted':
-      case 'Inserted':
         return d
 
       case 'Edited': // could be represented as a drag & a drop at the same spot for consistency
@@ -499,11 +479,11 @@ function Dragged(source: string, id: string): Diff {
 }
 
 function Inserted(target: string): Diff {
-  return { edit: 'Inserted', target }
+  return Edited([target], [])
 }
 
 function Deleted(source: string): Diff {
-  return { edit: 'Deleted', source }
+  return Edited([], [source])
 }
 
 /**
@@ -659,13 +639,9 @@ export function diff_to_xml(diff: Diff[]): Element {
             enqueue({edit: 'EditedContinuation', source: s})
           }
         })
-      case 'Deleted':
-        return enqueue(d)
       case 'Dragged':
         return enqueue({...d, ids: [d.id]})
       case 'Dropped':
-        return enqueue(d)
-      case 'Inserted':
         return enqueue(d)
     }
   })
@@ -761,7 +737,6 @@ export function diff_to_spans(diff: Diff[]): {spans: Span[], tokens: string[]} {
     switch (d.edit) {
       case 'Dragged': m[d.id] = tokens.length
       case 'Unchanged':
-      case 'Deleted':
         tokens.push(d.source)
         break
 
@@ -786,16 +761,11 @@ export function diff_to_spans(diff: Diff[]): {spans: Span[], tokens: string[]} {
       case 'Edited':
         const links = d.source.map(() => i++)
         return d.target.map(text => ({text, links, moved: false, labels}))
-      case 'Deleted':
-        i++
-        return []
       case 'Dragged':
         i++
         return []
       case 'Dropped':
         return [{text: d.target, links: d.ids.map(lookup), moved: true, labels}]
-      case 'Inserted':
-        return [{text: d.target, links: [], moved: false, labels}]
     }
   })
   return {tokens, spans: Utils.flatten(mspans)}
@@ -807,10 +777,6 @@ export function invert_diff(diff: RichDiff[]): Diff[] {
     switch(d.edit) {
       case 'Unchanged':
         return d
-      case 'Deleted':
-        return Inserted(d.source)
-      case 'Inserted':
-        return Deleted(d.target)
       case 'Edited':
         return Edited(d.source, d.target)
       case 'Dragged':
