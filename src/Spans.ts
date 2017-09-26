@@ -1,6 +1,7 @@
 
 import * as Utils from './Utils'
-import {debug} from './dev'
+import {TokenDiff} from './Utils'
+import {debug, log} from './dev'
 
 export interface Span {
   readonly text: string,
@@ -11,7 +12,7 @@ export interface Span {
 
 /** Combine all data from several spans */
 export function merge_spans(spans: Span[], text: string): Span {
-  const links = Utils.flatten(spans.map(s => s.links))
+  const links = Utils.uniq(Utils.flatten(spans.map(s => s.links)))
   return {
     text: text,
     labels: Utils.flatten(spans.map(s => s.labels)),
@@ -37,39 +38,53 @@ export const identity_spans: (s: string) => Span[] = (s) => init(tokenize(s))
 export function init(tokens: string[]): Span[] {
   return tokens.map((s, i) => ({
     text: s,
-    links: [i],
     labels: [],
+    links: [i],
     moved: false
   }))
 }
 
 /** Checks the invariants for spans, returns empty string if OK */
 export function check_invariant(spans: Span[]): string {
-  for (let i = 0; i < spans.length; i++) {
-    const span = spans[i]
+  const rmap = {} as {[index: number]: number[]}
+  spans.map(({links}, i) => {
+    links.map(j => {
+      rmap[j] = [...(rmap[j] || []), i]
+    })
+  })
+  const err = [] as string[]
+  spans.map((span, i) => {
     const {text, links, moved} = span
+    const report = (s: string) => err.push('At index ' + i + ': ' + s)
     if (!text.match(/^\S(.|\n)*\s$/)) {
-      return 'Content invariant violated at index ' + i + ': ' + text
+      report('Content invariant violated: ' + text)
     }
     if (!moved && !Utils.contiguous(links)) {
-      return 'Links not contiguous on unmoved span at index ' + i
+      report('Links not contiguous on unmoved span')
     }
     if (moved && links.length == 0) {
-      return 'Span moved but without links at index ' + i
+      report('Span moved but without links at index ' + i)
     }
+    links.map(j => {
+      rmap[j].map(k => {
+        if (!Utils.array_multiset_eq(links, spans[k].links)) {
+          report('there is a link to ' + j + ' connected to ' + k + ' with links ' + spans[k].links + ', this should be ' + links)
+        }
+      })
+    })
     if (links.some((x, xi) => links.some((y, yi) => x == y && xi != yi))) {
-      return 'Duplicate links on index ' + i + ' : ' + Utils.show(links)
+      report('Duplicate links: ' + Utils.show(links))
     }
-    for (let j = 0; j < spans.length; j++) {
-      if (links.some((x) => spans[j].links.some((y) => x == y)) && i != j) {
-        return 'Links injectivity invariant broken at indicies ' + i + ' and ' + j
-      }
-    }
+  })
+  const unmoved = spans.filter(s => !s.moved).map(s => s.links)
+  const ok = unmoved.every((ls, i) => i == 0 || Utils.shallow_array_eq(ls, unmoved[i-1]) || Utils.increases([...(unmoved[i-1]), ...ls]))
+  if (!ok) {
+    err.push('Links not increasing ' + unmoved)
   }
-  if (!Utils.increases(Utils.flatten(spans.filter(s => !s.moved).map(s => s.links)))) {
-    return 'Links not increasing'
+  if (err.length > 0) {
+    console.error(err)
   }
-  return '' // all ok!
+  return err.join(', ') // all ok if this is the empty string
 }
 
 /** Moves a slice of the spans and puts it at a new destination (marking them as moved).
@@ -146,26 +161,24 @@ export function auto_revert(spans: Span[], original: string[]): Span[] {
 and that word is the prefix or suffix, make this an insertion */
 export function chop_up_insertions(spans: Span[], original: string[]): Span[] {
   return cursor<Span>((prev, me, next) => {
-    if (me.links.length == 1) {
-      const origin = original[me.links[0]]
-      const diff = Utils.token_diff(origin, me.text)
-      if (diff.length == 2) {
-        const [[t1, s1], [t2, s2]] = diff
-        if (s1 == origin && s2.match(/\w\s$/)) {
-          return [prev].concat([{...me, text: origin},
-                                merge_spans([], s2),
-                                next])
-        } else if (s1.match(/\w\s$/) && s2 == origin) {
-          return [prev].concat([merge_spans([], s1),
-                                {...me, text: origin},
-                                next])
-        }
+    const m = me.text.match(/\S\s\S/)
+    if (m && m.index != undefined) {
+      const [w1, w2] = Utils.stringSplitAt(me.text, m.index + 2)
+      const wo = me.links.map(j => original[j]).join('')
+      //console.log({wo, w1, w2})
+      if (wo == w1) {
+        return [prev, {...me, text: w1}, merge_spans([], w2), next]
+      } else if (wo == w2) {
+        return [prev, merge_spans([], w1), {...me, text: w2}, next]
+      } else {
+        // todo: where do labels go? right now duplicated
+        return [prev, {...me, text: w1}, {...me, text: w2}, next]
       }
+    } else {
+      return null
     }
-    return null
   })(spans)
 }
-
 
 /** Shuffles initial whitespace from a token to the previous one,
 or if it's the first span remove all its initial whitespace */
@@ -218,47 +231,54 @@ function cleanup_after_raw_modifications(spans: Span[]): Span[] {
     }
     //check_invariant(new_spans)
   }
-  return new_spans
+  return transitive_closure(new_spans)
 }
 
-export function revert(i: number, spans: Span[], original: string[]): Span[] {
-  if (!spans[i].moved) {
-    const [before, _me, after] = Utils.splitAt3(spans, i, i + 1)
-    if (debug) {
-      if (_me.length != 1) {
-        throw 'revert splitAt3 messed up'
-      }
-      if (!Utils.contiguous(spans[i].links)) {
-        throw 'revert: not contiguous but not marked as moved (invariant fail)'
-      }
-    }
-    return [...before, ...spans[i].links.map(j => ({...merge_spans([], original[j]), links: [j]})), ...after]
-  } else if (spans[i].links.length == 0) {
-    // inserted word: reverting this means just deleting it
-    const [before, _me, after] = Utils.splitAt3(spans, i, i + 1)
-    return [...before, ...after]
-  } else {
-    const [before_me, _me, after_me] = Utils.splitAt3(spans, i, i + 1)
-    if (debug) {
-      if (_me.length != 1) {
-        throw 'revert splitAt3 messed up'
-      }
-    }
-    let spans_work = [...before_me, ...after_me]
-    spans[i].links.map(j => {
-      let p = 0
-      spans_work.map((span, i) => {
-        if (!span.moved && span.links.length > 0 && Utils.minimum(span.links) < j) {
-          p = i + 1
+// find the transitive closure of all involved moves
+// if any side is non-contiguous mark them all as moved
+function transitive_closure(spans: Span[]): Span[] {
+  const {find, unions} = Utils.UnionFind()
+  // Put all links in the same equivalence classes
+  spans.map(s => unions(s.links))
+  // Go from representation to new links and moved
+  const links = [] as number[][]
+  const indexes = [] as number[][]
+  const moved = [] as boolean[]
+  spans.map((s, i) => {
+    if (s.links.length > 0) {
+      const repr = find(s.links[0])
+      s.links.map(n => {
+        if (links[repr] == undefined) {
+          links[repr] = []
+        }
+        if (!~links[repr].indexOf(n)) {
+          links[repr].push(n)
         }
       })
-      // place it at p
-      const [before_p, after_p] = Utils.splitAt(spans_work, p)
-      spans_work = [...before_p, {...merge_spans([], original[j]), links: [j]}, ...after_p]
-    })
-    return spans_work
-  }
-  return spans
+      moved[repr] = (moved[repr] || false) || s.moved;
+      (indexes[repr] || (indexes[repr] = [])).push(i)
+    }
+  })
+  // Set moved flags appropriately
+  links.map((ls, i) => {
+    if (ls && !Utils.contiguous(ls)) {
+      moved[i] = true
+    }
+  })
+  indexes.map((ls, i) => {
+    if (ls && !Utils.contiguous(ls)) {
+      moved[i] = true
+    }
+  })
+  // Update spans
+  return spans.map((s, i) => {
+    if (s.links.length > 0) {
+      const repr = find(s.links[0])
+      return {...s, links: links[repr], moved: moved[repr]}
+    } else {
+      return s
+    }
+  })
 }
 
 /** The total text length */
@@ -289,24 +309,211 @@ export function span_from_offset(spans: Span[], offset: number): [number, number
   throw new Error('Out of bounds')
 }
 
-export type Dropped =  { edit: 'Dropped', target: string, ids: string[] }
-
 export type Diff
   = { edit: 'Unchanged', source: string }
-  | { edit: 'Edited', target: string, source: string[] }
-  | { edit: 'Deleted', source: string }
+  | { edit: 'Edited', target: string[], source: string[] }
   | { edit: 'Dragged', source: string, id: string }
-  // The following two are (unlike the four above) not related to a source word
-  | Dropped
-  | { edit: 'Inserted', target: string }
+  // The following (unlike the three above) is related to a source word
+  | { edit: 'Dropped', target: string, ids: string[] }
+
+  // TODO: Make Inserted Deleted special cases of Edited?
+
+export type PosDiff
+  = Diff
+  & { source_pos: number[], target_pos: number[] }
+
+export function pos_diff(diff: Diff[]): PosDiff[] {
+  let s = 0
+  let t = 0
+  return diff.map(d => {
+    switch (d.edit) {
+      case 'Unchanged':
+        return {...d, source_pos: [s++], target_pos: [t++]}
+
+      case 'Edited':
+        return {...d, source_pos: d.source.map(_ => s++), target_pos: d.target.map(_ => t++)}
+
+      case 'Dragged':
+        return {...d, source_pos: [s++], target_pos: []}
+
+      case 'Dropped':
+        return {...d, source_pos: [], target_pos: [t++]}
+    }
+  })
+}
+
+/** Revert all involved edits at array index i in the target text */
+export function revert(i: number, spans: Span[], original: string[]): Span[] {
+  const {links} = spans[i]
+  const diff = pos_diff(calculate_diff(spans, original))
+  return diff_to_spans(Utils.flatten(diff.map(d => {
+    switch (d.edit) {
+      case 'Dragged':
+        if (-1 != links.indexOf(d.source_pos[0])) {
+          return [Unchanged(d.source)]
+        } else {
+          return [d]
+        }
+      case 'Dropped':
+        console.log('Dropped', links, d.ids)
+        if (Utils.shallow_array_eq(links.map(x => x.toString()), d.ids)) {
+          return [] as Diff[]
+        } else {
+          return [d]
+        }
+      case 'Edited':
+        if (-1 != d.target_pos.indexOf(i)) {
+          return d.source.map(Unchanged)
+        } else {
+          return [d]
+        }
+      case 'Unchanged':
+        return [d]
+    }
+  }))).spans
+}
+
+
+export type RichDiff
+  = { edit: 'Unchanged', source: string }
+  // these have more information:
+  | { edit: 'Edited', target: string[], source: string[], target_diffs: TokenDiff[], source_diffs: TokenDiff[] }
+  | { edit: 'Dragged', source: string, id: string, rev_ids: string[], source_diff: TokenDiff, join_id: string }
+  | { edit: 'Dropped', target: string, ids: string[], rev_id: string, target_diff: TokenDiff, join_id: string }
+
+export type SemiRichDiff
+  = { edit: 'Unchanged', source: string }
+  | { edit: 'Dragged', source: string, id: string, source_diff: TokenDiff, join_id: string, float: boolean, nullary: boolean, move: boolean }
+  | { edit: 'Dropped', target: string, ids: string[], target_diff: TokenDiff, join_id: string, float: boolean, nullary: boolean, move: boolean }
+
+// help typescript understand what's going on
+function typehelp<A>(x: A): A {
+  return x
+}
+
+export function semirich(diff: RichDiff[]): SemiRichDiff[] {
+  let u = 0
+  const unique = () => 'fake_dnd_' + u++
+  return Utils.flatten<SemiRichDiff>(diff.map(d => {
+    switch(d.edit) {
+      case 'Edited':
+        const join_id = unique()
+        const nullary = d.source.length == 0 || d.target.length == 0
+        const float = nullary
+        const move = false
+        const drags = d.source.map((source, i) => ({
+          edit: typehelp<'Dragged'>('Dragged'),
+          source,
+          id: unique(),
+          source_diff: d.source_diffs[i],
+          join_id,
+          nullary,
+          float,
+          move
+        }))
+        const drops: SemiRichDiff[] = d.target.map((target, i) => ({
+          edit: typehelp<'Dropped'>('Dropped'),
+          target,
+          ids: drags.map(drag => drag.id),
+          target_diff: d.target_diffs[i],
+          join_id,
+          nullary,
+          float,
+          move
+        }))
+        return [...drags, ...drops]
+      case 'Unchanged':
+        return [d]
+      case 'Dragged':
+      case 'Dropped':
+        return [{...d, float: true, nullary: false, move: true}]
+    }
+  }))
+}
+
+  // want to use & type here but TS doesn't know that eg "Edited" & "Dragged" is uninhabited
+
+  // if they are m-1 or 1-n then they can be drawn a little more elegant
+  // but for now let's just make them go through the join_id
+
+export function enrichen_diff(diff: Diff[]): RichDiff[] {
+  // id in Dragged and ids in Dropped -> new join identifier
+  const join_id = {} as Record<string, string>
+  const join_ids = {} as Record<string, string[]>
+  const join_source = {} as Record<string, string[]>
+  const join_target = {} as Record<string, string[]>
+  diff.map((d: Diff) => {
+    if (d.edit == 'Dropped') {
+      const ji = Utils.pipesep(d.ids)
+      d.ids.map(id => {
+        join_id[id] = ji
+      })
+      join_ids[ji] = d.ids
+      join_target[ji] = [...(join_target[ji] || []), d.target]
+    }
+  })
+  diff.map((d: Diff) => {
+    if (d.edit == 'Dragged') {
+      const ji = join_id[d.id]
+      if (join_source[ji] == undefined) {
+        join_source[ji] = []
+      }
+      join_source[ji][join_ids[ji].indexOf(d.id)] = d.source
+    }
+  })
+  const source_diffs = {} as Record<string, TokenDiff[]>
+  const target_diffs = {} as Record<string, /* rw */ TokenDiff[]>
+  const join_seen = {} as Record<string, /* rw */ number>
+  Object.keys(join_ids).map(ji => {
+    target_diffs[ji] = Utils.multi_token_diff(join_target[ji], join_source[ji].join('')).map(Utils.invert_token_diff)
+    source_diffs[ji] = Utils.multi_token_diff(join_source[ji], join_target[ji].join(''))
+    join_seen[ji] = 0
+    // only keep deletes & inserts appropriately ?
+  })
+  return diff.map((d: Diff) => {
+    switch (d.edit) {
+      case 'Unchanged':
+        return d
+
+      case 'Edited': // could be represented as a drag & a drop at the same spot for consistency
+        return {
+          ...d,
+          source_diffs: Utils.multi_token_diff(d.source, d.target.join('')),
+          target_diffs: Utils.multi_token_diff(d.target, d.source.join('')).map(Utils.invert_token_diff)
+          // could try to make a best guess where each part has ended up
+          // same for drag and drop?
+        }
+
+      case 'Dragged': {
+        const ji = join_id[d.id]
+        return {
+          ...d,
+          source_diff: source_diffs[ji][join_ids[ji].indexOf(d.id)],
+          join_id: join_id[d.id],
+          rev_ids: join_target[ji].map((_, i) => ji + '_' + i)
+        }
+      }
+
+      case 'Dropped': {
+        const ji = Utils.pipesep(d.ids)
+        return {
+          ...d,
+          target_diff: target_diffs[ji].shift() || [[0, "?"]],
+          join_id: ji,
+          rev_id: ji + '_' + join_seen[ji]++
+        }
+      }
+    }
+  })
+}
 
 function Unchanged(source: string): Diff {
   return { edit: 'Unchanged', source }
 }
 
-function Edited(target: string, source: string[]): Diff {
-  if (target == source.join('')) {
-    return Unchanged(target)
+function Edited(target: string[], source: string[]): Diff {
+  if (target.length == 1 && source.length == 1 && target[0] == source[0]) {
+    return Unchanged(target[0])
   } else {
     return { edit: 'Edited', target, source }
   }
@@ -321,30 +528,12 @@ function Dragged(source: string, id: string): Diff {
 }
 
 function Inserted(target: string): Diff {
-  return { edit: 'Inserted', target }
+  return Edited([target], [])
 }
 
 function Deleted(source: string): Diff {
-  return { edit: 'Deleted', source }
+  return Edited([], [source])
 }
-
-export function drop_map(diff: Diff[]): Record<string, string> {
-  let m = {} as Record<string, string>
-  diff.map((d: Diff) => d.edit == 'Dragged' && (m[d.id] = d.source))
-  return m
-}
-
-// Where in the diff was I dropped?
-export function drag_map(diff: Diff[]): Record<string, [number, Dropped]> {
-  let m = {} as Record<string, [number, Dropped]>
-  diff.map((d: Diff, i: number) => {
-    if (d.edit == 'Dropped') {
-      d.ids.map(id => m[id] = [i, d])
-    }
-  })
-  return m
-}
-
 
 /**
 This is a translation of this algorithm:
@@ -359,6 +548,8 @@ diff (Span text links true : spans) ss = Dropped text (concatMap (! unlinked) li
 diff [] ss = map (Deleted/Dragged . fst) ss
 
 Todo: given a source position in spans or tokens, say where in the diff it ends up
+
+Todo: calculate diff_match_patch here once and for all
 */
 export function calculate_diff(spans: Span[], tokens: string[]): Diff[] {
   const moved : {[x : number] : {}} = {}
@@ -389,39 +580,43 @@ export function calculate_diff(spans: Span[], tokens: string[]): Diff[] {
       out.push(Dropped(span.text, span.links.map(Utils.show)))
       i++
     } else if (j == span.links[0]) {
-      out.push(Edited(span.text, span.links.map((t) => tokens[t])))
-      i++
+      let width = 1
+      while (i + width < spans.length && j == spans[i + width].links[0]) {
+        width++;
+      }
+      out.push(Edited(spans.slice(i, i + width).map(s => s.text),
+                      span.links.map((t) => tokens[t])))
+      i+=width
       j+=span.links.length
     } else {
       Gone()
-      if (j >= tokens.length) {
-        // debug
-        return out
-      }
     }
   }
   tokens.slice(j).map(Gone)
   return out
 }
 
-type Children = (Element | string | [string, string])[]
 
-const xml: Document = document.implementation.createDocument(null, null, null);
-function node(tag_name: string): (...children: Children) => Element {
-  return (...children) => {
-    const ret = xml.createElement(tag_name)
-    for (const child of children) {
-      if (typeof child === 'string') {
-        ret.appendChild(xml.createTextNode(child))
-      } else if (Array.isArray(child)) {
-        ret.setAttribute(child[0], child[1])
-      } else {
-        ret.appendChild(child)
-      }
-    }
-    return ret
-  }
-}
+
+ type Children = (Element | string | [string, string])[]
+
+ const xml: Document = document.implementation.createDocument(null, null, null);
+ function node(tag_name: string): (...children: Children) => Element {
+   return (...children) => {
+     const ret = xml.createElement(tag_name)
+     for (const child of children) {
+       if (typeof child === 'string') {
+         ret.appendChild(xml.createTextNode(child))
+       } else if (Array.isArray(child)) {
+         ret.setAttribute(child[0], child[1])
+       } else {
+         ret.appendChild(child)
+       }
+     }
+     return ret
+   }
+ }
+
 
 // these are exported for testing
 export type LaxDiff = {
@@ -488,18 +683,14 @@ export function diff_to_xml(diff: Diff[]): Element {
       case 'Edited':
         return d.source.map((s, i) => {
           if (i == 0) {
-            enqueue({edit: 'Edited', target: d.target, source: s})
+            enqueue({edit: 'Edited', target: d.target.join(''), source: s})
           } else {
             enqueue({edit: 'EditedContinuation', source: s})
           }
         })
-      case 'Deleted':
-        return enqueue(d)
       case 'Dragged':
         return enqueue({...d, ids: [d.id]})
       case 'Dropped':
-        return enqueue(d)
-      case 'Inserted':
         return enqueue(d)
     }
   })
@@ -541,7 +732,10 @@ export function xml_to_diff(xml_string: string): Diff[] {
           if (ld.target === undefined) {
             throw 'No edit target on: ' + h
           }
-          return diff.push(Edited(ld.target, [w_text(ld)]))
+          const t = ld.target
+          const t2 = t.slice(0, t.length - 1)
+          console.log('tokenizing', [t2], 'to', tokenize(t2))
+          return diff.push(Edited(tokenize(t2), [w_text(ld)]))
         case 'EditedContinuation':
           if (diff.length == 0) {
             throw 'EditedContinuation with no previous Edited'
@@ -592,7 +786,6 @@ export function diff_to_spans(diff: Diff[]): {spans: Span[], tokens: string[]} {
     switch (d.edit) {
       case 'Dragged': m[d.id] = tokens.length
       case 'Unchanged':
-      case 'Deleted':
         tokens.push(d.source)
         break
 
@@ -609,24 +802,41 @@ export function diff_to_spans(diff: Diff[]): {spans: Span[], tokens: string[]} {
     }
   }
   let i = 0
+  const labels = [] as string[]
   const mspans = diff.map((d) => {
     switch (d.edit) {
       case 'Unchanged':
-        return {text: d.source, links: [i++], moved: false, labels: []}
+        return [{text: d.source, links: [i++], moved: false, labels}]
       case 'Edited':
-        return {text: d.target, links: d.source.map(() => i++), moved: false, labels: []}
-      case 'Deleted':
-        i++
-        return null
+        const links = d.source.map(() => i++)
+        return d.target.map(text => ({text, links, moved: false, labels}))
       case 'Dragged':
         i++
-        return null
+        return []
       case 'Dropped':
-        return {text: d.target, links: d.ids.map(lookup), moved: true, labels: []}
-      case 'Inserted':
-        return {text: d.target, links: [], moved: false, labels: []}
+        return [{text: d.target, links: d.ids.map(lookup), moved: true, labels}]
     }
   })
-  return {tokens, spans: Utils.cat(mspans)}
+  return {tokens, spans: Utils.flatten(mspans)}
 }
+
+/** Change the role of source and target in a diff. */
+export function invert_diff(diff: RichDiff[]): Diff[] {
+  return diff.map(d => {
+    switch(d.edit) {
+      case 'Unchanged':
+        return d
+      case 'Edited':
+        return Edited(d.source, d.target)
+      case 'Dragged':
+        return Dropped(d.source, d.rev_ids)
+      case 'Dropped':
+        return Dragged(d.target, d.rev_id)
+    }
+  })
+}
+
+/** Change the role of source and target. */
+export const invert = (spans: Span[], tokens: string[]) =>
+  diff_to_spans(invert_diff(enrichen_diff(calculate_diff(spans, tokens))))
 

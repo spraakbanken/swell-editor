@@ -2,14 +2,18 @@
 import Dmp = require("diff-match-patch")
 export const dmp = new Dmp.diff_match_patch()
 
+export type TokenDiff = [number, string][]
+
 export function token_diff(s1: string, s2: string) {
   const d = dmp.diff_main(s1, s2)
   dmp.diff_cleanupSemantic(d)
   return d
 }
 
+export const invert_token_diff = (ds : TokenDiff) => ds.map(([i, s]) => [-i, s] as [number, string])
+
 // ss must be nonempty and all strings must be nonempty
-export function multi_diff(ss: string[], s2: string): [number, string][][] {
+export function multi_token_diff(ss: string[], s2: string): TokenDiff[] {
   let lengths = ss.map(s => s.length)
   const diff = token_diff(ss.join(''), s2)
   let cur = [] as [number, string][]
@@ -102,6 +106,11 @@ export function splitAt<A>(xs: A[], i: number): [A[], A[]] {
   return [xs.slice(0, i), xs.slice(i)]
 }
 
+/** Split a string into two pieces */
+export function stringSplitAt<A>(s: string, i: number): [string, string] {
+  return [s.slice(0, i), s.slice(i)]
+}
+
 /** Split an array into three pieces */
 export function splitAt3<A>(xs: A[], start: number, end: number): [A[], A[], A[]] {
   const [ab,c] = splitAt(xs, end)
@@ -157,3 +166,49 @@ export function cycle<A>(n: number, xs: A[]): A[] {
 export function minimum(xs: number[]) {
   return xs.reduce((x,y) => Math.min(x,y), xs[0])
 }
+
+/** Returns a copy of the array with duplicates removed */
+export function uniq(xs: number[]): number[] {
+  const seen = {} as Record<string, boolean>
+  return xs.filter(x => {
+    const s = x.toString()
+    const duplicate = s in seen
+    seen[s] = true
+    return !duplicate
+  })
+}
+
+/** Union-find data structure operations */
+interface UnionFind {
+  find(x: number): number,
+  union(x: number, y: number): number,
+  unions(xs: number[]): void,
+}
+
+/** Make a union-find data structure */
+export function UnionFind(): UnionFind {
+  const rev = [] as number[]
+  const find = (x: number) => {
+    if (rev[x] == undefined) {
+      rev[x] = x
+    } else if (rev[x] != x) {
+      rev[x] = find(rev[x])
+    }
+    return rev[x]
+  }
+  const union = (x: number, y: number) => {
+    const find_x = find(x)
+    const find_y = find(y)
+    if (find_x != find_y) {
+      rev[find_y] = find_x
+    }
+    return find_x
+  }
+  const unions = (xs: number[]) => {
+    if (xs.length > 0) {
+      xs.reduce(union, xs[0])
+    }
+  }
+  return {find, union, unions}
+}
+

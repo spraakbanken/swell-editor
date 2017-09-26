@@ -7,13 +7,14 @@ import * as CodeMirror from "codemirror"
 import { Editor } from "codemirror"
 import * as Spans from "./Spans"
 import * as Utils from "./Utils"
+import { classes_module } from './Classes'
 import { Span } from "./Spans"
 import * as ViewDiff from "./ViewDiff"
-import { log, debug } from "./dev"
+import { log, debug, debug_table } from "./dev"
 import * as Positions from "./Positions"
+import * as typestyle from "typestyle"
 
 import * as snabbdom from "snabbdom"
-import snabbdomClass from 'snabbdom/modules/class'
 import snabbdomStyle from 'snabbdom/modules/style'
 import snabbdomAttributes from 'snabbdom/modules/attributes'
 
@@ -53,8 +54,10 @@ export function init_data(original: string): UndoableState {
   return {now: {tokens, spans}, past: [] as State[], future: [] as State[]}
 }
 
-export function bind(element: HTMLElement, state: UndoableState): () => UndoableState {
-  while (element.lastChild && element.removeChild(element.lastChild)) {}
+export function bind(root_element: HTMLElement, state: UndoableState): () => UndoableState {
+  while (root_element.lastChild) {
+    root_element.removeChild(root_element.lastChild)
+  }
   const history_keys = {
     "Ctrl-Z": undo,
     "Ctrl-Y": redo,
@@ -62,21 +65,27 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
   }
   console.log('debug', debug)
 
-  const cm_orig = CodeMirror(element, { lineWrapping: true, readOnly: true })
-  const cm_main = CodeMirror(element, { lineWrapping: true, extraKeys: history_keys })
-  const cm_diff = CodeMirror(element, { lineWrapping: true, readOnly: true })
+  const CM = (name: string, opts: CodeMirror.EditorConfiguration) => {
+    const cm = CodeMirror(root_element, {lineWrapping: true, ...opts})
+    cm.getWrapperElement().className += ' ' + name
+    return cm
+  }
 
-  const patch = snabbdom.init([snabbdomClass, snabbdomStyle, snabbdomAttributes])
+  const cm_orig = CM('cm_orig', {readOnly: true})
+  const cm_main = CM('cm_main', {extraKeys: history_keys})
+  const cm_diff = CM('cm_diff', {readOnly: true})
+
+  const patch = snabbdom.init([classes_module, snabbdomStyle, snabbdomAttributes])
   const container = document.createElement('div')
-  element.appendChild(container)
+  root_element.appendChild(container)
   let vnode = patch(container, snabbdom.h('div'))
   let pos_dict = Positions.init_pos_dict()
 
-  const cm_xml = CodeMirror(element, { lineWrapping: false, mode: 'xml', extraKeys: history_keys })
-  cm_xml.getWrapperElement().className += ' xml_editor'
+  const cm_xml = CM('cm_xml', {lineWrapping: false, mode: 'xml', extraKeys: history_keys})
 
   let spans = state.now.spans
   let tokens = state.now.tokens
+  log(JSON.stringify({spans, tokens}))
   let past = state.past.slice()
   let future = state.future.slice()
 
@@ -87,7 +96,6 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
     const upd = spans.map(s => s.text).join('')
     cm_orig.getDoc().setValue(tokens.join(''))
     cm_main.getDoc().setValue(upd.slice(0, upd.length - 1))
-    log('cm_main value:', cm_main.getDoc().getValue())
     cm_main.getDoc().setSelection(cursor, cursor)
     partial_update_view()
   }
@@ -95,11 +103,16 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
   /** Updates all views but cm_main */
   function partial_update_view() {
     const diff = Spans.calculate_diff(spans, tokens)
-    ViewDiff.draw_diff(diff, cm_diff)
+    const rich_diff = Spans.enrichen_diff(diff)
+    const semi_rich_diff = Spans.semirich(rich_diff)
+    debug_table(semi_rich_diff)
+    ViewDiff.draw_diff(semi_rich_diff, cm_diff)
+    typestyle.forceRenderStyles()
     do {
       pos_dict.modified = false
-      const ladder = ViewDiff.ladder_diff(diff, pos_dict)
+      const ladder = ViewDiff.ladder_diff(semi_rich_diff, pos_dict)
       vnode = patch(vnode, ladder)
+      const elm = (vnode as any).elm
     } while (pos_dict.modified)
     const pretty_xml = format(new XMLSerializer().serializeToString(Spans.diff_to_xml(diff)))
     if (pretty_xml != cm_xml.getDoc().getValue()) {
@@ -107,26 +120,40 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
       cm_xml.getDoc().setValue(pretty_xml)
       cm_xml.getDoc().setSelection(cursor, cursor)
     }
-    //log(Utils.show(spans))
   }
 
   cm_main.focus()
   update_view()
 
   function set_spans(new_spans : Span[], new_tokens?: string[]) {
-    log('set_spans', new_spans)
+    //log(JSON.stringify({spans, tokens}))
+    debug_state()
     if (new_spans.length == 0) {
       log('not updating to empty spans')
       // update_view will be run on('change')
       return
     }
     if (debug) {
-      Spans.check_invariant(new_spans)
+      const errors = Spans.check_invariant(new_spans)
+      if (errors.length > 0) {
+        console.error(new_spans)
+        console.error(errors)
+        throw errors
+      }
     }
     past = past.concat([{spans, tokens}])
     spans = new_spans
     tokens = new_tokens || tokens
     future = [] as State[]
+  }
+  ; (window as any).set_state = (s: Span[], t: string[]) => { set_spans(s,t); update_view(); }
+  ; (window as any).get_state = () => ({spans, tokens})
+  const debug_state = () => debug_table(spans.map(({labels, ...s}) => ({...s, original: s.links.map(i => tokens[i]) })))
+  ; (window as any).debug_state = debug_state
+  ; (window as any).invert = () => {
+    const res = Spans.invert(spans, tokens)
+    set_spans(res.spans, res.tokens)
+    update_view()
   }
   function undo() {
     const new_state = past.pop()
@@ -243,7 +270,7 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
   cm_main.on('update', () => {
     const lhs = spans.map(s => s.text).join('')
     const rhs = cm_main.getDoc().getValue() + ' '
-    log('update', Utils.show({lhs, rhs}))
+    //log('update', Utils.show({lhs, rhs}))
     if (rhs != lhs && (Utils.ltrim(rhs) == lhs || Utils.ltrim(rhs) == '')) {
       // everything deleted! just update view
       cm_main.getDoc().setValue(lhs.slice(0, lhs.length - 1))
@@ -255,7 +282,7 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
 
   cm_xml.on('beforeChange', (_, change) => {
     const {origin} = change
-    console.log('beforeChange', change, origin)
+    //console.log('beforeChange', change, origin)
     if (origin == 'undo') {
       change.cancel()
       undo()
@@ -270,10 +297,12 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
       try {
         const diff = Spans.xml_to_diff(cm_xml.getDoc().getValue())
         const res = Spans.diff_to_spans(diff)
-        log('xml change to', res, 'origin:', origin)
+        log('xml change', origin)
+        //debug_table(diff)
+        //debug_table(res.spans)
         const check = Spans.check_invariant(res.spans)
         if (check != '') {
-          throw check
+          console.log(check)
         } else {
           set_spans(res.spans, res.tokens)
           update_view()
@@ -288,7 +317,7 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
     // need to do this /beforeChange/ (not after),
     // otherwise indexFromPos does not work anymore
     // since the position might be removed
-    log('beforeChange', change.origin, change)
+    //log('beforeChange', change.origin, change)
 
     if (change.origin == 'undo') {
       log('undo')
@@ -316,7 +345,7 @@ export function bind(element: HTMLElement, state: UndoableState): () => Undoable
             tokens),
           tokens))
       partial_update_view()
-      log(spans.map(({text}) => text))
+      //log(spans.map(({text}) => text))
     }
   })
 

@@ -1,6 +1,8 @@
 
 import { h } from "snabbdom"
 import { VNode } from "snabbdom/vnode"
+import * as Utils from "./Utils"
+import * as Classes from "./Classes"
 
 export interface Pos {
   left: number,
@@ -8,6 +10,12 @@ export interface Pos {
   width: number,
   height: number
 }
+
+export const hmid = (p: Pos) => p.left + p.width / 2
+
+export const vmid = (p: Pos) => p.top + p.height / 2
+
+export const bot = (p: Pos) => p.top + p.height
 
 const eq_pos = (p: Pos, q: Pos) => Object.getOwnPropertyNames(p).every((i: keyof Pos) => p[i] == q[i])
 
@@ -26,7 +34,8 @@ const update = (id: string, d: PosDict, x: HTMLElement) => {
     height: x.offsetHeight
   }
   if (!(id in d.dict) || !eq_pos(p, d.dict[id])) {
-    d.modified = true;
+    //console.log('updating', id, 'to', Utils.show(p))
+    d.modified = true
     d.dict[id] = p
   }
 }
@@ -38,8 +47,12 @@ export const posid = (id: string, d: PosDict, v: VNode) => ({
     ...v.data,
     hook: {
       ...(v.data || {}).hook,
-      insert: (vn: VNode) => vn.elm instanceof HTMLElement && update(id, d, vn.elm),
-      postpatch: (_: any, vn: VNode) => vn.elm instanceof HTMLElement && update(id, d, vn.elm)
+      insert(vn: VNode) {
+        vn.elm instanceof HTMLElement && update(id, d, vn.elm)
+      },
+      postpatch(_: any, vn: VNode) {
+        vn.elm instanceof HTMLElement && update(id, d, vn.elm)
+      }
     }
   }
 })
@@ -91,12 +104,12 @@ export function posid_ignore_child(id: string, d: PosDict, v: VNode, ignore_clas
   return posid(id, d, v)
 }
 
-export function relative(n1: VNode, n2: VNode): VNode {
+export function relative(n1: VNode, n2: VNode, classes: string[] = []): VNode {
   return (
     h('div',
-      {style: {position: 'relative'}},
+      {classes: [Classes.RelativeOuter, ...classes]},
       [ n1,
-        h('div', {style: {position: 'absolute', top: '0', left: '0', width: '100%', height: '100%'}}, [n2])
+        h('div', {classes: [Classes.RelativeInner]}, [n2])
       ])
   )
 }
