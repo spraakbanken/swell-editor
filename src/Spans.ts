@@ -379,8 +379,57 @@ export type RichDiff
   // these have more information:
   | { edit: 'Edited', target: string[], source: string[], target_diffs: TokenDiff[], source_diffs: TokenDiff[] }
   | { edit: 'Dragged', source: string, id: string, rev_ids: string[], source_diff: TokenDiff, join_id: string }
-  | { edit: 'Dropped', target: string, ids: string[], rev_id: string, target_diff: TokenDiff, join_id: string}
+  | { edit: 'Dropped', target: string, ids: string[], rev_id: string, target_diff: TokenDiff, join_id: string }
 
+export type SemiRichDiff
+  = { edit: 'Unchanged', source: string }
+  | { edit: 'Dragged', source: string, id: string, source_diff: TokenDiff, join_id: string, float: boolean, nullary: boolean, move: boolean }
+  | { edit: 'Dropped', target: string, ids: string[], target_diff: TokenDiff, join_id: string, float: boolean, nullary: boolean, move: boolean }
+
+// help typescript understand what's going on
+function typehelp<A>(x: A): A {
+  return x
+}
+
+export function semirich(diff: RichDiff[]): SemiRichDiff[] {
+  let u = 0
+  const unique = () => 'fake_dnd_' + u++
+  return Utils.flatten<SemiRichDiff>(diff.map(d => {
+    switch(d.edit) {
+      case 'Edited':
+        const join_id = unique()
+        const nullary = d.source.length == 0 || d.target.length == 0
+        const float = nullary
+        const move = false
+        const drags = d.source.map((source, i) => ({
+          edit: typehelp<'Dragged'>('Dragged'),
+          source,
+          id: unique(),
+          source_diff: d.source_diffs[i],
+          join_id,
+          nullary,
+          float,
+          move
+        }))
+        const drops: SemiRichDiff[] = d.target.map((target, i) => ({
+          edit: typehelp<'Dropped'>('Dropped'),
+          target,
+          ids: drags.map(drag => drag.id),
+          target_diff: d.target_diffs[i],
+          join_id,
+          nullary,
+          float,
+          move
+        }))
+        return [...drags, ...drops]
+      case 'Unchanged':
+        return [d]
+      case 'Dragged':
+      case 'Dropped':
+        return [{...d, float: true, nullary: false, move: true}]
+    }
+  }))
+}
 
   // want to use & type here but TS doesn't know that eg "Edited" & "Dragged" is uninhabited
 

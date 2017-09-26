@@ -68,11 +68,11 @@ type Link
   | { type: 'upper', from: string, converge: string }
   | { type: 'lower', to: string, converge: string }
 
-export function ladder_diff(diff: Spans.RichDiff[], pos_dict: Positions.PosDict): VNode {
+export function ladder_diff(diff: Spans.SemiRichDiff[], pos_dict: Positions.PosDict): VNode {
   const links = [] as Link[]
   // If we are only doing drag or drop and previous did as well,
   // we don't need to start a new column, we can just push onto its parts
-  let last_moved = false
+  const last_edit_type = '__init__'
   const cols = [] as [VNode[], VNode[]][]
   const name = (vnode: VNode, prefix: string, i: number, j: number|undefined = undefined) => {
     return Positions.posid(prefix+i+(j == undefined ? '' : '.'+j), pos_dict, vnode)
@@ -86,37 +86,42 @@ export function ladder_diff(diff: Spans.RichDiff[], pos_dict: Positions.PosDict)
             name(span(d.source), 'top', i),
             name(span(d.source), 'bot', i)
           ]
-        case 'Edited':
-          if (d.target.length == 1 && d.source.length == 1) {
-            links.push({ type: 'segment', from: 'top'+i+'.0', to: 'bot'+i+'.0' })
-          } else if (d.target.length > 0 && d.source.length > 0) {
-            const converge = 'edit'+i
-            d.source.map((_, j) => links.push({ type: 'upper', from: 'top'+i+'.'+j, converge }))
-            d.target.map((_, j) => links.push({ type: 'lower', to: 'bot'+i+'.'+j, converge }))
-          }
-          return [
-            name(h('span', {classes: [Cell]}, d.source_diffs.map(deletes).map((xs, j) => name(h('span', {classes: [InnerCell]}, xs), 'top', i, j))), 'top', i),
-            name(h('span', {classes: [Cell]}, d.target_diffs.map(inserts).map((xs, j) => name(h('span', {classes: [InnerCell]}, xs), 'bot', i, j))), 'bot', i)
-          ]
         case 'Dragged':
-          links.push({type: 'upper', from: 'top'+i, converge: d.join_id})
+          if (!d.nullary) {
+            links.push({type: 'upper', from: 'top'+i, converge: d.join_id})
+          }
           return [name(h('span', {classes: [InnerCell]}, deletes(d.source_diff)), 'top', i), null]
         case 'Dropped':
-          links.push({type: 'lower', to: 'bot'+i, converge: d.join_id})
+          if (!d.nullary) {
+            links.push({type: 'lower', to: 'bot'+i, converge: d.join_id})
+          }
           return [null, name(h('span', {classes: [InnerCell]}, inserts(d.target_diff)), 'bot', i)]
         default:
           return d
       }
     }
     const [top, bot] = elements().map(x => x == null ? [] : [x])
-    const moved = d.edit == 'Dragged' || d.edit == 'Dropped'
-    if (moved && last_moved) {
+    let new_col = true
+    if (i > 0) {
+      const prev = diff[i-1]
+      // floats: drag, drop, insert, delete: can float into previous
+      if (d.edit != 'Unchanged' && prev.edit != 'Unchanged' && d.float && prev.float) {
+        new_col = false
+      }
+      // non-floats: edits. merge them unless they are Dropped followed by Dragged
+      if (d.edit != 'Unchanged' && prev.edit == d.edit && !d.float && !prev.float) {
+        new_col = false
+      }
+      if (prev.edit == 'Dragged' && d.edit == 'Dropped' && !d.float && !prev.float) {
+        new_col = false
+      }
+    }
+    if (new_col) {
+      cols.push([top, bot])
+    } else {
       cols[cols.length-1][0].push(...top)
       cols[cols.length-1][1].push(...bot)
-    } else {
-      cols.push([top, bot])
     }
-    last_moved = moved
   })
   const ladder = Positions.posid('table', pos_dict, table(cols.map(([u, d]) => [
     h('span', {classes: [Cell]}, u),
@@ -216,7 +221,7 @@ const diff_and_whitespace = (diff: TokenDiff) => {
 }
 
 /** Draws a diff onto a code mirror */
-export const draw_diff = (diff: Spans.RichDiff[], editor: CodeMirror.Editor) => editor.operation(() => {
+export const draw_diff = (diff: Spans.SemiRichDiff[], editor: CodeMirror.Editor) => editor.operation(() => {
   const diff_doc = editor.getDoc()
   diff_doc.setValue('')
   diff_doc.getAllMarks().map((m) => m.clear())
@@ -234,7 +239,7 @@ export const draw_diff = (diff: Spans.RichDiff[], editor: CodeMirror.Editor) => 
   const rename_map = {} as {[x: string]: string}
   let i = 0
   diff.map(d => {
-    if (d.edit == 'Dropped') {
+    if (d.edit == 'Dropped' && d.move) {
       d.ids.map(id => id in rename_map || (rename_map[id] = ++i + ''))
     }
   })
@@ -242,17 +247,21 @@ export const draw_diff = (diff: Spans.RichDiff[], editor: CodeMirror.Editor) => 
   diff.map(d => {
     if (d.edit == 'Unchanged') {
       push(d.source)
-    } else if (d.edit == 'Edited') {
-      push_diff(Utils.token_diff(d.source.join(''), d.target.join('')))
     } else if (d.edit == 'Dropped') {
       const m = diff_and_whitespace(d.target_diff.filter(([t, _]) => t != -1))
-      push_diff(m.diff, Classes.Dropped)
-      push(d.ids.map(rename).join(','), Classes.Subscript)
+      const cl = d.move ? Classes.Dropped : ''
+      push_diff(m.diff, cl)
+      if (cl != '') {
+        push(d.ids.map(rename).join(','), Classes.Subscript)
+      }
       push(m.whitespace)
     } else if (d.edit == 'Dragged') {
       const m = diff_and_whitespace(d.source_diff.filter(([t, _]) => t != 1))
-      push_diff(m.diff, Classes.Dragged)
-      push(rename(d.id), Classes.Subscript)
+      const cl = d.move ? Classes.Dragged : ''
+      push_diff(m.diff, cl)
+      if (cl != '') {
+        push(rename(d.id), Classes.Subscript)
+      }
       push(m.whitespace)
     } else {
       push(d)

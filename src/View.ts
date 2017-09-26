@@ -104,12 +104,13 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
   function partial_update_view() {
     const diff = Spans.calculate_diff(spans, tokens)
     const rich_diff = Spans.enrichen_diff(diff)
-    debug_table(diff)
-    ViewDiff.draw_diff(rich_diff, cm_diff)
+    const semi_rich_diff = Spans.semirich(rich_diff)
+    debug_table(semi_rich_diff)
+    ViewDiff.draw_diff(semi_rich_diff, cm_diff)
     typestyle.forceRenderStyles()
     do {
       pos_dict.modified = false
-      const ladder = ViewDiff.ladder_diff(rich_diff, pos_dict)
+      const ladder = ViewDiff.ladder_diff(semi_rich_diff, pos_dict)
       vnode = patch(vnode, ladder)
       const elm = (vnode as any).elm
     } while (pos_dict.modified)
