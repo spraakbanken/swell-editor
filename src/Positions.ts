@@ -47,8 +47,12 @@ export const posid = (id: string, d: PosDict, v: VNode) => ({
     ...v.data,
     hook: {
       ...(v.data || {}).hook,
-      insert: (vn: VNode) => vn.elm instanceof HTMLElement && update(id, d, vn.elm),
-      postpatch: (_: any, vn: VNode) => vn.elm instanceof HTMLElement && update(id, d, vn.elm)
+      insert(vn: VNode) {
+        vn.elm instanceof HTMLElement && update(id, d, vn.elm)
+      },
+      postpatch(_: any, vn: VNode) {
+        vn.elm instanceof HTMLElement && update(id, d, vn.elm)
+      }
     }
   }
 })

@@ -1,7 +1,7 @@
 
 import * as Utils from './Utils'
 import {TokenDiff} from './Utils'
-import {debug} from './dev'
+import {debug, log} from './dev'
 
 export interface Span {
   readonly text: string,
@@ -12,7 +12,7 @@ export interface Span {
 
 /** Combine all data from several spans */
 export function merge_spans(spans: Span[], text: string): Span {
-  const links = Utils.flatten(spans.map(s => s.links))
+  const links = Utils.uniq(Utils.flatten(spans.map(s => s.links)))
   return {
     text: text,
     labels: Utils.flatten(spans.map(s => s.labels)),
@@ -38,8 +38,8 @@ export const identity_spans: (s: string) => Span[] = (s) => init(tokenize(s))
 export function init(tokens: string[]): Span[] {
   return tokens.map((s, i) => ({
     text: s,
-    links: [i],
     labels: [],
+    links: [i],
     moved: false
   }))
 }
@@ -68,7 +68,7 @@ export function check_invariant(spans: Span[]): string {
     links.map(j => {
       rmap[j].map(k => {
         if (!Utils.array_multiset_eq(links, spans[k].links)) {
-          report('there is a link to ' + j + ' connected to ' + k + ' with links ' + spans[j].links + ', this should be ' + links)
+          report('there is a link to ' + j + ' connected to ' + k + ' with links ' + spans[k].links + ', this should be ' + links)
         }
       })
     })
@@ -76,8 +76,13 @@ export function check_invariant(spans: Span[]): string {
       report('Duplicate links: ' + Utils.show(links))
     }
   })
-  if (!Utils.increases(Utils.flatten(spans.filter(s => !s.moved).map(s => s.links)))) {
-    err.push('Links not increasing')
+  const unmoved = spans.filter(s => !s.moved).map(s => s.links)
+  const ok = unmoved.every((ls, i) => i == 0 || Utils.shallow_array_eq(ls, unmoved[i-1]) || Utils.increases([...(unmoved[i-1]), ...ls]))
+  if (!ok) {
+    err.push('Links not increasing ' + unmoved)
+  }
+  if (err.length > 0) {
+    console.error(err)
   }
   return err.join(', ') // all ok if this is the empty string
 }
@@ -232,29 +237,7 @@ function cleanup_after_raw_modifications(spans: Span[]): Span[] {
 // find the transitive closure of all involved moves
 // if any side is non-contiguous mark them all as moved
 function transitive_closure(spans: Span[]): Span[] {
-  // Union-find data structure
-  const rev = [] as number[]
-  const find = (x: number) => {
-    if (rev[x] == undefined) {
-      rev[x] = x
-    } else if (rev[x] != x) {
-      rev[x] = find(rev[x])
-    }
-    return rev[x]
-  }
-  const union = (x: number, y: number) => {
-    const find_x = find(x)
-    const find_y = find(y)
-    if (find_x != find_y) {
-      rev[find_y] = find_x
-    }
-    return find_x
-  }
-  const unions = (xs: number[]) => {
-    if (xs.length > 0) {
-      xs.reduce(union, xs[0])
-    }
-  }
+  const {find, unions} = Utils.UnionFind()
   // Put all links in the same equivalence classes
   spans.map(s => unions(s.links))
   // Go from representation to new links and moved
@@ -299,7 +282,13 @@ function transitive_closure(spans: Span[]): Span[] {
 }
 
 export function revert(i: number, spans: Span[], original: string[]): Span[] {
-  if (!spans[i].moved) {
+  const {links} = spans[i]
+  const zap = (s: Span[]) => s.filter(s => !Utils.shallow_array_eq(s.links, links))
+  if (links.length == 0) {
+    // inserted word: reverting this means just deleting it
+    const [before, _me, after] = Utils.splitAt3(spans, i, i + 1)
+    return [...before, ...after]
+  } else if (!spans[i].moved) {
     const [before, _me, after] = Utils.splitAt3(spans, i, i + 1)
     if (debug) {
       if (_me.length != 1) {
@@ -309,11 +298,7 @@ export function revert(i: number, spans: Span[], original: string[]): Span[] {
         throw 'revert: not contiguous but not marked as moved (invariant fail)'
       }
     }
-    return [...before, ...spans[i].links.map(j => ({...merge_spans([], original[j]), links: [j]})), ...after]
-  } else if (spans[i].links.length == 0) {
-    // inserted word: reverting this means just deleting it
-    const [before, _me, after] = Utils.splitAt3(spans, i, i + 1)
-    return [...before, ...after]
+    return [...zap(before), ...spans[i].links.map(j => ({...merge_spans([], original[j]), links: [j]})), ...zap(after)]
   } else {
     const [before_me, _me, after_me] = Utils.splitAt3(spans, i, i + 1)
     if (debug) {
@@ -321,7 +306,7 @@ export function revert(i: number, spans: Span[], original: string[]): Span[] {
         throw 'revert splitAt3 messed up'
       }
     }
-    let spans_work = [...before_me, ...after_me]
+    let spans_work = zap([...before_me, ...after_me])
     spans[i].links.map(j => {
       let p = 0
       spans_work.map((span, i) => {
@@ -335,7 +320,6 @@ export function revert(i: number, spans: Span[], original: string[]): Span[] {
     })
     return spans_work
   }
-  return spans
 }
 
 /** The total text length */
@@ -541,10 +525,6 @@ export function calculate_diff(spans: Span[], tokens: string[]): Diff[] {
       j+=span.links.length
     } else {
       Gone()
-      if (j >= tokens.length) {
-        // debug
-        return out
-      }
     }
   }
   tokens.slice(j).map(Gone)
@@ -552,230 +532,236 @@ export function calculate_diff(spans: Span[], tokens: string[]): Diff[] {
 }
 
 
-//
-// type Children = (Element | string | [string, string])[]
-//
-// const xml: Document = document.implementation.createDocument(null, null, null);
-// function node(tag_name: string): (...children: Children) => Element {
-//   return (...children) => {
-//     const ret = xml.createElement(tag_name)
-//     for (const child of children) {
-//       if (typeof child === 'string') {
-//         ret.appendChild(xml.createTextNode(child))
-//       } else if (Array.isArray(child)) {
-//         ret.setAttribute(child[0], child[1])
-//       } else {
-//         ret.appendChild(child)
-//       }
-//     }
-//     return ret
-//   }
-// }
-//
-// // these are exported for testing
-// export type LaxDiff = {
-//   edit: string,
-//   source?: string,
-//   target?: string,
-//   ids?: string[]
-// }
-//
-// export function pretty_lax(d: LaxDiff): string {
-//   const args = (d.ids || []).map((x) => x + '')
-//   return [d.edit].concat(...args).join(' ') + (d.target != null ? ':' + d.target : '')
-// }
-//
-// export function parse_lax(s: string): LaxDiff {
-//   const m = s.match(/^(\w*)((?:\s+\w+)*)(?::(.*))?$/)
-//   if (!m) {
-//     throw 'Cannot parse ' + s
-//   } else {
-//     const ids = (m[2].match(/\w+/g) || [])
-//     return {
-//       edit: m[1],
-//       target: m[3],
-//       ids: ids.length == 0 ? undefined : ids
-//     }
-//   }
-// }
-//
-// /*
-//   <w h="|Unchanged:En |">En </w>
-//   <w h="|Edited:x dag |">dag </w>
-//   <w h="|Dropped 3:vaknade|Unchanged:jag|">jag </w>
-//   <w h="|Dragged 3|">vaknade </w>
-//   <w h="|Unchanged:när |">när </w>
-// */
-//
-// export function diff_to_xml(diff: Diff[]): Element {
-//   let queue: LaxDiff[] = []
-//   let source: string | null = null
-//   const nodes = [] as Element[]
-//   function pop(): void {
-//     if (source) {
-//       const pretty = queue.map(pretty_lax)
-//       nodes.push(node('w')(['h', Utils.pipesep(pretty)], source))
-//     } else {
-//       throw new Error('Internal error, no source! Starting from an empty document?')
-//     }
-//     queue = []
-//   }
-//   function enqueue(x: LaxDiff): void {
-//     const {source:x_source, ...x_without_source} = x
-//     if (source && x_source) {
-//       pop()
-//     }
-//     if (x_source) {
-//       source = x_source
-//     }
-//     queue.push(x_without_source)
-//   }
-//   diff.map((d) => {
-//     switch (d.edit) {
-//       case 'Unchanged':
-//         return enqueue(d)
-//       case 'Edited':
-//         return d.source.map((s, i) => {
-//           if (i == 0) {
-//             enqueue({edit: 'Edited', target: d.target, source: s})
-//           } else {
-//             enqueue({edit: 'EditedContinuation', source: s})
-//           }
-//         })
-//       case 'Deleted':
-//         return enqueue(d)
-//       case 'Dragged':
-//         return enqueue({...d, ids: [d.id]})
-//       case 'Dropped':
-//         return enqueue(d)
-//       case 'Inserted':
-//         return enqueue(d)
-//     }
-//   })
-//   pop()
-//   return node('corpus')(...nodes)
-// }
-//
-// export function xml_to_diff(xml_string: string): Diff[] {
-//   const parser = new DOMParser();
-//   const xml = parser.parseFromString('<?xml version="1.0"?>' + xml_string, 'application/xml')
-//   if (xml.querySelector('parsererror')) {
-//     throw 'Invalid xml'
-//   }
-//   const ws = xml.getElementsByTagName('w') as any as Element[]
-//   let diff = [] as Diff[]
-//   for (const w of ws) {
-//     const h = w.getAttribute('h')
-//     if (h == null) {
-//       throw 'No h attribute for target hypothesis on: ' + w
-//     }
-//     const lds = Utils.pipeunsep(h).map(parse_lax)
-//     let consumed = false
-//     const w_text = (ld: LaxDiff) => {
-//       const text = w.textContent
-//       if (text == null) {
-//         throw 'Word tag without text content: ' + w
-//       }
-//       if (consumed) {
-//         throw 'Cannot have another edit on the same word ' + text
-//       }
-//       consumed = true
-//       return text
-//     }
-//     lds.map((ld) => {
-//       switch (ld.edit) {
-//         case 'Unchanged':
-//           return diff.push(Unchanged(w_text(ld)))
-//         case 'Edited':
-//           if (ld.target === undefined) {
-//             throw 'No edit target on: ' + h
-//           }
-//           return diff.push(Edited(ld.target, [w_text(ld)]))
-//         case 'EditedContinuation':
-//           if (diff.length == 0) {
-//             throw 'EditedContinuation with no previous Edited'
-//           }
-//           const last = diff[diff.length - 1]
-//           if (last.edit == 'Edited') {
-//             const {target, source} = last
-//             diff[diff.length - 1] = Edited(target, source.concat([w_text(ld)]))
-//             return
-//           } else {
-//             throw 'EditedContinuation with no previous Edited'
-//           }
-//         case 'Deleted':
-//           return diff.push(Deleted(w_text(ld)))
-//         case 'Dragged':
-//           if (!ld.ids || ld.ids.length != 1) {
-//             throw 'Dragged without identifier'
-//           }
-//           return diff.push(Dragged(w_text(ld), ld.ids[0]))
-//         case 'Dropped':
-//           if (!ld.ids || ld.ids.length == 0) {
-//             throw 'Dropped without identifiers'
-//           }
-//           if (!ld.target) {
-//             throw 'Dropped without target text'
-//           }
-//           return diff.push(Dropped(ld.target, ld.ids))
-//         case 'Inserted':
-//           if (!ld.target) {
-//             throw 'Inserted without target text'
-//           }
-//           return diff.push(Inserted(ld.target))
-//         default:
-//           throw 'Unknown edit type: ' + ld.edit
-//       }
-//     })
-//     if (!consumed) {
-//       throw 'Needs an operation about the current word on ' + h
-//     }
-//   }
-//   return diff
-// }
-//
-// export function diff_to_spans(diff: Diff[]): {spans: Span[], tokens: string[]} {
-//   let m = {} as {[id: string]: number}
-//   const tokens = [] as string[]
-//   diff.map((d) => {
-//     switch (d.edit) {
-//       case 'Dragged': m[d.id] = tokens.length
-//       case 'Unchanged':
-//       case 'Deleted':
-//         tokens.push(d.source)
-//         break
-//
-//       case 'Edited':
-//         tokens.push(...d.source)
-//         break
-//     }
-//   })
-//   const lookup = (id: string) => {
-//     if (id in m) {
-//       return m[id]
-//     } else {
-//       throw 'Unknown identifier: ' + id
-//     }
-//   }
-//   let i = 0
-//   const mspans = diff.map((d) => {
-//     switch (d.edit) {
-//       case 'Unchanged':
-//         return {text: d.source, links: [i++], moved: false, labels: []}
-//       case 'Edited':
-//         return {text: d.target, links: d.source.map(() => i++), moved: false, labels: []}
-//       case 'Deleted':
-//         i++
-//         return null
-//       case 'Dragged':
-//         i++
-//         return null
-//       case 'Dropped':
-//         return {text: d.target, links: d.ids.map(lookup), moved: true, labels: []}
-//       case 'Inserted':
-//         return {text: d.target, links: [], moved: false, labels: []}
-//     }
-//   })
-//   return {tokens, spans: Utils.cat(mspans)}
-// }
-//
+
+ type Children = (Element | string | [string, string])[]
+
+ const xml: Document = document.implementation.createDocument(null, null, null);
+ function node(tag_name: string): (...children: Children) => Element {
+   return (...children) => {
+     const ret = xml.createElement(tag_name)
+     for (const child of children) {
+       if (typeof child === 'string') {
+         ret.appendChild(xml.createTextNode(child))
+       } else if (Array.isArray(child)) {
+         ret.setAttribute(child[0], child[1])
+       } else {
+         ret.appendChild(child)
+       }
+     }
+     return ret
+   }
+ }
+
+
+// these are exported for testing
+export type LaxDiff = {
+  edit: string,
+  source?: string,
+  target?: string,
+  ids?: string[]
+}
+
+export function pretty_lax(d: LaxDiff): string {
+  const args = (d.ids || []).map((x) => x + '')
+  return [d.edit].concat(...args).join(' ') + (d.target != null ? ':' + d.target : '')
+}
+
+export function parse_lax(s: string): LaxDiff {
+  const m = s.match(/^(\w*)((?:\s+\w+)*)(?::(.*))?$/)
+  if (!m) {
+    throw 'Cannot parse ' + s
+  } else {
+    const ids = (m[2].match(/\w+/g) || [])
+    return {
+      edit: m[1],
+      target: m[3],
+      ids: ids.length == 0 ? undefined : ids
+    }
+  }
+}
+
+/*
+  <w h="|Unchanged:En |">En </w>
+  <w h="|Edited:x dag |">dag </w>
+  <w h="|Dropped 3:vaknade|Unchanged:jag|">jag </w>
+  <w h="|Dragged 3|">vaknade </w>
+  <w h="|Unchanged:när |">när </w>
+*/
+
+export function diff_to_xml(diff: Diff[]): Element {
+  let queue: LaxDiff[] = []
+  let source: string | null = null
+  const nodes = [] as Element[]
+  function pop(): void {
+    if (source) {
+      const pretty = queue.map(pretty_lax)
+      nodes.push(node('w')(['h', Utils.pipesep(pretty)], source))
+    } else {
+      throw new Error('Internal error, no source! Starting from an empty document?')
+    }
+    queue = []
+  }
+  function enqueue(x: LaxDiff): void {
+    const {source:x_source, ...x_without_source} = x
+    if (source && x_source) {
+      pop()
+    }
+    if (x_source) {
+      source = x_source
+    }
+    queue.push(x_without_source)
+  }
+  diff.map((d) => {
+    switch (d.edit) {
+      case 'Unchanged':
+        return enqueue(d)
+      case 'Edited':
+        return d.source.map((s, i) => {
+          if (i == 0) {
+            enqueue({edit: 'Edited', target: d.target.join(''), source: s})
+          } else {
+            enqueue({edit: 'EditedContinuation', source: s})
+          }
+        })
+      case 'Deleted':
+        return enqueue(d)
+      case 'Dragged':
+        return enqueue({...d, ids: [d.id]})
+      case 'Dropped':
+        return enqueue(d)
+      case 'Inserted':
+        return enqueue(d)
+    }
+  })
+  pop()
+  return node('corpus')(...nodes)
+}
+
+export function xml_to_diff(xml_string: string): Diff[] {
+  const parser = new DOMParser();
+  const xml = parser.parseFromString('<?xml version="1.0"?>' + xml_string, 'application/xml')
+  if (xml.querySelector('parsererror')) {
+    throw 'Invalid xml'
+  }
+  const ws = xml.getElementsByTagName('w') as any as Element[]
+  let diff = [] as Diff[]
+  for (const w of ws) {
+    const h = w.getAttribute('h')
+    if (h == null) {
+      throw 'No h attribute for target hypothesis on: ' + w
+    }
+    const lds = Utils.pipeunsep(h).map(parse_lax)
+    let consumed = false
+    const w_text = (ld: LaxDiff) => {
+      const text = w.textContent
+      if (text == null) {
+        throw 'Word tag without text content: ' + w
+      }
+      if (consumed) {
+        throw 'Cannot have another edit on the same word ' + text
+      }
+      consumed = true
+      return text
+    }
+    lds.map((ld) => {
+      switch (ld.edit) {
+        case 'Unchanged':
+          return diff.push(Unchanged(w_text(ld)))
+        case 'Edited':
+          if (ld.target === undefined) {
+            throw 'No edit target on: ' + h
+          }
+          const t = ld.target
+          const t2 = t.slice(0, t.length - 1)
+          console.log('tokenizing', [t2], 'to', tokenize(t2))
+          return diff.push(Edited(tokenize(t2), [w_text(ld)]))
+        case 'EditedContinuation':
+          if (diff.length == 0) {
+            throw 'EditedContinuation with no previous Edited'
+          }
+          const last = diff[diff.length - 1]
+          if (last.edit == 'Edited') {
+            const {target, source} = last
+            diff[diff.length - 1] = Edited(target, source.concat([w_text(ld)]))
+            return
+          } else {
+            throw 'EditedContinuation with no previous Edited'
+          }
+        case 'Deleted':
+          return diff.push(Deleted(w_text(ld)))
+        case 'Dragged':
+          if (!ld.ids || ld.ids.length != 1) {
+            throw 'Dragged without identifier'
+          }
+          return diff.push(Dragged(w_text(ld), ld.ids[0]))
+        case 'Dropped':
+          if (!ld.ids || ld.ids.length == 0) {
+            throw 'Dropped without identifiers'
+          }
+          if (!ld.target) {
+            throw 'Dropped without target text'
+          }
+          return diff.push(Dropped(ld.target, ld.ids))
+        case 'Inserted':
+          if (!ld.target) {
+            throw 'Inserted without target text'
+          }
+          return diff.push(Inserted(ld.target))
+        default:
+          throw 'Unknown edit type: ' + ld.edit
+      }
+    })
+    if (!consumed) {
+      throw 'Needs an operation about the current word on ' + h
+    }
+  }
+  return diff
+}
+
+export function diff_to_spans(diff: Diff[]): {spans: Span[], tokens: string[]} {
+  let m = {} as {[id: string]: number}
+  const tokens = [] as string[]
+  diff.map((d) => {
+    switch (d.edit) {
+      case 'Dragged': m[d.id] = tokens.length
+      case 'Unchanged':
+      case 'Deleted':
+        tokens.push(d.source)
+        break
+
+      case 'Edited':
+        tokens.push(...d.source)
+        break
+    }
+  })
+  const lookup = (id: string) => {
+    if (id in m) {
+      return m[id]
+    } else {
+      throw 'Unknown identifier: ' + id
+    }
+  }
+  let i = 0
+  const labels = [] as string[]
+  const mspans = diff.map((d) => {
+    switch (d.edit) {
+      case 'Unchanged':
+        return [{text: d.source, links: [i++], moved: false, labels}]
+      case 'Edited':
+        const links = d.source.map(() => i++)
+        return d.target.map(text => ({text, links, moved: false, labels}))
+      case 'Deleted':
+        i++
+        return []
+      case 'Dragged':
+        i++
+        return []
+      case 'Dropped':
+        return [{text: d.target, links: d.ids.map(lookup), moved: true, labels}]
+      case 'Inserted':
+        return [{text: d.target, links: [], moved: false, labels}]
+    }
+  })
+  return {tokens, spans: Utils.flatten(mspans)}
+}
+

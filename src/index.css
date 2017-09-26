@@ -1,17 +1,16 @@
 
 .CodeMirror, body {
+    font-size: 15px;
     font-family: 'Lato', sans-serif;
 }
 
 .CodeMirror.cm_xml {
     font-family: 'Consolas', monospace;
     width: 98%;
-    height: 600px;
-    display: none;
+    height: 400px;
 }
 
 .CodeMirror {
-    font-size: 16px;
     border: 1px solid #ddd;
     width: 32%;
     display: inline-block;

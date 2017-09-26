@@ -167,4 +167,48 @@ export function minimum(xs: number[]) {
   return xs.reduce((x,y) => Math.min(x,y), xs[0])
 }
 
+/** Returns a copy of the array with duplicates removed */
+export function uniq(xs: number[]): number[] {
+  const seen = {} as Record<string, boolean>
+  return xs.filter(x => {
+    const s = x.toString()
+    const duplicate = s in seen
+    seen[s] = true
+    return !duplicate
+  })
+}
+
+/** Union-find data structure operations */
+interface UnionFind {
+  find(x: number): number,
+  union(x: number, y: number): number,
+  unions(xs: number[]): void,
+}
+
+/** Make a union-find data structure */
+export function UnionFind(): UnionFind {
+  const rev = [] as number[]
+  const find = (x: number) => {
+    if (rev[x] == undefined) {
+      rev[x] = x
+    } else if (rev[x] != x) {
+      rev[x] = find(rev[x])
+    }
+    return rev[x]
+  }
+  const union = (x: number, y: number) => {
+    const find_x = find(x)
+    const find_y = find(y)
+    if (find_x != find_y) {
+      rev[find_y] = find_x
+    }
+    return find_x
+  }
+  const unions = (xs: number[]) => {
+    if (xs.length > 0) {
+      xs.reduce(union, xs[0])
+    }
+  }
+  return {find, union, unions}
+}
 

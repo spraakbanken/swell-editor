@@ -10,7 +10,7 @@ import * as Utils from "./Utils"
 import { classes_module } from './Classes'
 import { Span } from "./Spans"
 import * as ViewDiff from "./ViewDiff"
-import { log, debug } from "./dev"
+import { log, debug, debug_table } from "./dev"
 import * as Positions from "./Positions"
 import * as typestyle from "typestyle"
 
@@ -96,7 +96,6 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
     const upd = spans.map(s => s.text).join('')
     cm_orig.getDoc().setValue(tokens.join(''))
     cm_main.getDoc().setValue(upd.slice(0, upd.length - 1))
-    //log('cm_main value:', cm_main.getDoc().getValue())
     cm_main.getDoc().setSelection(cursor, cursor)
     partial_update_view()
   }
@@ -105,6 +104,7 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
   function partial_update_view() {
     const diff = Spans.calculate_diff(spans, tokens)
     const rich_diff = Spans.enrichen_diff(diff)
+    debug_table(diff)
     ViewDiff.draw_diff(rich_diff, cm_diff)
     typestyle.forceRenderStyles()
     do {
@@ -113,37 +113,42 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
       vnode = patch(vnode, ladder)
       const elm = (vnode as any).elm
     } while (pos_dict.modified)
-    /*
     const pretty_xml = format(new XMLSerializer().serializeToString(Spans.diff_to_xml(diff)))
     if (pretty_xml != cm_xml.getDoc().getValue()) {
       const cursor = cm_xml.getDoc().getCursor()
       cm_xml.getDoc().setValue(pretty_xml)
       cm_xml.getDoc().setSelection(cursor, cursor)
     }
-    cm_xml.getDoc().setValue(Utils.show({diff, rich_diff, spans}))
-    */
-    //log(Utils.show(spans))
   }
 
   cm_main.focus()
   update_view()
 
   function set_spans(new_spans : Span[], new_tokens?: string[]) {
-    log(JSON.stringify({spans, tokens}))
+    //log(JSON.stringify({spans, tokens}))
+    debug_state()
     if (new_spans.length == 0) {
       log('not updating to empty spans')
       // update_view will be run on('change')
       return
     }
     if (debug) {
-      Spans.check_invariant(new_spans)
+      const errors = Spans.check_invariant(new_spans)
+      if (errors.length > 0) {
+        console.error(new_spans)
+        console.error(errors)
+        throw errors
+      }
     }
     past = past.concat([{spans, tokens}])
     spans = new_spans
     tokens = new_tokens || tokens
     future = [] as State[]
   }
-  (window as any).set_state = (s: Span[], t: string[]) => { set_spans(s,t); update_view(); }
+  ; (window as any).set_state = (s: Span[], t: string[]) => { set_spans(s,t); update_view(); }
+  ; (window as any).get_state = () => ({spans, tokens})
+  const debug_state = () => debug_table(spans.map(({labels, ...s}) => ({...s, original: s.links.map(i => tokens[i]) })))
+  ; (window as any).debug_state = debug_state
   function undo() {
     const new_state = past.pop()
     if (new_state) {
@@ -282,24 +287,24 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
   })
 
   cm_xml.on('change', (_, {origin}) => {
-    /*
     if (origin != 'setValue') {
       try {
         const diff = Spans.xml_to_diff(cm_xml.getDoc().getValue())
         const res = Spans.diff_to_spans(diff)
-        log('xml change to', res, 'origin:', origin)
+        log('xml change', origin)
+        //debug_table(diff)
+        //debug_table(res.spans)
         const check = Spans.check_invariant(res.spans)
         if (check != '') {
-          throw check
+          console.log(check)
         } else {
           set_spans(res.spans, res.tokens)
           update_view()
         }
       } catch (e) {
-        //console.log(e)
+        console.log(e)
       }
     }
-    */
   })
 
   cm_main.on('beforeChange', (_, change) => {

@@ -234,10 +234,10 @@ function restrictModify(spans: Spans.Span[], r: Modify): {begin: number, end: nu
 describe("Utils", () => {
   jsc.property("multi_token_diff", jsc.nearray(nealphabet('ab ')), alphabet('ab '), (ss, s2) => {
     const md = Utils.multi_token_diff(ss, s2)
-    const info = {ss, s2, md}
+    const flatten_md = [].concat(...md)
+    const info = {ss, s2, md, flatten_md}
     return eq(md.map(Utils.dmp.diff_text1), ss, ['ss', info]) &&
-           eq(Utils.dmp.diff_text2(Utils.flatten(md)), s2, ['s2', info]) &&
-           eq(flatten(md), Utils.token_diff(ss.join(''), s2), ['flatten', info])
+           eq(Utils.dmp.diff_text2(flatten_md), s2, ['s2', info])
   })
 })
 
@@ -330,6 +330,8 @@ describe("Spans", () => {
     })
   })
 
+  /*
+
   describe("diff", () => {
     jsc.property("invertible", arb_spans, jsc.nearray(nealphabet('|\\ab')), (spans, tokens) => {
       const max = Utils.flatten(spans.map(s => s.links)).reduce((x,y) => Math.max(x,y), 0)
@@ -356,6 +358,6 @@ describe("Spans", () => {
       return eq(true, isEqual({spans: spans2, tokens: tokens2}, res), info)
     })
   })
-
+  */
 })
 

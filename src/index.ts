@@ -9,7 +9,7 @@ csstips.setupPage('#top')
 
 const root = document.getElementById('root') as HTMLElement
 
-const hash_text = window.location.hash.slice(1)
+const hash_text = decodeURIComponent(window.location.hash.slice(1))
 
 const example_text = hash_text || "En dag jag vaknade när larmet på min telefon ringde. De väder var inte fint."
 
