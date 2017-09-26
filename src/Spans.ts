@@ -281,47 +281,6 @@ function transitive_closure(spans: Span[]): Span[] {
   })
 }
 
-export function revert(i: number, spans: Span[], original: string[]): Span[] {
-  const {links} = spans[i]
-  const zap = (s: Span[]) => s.filter(s => !Utils.shallow_array_eq(s.links, links))
-  if (links.length == 0) {
-    // inserted word: reverting this means just deleting it
-    const [before, _me, after] = Utils.splitAt3(spans, i, i + 1)
-    return [...before, ...after]
-  } else if (!spans[i].moved) {
-    const [before, _me, after] = Utils.splitAt3(spans, i, i + 1)
-    if (debug) {
-      if (_me.length != 1) {
-        throw 'revert splitAt3 messed up'
-      }
-      if (!Utils.contiguous(spans[i].links)) {
-        throw 'revert: not contiguous but not marked as moved (invariant fail)'
-      }
-    }
-    return [...zap(before), ...spans[i].links.map(j => ({...merge_spans([], original[j]), links: [j]})), ...zap(after)]
-  } else {
-    const [before_me, _me, after_me] = Utils.splitAt3(spans, i, i + 1)
-    if (debug) {
-      if (_me.length != 1) {
-        throw 'revert splitAt3 messed up'
-      }
-    }
-    let spans_work = zap([...before_me, ...after_me])
-    spans[i].links.map(j => {
-      let p = 0
-      spans_work.map((span, i) => {
-        if (!span.moved && span.links.length > 0 && Utils.minimum(span.links) < j) {
-          p = i + 1
-        }
-      })
-      // place it at p
-      const [before_p, after_p] = Utils.splitAt(spans_work, p)
-      spans_work = [...before_p, {...merge_spans([], original[j]), links: [j]}, ...after_p]
-    })
-    return spans_work
-  }
-}
-
 /** The total text length */
 export function text_length(spans: Span[]): number {
   return text(spans).length
@@ -359,6 +318,78 @@ export type Diff
   | { edit: 'Dropped', target: string, ids: string[] }
   | { edit: 'Inserted', target: string }
 
+  // TODO: Make Inserted Deleted special cases of Edited?
+
+export type PosDiff
+  = Diff
+  & { source_pos: number[], target_pos: number[] }
+
+export function pos_diff(diff: Diff[]): PosDiff[] {
+  let s = 0
+  let t = 0
+  return diff.map(d => {
+    switch (d.edit) {
+      case 'Unchanged':
+        return {...d, source_pos: [s++], target_pos: [t++]}
+
+      case 'Deleted':
+        return {...d, source_pos: [], target_pos: [t++]}
+
+      case 'Inserted':
+        return {...d, source_pos: [s++], target_pos: []}
+
+      case 'Edited':
+        return {...d, source_pos: d.source.map(_ => s++), target_pos: d.target.map(_ => t++)}
+
+      case 'Dragged':
+        return {...d, source_pos: [s++], target_pos: []}
+
+      case 'Dropped':
+        return {...d, source_pos: [], target_pos: [t++]}
+    }
+  })
+}
+
+/** Revert all involved edits at array index i in the target text */
+export function revert(i: number, spans: Span[], original: string[]): Span[] {
+  const {links} = spans[i]
+  const diff = pos_diff(calculate_diff(spans, original))
+  return diff_to_spans(Utils.flatten(diff.map(d => {
+    switch (d.edit) {
+      case 'Dragged':
+        if (-1 != links.indexOf(d.source_pos[0])) {
+          return [Unchanged(d.source)]
+        } else {
+          return [d]
+        }
+      case 'Dropped':
+        console.log('Dropped', links, d.ids)
+        if (Utils.shallow_array_eq(links.map(x => x.toString()), d.ids)) {
+          return [] as Diff[]
+        } else {
+          return [d]
+        }
+      case 'Edited':
+        if (-1 != d.target_pos.indexOf(i)) {
+          return d.source.map(Unchanged)
+        } else {
+          return [d]
+        }
+      case 'Inserted':
+        if (-1 != d.target_pos.indexOf(i)) {
+          return [] as Diff[]
+        } else {
+          return [d]
+        }
+      case 'Deleted':
+        return [d]
+      case 'Unchanged':
+        return [d]
+    }
+  }))).spans
+}
+
+
 export type RichDiff
   = { edit: 'Unchanged', source: string }
   | { edit: 'Deleted', source: string }
@@ -367,6 +398,7 @@ export type RichDiff
   | { edit: 'Edited', target: string[], source: string[], target_diffs: TokenDiff[], source_diffs: TokenDiff[] }
   | { edit: 'Dragged', source: string, id: string, rev_ids: string[], source_diff: TokenDiff, join_id: string }
   | { edit: 'Dropped', target: string, ids: string[], rev_id: string, target_diff: TokenDiff, join_id: string}
+
 
   // want to use & type here but TS doesn't know that eg "Edited" & "Dragged" is uninhabited
 

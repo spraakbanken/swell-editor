@@ -40,6 +40,8 @@ export function debug_table(xs: Record<string, any>[]) {
   }
 }
 
+; (window as any).debug_table = debug_table
+
 function objmap<A,B>(a: Record<string, A>, f: (a: A) => B): Record<string, B> {
   const b = {} as Record<string, B>
   Object.getOwnPropertyNames(a).map(k => b[k] = f(a[k]))
