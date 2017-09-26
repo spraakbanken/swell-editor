@@ -149,6 +149,11 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
   ; (window as any).get_state = () => ({spans, tokens})
   const debug_state = () => debug_table(spans.map(({labels, ...s}) => ({...s, original: s.links.map(i => tokens[i]) })))
   ; (window as any).debug_state = debug_state
+  ; (window as any).invert = () => {
+    const res = Spans.invert(spans, tokens)
+    set_spans(res.spans, res.tokens)
+    update_view()
+  }
   function undo() {
     const new_state = past.pop()
     if (new_state) {

@@ -365,8 +365,8 @@ export type RichDiff
   | { edit: 'Inserted', target: string }
   // these have more information:
   | { edit: 'Edited', target: string[], source: string[], target_diffs: TokenDiff[], source_diffs: TokenDiff[] }
-  | { edit: 'Dragged', source: string, id: string, source_diff: TokenDiff, join_id: string }
-  | { edit: 'Dropped', target: string, ids: string[], target_diff: TokenDiff, join_id: string}
+  | { edit: 'Dragged', source: string, id: string, rev_ids: string[], source_diff: TokenDiff, join_id: string }
+  | { edit: 'Dropped', target: string, ids: string[], rev_id: string, target_diff: TokenDiff, join_id: string}
 
   // want to use & type here but TS doesn't know that eg "Edited" & "Dragged" is uninhabited
 
@@ -400,9 +400,11 @@ export function enrichen_diff(diff: Diff[]): RichDiff[] {
   })
   const source_diffs = {} as Record<string, TokenDiff[]>
   const target_diffs = {} as Record<string, /* rw */ TokenDiff[]>
+  const join_seen = {} as Record<string, /* rw */ number>
   Object.keys(join_ids).map(ji => {
     target_diffs[ji] = Utils.multi_token_diff(join_target[ji], join_source[ji].join('')).map(Utils.invert_token_diff)
     source_diffs[ji] = Utils.multi_token_diff(join_source[ji], join_target[ji].join(''))
+    join_seen[ji] = 0
     // only keep deletes & inserts appropriately ?
   })
   return diff.map((d: Diff) => {
@@ -426,7 +428,8 @@ export function enrichen_diff(diff: Diff[]): RichDiff[] {
         return {
           ...d,
           source_diff: source_diffs[ji][join_ids[ji].indexOf(d.id)],
-          join_id: join_id[d.id]
+          join_id: join_id[d.id],
+          rev_ids: join_target[ji].map((_, i) => ji + '_' + i)
         }
       }
 
@@ -435,7 +438,8 @@ export function enrichen_diff(diff: Diff[]): RichDiff[] {
         return {
           ...d,
           target_diff: target_diffs[ji].shift() || [[0, "?"]],
-          join_id: ji
+          join_id: ji,
+          rev_id: ji + '_' + join_seen[ji]++
         }
       }
     }
@@ -764,4 +768,28 @@ export function diff_to_spans(diff: Diff[]): {spans: Span[], tokens: string[]} {
   })
   return {tokens, spans: Utils.flatten(mspans)}
 }
+
+/** Change the role of source and target in a diff. */
+export function invert_diff(diff: RichDiff[]): Diff[] {
+  return diff.map(d => {
+    switch(d.edit) {
+      case 'Unchanged':
+        return d
+      case 'Deleted':
+        return Inserted(d.source)
+      case 'Inserted':
+        return Deleted(d.target)
+      case 'Edited':
+        return Edited(d.source, d.target)
+      case 'Dragged':
+        return Dropped(d.source, d.rev_ids)
+      case 'Dropped':
+        return Dragged(d.target, d.rev_id)
+    }
+  })
+}
+
+/** Change the role of source and target. */
+export const invert = (spans: Span[], tokens: string[]) =>
+  diff_to_spans(invert_diff(enrichen_diff(calculate_diff(spans, tokens))))
 

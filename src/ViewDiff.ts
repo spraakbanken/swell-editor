@@ -128,7 +128,6 @@ export function ladder_diff(diff: Spans.RichDiff[], pos_dict: Positions.PosDict)
   ]), [LadderTable]))
   const m = {} as Record<string, number[]>
   links.map(link => {
-    //console.log(link)
     if (link.type == 'upper') {
       const c = link.converge;
       if (link.from in pos_dict.dict) {
