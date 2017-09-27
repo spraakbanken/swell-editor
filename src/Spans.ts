@@ -165,7 +165,6 @@ export function chop_up_insertions(spans: Span[], original: string[]): Span[] {
     if (m && m.index != undefined) {
       const [w1, w2] = Utils.stringSplitAt(me.text, m.index + 2)
       const wo = me.links.map(j => original[j]).join('')
-      //console.log({wo, w1, w2})
       if (wo == w1) {
         return [prev, {...me, text: w1}, merge_spans([], w2), next]
       } else if (wo == w2) {
@@ -355,7 +354,6 @@ export function revert(i: number, spans: Span[], original: string[]): Span[] {
           return [d]
         }
       case 'Dropped':
-        console.log('Dropped', links, d.ids)
         if (Utils.shallow_array_eq(links.map(x => x.toString()), d.ids)) {
           return [] as Diff[]
         } else {
@@ -734,7 +732,6 @@ export function xml_to_diff(xml_string: string): Diff[] {
           }
           const t = ld.target
           const t2 = t.slice(0, t.length - 1)
-          console.log('tokenizing', [t2], 'to', tokenize(t2))
           return diff.push(Edited(tokenize(t2), [w_text(ld)]))
         case 'EditedContinuation':
           if (diff.length == 0) {

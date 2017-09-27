@@ -282,7 +282,6 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
 
   cm_xml.on('beforeChange', (_, change) => {
     const {origin} = change
-    //console.log('beforeChange', change, origin)
     if (origin == 'undo') {
       change.cancel()
       undo()
@@ -302,13 +301,13 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
         //debug_table(res.spans)
         const check = Spans.check_invariant(res.spans)
         if (check != '') {
-          console.log(check)
+          console.error(check)
         } else {
           set_spans(res.spans, res.tokens)
           update_view()
         }
       } catch (e) {
-        console.log(e)
+        console.error(e)
       }
     }
   })
