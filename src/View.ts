@@ -69,15 +69,21 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
   }
   console.log('debug', debug)
 
-  const CM = (onto: HTMLElement, name: string, opts: CodeMirror.EditorConfiguration) => {
-    const cm = CodeMirror(onto, {lineWrapping: true, ...opts})
+  const CM = (onto: HTMLElement, caption: string, name: string, opts: CodeMirror.EditorConfiguration) => {
+    const a_div = document.createElement('div')
+    const text = document.createElement('div')
+    text.appendChild(document.createTextNode(caption))
+    text.className = 'caption'
+    a_div.appendChild(text)
+    const cm = CodeMirror(a_div, {lineWrapping: true, ...opts})
     cm.getWrapperElement().className += ' ' + name
+    onto.appendChild(a_div)
     return cm
   }
 
-  const cm_orig = CM(cm_div, 'cm_orig', {readOnly: true})
-  const cm_main = CM(cm_div, 'cm_main', {extraKeys: history_keys})
-  const cm_diff = CM(cm_div, 'cm_diff', {readOnly: true})
+  const cm_orig = CM(cm_div, 'Source text', 'cm_orig', {readOnly: true})
+  const cm_main = CM(cm_div, 'Normalised text', 'cm_main', {extraKeys: history_keys})
+  const cm_diff = CM(cm_div, 'Changes', 'cm_diff', {readOnly: true})
 
   const patch = snabbdom.init([classes_module, snabbdomStyle, snabbdomAttributes])
   const container = document.createElement('div')
@@ -85,7 +91,7 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
   let vnode = patch(container, snabbdom.h('div'))
   let pos_dict = Positions.init_pos_dict()
 
-  const cm_xml = CM(root_element, 'cm_xml', {lineWrapping: false, mode: 'xml', extraKeys: history_keys})
+  const cm_xml = CM(root_element, 'XML representation', 'cm_xml', {lineWrapping: false, mode: 'xml', extraKeys: history_keys})
 
   let spans = state.now.spans
   let tokens = state.now.tokens
@@ -114,7 +120,8 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
     typestyle.forceRenderStyles()
     do {
       pos_dict.modified = false
-      const ladder = ViewDiff.ladder_diff(semi_rich_diff, pos_dict)
+      const ladder = snabbdom.h('div', [snabbdom.h('div', {classes: ['caption']}, 'Alignment of source text and normalised text'),
+                                        ViewDiff.ladder_diff(semi_rich_diff, pos_dict)])
       vnode = patch(vnode, ladder)
       const elm = (vnode as any).elm
     } while (pos_dict.modified)
