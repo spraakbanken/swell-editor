@@ -61,7 +61,7 @@ export function relative(n1: VNode, n2: VNode, classes: string[] = []): VNode {
     h('div',
       {classes: [Classes.RelativeOuter, ...classes]},
       [ n1,
-        h('div', {classes: [Classes.RelativeInner]}, [n2])
+        h('div', {classes: [Classes.RelativeInner, Classes.Below]}, [n2])
       ])
   )
 }

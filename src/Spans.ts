@@ -310,16 +310,25 @@ export function span_from_offset(spans: Span[], offset: number): [number, number
 
 export type Diff
   = { edit: 'Unchanged', source: string }
-  | { edit: 'Edited', target: string[], source: string[] }
-  | { edit: 'Dragged', source: string, id: string }
+  | { edit: 'Edited', target: string[], source: string[], labels: string[] }
+  | { edit: 'Dragged', source: string, id: string, labels: string[] }
   // The following (unlike the three above) is related to a source word
-  | { edit: 'Dropped', target: string, ids: string[] }
-
-  // TODO: Make Inserted Deleted special cases of Edited?
+  | { edit: 'Dropped', target: string, ids: string[], labels: string[] }
 
 export type PosDiff
   = Diff
   & { source_pos: number[], target_pos: number[] }
+
+export type RichDiff
+  = { edit: 'Unchanged', source: string }
+  | { edit: 'Edited', target: string[], source: string[], target_diffs: TokenDiff[], source_diffs: TokenDiff[], labels: string[] }
+  | { edit: 'Dragged', source: string, id: string, rev_ids: string[], source_diff: TokenDiff, join_id: string, labels: string[] }
+  | { edit: 'Dropped', target: string, ids: string[], rev_id: string, target_diff: TokenDiff, join_id: string, labels: string[] }
+
+export type SemiRichDiff
+  = { edit: 'Unchanged', source: string }
+  | { edit: 'Dragged', source: string, id: string, source_diff: TokenDiff, join_id: string, float: boolean, nullary: boolean, move: boolean, labels: string[] }
+  | { edit: 'Dropped', target: string, ids: string[], target_diff: TokenDiff, join_id: string, float: boolean, nullary: boolean, move: boolean, labels: string[] }
 
 export function pos_diff(diff: Diff[]): PosDiff[] {
   let s = 0
@@ -372,18 +381,6 @@ export function revert(i: number, spans: Span[], original: string[]): Span[] {
 }
 
 
-export type RichDiff
-  = { edit: 'Unchanged', source: string }
-  // these have more information:
-  | { edit: 'Edited', target: string[], source: string[], target_diffs: TokenDiff[], source_diffs: TokenDiff[] }
-  | { edit: 'Dragged', source: string, id: string, rev_ids: string[], source_diff: TokenDiff, join_id: string }
-  | { edit: 'Dropped', target: string, ids: string[], rev_id: string, target_diff: TokenDiff, join_id: string }
-
-export type SemiRichDiff
-  = { edit: 'Unchanged', source: string }
-  | { edit: 'Dragged', source: string, id: string, source_diff: TokenDiff, join_id: string, float: boolean, nullary: boolean, move: boolean }
-  | { edit: 'Dropped', target: string, ids: string[], target_diff: TokenDiff, join_id: string, float: boolean, nullary: boolean, move: boolean }
-
 // help typescript understand what's going on
 function typehelp<A>(x: A): A {
   return x
@@ -391,7 +388,7 @@ function typehelp<A>(x: A): A {
 
 export function semirich(diff: RichDiff[]): SemiRichDiff[] {
   let u = 0
-  const unique = () => 'fake_dnd_' + u++
+  const unique = () => u++ + '_fake_dnd'
   return Utils.flatten<SemiRichDiff>(diff.map(d => {
     switch(d.edit) {
       case 'Edited':
@@ -402,6 +399,7 @@ export function semirich(diff: RichDiff[]): SemiRichDiff[] {
         const drags = d.source.map((source, i) => ({
           edit: typehelp<'Dragged'>('Dragged'),
           source,
+          labels: d.labels,
           id: unique(),
           source_diff: d.source_diffs[i],
           join_id,
@@ -412,6 +410,7 @@ export function semirich(diff: RichDiff[]): SemiRichDiff[] {
         const drops: SemiRichDiff[] = d.target.map((target, i) => ({
           edit: typehelp<'Dropped'>('Dropped'),
           target,
+          labels: d.labels,
           ids: drags.map(drag => drag.id),
           target_diff: d.target_diffs[i],
           join_id,
@@ -509,28 +508,28 @@ function Unchanged(source: string): Diff {
   return { edit: 'Unchanged', source }
 }
 
-function Edited(target: string[], source: string[]): Diff {
-  if (target.length == 1 && source.length == 1 && target[0] == source[0]) {
+function Edited(target: string[], source: string[], labels: string[]): Diff {
+  if (target.length == 1 && source.length == 1 && target[0] == source[0] && labels.length == 0) {
     return Unchanged(target[0])
   } else {
-    return { edit: 'Edited', target, source }
+    return { edit: 'Edited', target, source, labels }
   }
 }
 
-function Dropped(target: string, ids: string[]): Diff {
-  return { edit: 'Dropped', target , ids }
+function Dropped(target: string, ids: string[], labels: string[]): Diff {
+  return { edit: 'Dropped', target , ids, labels }
 }
 
-function Dragged(source: string, id: string): Diff {
-  return { edit: 'Dragged', source, id }
+function Dragged(source: string, id: string, labels: string[]): Diff {
+  return { edit: 'Dragged', source, id, labels }
 }
 
-function Inserted(target: string): Diff {
-  return Edited([target], [])
+function Inserted(target: string, labels: string[]): Diff {
+  return Edited([target], [], labels)
 }
 
-function Deleted(source: string): Diff {
-  return Edited([], [source])
+function Deleted(source: string, labels: string[]): Diff {
+  return Edited([], [source], labels)
 }
 
 /**
@@ -550,10 +549,10 @@ Todo: given a source position in spans or tokens, say where in the diff it ends 
 Todo: calculate diff_match_patch here once and for all
 */
 export function calculate_diff(spans: Span[], tokens: string[]): Diff[] {
-  const moved : {[x : number] : {}} = {}
+  const moved : {[x : number] : string[]} = {}
   spans.map((s, i) => {
     if (s.moved) {
-      s.links.map(j => moved[j] = {})
+      s.links.map(j => moved[j] = s.labels)
     }
   })
   let i = 0
@@ -562,20 +561,20 @@ export function calculate_diff(spans: Span[], tokens: string[]): Diff[] {
   function Gone() {
     const u = j in moved
     if (u) {
-      out.push(Dragged(tokens[j], Utils.show(j)))
+      out.push(Dragged(tokens[j], Utils.show(j), moved[j]))
       j++
     } else {
-      out.push(Deleted(tokens[j]))
+      out.push(Deleted(tokens[j], []))
       j++
     }
   }
   while (i < spans.length) {
     const span = spans[i]
     if (span.links.length == 0) {
-      out.push(Inserted(span.text))
+      out.push(Inserted(span.text, span.labels))
       i++
     } else if (span.moved) {
-      out.push(Dropped(span.text, span.links.map(Utils.show)))
+      out.push(Dropped(span.text, span.links.map(Utils.show), span.labels))
       i++
     } else if (j == span.links[0]) {
       let width = 1
@@ -583,7 +582,8 @@ export function calculate_diff(spans: Span[], tokens: string[]): Diff[] {
         width++;
       }
       out.push(Edited(spans.slice(i, i + width).map(s => s.text),
-                      span.links.map((t) => tokens[t])))
+                      span.links.map((t) => tokens[t]),
+                      span.labels))
       i+=width
       j+=span.links.length
     } else {
@@ -679,13 +679,17 @@ export function diff_to_xml(diff: Diff[]): Element {
       case 'Unchanged':
         return enqueue(d)
       case 'Edited':
-        return d.source.map((s, i) => {
-          if (i == 0) {
-            enqueue({edit: 'Edited', target: d.target.join(''), source: s})
-          } else {
-            enqueue({edit: 'EditedContinuation', source: s})
-          }
-        })
+        if (d.source.length == 0) {
+          return enqueue({edit: 'Inserted', target: d.target.join('')})
+        } else {
+          return d.source.map((s, i) => {
+            if (i == 0) {
+              enqueue({edit: 'Edited', target: d.target.join(''), source: s})
+            } else {
+              enqueue({edit: 'EditedContinuation', source: s})
+            }
+          })
+        }
       case 'Dragged':
         return enqueue({...d, ids: [d.id]})
       case 'Dropped':
@@ -722,6 +726,7 @@ export function xml_to_diff(xml_string: string): Diff[] {
       consumed = true
       return text
     }
+    const unknown = [] as string[]
     lds.map((ld) => {
       switch (ld.edit) {
         case 'Unchanged':
@@ -732,7 +737,7 @@ export function xml_to_diff(xml_string: string): Diff[] {
           }
           const t = ld.target
           const t2 = t.slice(0, t.length - 1)
-          return diff.push(Edited(tokenize(t2), [w_text(ld)]))
+          return diff.push(Edited(tokenize(t2), [w_text(ld)], unknown))
         case 'EditedContinuation':
           if (diff.length == 0) {
             throw 'EditedContinuation with no previous Edited'
@@ -740,18 +745,16 @@ export function xml_to_diff(xml_string: string): Diff[] {
           const last = diff[diff.length - 1]
           if (last.edit == 'Edited') {
             const {target, source} = last
-            diff[diff.length - 1] = Edited(target, source.concat([w_text(ld)]))
+            diff[diff.length - 1] = Edited(target, source.concat([w_text(ld)]), unknown)
             return
           } else {
             throw 'EditedContinuation with no previous Edited'
           }
-        case 'Deleted':
-          return diff.push(Deleted(w_text(ld)))
         case 'Dragged':
           if (!ld.ids || ld.ids.length != 1) {
             throw 'Dragged without identifier'
           }
-          return diff.push(Dragged(w_text(ld), ld.ids[0]))
+          return diff.push(Dragged(w_text(ld), ld.ids[0], unknown))
         case 'Dropped':
           if (!ld.ids || ld.ids.length == 0) {
             throw 'Dropped without identifiers'
@@ -759,12 +762,12 @@ export function xml_to_diff(xml_string: string): Diff[] {
           if (!ld.target) {
             throw 'Dropped without target text'
           }
-          return diff.push(Dropped(ld.target, ld.ids))
+          return diff.push(Dropped(ld.target, ld.ids, unknown))
         case 'Inserted':
           if (!ld.target) {
             throw 'Inserted without target text'
           }
-          return diff.push(Inserted(ld.target))
+          return diff.push(Inserted(ld.target, unknown))
         default:
           throw 'Unknown edit type: ' + ld.edit
       }
@@ -824,11 +827,11 @@ export function invert_diff(diff: RichDiff[]): Diff[] {
       case 'Unchanged':
         return d
       case 'Edited':
-        return Edited(d.source, d.target)
+        return Edited(d.source, d.target, d.labels)
       case 'Dragged':
-        return Dropped(d.source, d.rev_ids)
+        return Dropped(d.source, d.rev_ids, d.labels)
       case 'Dropped':
-        return Dragged(d.target, d.rev_id)
+        return Dragged(d.target, d.rev_id, d.labels)
     }
   })
 }

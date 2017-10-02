@@ -24,15 +24,23 @@ const LadderTable = style(
 const Cell = style(
   debug_name('Cell'),
   csstips.horizontal,
+  csstips.aroundJustified,
   csstips.horizontallySpaced(5),
-  {
-    alignSelf: 'center',
-    '-webkit-align-self': 'center',
-  })
+  )
 
 const InnerCell = style(
    debug_name('Inner_Cell'),
+   { background: 'white' },
+   csstips.padding('2px', '0'),
    csstips.horizontal)
+
+const BorderCell = style(
+   csstips.border('1.5px #777 solid'),
+   { borderRadius: '3px' },
+   { fontSize: '13px' },
+   { background: 'white' },
+   csstips.padding('2px')
+)
 
 const Path = style({
   stroke: "#777",
@@ -65,42 +73,50 @@ const avg = (xs: number[]) => {
 
 type Link
   = { type: 'segment', from: string, to: string }
-  | { type: 'upper', from: string, converge: string }
-  | { type: 'lower', to: string, converge: string }
+//  | { type: 'upper', from: string, converge: string }
+//  | { type: 'lower', to: string, converge: string }
 
 export function ladder_diff(diff: Spans.SemiRichDiff[], pos_dict: Positions.PosDict): VNode {
   const links = [] as Link[]
   // If we are only doing drag or drop and previous did as well,
   // we don't need to start a new column, we can just push onto its parts
   const last_edit_type = '__init__'
-  const cols = [] as [VNode[], VNode[]][]
+  const cols = [] as [VNode[], VNode[], VNode[]][]
   const name = (vnode: VNode, prefix: string, i: number, j: number|undefined = undefined) => {
     return Positions.posid(prefix+i+(j == undefined ? '' : '.'+j), pos_dict, vnode)
   }
+  const labels = {} as Record<string, boolean>
   diff.map((d, i) => {
-    function elements(): [VNode | null, VNode | null] {
+    function elements(): [VNode | null, VNode | null, VNode | null] {
+      let mid = null
       switch (d.edit) {
         case 'Unchanged':
           links.push({ type: 'segment', from: 'top'+i, to: 'bot'+i })
           return [
             name(span(d.source), 'top', i),
+            null,
             name(span(d.source), 'bot', i)
           ]
         case 'Dragged':
-          if (!d.nullary) {
-            links.push({type: 'upper', from: 'top'+i, converge: d.join_id})
+          links.push({type: 'segment', from: 'top'+i, to: d.join_id + '0'})
+          if (d.nullary) {
+            console.log(d.labels)
+            mid = name(h('span', {classes: [BorderCell]}, d.labels.join(', ')), d.join_id, 0)
           }
-          return [name(h('span', {classes: [InnerCell]}, deletes(d.source_diff)), 'top', i), null]
+          return [name(h('span', {classes: [InnerCell]}, deletes(d.source_diff)), 'top', i), mid, null]
         case 'Dropped':
-          if (!d.nullary) {
-            links.push({type: 'lower', to: 'bot'+i, converge: d.join_id})
+          links.push({type: 'segment', to: 'bot'+i, from: d.join_id + '0'})
+          if (!labels[d.join_id]) {
+            labels[d.join_id] = true
+            console.log(d.labels)
+            mid = name(h('span', {classes: [BorderCell]}, d.labels.join(', ')), d.join_id, 0)
           }
-          return [null, name(h('span', {classes: [InnerCell]}, inserts(d.target_diff)), 'bot', i)]
+          return [null, mid, name(h('span', {classes: [InnerCell]}, inserts(d.target_diff)), 'bot', i)]
         default:
           return d
       }
     }
-    const [top, bot] = elements().map(x => x == null ? [] : [x])
+    const [top, mid, bot] = elements().map(x => x == null ? [] : [x])
     let new_col = true
     if (i > 0) {
       const prev = diff[i-1]
@@ -117,73 +133,35 @@ export function ladder_diff(diff: Spans.SemiRichDiff[], pos_dict: Positions.PosD
       }
     }
     if (new_col) {
-      cols.push([top, bot])
+      cols.push([top, mid, bot])
     } else {
       cols[cols.length-1][0].push(...top)
-      cols[cols.length-1][1].push(...bot)
+      cols[cols.length-1][1].push(...mid)
+      cols[cols.length-1][2].push(...bot)
     }
   })
-  const ladder = Positions.posid('table', pos_dict, table(cols.map(([u, d]) => [
-    h('span', {classes: [Cell]}, u),
-    h('span', {classes: [Cell]}, d)
+  const ladder = Positions.posid('table', pos_dict, table(cols.map(([u, m, d]) => [
+    h('div', {classes: [Cell]}, u.length == 0 ? [h('div', {classes: [InnerCell]}, '\u200b')] : u),
+    h('div', {classes: [Cell]}, m.length == 0 ? []                                           : m),
+    h('div', {classes: [Cell]}, d.length == 0 ? [h('div', {classes: [InnerCell]}, '\u200b')] : d)
   ]), [LadderTable]))
-  const m = {} as Record<string, number[]>
-  links.map(link => {
-    if (link.type == 'upper') {
-      const c = link.converge;
-      if (link.from in pos_dict.dict) {
-        (m[c] || (m[c] = [])).push(Positions.hmid(pos_dict.dict[link.from]));
-      }
-    } else if (link.type == 'lower') {
-      const c = link.converge;
-      if (link.to in pos_dict.dict) {
-        (m[c] || (m[c] = [])).push(Positions.hmid(pos_dict.dict[link.to]));
-      }
-    }
-  })
-  const table_pos = pos_dict.dict['table']
-  const ym = table_pos ? Positions.vmid(table_pos) - 2 : null
 
-  const svg = ym == null ? h('span') :
-  h('svg', {classes: [Classes.Width100Pct]}, links.map(link => {
-    if (link.type == 'upper') {
-      const top = pos_dict.dict[link.from]
-      if (!top) return;
-      const x1 = Positions.hmid(top)
-      const y1 = Positions.bot(top)
-      const x2 = avg(m[link.converge])
-      const y2 = ym
-      const d = 15
-      if (x2 == null) return
-      return h('path', {attrs: {
-        d: ['M', x1, y1, 'Q', x1, y1 + d, x2, y2].join(' '),
-      }, classes: [Path]})
-    } else if (link.type == 'lower') {
-      const bot = pos_dict.dict[link.to]
-      if (!bot) return;
-      const x1 = Positions.hmid(bot)
-      const y1 = bot.top
-      const x2 = avg(m[link.converge])
-      const y2 = ym
-      const d = -15
-      if (x2 == null) return
-      return h('path', {attrs: {
-        d: ['M', x1, y1, 'Q', x1, y1 + d, x2, y2].join(' '),
-      }, classes: [Path]})
-    } else if (link.type == 'segment') {
-      const top = pos_dict.dict[link.from]
-      const bot = pos_dict.dict[link.to]
-      if (!top || !bot) return;
-      const x1 = Positions.hmid(top)
-      const y1 = Positions.bot(top)
-      const x2 = Positions.hmid(bot)
-      const y2 = bot.top
-      const d = 35 * (-1 / (Math.abs(x1 - x2) + 1) + 1)
-      return h('path', {attrs: {
-        d: ['M', x1, y1, 'C', x1, y1 + d, x2, y2 - d, x2, y2].join(' '),
-      }, classes: [Path]})
-    }
-  }).filter(x => x != null))
+  const svg = h('svg', {classes: [Classes.Width100Pct]}, links.map(link => {
+      if (link.type == 'segment') {
+        const top = pos_dict.dict[link.from]
+        const bot = pos_dict.dict[link.to]
+        if (!top || !bot) return;
+        const x1 = Positions.hmid(top)
+        const y1 = Positions.bot(top)
+        const x2 = Positions.hmid(bot)
+        const y2 = bot.top // Positions.top(bot)
+        const d = 20 * (-1 / (Math.abs(x1 - x2) + 1) + 1)
+        return h('path', {attrs: {
+          d: ['M', x1, y1, 'C', x1, y1 + d, x2, y2 - d, x2, y2].join(' '),
+        }, classes: [Path]})
+      }
+    }).filter(x => x != null)
+  )
   return Positions.relative(ladder, svg, ['LadderRoot'])
 }
 

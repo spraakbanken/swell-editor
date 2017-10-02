@@ -45,6 +45,12 @@ describe('permute', () =>
     xs => Utils.array_multiset_eq(xs, permute(xs)(0)))
 )
 
+function nearray<A>(g: jsc.Arbitrary<A>) {
+  return jsc.pair(g, jsc.array(g)).smap<A[]>(
+    ([a, as]) => [a].concat(as),
+    as => [as[0], as.slice(1)])
+}
+
 function alphabet(cs: string): jsc.Arbitrary<string> {
   return jsc.array(
     jsc.oneof<string>(Utils.str_map(cs, c => jsc.constant(c)))
@@ -52,7 +58,7 @@ function alphabet(cs: string): jsc.Arbitrary<string> {
 }
 
 function nealphabet(cs: string): jsc.Arbitrary<string> {
-  return jsc.nearray(
+  return nearray(
     jsc.oneof<string>(Utils.str_map(cs, c => jsc.constant(c)))
   ).smap((ss) => ss.join(''), (s) => Utils.str_map(s, c => c))
 }
@@ -64,14 +70,17 @@ const head_text: jsc.Arbitrary<string> = alphabet('|\\ab ')
 /** Text not starting with whitespace */
 const tail_text: jsc.Arbitrary<string> = head_text.smap(s => 'a' + s, a_s => a_s.slice(1))
 
+const token_text: jsc.Arbitrary<string> =
+  jsc.pair(nealphabet('|\\ab'), nealphabet(' \n'))
+     .smap(([a, b]) => a + b, Utils.whitespace_split)
+
 class Pair<A,B> {
   constructor(public readonly first: A, public readonly second: B) {}
 }
 
 const gen_spans: jsc.Generator<Spans.Span[]> = jsc.generator.bless(
   (size : number) => {
-    const toks = jsc.nearray(tail_text).generator(Math.pow(2,size))
-    const texts = toks.map((text) => text + ' ') // make sure each text segment ends with whitespace
+    const texts = nearray(token_text).generator(Math.pow(2,size))
     const links = increasing(texts.map(_ => jsc.small(jsc.array(jsc.integer)).generator(size)))
 
     /** indexes to move */
@@ -185,7 +194,7 @@ const LaxDiff: jsc.Arbitrary<Spans.LaxDiff> =
   jsc.record({
     edit: alphabet('Abcd'),
     target: jsc.oneof([alphabet(':\| a1'), jsc.constant(undefined)]),
-    ids: jsc.oneof([jsc.nearray(nealphabet('1234567890')), jsc.constant(undefined)]),
+    ids: jsc.oneof([nearray(nealphabet('1234567890')), jsc.constant(undefined)]),
   })
 
 type Rearrange = { kind: 'Rearrange', ixs: number[], side: boolean }
@@ -232,7 +241,7 @@ function restrictModify(spans: Spans.Span[], r: Modify): {begin: number, end: nu
 }
 
 describe("Utils", () => {
-  jsc.property("multi_token_diff", jsc.nearray(nealphabet('ab ')), alphabet('ab '), (ss, s2) => {
+  jsc.property("multi_token_diff", nearray(nealphabet('ab ')), alphabet('ab '), (ss, s2) => {
     const md = Utils.multi_token_diff(ss, s2)
     const flatten_md = [].concat(...md)
     const info = {ss, s2, md, flatten_md}
@@ -330,10 +339,8 @@ describe("Spans", () => {
     })
   })
 
-  /*
-
   describe("diff", () => {
-    jsc.property("invertible", arb_spans, jsc.nearray(nealphabet('|\\ab')), (spans, tokens) => {
+    jsc.property("invertible", arb_spans, nearray(nealphabet('|\\ab')), (spans, tokens) => {
       const max = Utils.flatten(spans.map(s => s.links)).reduce((x,y) => Math.max(x,y), 0)
       const tokens2 = Utils.cycle(max + 1, tokens)
       const spans2 = spans.map(s => ({...s, labels: []}))
@@ -343,21 +350,38 @@ describe("Spans", () => {
       return eq(true, isEqual({spans: spans2, tokens: tokens2}, res), info)
     })
   })
-
-  describe("xml diff", () => {
-    jsc.property("invertible", arb_spans, jsc.nearray(nealphabet('|\\ab')), (spans, tokens) => {
-      const max = Utils.flatten(spans.map(s => s.links)).reduce((x,y) => Math.max(x,y), 0)
-      const tokens2 = Utils.cycle(max + 1, tokens)
-      const spans2 = spans.map(s => ({...s, labels: []}))
-      const diff = Spans.calculate_diff(spans, tokens2)
-      const xml = Spans.diff_to_xml(diff)
-      const xml_string = new XMLSerializer().serializeToString(xml)
-      const diff2 = Spans.xml_to_diff(xml_string)
-      const res = Spans.diff_to_spans(diff2)
-      const info = {} // {spans2, tokens2, diff, diff2, res}
-      return eq(true, isEqual({spans: spans2, tokens: tokens2}, res), info)
-    })
-  })
-  */
 })
+
+function xml_diff_invertible(spans: Spans.Span[], tokens: string[])  {
+  const max = Utils.flatten(spans.map(s => s.links)).reduce((x,y) => Math.max(x,y), 0)
+  const tokens2 = Utils.cycle(max + 1, tokens)
+  const spans2 = spans.map(s => ({...s, labels: []}))
+  const start = {spans: spans2, tokens: tokens2}
+  const diff = Spans.calculate_diff(spans2, tokens2)
+  const xml = Spans.diff_to_xml(diff)
+  const xml_string = new XMLSerializer().serializeToString(xml)
+  const diff2 = Spans.xml_to_diff(xml_string)
+  const res = Spans.diff_to_spans(diff2)
+  const info = {start, res, diff, diff2}
+  return eq(true, isEqual(start, res), info)
+}
+
+describe("xml diff", () =>
+  jsc.property("invertible", arb_spans, nearray(nealphabet('ab')), xml_diff_invertible)
+)
+
+const test_case = {
+   "spans": [
+   {
+      "text": "a ",
+      "links": [],
+      "moved": false,
+      "labels": []
+    }
+  ],
+  "tokens": [
+    "b"
+  ]
+}
+xml_diff_invertible(test_case.spans, test_case.tokens)
 

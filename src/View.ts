@@ -58,22 +58,26 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
   while (root_element.lastChild) {
     root_element.removeChild(root_element.lastChild)
   }
+  const cm_div = document.createElement('div')
+  cm_div.className = 'CodeMirrors'
+  root_element.appendChild(cm_div)
   const history_keys = {
     "Ctrl-Z": undo,
     "Ctrl-Y": redo,
-    "Ctrl-R": revert
+    "Ctrl-R": revert,
+    "Alt-L": label
   }
   console.log('debug', debug)
 
-  const CM = (name: string, opts: CodeMirror.EditorConfiguration) => {
-    const cm = CodeMirror(root_element, {lineWrapping: true, ...opts})
+  const CM = (onto: HTMLElement, name: string, opts: CodeMirror.EditorConfiguration) => {
+    const cm = CodeMirror(onto, {lineWrapping: true, ...opts})
     cm.getWrapperElement().className += ' ' + name
     return cm
   }
 
-  const cm_orig = CM('cm_orig', {readOnly: true})
-  const cm_main = CM('cm_main', {extraKeys: history_keys})
-  const cm_diff = CM('cm_diff', {readOnly: true})
+  const cm_orig = CM(cm_div, 'cm_orig', {readOnly: true})
+  const cm_main = CM(cm_div, 'cm_main', {extraKeys: history_keys})
+  const cm_diff = CM(cm_div, 'cm_diff', {readOnly: true})
 
   const patch = snabbdom.init([classes_module, snabbdomStyle, snabbdomAttributes])
   const container = document.createElement('div')
@@ -81,7 +85,7 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
   let vnode = patch(container, snabbdom.h('div'))
   let pos_dict = Positions.init_pos_dict()
 
-  const cm_xml = CM('cm_xml', {lineWrapping: false, mode: 'xml', extraKeys: history_keys})
+  const cm_xml = CM(root_element, 'cm_xml', {lineWrapping: false, mode: 'xml', extraKeys: history_keys})
 
   let spans = state.now.spans
   let tokens = state.now.tokens
@@ -127,7 +131,6 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
 
   function set_spans(new_spans : Span[], new_tokens?: string[]) {
     //log(JSON.stringify({spans, tokens}))
-    debug_state()
     if (new_spans.length == 0) {
       log('not updating to empty spans')
       // update_view will be run on('change')
@@ -144,11 +147,12 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
     past = past.concat([{spans, tokens}])
     spans = new_spans
     tokens = new_tokens || tokens
+    debug_state()
     future = [] as State[]
   }
   ; (window as any).set_state = (s: Span[], t: string[]) => { set_spans(s,t); update_view(); }
   ; (window as any).get_state = () => ({spans, tokens})
-  const debug_state = () => debug_table(spans.map(({labels, ...s}) => ({...s, original: s.links.map(i => tokens[i]) })))
+  const debug_state = () => debug_table(spans.map(({...s}) => ({...s, original: s.links.map(i => tokens[i]) })))
   ; (window as any).debug_state = debug_state
   ; (window as any).invert = () => {
     const res = Spans.invert(spans, tokens)
@@ -200,6 +204,17 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
       const {head} = sels[0]
       const index = Spans.span_from_offset(spans, cm_main.getDoc().indexFromPos(head))[0]
       set_spans(Spans.revert(index, spans, tokens))
+      update_view()
+    }
+  }
+
+  function label() {
+    const sels = cm_main.getDoc().listSelections()
+    if (sels) {
+      const {head} = sels[0]
+      const index = Spans.span_from_offset(spans, cm_main.getDoc().indexFromPos(head))[0]
+      const [pre, [me], post] = Utils.splitAt3(spans, index, index+1)
+      set_spans([...pre, {...me, labels: [...me.labels, "ABCXYZ"[Math.floor(Math.random()*6)]]}, ...post])
       update_view()
     }
   }

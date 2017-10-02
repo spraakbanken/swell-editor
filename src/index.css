@@ -8,14 +8,27 @@
     font-family: 'Consolas', monospace;
     width: 98%;
     height: 400px;
+    display: none;
+}
+
+.CodeMirrors {
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-wrap: wrap;
+    flex-wrap: wrap;
+}
+
+.CodeMirrors > *:not(:last-child) {
+    margin-right: 5px;
 }
 
 .CodeMirror {
     border: 1px solid #ddd;
-    width: 32%;
-    display: inline-block;
-    margin-right: 1%;
     height: 300px;
+    -webkit-flex-grow: 1;
+    flex-grow: 1;
+    -webkit-flex-basis: 0;
+    flex-basis: 0;
     min-width: 250px;
 }
 
