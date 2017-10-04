@@ -61,8 +61,12 @@ declare const module: any;
 if (debug) {
   if (module.hot) {
     module.hot.accept('./View.ts', (_: any) => {
-      View = require('./View.ts')
-      get = View.bind(root, get())
+      try {
+        View = require('./View.ts')
+        get = View.bind(root, get())
+      } catch (e) {
+        console.error(e)
+      }
     })
   }
 }

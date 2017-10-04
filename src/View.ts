@@ -7,6 +7,7 @@ import * as CodeMirror from "codemirror"
 import { Editor } from "codemirror"
 import * as Spans from "./Spans"
 import * as Utils from "./Utils"
+import * as Classes from './Classes'
 import { classes_module } from './Classes'
 import { Span } from "./Spans"
 import * as ViewDiff from "./ViewDiff"
@@ -14,9 +15,13 @@ import { log, debug, debug_table } from "./dev"
 import * as Positions from "./Positions"
 import * as typestyle from "typestyle"
 
+import { h } from "snabbdom"
+import { VNode } from "snabbdom/vnode"
+
 import * as snabbdom from "snabbdom"
-import snabbdomStyle from 'snabbdom/modules/style'
-import snabbdomAttributes from 'snabbdom/modules/attributes'
+import snabbdomAttrs from 'snabbdom/modules/attributes'
+import snabbdomProps from 'snabbdom/modules/props'
+import snabbdomEvents from 'snabbdom/modules/eventlisteners'
 
 // no @types for prettify-xml
 declare function require(module_name: string): any
@@ -48,16 +53,70 @@ function whitespace_start(s: string): number {
   }
 }
 
+function checkbox(value: boolean, update: (new_value: boolean) => void): VNode {
+  return h('input', {
+    props: {type: 'checkbox', value},
+    on: {
+      change: (evt: Event) => update((evt.target as any).checked)
+    }
+  })
+}
+
 export function init_data(original: string): UndoableState {
   const tokens = Spans.tokenize(original)
   const spans = Spans.init(tokens)
   return {now: {tokens, spans}, past: [] as State[], future: [] as State[]}
 }
 
+export function wrap(div: HTMLDivElement, post: () => void) {
+  function move(_: any, v: VNode) {
+    if (v.elm) {
+      v.elm.appendChild(div)
+    }
+    post()
+  }
+
+  return h('div', {
+    hook: {
+      insert: v => move(null, v),
+      //create: move,
+      //update: move,
+      //postpatch: move
+    }
+  })
+}
+
+interface EditorAndNode {
+  editor: CodeMirror.Editor,
+  vnode: () => VNode
+}
+
+function CM(opts: CodeMirror.EditorConfiguration): EditorAndNode {
+  const div = document.createElement('div')
+  const editor = CodeMirror(div, {lineWrapping: true, ...opts})
+  return {editor, vnode: () => wrap(div, () => editor.refresh()) }
+}
+
+/*
+export function bind(root_element: HTMLElement, state: UndoableState): () => UndoableState {
+
+  const patch = snabbdom.init([classes_module, snabbdomStyle, snabbdomAttributes])
+  const container = document.createElement('div')
+  root_element.appendChild(container)
+  const {editor: cm, vnode: wrapped} = CM({})
+  cm.setValue('apa')
+  let vnode = patch(container, snabbdom.h('div', [wrapped()]))
+  const ladder = h('div',[h('span', 'apa'), wrapped()])
+  vnode = patch(vnode, ladder)
+  return () => state
+}
+*/
+
 export function bind(root_element: HTMLElement, state: UndoableState): () => UndoableState {
   while (root_element.lastChild) {
     root_element.removeChild(root_element.lastChild)
   }
+
   const cm_div = document.createElement('div')
   cm_div.className = 'CodeMirrors'
   root_element.appendChild(cm_div)
@@ -69,29 +128,54 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
   }
   console.log('debug', debug)
 
-  const CM = (onto: HTMLElement, caption: string, name: string, opts: CodeMirror.EditorConfiguration) => {
-    const a_div = document.createElement('div')
-    const text = document.createElement('div')
-    text.appendChild(document.createTextNode(caption))
-    text.className = 'caption'
-    a_div.appendChild(text)
-    const cm = CodeMirror(a_div, {lineWrapping: true, ...opts})
-    cm.getWrapperElement().className += ' ' + name
-    onto.appendChild(a_div)
-    return cm
+  function MkCM(caption: string, name: string, opts: CodeMirror.EditorConfiguration): EditorAndNode {
+    const {editor, vnode} = CM(opts)
+    return {
+      editor,
+      vnode: () =>
+        h('div', {key: name, classes: [name]}, [
+          h('div', {classes: ['caption']}, caption),
+          vnode()
+        ])
+    }
   }
 
-  const cm_orig = CM(cm_div, 'Source text', 'cm_orig', {readOnly: true})
-  const cm_main = CM(cm_div, 'Normalised text', 'cm_main', {extraKeys: history_keys})
-  const cm_diff = CM(cm_div, 'Changes', 'cm_diff', {readOnly: true})
+  const {editor: cm_orig, vnode: vnode_orig} = MkCM('Source text', 'cm_orig', {readOnly: true})
+  const {editor: cm_main, vnode: vnode_main} = MkCM('Normalised text', 'cm_main', {extraKeys: history_keys})
+  const {editor: cm_diff, vnode: vnode_diff} = MkCM('Changes', 'cm_diff', {readOnly: true})
+  const {editor: cm_xml, vnode: vnode_xml} = MkCM('XML representation', 'cm_xml', {lineWrapping: false, mode: 'xml', extraKeys: history_keys})
 
-  const patch = snabbdom.init([classes_module, snabbdomStyle, snabbdomAttributes])
+  let show_xml = false
+
+  const view = (ladder: VNode) =>
+    h('div', [
+      h('div', {classes: [Classes.SideBySide]}, [
+        vnode_orig(),
+        vnode_main(),
+        vnode_diff(),
+      ]),
+      h('div', {key: 'ladder'}, [
+        h('div', {classes: ['caption']},
+          'Alignment of source text and normalised text'),
+        ladder
+      ]),
+      h('div', {classes: [Classes.Vertical]}, [
+        h('span', {classes: [Classes.FlushRight]}, [
+          checkbox(show_xml, b => {
+            show_xml = b
+            partial_update_view()
+          }),
+          h('span', 'Show XML')
+        ]),
+        show_xml ? vnode_xml() : null
+      ])
+    ])
+
+  const patch = snabbdom.init([classes_module, snabbdomAttrs, snabbdomEvents, snabbdomProps])
   const container = document.createElement('div')
   root_element.appendChild(container)
-  let vnode = patch(container, snabbdom.h('div'))
+  let vnode = patch(container, view(h('span')))
   let pos_dict = Positions.init_pos_dict()
-
-  const cm_xml = CM(root_element, 'XML representation', 'cm_xml', {lineWrapping: false, mode: 'xml', extraKeys: history_keys})
 
   let spans = state.now.spans
   let tokens = state.now.tokens
@@ -115,15 +199,13 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
     const diff = Spans.calculate_diff(spans, tokens)
     const rich_diff = Spans.enrichen_diff(diff)
     const semi_rich_diff = Spans.semirich(rich_diff)
-    debug_table(semi_rich_diff)
+    //debug_table(semi_rich_diff)
     ViewDiff.draw_diff(semi_rich_diff, cm_diff)
     typestyle.forceRenderStyles()
     do {
       pos_dict.modified = false
-      const ladder = snabbdom.h('div', [snabbdom.h('div', {classes: ['caption']}, 'Alignment of source text and normalised text'),
-                                        ViewDiff.ladder_diff(semi_rich_diff, pos_dict)])
-      vnode = patch(vnode, ladder)
-      const elm = (vnode as any).elm
+      const ladder = ViewDiff.ladder_diff(semi_rich_diff, pos_dict)
+      vnode = patch(vnode, view(ladder))
     } while (pos_dict.modified)
     const pretty_xml = format(new XMLSerializer().serializeToString(Spans.diff_to_xml(diff)))
     if (pretty_xml != cm_xml.getDoc().getValue()) {
@@ -154,7 +236,7 @@ export function bind(root_element: HTMLElement, state: UndoableState): () => Und
     past = past.concat([{spans, tokens}])
     spans = new_spans
     tokens = new_tokens || tokens
-    debug_state()
+    //debug_state()
     future = [] as State[]
   }
   ; (window as any).set_state = (s: Span[], t: string[]) => { set_spans(s,t); update_view(); }

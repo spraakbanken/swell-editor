@@ -100,7 +100,7 @@ export function ladder_diff(diff: Spans.SemiRichDiff[], pos_dict: Positions.PosD
         case 'Dragged':
           links.push({type: 'segment', from: 'top'+i, to: d.join_id + '0'})
           if (d.nullary) {
-            console.log(d.labels)
+            //console.log(d.labels)
             mid = name(h('span', {classes: [BorderCell]}, d.labels.join(', ')), d.join_id, 0)
           }
           return [name(h('span', {classes: [InnerCell]}, deletes(d.source_diff)), 'top', i), mid, null]
@@ -108,7 +108,7 @@ export function ladder_diff(diff: Spans.SemiRichDiff[], pos_dict: Positions.PosD
           links.push({type: 'segment', to: 'bot'+i, from: d.join_id + '0'})
           if (!labels[d.join_id]) {
             labels[d.join_id] = true
-            console.log(d.labels)
+            //console.log(d.labels)
             mid = name(h('span', {classes: [BorderCell]}, d.labels.join(', ')), d.join_id, 0)
           }
           return [null, mid, name(h('span', {classes: [InnerCell]}, inserts(d.target_diff)), 'bot', i)]

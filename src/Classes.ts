@@ -1,5 +1,6 @@
 import {VNode, VNodeData} from 'snabbdom/vnode'
 import {style} from "typestyle"
+import * as csstips from "csstips"
 
 declare module "snabbdom/vnode" {
   export interface VNodeData {
@@ -83,5 +84,13 @@ export const Below = style({
   zIndex: -1
 })
 
+export const SideBySide = style(csstips.horizontal, {
+  $nest: {
+    "& > *": csstips.flex
+  }
+})
 
+export const FlushRight = style(csstips.selfEnd)
+
+export const Vertical = style(csstips.vertical)
 
