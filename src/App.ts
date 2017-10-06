@@ -4,21 +4,16 @@ Right now we use the cut word part of the CM state using a CM mark
 
 */
 import * as CodeMirror from "codemirror"
-import { Editor } from "codemirror"
-import * as Spans from "./Spans"
-import * as Utils from "./Utils"
-import * as Classes from './Classes'
-import { classes_module } from './Classes'
-import { Span } from "./Spans"
-import * as ViewDiff from "./ViewDiff"
-import { log, debug, debug_table } from "./dev"
-import * as Positions from "./Positions"
 import * as typestyle from "typestyle"
-import {AppState, EditorState} from "./AppTypes"
+import * as Utils from "./Utils"
+import * as ViewDiff from "./ViewDiff"
 import * as AppTypes from "./AppTypes"
 import * as View from "./View"
+import * as Spans from "./Spans"
 
-import { VNode, VNodeData } from "snabbdom/vnode"
+import { Span } from "./Spans"
+import { log, debug, debug_table } from "./dev"
+import { AppState, EditorState } from "./AppTypes"
 
 // no @types for prettify-xml
 declare function require(module_name: string): any
@@ -31,6 +26,11 @@ function whitespace_start(s: string): number {
   } else {
     return s.length
   }
+}
+
+export function CM(opts: CodeMirror.EditorConfiguration): CodeMirror.Editor {
+  const div = document.createElement('div')
+  return CodeMirror(div, {lineWrapping: true, ...opts})
 }
 
 export function bind(root_element: HTMLElement, init_state: AppState): () => AppState{
@@ -73,7 +73,7 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
     //debug_state()
   }
 
-  ; (window as any).set_state = set_spans
+  ; (window as any).set_state = (spans: Span[], tokens: string[]) => { set_spans(spans, tokens); update_view() }
   ; (window as any).get_state = () => (state.editor_state.now)
   //const debug_state = () => debug_table(spans.map(({...s}) => ({...s, original: s.links.map(i => tokens[i]) })))
   //; (window as any).debug_state = debug_state
@@ -95,10 +95,11 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
   }
   console.log('debug', debug)
 
-  const {editor: cm_orig, vnode: view_orig} = View.MkCM('Source text', 'cm_orig', {readOnly: true}, Classes.TextEditor, Classes.Editor)
-  const {editor: cm_main, vnode: view_main} = View.MkCM('Normalised text', 'cm_main', {extraKeys: history_keys}, Classes.TextEditor, Classes.Editor)
-  const {editor: cm_diff, vnode: view_diff} = View.MkCM('Changes', 'cm_diff', {readOnly: true}, Classes.TextEditor, Classes.Editor)
-  const {editor: cm_xml, vnode: view_xml} = View.MkCM('XML representation', 'cm_xml', {lineWrapping: false, mode: 'xml', extraKeys: history_keys}, Classes.CodeEditor, Classes.Editor)
+  // only create CMs here, move wrapping business to someone else to deal with
+  const cm_orig = CM({readOnly: true})
+  const cm_main = CM({extraKeys: history_keys})
+  const cm_diff = CM({readOnly: true})
+  const cm_xml = CM({lineWrapping: false, mode: 'xml', extraKeys: history_keys})
 
   const patch = View.setup(root_element)
 
@@ -124,14 +125,9 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
     typestyle.forceRenderStyles()
 
     patch({
-      view_orig,
-      view_main,
-      view_diff,
-      view_xml,
       semi_rich_diff,
-      cm_diff,
-      state,
-      set_state,
+      cm_orig, cm_main, cm_diff, cm_xml,
+      state, set_state,
     })
 
     const pretty_xml = format(new XMLSerializer().serializeToString(Spans.diff_to_xml(diff)))

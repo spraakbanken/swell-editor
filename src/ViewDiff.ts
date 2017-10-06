@@ -1,67 +1,23 @@
-import * as CodeMirror from "codemirror"
 import * as Spans from "./Spans"
 import * as Utils from "./Utils"
 import { TokenDiff }  from "./Utils"
 import * as Positions from "./Positions"
-import { h } from "snabbdom"
-import './Classes'
 import * as Classes from './Classes'
-import { VNode } from "snabbdom/vnode"
+import { div, VNode, h } from "./Snabbdom"
+import * as Snabbdom from "./Snabbdom"
 import * as csstips from "csstips"
 import { style } from "typestyle"
 import { debug_name } from './dev'
 
-const LadderTable = style(
-  debug_name('LadderTable'), {
-  height: '120px',
-  padding: '10px',
-  width: [
-    '-webkit-fit-content',
-    'fit-content',
-  ]
-})
-
-const Cell = style(
-  debug_name('Cell'),
-  csstips.horizontal,
-  csstips.aroundJustified,
-  csstips.horizontallySpaced(5),
-  )
-
-const InnerCell = style(
-   debug_name('Inner_Cell'),
-   { background: 'white' },
-   csstips.padding('2px', '0'),
-   csstips.horizontal)
-
-const BorderCell = style(
-   csstips.border('1.5px #777 solid'),
-   { borderRadius: '3px' },
-   { fontSize: '13px' },
-   { background: 'white' },
-   csstips.padding('2px')
-)
-
-const Path = style({
-  stroke: "#777",
-  strokeWidth: '1.5',
-  fill: "none"
-})
-
-const row = style(csstips.horizontal, csstips.horizontallySpaced(5))
-const column = style(csstips.content, csstips.vertical, csstips.betweenJustified)
-
-
 function table(cols: VNode[][], classes: string[] = []): VNode {
-  return h('div', {classes: [row, ...classes]},
-  cols.map(col => h('div', {classes: [column]}, col)))
+  return div(Classes.Row, {}, ...classes)(
+    ...cols.map(col => div(Classes.Column)(...col)))
 }
 
 // todo: keys on VNodes
 
 const span = (t ?: string, cls: string[] = []) =>
-  t ? h('span', {classes: [...cls, InnerCell]}, t)
-    : h('span', {classes: [...cls, InnerCell]})
+  Snabbdom.span(Classes.InnerCell, {}, ...cls)(...(t ? [t] : []))
 
 const avg = (xs: number[]) => {
   if (xs.length == 0) {
@@ -78,12 +34,10 @@ type Link
 
 export function ladder_diff(diff: Spans.SemiRichDiff[], pos_dict: Positions.PosDict): VNode {
   const links = [] as Link[]
-  // If we are only doing drag or drop and previous did as well,
-  // we don't need to start a new column, we can just push onto its parts
-  const last_edit_type = '__init__'
   const cols = [] as [VNode[], VNode[], VNode[]][]
   const name = (vnode: VNode, prefix: string, i: number, j: number|undefined = undefined) => {
-    return Positions.posid(prefix+i+(j == undefined ? '' : '.'+j), pos_dict, vnode)
+    const key = prefix+i+(j == undefined ? '' : '.'+j)
+    return Positions.posid(key, pos_dict, vnode)
   }
   const labels = {} as Record<string, boolean>
   diff.map((d, i) => {
@@ -101,22 +55,24 @@ export function ladder_diff(diff: Spans.SemiRichDiff[], pos_dict: Positions.PosD
           links.push({type: 'segment', from: 'top'+i, to: d.join_id + '0'})
           if (d.nullary) {
             //console.log(d.labels)
-            mid = name(h('span', {classes: [BorderCell]}, d.labels.join(', ')), d.join_id, 0)
+            mid = name(h('span', {classes: [Classes.BorderCell]}, d.labels.join(', ')), d.join_id, 0)
           }
-          return [name(h('span', {classes: [InnerCell]}, deletes(d.source_diff)), 'top', i), mid, null]
+          return [name(h('span', {classes: [Classes.InnerCell]}, deletes(d.source_diff)), 'top', i), mid, null]
         case 'Dropped':
           links.push({type: 'segment', to: 'bot'+i, from: d.join_id + '0'})
           if (!labels[d.join_id]) {
             labels[d.join_id] = true
             //console.log(d.labels)
-            mid = name(h('span', {classes: [BorderCell]}, d.labels.join(', ')), d.join_id, 0)
+            mid = name(h('span', {classes: [Classes.BorderCell]}, d.labels.join(', ')), d.join_id, 0)
           }
-          return [null, mid, name(h('span', {classes: [InnerCell]}, inserts(d.target_diff)), 'bot', i)]
+          return [null, mid, name(h('span', {classes: [Classes.InnerCell]}, inserts(d.target_diff)), 'bot', i)]
         default:
           return d
       }
     }
-    const [top, mid, bot] = elements().map(x => x == null ? [] : [x])
+    const col = elements().map(x => x == null ? [] : [x])
+    // If we are only doing drag or drop and previous did as well,
+    // we don't need to start a new column, we can just push onto its parts
     let new_col = true
     if (i > 0) {
       const prev = diff[i-1]
@@ -133,18 +89,16 @@ export function ladder_diff(diff: Spans.SemiRichDiff[], pos_dict: Positions.PosD
       }
     }
     if (new_col) {
-      cols.push([top, mid, bot])
+      cols.push(col)
     } else {
-      cols[cols.length-1][0].push(...top)
-      cols[cols.length-1][1].push(...mid)
-      cols[cols.length-1][2].push(...bot)
+      col.map((e, i) => cols[cols.length-1][i].push(...e))
     }
   })
   const ladder = Positions.posid('table', pos_dict, table(cols.map(([u, m, d]) => [
-    h('div', {classes: [Cell]}, u.length == 0 ? [h('div', {classes: [InnerCell]}, '\u200b')] : u),
-    h('div', {classes: [Cell]}, m.length == 0 ? []                                           : m),
-    h('div', {classes: [Cell]}, d.length == 0 ? [h('div', {classes: [InnerCell]}, '\u200b')] : d)
-  ]), [LadderTable]))
+    h('div', {classes: [Classes.Cell]}, u.length == 0 ? [h('div', {classes: [Classes.InnerCell]}, '\u200b')] : u),
+    h('div', {classes: [Classes.Cell]}, m.length == 0 ? []                                           : m),
+    h('div', {classes: [Classes.Cell]}, d.length == 0 ? [h('div', {classes: [Classes.InnerCell]}, '\u200b')] : d)
+  ]), [Classes.LadderTable, Classes.MainStyle]))
 
   const svg = h('svg', {classes: [Classes.Width100Pct]}, links.map(link => {
       if (link.type == 'segment') {
@@ -155,10 +109,13 @@ export function ladder_diff(diff: Spans.SemiRichDiff[], pos_dict: Positions.PosD
         const y1 = Positions.bot(top)
         const x2 = Positions.hmid(bot)
         const y2 = bot.top // Positions.top(bot)
-        const d = 20 * (-1 / (Math.abs(x1 - x2) + 1) + 1)
-        return h('path', {attrs: {
-          d: ['M', x1, y1, 'C', x1, y1 + d, x2, y2 - d, x2, y2].join(' '),
-        }, classes: [Path]})
+        const d = 25 * (-1 / (Math.abs(x1 - x2) + 1) + 1)
+        return h('path', {
+          attrs: {
+            d: ['M', x1, y1, 'C', x1, y1 + d, x2, y2 - d, x2, y2].join(' '),
+          },
+          classes: [Classes.Path]
+        })
       }
     }).filter(x => x != null)
   )

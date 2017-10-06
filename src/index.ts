@@ -52,7 +52,7 @@ let get = App.bind(root, init)
 
 // could retain history, but we reinitialize the data here
 window.onhashchange = () => {
-  get = App.bind(root, App.init_data(window.location.hash.slice(1)))
+  get = App.bind(root, AppTypes.init_app(window.location.hash.slice(1)))
 }
 
 declare const module: any;

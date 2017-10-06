@@ -1,42 +1,6 @@
-import {VNode, VNodeData} from 'snabbdom/vnode'
-import {style} from "typestyle"
+import { style } from "typestyle"
 import * as csstips from "csstips"
 import { debug_name } from './dev'
-
-declare module "snabbdom/vnode" {
-  export interface VNodeData {
-    classes?: string[]
-  }
-}
-
-function update_classes(old_vnode: VNode, vnode: VNode) {
-  const elm: Element = vnode.elm as Element
-  const old_classes = (old_vnode.data as VNodeData).classes || []
-  const classes = (vnode.data as VNodeData).classes || []
-
-  if (old_classes === classes) return;
-
-  const now = {} as Record<string, boolean>
-  for (let name of classes) {
-    now[name] = true
-  }
-
-  const old = {} as Record<string, boolean>
-  for (let name of old_classes) {
-    if (!now[name] && name) {
-      elm.classList.remove(name);
-    }
-    old[name] = true
-  }
-
-  for (let name of classes) {
-    if (!(name in old) && name) {
-      (elm.classList as any).add(name)
-    }
-  }
-}
-
-export const classes_module = {create: update_classes, update: update_classes}
 
 export const Insert = style(debug_name('Insert'), {
   color: '#090',
@@ -107,22 +71,76 @@ export const MainStyle = style(debug_name('MainStyle'), {
 })
 
 export const Editor = style(debug_name('Editor'), {
-  border: '1px solid #ddd',
-  height: '300px',
-  minWidth: '250px',
+  $nest: {
+    '& > .CodeMirror': {
+      border: '1px solid #ddd',
+      height: '300px',
+      minWidth: '250px',
+    }
+  }
 })
 
 export const TextEditor = style(debug_name('TextEditor'), {
-  fontFamily: "'Lato', sans-serif",
-  fontSize: '15px'
+  $nest: {
+    '& > .CodeMirror': {
+      fontFamily: "'Lato', sans-serif",
+      fontSize: '15px'
+    }
+  }
 })
 
 export const CodeEditor = style(debug_name('CodeEditor'), {
-  fontFamily: "'Consolas', monospace",
-  fontSize: '15px'
+  $nest: {
+    '& > .CodeMirror': {
+      fontFamily: "'Consolas', monospace",
+      fontSize: '15px'
+    }
+  }
 })
 
 export const Caption = style(debug_name('Caption'), {
   marginTop: '10px',
   fontStyle: 'italic',
 })
+
+export const LadderTable = style(
+  debug_name('LadderTable'), {
+  height: '120px',
+  padding: '10px',
+  width: [
+    '-webkit-fit-content',
+    'fit-content',
+  ]
+})
+
+export const Cell = style(
+  debug_name('Cell'),
+  csstips.horizontal,
+  csstips.aroundJustified,
+  csstips.horizontallySpaced(5),
+)
+
+export const InnerCell = style(
+  debug_name('Inner_Cell'),
+  { background: 'white' },
+  csstips.padding('2px', '0'),
+  csstips.horizontal
+)
+
+export const BorderCell = style(
+  csstips.border('1.5px #777 solid'),
+  { borderRadius: '3px' },
+  { fontSize: '13px' },
+  { background: 'white' },
+  csstips.padding('2px')
+)
+
+export const Path = style({
+  stroke: "#777",
+  strokeWidth: '1.5',
+  fill: "none"
+})
+
+export const Row = style(csstips.horizontal, csstips.horizontallySpaced(5))
+export const Column = style(csstips.content, csstips.vertical, csstips.betweenJustified)
+
