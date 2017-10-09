@@ -13,7 +13,7 @@ import * as Spans from "./Spans"
 
 import { Span } from "./Spans"
 import { log, debug, debug_table } from "./dev"
-import { AppState, EditorState } from "./AppTypes"
+import { AppState, EditorState, Undoable } from "./AppTypes"
 
 // no @types for prettify-xml
 declare function require(module_name: string): any
@@ -46,7 +46,7 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
     set_state(f(state))
   }
 
-  function set_spans(new_spans : Span[], new_tokens: string[] = []) {
+  function advance_spans(new_spans : Span[], new_tokens: string[] = []) {
     //log(JSON.stringify({spans, tokens}))
     if (new_spans.length == 0) {
       log('not updating to empty spans')
@@ -63,29 +63,44 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
     }
     const spans = new_spans
     const tokens = new_tokens.length > 0 ? new_tokens : state.editor_state.now.tokens
-    mod_state(
-      AppTypes.on_editor_state(
-        (editor_state: AppTypes.Undoable<EditorState>) =>
-          AppTypes.advance(
-            editor_state,
-            {spans, tokens}
-      )))
+    mod_editor_state(
+      (editor_state: AppTypes.Undoable<EditorState>) =>
+        AppTypes.advance(
+          editor_state,
+          {spans, tokens}
+    ))
     //debug_state()
   }
 
-  ; (window as any).set_state = (spans: Span[], tokens: string[]) => { set_spans(spans, tokens); full_view_update() }
+  ; (window as any).set_state = (spans: Span[], tokens: string[]) => { advance_spans(spans, tokens); full_view_update() }
   ; (window as any).get_state = () => (state.editor_state.now)
-  //const debug_state = () => debug_table(spans.map(({...s}) => ({...s, original: s.links.map(i => tokens[i]) })))
-  //; (window as any).debug_state = debug_state
+  const debug_state = () => {
+    const {spans, tokens} = state.editor_state.now
+    debug_table(spans.map(({...s}) => ({...s, original: s.links.map(i => tokens[i]) })))
+  }
+  ; (window as any).debug_state = debug_state
   ; (window as any).invert = () => {
     const {spans, tokens} = state.editor_state.now
     const res = Spans.invert(spans, tokens)
-    set_spans(res.spans, res.tokens)
+    advance_spans(res.spans, res.tokens)
     full_view_update()
   }
 
-  const undo = () => { mod_state(AppTypes.on_editor_state(AppTypes.undo)); full_view_update() }
-  const redo = () => { mod_state(AppTypes.on_editor_state(AppTypes.redo)); full_view_update() }
+  function mod_editor_state(f: (s0: Undoable<EditorState>) => Undoable<EditorState>): void {
+    mod_state(AppTypes.on_editor_state(f))
+  }
+
+  function mod_state_undoable(f: (spans: Span[], tokens: string[]) => Spans.CursorUpdateInfo<Span>): void {
+    const {spans, tokens} = state.editor_state.now
+    const r = f(spans, tokens)
+    if (r.updated) {
+      console.log('updated', r.spans)
+      advance_spans(r.spans)
+    }
+  }
+
+  const undo = () => { mod_editor_state(AppTypes.undo); full_view_update() }
+  const redo = () => { mod_editor_state(AppTypes.redo); full_view_update() }
 
   const history_keys = {
     "Ctrl-Z": undo,
@@ -167,7 +182,7 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
     if (sels) {
       const {head} = sels[0]
       const index = Spans.span_from_offset(spans, cm_main.getDoc().indexFromPos(head))[0]
-      set_spans(Spans.revert(index, spans, tokens))
+      advance_spans(Spans.revert(index, spans, tokens))
       full_view_update()
     }
   }
@@ -179,7 +194,7 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
       const {head} = sels[0]
       const index = Spans.span_from_offset(spans, cm_main.getDoc().indexFromPos(head))[0]
       const [pre, [me], post] = Utils.splitAt3(spans, index, index+1)
-      set_spans([...pre, {...me, labels: [...me.labels, "ABCXYZ"[Math.floor(Math.random()*6)]]}, ...post])
+      advance_spans([...pre, {...me, labels: [...me.labels, "ABCXYZ"[Math.floor(Math.random()*6)]]}, ...post])
       full_view_update()
     }
   }
@@ -223,7 +238,7 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
       }
       log(from, to, here)
       log(spans.map(({text}) => text))
-      set_spans(Spans.rearrange(spans, from, to, here))
+      advance_spans(Spans.rearrange(spans, from, to, here))
       full_view_update()
     })
   }
@@ -266,7 +281,7 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
         if (check != '') {
           console.error(check)
         } else {
-          set_spans(res.spans, res.tokens)
+          advance_spans(res.spans, res.tokens)
           full_view_update()
         }
       } catch (e) {
@@ -301,12 +316,11 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
       const from = cm_main.getDoc().indexFromPos(change.from)
       const to = cm_main.getDoc().indexFromPos(change.to)
       const {spans, tokens} = state.editor_state.now
-      set_spans(
-        Spans.chop_up_insertions(
-          Spans.auto_revert(
-            Spans.modify(spans, from, to, change.text.join('\n')),
-            tokens),
-          tokens))
+      const new_spans = Spans.modify(spans, from, to, change.text.join('\n'))
+      advance_spans(Spans.chop_up_insertions(false)(new_spans, tokens).spans)
+      mod_state_undoable(_ => Spans.chop_up_insertions(true)(new_spans, tokens))
+      mod_state_undoable(_ => Spans.auto_revert(new_spans, tokens))
+      // bug: fix duplicate states next to each other in undo history
       partial_update_view()
       //log(spans.map(({text}) => text))
     }

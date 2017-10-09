@@ -5,7 +5,7 @@ import {debug, log} from './dev'
 
 export interface Span {
   readonly text: string,
-  readonly links: number[], // could retain the order in which they were glued together
+  readonly links: number[], // order in which they were glued together is retained
   readonly labels: string[],
   readonly moved: boolean
 }
@@ -123,24 +123,36 @@ Goes through the array backwards in case the size changes.
 Return null for no change.
 */
 function cursor<S>(f: ((prev: S | null, me: S, next: S | null) => (S | null)[] | null)): (spans: S[]) => S[] {
+  return spans => cursor_with_update_info(f)(spans).spans
+}
+
+export interface CursorUpdateInfo<S> {
+  spans: S[],
+  updated: boolean
+}
+
+function cursor_with_update_info<S>(f: ((prev: S | null, me: S, next: S | null) => (S | null)[] | null)): (spans: S[]) => CursorUpdateInfo<S>  {
   return (spans) => {
+    let updated = false
     for (let i = spans.length - 1; i >= 0; i--) {
       const prev = i > 0 ? spans[i-1] : null
       const next = i < spans.length - 1 ? spans[i+1] : null
       const replace = f(prev, spans[i], next)
       if (replace != null) {
         spans = Utils.flatten([spans.slice(0, Math.max(i-1,0)), replace.filter((x) => x != null) as S[], spans.slice(i+2)])
+        updated = true
       }
     }
-    return spans
+    return {spans, updated}
   }
 }
+
 
 /** Reverts a span if it matches the original exactly.
 
 Only performed when this breaks up a span into many, and they are not moved */
-export function auto_revert(spans: Span[], original: string[]): Span[] {
-  return cursor<Span>((prev, me, next) => {
+export function auto_revert(spans: Span[], original: string[]): CursorUpdateInfo<Span> {
+  return cursor_with_update_info<Span>((prev, me, next) => {
     if (me.links.length > 1 &&
         !me.moved &&
         me.text == me.links.map((i) => original[i]).join('')) {
@@ -159,25 +171,27 @@ export function auto_revert(spans: Span[], original: string[]): Span[] {
 
 /** If a span contains non-final whitespace, and is linked to exactly one word,
 and that word is the prefix or suffix, make this an insertion */
-export function chop_up_insertions(spans: Span[], original: string[]): Span[] {
-  return cursor<Span>((prev, me, next) => {
-    const m = me.text.match(/\S\s\S/)
-    if (m && m.index != undefined) {
-      const [w1, w2] = Utils.stringSplitAt(me.text, m.index + 2)
-      const wo = me.links.map(j => original[j]).join('')
-      if (wo == w1) {
-        return [prev, {...me, text: w1}, merge_spans([], w2), next]
-      } else if (wo == w2) {
-        return [prev, merge_spans([], w1), {...me, text: w2}, next]
+export const chop_up_insertions =
+  (make_inserts: boolean) =>
+  (spans: Span[], original: string[]) =>
+    cursor_with_update_info<Span>((prev, me, next) => {
+      const m = me.text.match(/\S\s\S/)
+      if (m && m.index != undefined) {
+        const [w1, w2] = Utils.stringSplitAt(me.text, m.index + 2)
+        const wo = me.links.map(j => original[j]).join('')
+        if (wo == w1 && make_inserts) {
+          return [prev, {...me, text: w1}, merge_spans([], w2), next]
+        } else if (wo == w2 && make_inserts) {
+          return [prev, merge_spans([], w1), {...me, text: w2}, next]
+        } else {
+          // todo: where do labels go? right now duplicated
+          return [prev, {...me, text: w1}, {...me, text: w2}, next]
+        }
       } else {
-        // todo: where do labels go? right now duplicated
-        return [prev, {...me, text: w1}, {...me, text: w2}, next]
+        return null
       }
-    } else {
-      return null
-    }
   })(spans)
-}
+
 
 /** Shuffles initial whitespace from a token to the previous one,
 or if it's the first span remove all its initial whitespace */
