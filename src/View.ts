@@ -17,8 +17,13 @@ export interface ViewParts {
   cm_xml: CodeMirror.Editor,
   semi_rich_diff: Spans.SemiRichDiff[],
   state: AppState,
-  set_show_xml: (b: boolean) => void
+  selected_labels: string[],
+  set_show_xml: (b: boolean) => void,
+  select_group: (group_id: string) => void,
+  ladder_keydown: (evt: KeyboardEvent) => void,
 }
+
+const noborderfocus = typestyle.style({outline: '0px solid transparent'})
 
 const view = (parts: ViewParts, ladder: VNode) =>
   div(Classes.MainStyle)(
@@ -36,11 +41,44 @@ const view = (parts: ViewParts, ladder: VNode) =>
         wrapCM(parts.cm_diff, Classes.TextEditor, Classes.Editor),
       ),
     ),
-    div()(
+    div(Classes.Vertical, {
+      on: {
+        keydown: parts.ladder_keydown
+      },
+      attrs: {
+        tabIndex: -1
+      }
+    }, noborderfocus)(
       div(Classes.Caption)('Alignment of source text and normalised text'),
       ladder
     ),
-    div(Classes.Vertical)(
+    (parts.state.selected_group || null) &&
+    div(Classes.Vertical, {}, typestyle.style({'background': '#333'}))(
+      ...parts.state.taxonomy.map(e => {
+        const cls = [] as string[]
+        const active = parts.selected_labels.some(l => l == e.code)
+        if (active) {
+          cls.push(typestyle.style({'color': 'orange'}))
+        } else {
+          cls.push(typestyle.style({'color': '#ccc'}))
+        }
+
+        if (parts.state.current_prefix.length > 0) {
+          if (e.code.indexOf(parts.state.current_prefix) == 0) {
+            cls.push(typestyle.style({'color': 'yellow !important'}))
+          } else {
+            if (active) {
+              cls.push(typestyle.style({'color': 'brown !important'}))
+            } else {
+              cls.push(typestyle.style({'color': '#999 !important'}))
+            }
+          }
+        } else {
+        }
+        return div('', {}, ...cls)(span()(e.code), span()(e.description))
+      })
+    ),
+    div()(
       span(Classes.FlushRight)(
         checkbox(parts.state.show_xml, parts.set_show_xml),
         span()('Show XML')
@@ -48,6 +86,7 @@ const view = (parts: ViewParts, ladder: VNode) =>
       (parts.state.show_xml || null) &&
       div('cm_xml')(
         div(Classes.Caption)('XML representation'),
+        // someone else has put the right XML into the editor:
         wrapCM(parts.cm_xml, Classes.CodeEditor, Classes.Editor)
       )
     )
@@ -69,7 +108,7 @@ export function setup(root_element: HTMLElement): (parts: ViewParts) => void {
     typestyle.forceRenderStyles()
     do {
       pos_dict.modified = false
-      const ladder = ViewDiff.ladder_diff(parts.semi_rich_diff, pos_dict)
+      const ladder = ViewDiff.ladder_diff(parts.semi_rich_diff, pos_dict, parts.select_group)
       vnode = Snabbdom.patch(vnode, view(parts, ladder))
     } while (pos_dict.modified)
   }

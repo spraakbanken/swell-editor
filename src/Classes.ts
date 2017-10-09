@@ -141,6 +141,38 @@ export const Path = style({
   fill: "none"
 })
 
-export const Row = style(csstips.horizontal, csstips.horizontallySpaced(5))
-export const Column = style(csstips.content, csstips.vertical, csstips.betweenJustified)
+export const Row = style(debug_name('Row'), csstips.horizontal, csstips.horizontallySpaced(5))
+export const Column = style(debug_name('Column'), csstips.content, csstips.vertical, csstips.betweenJustified)
 
+export const Pointer = style(debug_name('Pointer'),
+  { cursor: 'pointer' }
+)
+
+/*
+export const Top = style(
+  debug_name('Top'),
+  {
+    flexGrow: 1
+  }
+)
+
+export const Mid = style(
+  debug_name('Mid'),
+  {
+    flexGrow: 0
+  }
+)
+
+export const Bot = style(
+  debug_name('Bot'),
+  {
+    flexGrow: 1
+  },
+  csstips.horizontal,
+  {
+    $nest: {
+      '&>*': csstips.selfEnd
+    }
+  }
+)
+*/

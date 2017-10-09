@@ -33,7 +33,22 @@ export function CM(opts: CodeMirror.EditorConfiguration): CodeMirror.Editor {
   return CodeMirror(div, {lineWrapping: true, ...opts})
 }
 
-export function bind(root_element: HTMLElement, init_state: AppState): () => AppState{
+export function ladder_keydown(evt: KeyboardEvent, state: AppState): Partial<AppState> {
+  const {current_prefix} = state
+  if (evt.key.length == 1) {
+    return {
+      current_prefix: current_prefix + evt.key
+    }
+  } else if (evt.key == 'Backspace') {
+    return {
+      current_prefix: current_prefix.slice(0,current_prefix.length - 1)
+    }
+  } else {
+    return {}
+  }
+}
+
+export function bind(root_element: HTMLElement, init_state: AppState): () => AppState {
 
   let state = init_state
 
@@ -143,6 +158,14 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
     ViewDiff.draw_diff(semi_rich_diff, cm_diff)
     typestyle.forceRenderStyles()
 
+    let selected_labels = [] as string[]
+    if (state.selected_group) {
+      const i = Spans.lookup_group(state.selected_group, semi_rich_diff)
+      if (i != undefined) {
+        selected_labels = spans[i].labels
+      }
+    }
+
     patch({
       semi_rich_diff,
       cm_orig, cm_main, cm_diff, cm_xml,
@@ -150,6 +173,40 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
       set_show_xml(show_xml: boolean) {
         set_state({show_xml})
       },
+      select_group(selected_group: string) {
+        console.log('select group', selected_group)
+        set_state({selected_group})
+      },
+      ladder_keydown(evt: KeyboardEvent) {
+        set_state(ladder_keydown(evt, state))
+        if (state.selected_group != null && state.current_prefix.length > 0) {
+          const matches = state.taxonomy.filter(e => e.code.indexOf(state.current_prefix) == 0)
+          log('matches:', matches)
+          if (matches.length == 1) {
+            set_state({
+              current_prefix: '',
+            })
+            const index = Spans.lookup_group(state.selected_group, semi_rich_diff)
+            log('updating at:', index)
+            if (index) {
+              const [pre, [me], post] = Utils.splitAt3(spans, index, index+1)
+              const w = me.labels.indexOf(matches[0].code)
+              if (w != -1) {
+                const [a, [_], z] = Utils.splitAt3(me.labels, w, w+1)
+                advance_spans([...pre, {...me, labels: [...a, ...z]}, ...post])
+              } else {
+                advance_spans([...pre, {...me, labels: [...me.labels, matches[0].code]}, ...post])
+              }
+            }
+          } else if (matches.length == 0) {
+            set_state({
+              current_prefix: '', // or just don't allow inserting this
+            })
+          }
+        }
+        console.log(evt, state)
+      },
+      selected_labels,
     })
 
     const pretty_xml = format(new XMLSerializer().serializeToString(Spans.diff_to_xml(diff)))

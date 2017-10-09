@@ -3,11 +3,11 @@ import * as Utils from "./Utils"
 import { TokenDiff }  from "./Utils"
 import * as Positions from "./Positions"
 import * as Classes from './Classes'
-import { div, VNode, h } from "./Snabbdom"
+import { div, VNode, h, on } from "./Snabbdom"
 import * as Snabbdom from "./Snabbdom"
 import * as csstips from "csstips"
 import { style } from "typestyle"
-import { debug_name } from './dev'
+import { log } from './dev'
 
 function table(cols: VNode[][], classes: string[] = []): VNode {
   return div(Classes.Row, {}, ...classes)(
@@ -32,12 +32,19 @@ type Link
 //  | { type: 'upper', from: string, converge: string }
 //  | { type: 'lower', to: string, converge: string }
 
-export function ladder_diff(diff: Spans.SemiRichDiff[], pos_dict: Positions.PosDict): VNode {
+export function ladder_diff(diff: Spans.SemiRichDiff[], pos_dict: Positions.PosDict, select_group: (join_id: string) => void): VNode {
   const links = [] as Link[]
   const cols = [] as [VNode[], VNode[], VNode[]][]
   const name = (vnode: VNode, prefix: string, i: number, j: number|undefined = undefined) => {
     const key = prefix+i+(j == undefined ? '' : '.'+j)
-    return Positions.posid(key, pos_dict, vnode)
+    return Positions.posid(key, pos_dict, on(vnode, {
+      mouseover(e: MouseEvent) {
+        log('over', key, e)
+      },
+      click(e: MouseEvent) {
+        log('click', key, e)
+      }
+    }))
   }
   const labels = {} as Record<string, boolean>
   diff.map((d, i) => {
@@ -54,7 +61,7 @@ export function ladder_diff(diff: Spans.SemiRichDiff[], pos_dict: Positions.PosD
         case 'Dragged':
           links.push({type: 'segment', from: 'top'+i, to: d.join_id + '0'})
           if (d.nullary) {
-            //console.log(d.labels)
+            //Delete
             mid = name(h('span', {classes: [Classes.BorderCell]}, d.labels.join(', ')), d.join_id, 0)
           }
           return [name(h('span', {classes: [Classes.InnerCell]}, deletes(d.source_diff)), 'top', i), mid, null]
@@ -62,7 +69,6 @@ export function ladder_diff(diff: Spans.SemiRichDiff[], pos_dict: Positions.PosD
           links.push({type: 'segment', to: 'bot'+i, from: d.join_id + '0'})
           if (!labels[d.join_id]) {
             labels[d.join_id] = true
-            //console.log(d.labels)
             mid = name(h('span', {classes: [Classes.BorderCell]}, d.labels.join(', ')), d.join_id, 0)
           }
           return [null, mid, name(h('span', {classes: [Classes.InnerCell]}, inserts(d.target_diff)), 'bot', i)]
@@ -70,7 +76,15 @@ export function ladder_diff(diff: Spans.SemiRichDiff[], pos_dict: Positions.PosD
           return d
       }
     }
-    const col = elements().map(x => x == null ? [] : [x])
+    const col = elements().map(x => x == null ? [] : [
+      on(x, {
+        click(e: MouseEvent) {
+          if (d.edit != 'Unchanged') {
+            select_group(d.join_id)
+          }
+        }
+      })
+    ])
     // If we are only doing drag or drop and previous did as well,
     // we don't need to start a new column, we can just push onto its parts
     let new_col = true
@@ -94,9 +108,9 @@ export function ladder_diff(diff: Spans.SemiRichDiff[], pos_dict: Positions.PosD
       col.map((e, i) => cols[cols.length-1][i].push(...e))
     }
   })
-  const ladder = Positions.posid('table', pos_dict, table(cols.map(([u, m, d]) => [
+  const ladder = Positions.posid('table', pos_dict, table(cols.map(([u, m, d], i) => [
     h('div', {classes: [Classes.Cell]}, u.length == 0 ? [h('div', {classes: [Classes.InnerCell]}, '\u200b')] : u),
-    h('div', {classes: [Classes.Cell]}, m.length == 0 ? []                                           : m),
+    h('div', {classes: [Classes.Cell]}, m.length == 0 ? []                                                   : m),
     h('div', {classes: [Classes.Cell]}, d.length == 0 ? [h('div', {classes: [Classes.InnerCell]}, '\u200b')] : d)
   ]), [Classes.LadderTable, Classes.MainStyle]))
 

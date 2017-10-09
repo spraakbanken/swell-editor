@@ -340,9 +340,9 @@ export type RichDiff
   | { edit: 'Dropped', target: string, ids: string[], rev_id: string, target_diff: TokenDiff, join_id: string, labels: string[] }
 
 export type SemiRichDiff
-  = { edit: 'Unchanged', source: string }
-  | { edit: 'Dragged', source: string, id: string, source_diff: TokenDiff, join_id: string, float: boolean, nullary: boolean, move: boolean, labels: string[] }
-  | { edit: 'Dropped', target: string, ids: string[], target_diff: TokenDiff, join_id: string, float: boolean, nullary: boolean, move: boolean, labels: string[] }
+  = { edit: 'Unchanged', span_index: number | undefined, source: string }
+  | { edit: 'Dragged', span_index: number | undefined, source: string, id: string, source_diff: TokenDiff, join_id: string, float: boolean, nullary: boolean, move: boolean, labels: string[] }
+  | { edit: 'Dropped', span_index: number | undefined, target: string, ids: string[], target_diff: TokenDiff, join_id: string, float: boolean, nullary: boolean, move: boolean, labels: string[] }
 
 export function pos_diff(diff: Diff[]): PosDiff[] {
   let s = 0
@@ -400,46 +400,71 @@ function typehelp<A>(x: A): A {
   return x
 }
 
+export function lookup_group(join_id: string, diff: SemiRichDiff[]): number | undefined {
+  console.log(diff)
+  for (const d of diff) {
+    if (d.edit != 'Unchanged' && d.join_id == join_id) {
+      console.log(d.join_id, join_id, d, d.span_index)
+      return d.span_index
+    }
+  }
+  return undefined
+}
+
 export function semirich(diff: RichDiff[]): SemiRichDiff[] {
   let u = 0
+  let i = 0
   const unique = () => u++ + '_fake_dnd'
+  const rmap = {} as Record<string, number>
   return Utils.flatten<SemiRichDiff>(diff.map(d => {
+    const span_index = i
     switch(d.edit) {
       case 'Edited':
         const join_id = unique()
+        if (d.target.length > 0) {
+          rmap[join_id] = i
+        }
+        i += d.target.length
         const nullary = d.source.length == 0 || d.target.length == 0
         const float = nullary
         const move = false
+        const base = {span_index, join_id, nullary, float, move}
         const drags = d.source.map((source, i) => ({
           edit: typehelp<'Dragged'>('Dragged'),
           source,
           labels: d.labels,
           id: unique(),
           source_diff: d.source_diffs[i],
-          join_id,
-          nullary,
-          float,
-          move
+          ...base,
         }))
-        const drops: SemiRichDiff[] = d.target.map((target, i) => ({
+        const drops = d.target.map((target, i) => ({
           edit: typehelp<'Dropped'>('Dropped'),
           target,
           labels: d.labels,
           ids: drags.map(drag => drag.id),
           target_diff: d.target_diffs[i],
-          join_id,
-          nullary,
-          float,
-          move
+          ...base
         }))
         return [...drags, ...drops]
       case 'Unchanged':
-        return [d]
-      case 'Dragged':
+        i += 1
+        return [{...d, span_index}]
       case 'Dropped':
-        return [{...d, float: true, nullary: false, move: true}]
+        rmap[d.join_id] = i
+        i += 1
+      case 'Dragged':
+        return [{...d, span_index, float: true, nullary: false, move: true}]
     }
-  }))
+  })).map(d => {
+    if (d.edit == 'Dragged') {
+      return {
+        ...d,
+        span_index: rmap[d.join_id]
+      }
+    } else {
+      return d
+    }
+  })
 }
 
   // want to use & type here but TS doesn't know that eg "Edited" & "Dragged" is uninhabited
@@ -463,6 +488,7 @@ export function enrichen_diff(diff: Diff[]): RichDiff[] {
       join_target[ji] = [...(join_target[ji] || []), d.target]
     }
   })
+  let passed = 0
   diff.map((d: Diff) => {
     if (d.edit == 'Dragged') {
       const ji = join_id[d.id]
@@ -486,7 +512,7 @@ export function enrichen_diff(diff: Diff[]): RichDiff[] {
       case 'Unchanged':
         return d
 
-      case 'Edited': // could be represented as a drag & a drop at the same spot for consistency
+      case 'Edited':
         return {
           ...d,
           source_diffs: Utils.multi_token_diff(d.source, d.target.join('')),
@@ -559,8 +585,6 @@ diff (Span text links true : spans) ss = Dropped text (concatMap (! unlinked) li
 diff [] ss = map (Deleted/Dragged . fst) ss
 
 Todo: given a source position in spans or tokens, say where in the diff it ends up
-
-Todo: calculate diff_match_patch here once and for all
 */
 export function calculate_diff(spans: Span[], tokens: string[]): Diff[] {
   const moved : {[x : number] : string[]} = {}

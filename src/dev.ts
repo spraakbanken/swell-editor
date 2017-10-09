@@ -26,7 +26,7 @@ export function debug_table(xs: Record<string, any>[]) {
   if (debug) {
     console.table(
       xs.map(a => objmap(a, (x: any) => {
-        if (typeof x == 'number') {
+        if (typeof x == 'number' || typeof x == 'undefined') {
           return x
         } if (typeof x == 'string') {
           return x.replace(/  /g, ' _')

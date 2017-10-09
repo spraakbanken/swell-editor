@@ -1,12 +1,6 @@
 import * as Spans from "./Spans"
 import { Editor } from "codemirror"
 
-export interface Editors {
-  readonly cm_orig: Editor,
-  readonly cm_main: Editor,
-  readonly cm_diff: Editor
-}
-
 export interface EditorState {
   readonly spans: Spans.Span[],
   readonly tokens: string[]
@@ -47,8 +41,11 @@ export function init_undoable<S>(now: S): Undoable<S> {
 }
 
 export interface AppState {
-  readonly editor_state: Undoable<EditorState>
-  readonly show_xml: boolean
+  readonly editor_state: Undoable<EditorState>,
+  readonly show_xml: boolean,
+  readonly selected_group: string | null,
+  readonly current_prefix: string,
+  readonly taxonomy: Taxonomy,
 }
 
 export const on_editor_state =
@@ -62,7 +59,51 @@ export function init_app(original: string): AppState {
   const spans = Spans.init(tokens)
   return {
     editor_state: init_undoable({tokens, spans}),
-    show_xml: false
+    show_xml: false,
+    selected_group: null,
+    current_prefix: '',
+    taxonomy
   }
 }
 
+export interface TaxonomyEntry {
+  code: string,
+  description: string
+}
+
+export type Taxonomy = TaxonomyEntry[]
+
+export const taxonomy: Taxonomy = [
+  ['W', 'wrong word'],
+  ['ORT', 'orthographic error'],
+  ['PART', 'overcompounding'],
+  ['SPL', 'oversplitting'],
+  ['DER', 'deviant derivational affix used'],
+  ['FL', 'Non-Norwegian word'],
+
+  ['F', 'deviant selection of morphosyntactic category'],
+  ['CAP', 'deviant letter case (upper/lower)'],
+  ['PUNC', 'wrong selection of punctuation mark'],
+  ['PUNCM', 'punctuation mark missing'],
+  ['PUNCR', 'punctuation mark redundant'],
+
+  ['F-AGR', 'deviant selection of morphosyntactic category: “agreement errors,” i.e. errors following logically from, and triggered by, previous errors, the agreement itself being in accordance with the target language norm'],
+  ['CAP-AGR', 'deviant letter case (upper/lower): “agreement errors,” i.e. errors following logically from, and triggered by, previous errors, the agreement itself being in accordance with the target language norm'],
+  ['PUNC-AGR', 'wrong selection of punctuation mark: “agreement errors,” i.e. errors following logically from, and triggered by, previous errors, the agreement itself being in accordance with the target language norm'],
+  ['PUNCM-AGR', 'punctuation mark missing: “agreement errors,” i.e. errors following logically from, and triggered by, previous errors, the agreement itself being in accordance with the target language norm'],
+  ['PUNCR-AGR', 'punctuation mark redundant: “agreement errors,” i.e. errors following logically from, and triggered by, previous errors, the agreement itself being in accordance with the target language norm'],
+
+  ['INFL', 'deviant paradigm selection, but interpreted to be in accordance with the morphosyntactical form in Norwegian'],
+
+  ['M', 'word or phrase missing'],
+  ['R', 'word or phrase redundant'],
+
+  ['O', 'word or phrase order'],
+
+  ['O-INV', 'word or phrase order: non-application of subject/verb inversion'],
+  ['O-OINV', 'word or phrase order: application of subject/verb inversion in inappropriate contexts'],
+  ['O-MCA', 'word or phrase order: incorrect position for main clause adverbial'],
+  ['O-SCA', 'word or phrase order: incorrect position for subsidiary clause adverbial'],
+
+  ['X', 'impossible to interpret the writer’s intention with the passage)'],
+].map(([code, description]: [string, string]) => ({code, description}))

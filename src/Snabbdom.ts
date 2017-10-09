@@ -4,6 +4,7 @@ import * as snabbdom from "snabbdom"
 import snabbdom_attrs from 'snabbdom/modules/attributes'
 import snabbdom_props from 'snabbdom/modules/props'
 import snabbdom_events from 'snabbdom/modules/eventlisteners'
+import * as eventlisteners from 'snabbdom/modules/eventlisteners'
 import * as vnode from "snabbdom/vnode"
 
 // reexports
@@ -81,4 +82,16 @@ export const patch = snabbdom.init([
   snabbdom_events,
   snabbdom_props
 ])
+
+
+export const on = (old: VNode, new_on: eventlisteners.On) => ({
+  ...old,
+  data: {
+    ...(old.data || {}),
+    on: {
+      ...((old.data || {}).on || {}),
+      ...new_on
+    }
+  }
+})
 
