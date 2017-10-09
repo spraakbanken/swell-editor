@@ -17,7 +17,7 @@ export interface ViewParts {
   cm_xml: CodeMirror.Editor,
   semi_rich_diff: Spans.SemiRichDiff[],
   state: AppState,
-  set_state: (to: AppState) => void,
+  set_show_xml: (b: boolean) => void
 }
 
 const view = (parts: ViewParts, ladder: VNode) =>
@@ -42,7 +42,7 @@ const view = (parts: ViewParts, ladder: VNode) =>
     ),
     div(Classes.Vertical)(
       span(Classes.FlushRight)(
-        checkbox(parts.state.show_xml, b => parts.set_state({...parts.state, show_xml: b})),
+        checkbox(parts.state.show_xml, parts.set_show_xml),
         span()('Show XML')
       ),
       (parts.state.show_xml || null) &&

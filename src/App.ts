@@ -37,12 +37,16 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
 
   let state = init_state
 
-  function set_state(new_state: AppState) {
-    state = new_state
+  function set_state(new_state: Partial<AppState>) {
+    Object.getOwnPropertyNames(state).map((k: keyof AppState) => {
+      if (new_state[k] != undefined) {
+        state = {...state, [k]: new_state[k]}
+      }
+    })
     partial_update_view()
   }
 
-  function mod_state(f: (state: AppState) => AppState) {
+  function mod_state(f: (state: AppState) => Partial<AppState>) {
     set_state(f(state))
   }
 
@@ -142,7 +146,10 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
     patch({
       semi_rich_diff,
       cm_orig, cm_main, cm_diff, cm_xml,
-      state, set_state,
+      state,
+      set_show_xml(show_xml: boolean) {
+        set_state({show_xml})
+      },
     })
 
     const pretty_xml = format(new XMLSerializer().serializeToString(Spans.diff_to_xml(diff)))
