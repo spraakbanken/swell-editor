@@ -17,7 +17,7 @@ const example_text = hash_text || "En dag jag vaknade när larmet på min telefo
 let App = require('./App')
 
 const init = hash_text != "test" ? AppTypes.init_app(example_text) : {
-  app_state: AppTypes.init_undoable({
+  editor_state: AppTypes.init_undoable({
     tokens: ['aaa ', 'abc ', 'ghi ', 'def '],
     spans: [
       {
