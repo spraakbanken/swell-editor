@@ -50,7 +50,7 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
     //log(JSON.stringify({spans, tokens}))
     if (new_spans.length == 0) {
       log('not updating to empty spans')
-      // update_view will be run on('change')
+      // full_view_update will be run on('change')
       return
     }
     if (debug) {
@@ -73,7 +73,7 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
     //debug_state()
   }
 
-  ; (window as any).set_state = (spans: Span[], tokens: string[]) => { set_spans(spans, tokens); update_view() }
+  ; (window as any).set_state = (spans: Span[], tokens: string[]) => { set_spans(spans, tokens); full_view_update() }
   ; (window as any).get_state = () => (state.editor_state.now)
   //const debug_state = () => debug_table(spans.map(({...s}) => ({...s, original: s.links.map(i => tokens[i]) })))
   //; (window as any).debug_state = debug_state
@@ -81,11 +81,11 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
     const {spans, tokens} = state.editor_state.now
     const res = Spans.invert(spans, tokens)
     set_spans(res.spans, res.tokens)
-    update_view()
+    full_view_update()
   }
 
-  const undo = () => mod_state(AppTypes.on_editor_state(AppTypes.undo))
-  const redo = () => mod_state(AppTypes.on_editor_state(AppTypes.redo))
+  const undo = () => { mod_state(AppTypes.on_editor_state(AppTypes.undo)); full_view_update() }
+  const redo = () => { mod_state(AppTypes.on_editor_state(AppTypes.redo)); full_view_update() }
 
   const history_keys = {
     "Ctrl-Z": undo,
@@ -104,7 +104,7 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
   const patch = View.setup(root_element)
 
   /** Updates all views, run this when the state is completely new */
-  function update_view() {
+  function full_view_update() {
     const {spans, tokens} = state.editor_state.now
     const cursor = cm_main.getDoc().getCursor()
     const upd = spans.map(s => s.text).join('')
@@ -139,7 +139,7 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
   }
 
   cm_main.focus()
-  update_view()
+  full_view_update()
 
   // disable a bunch of "complicated" events for now
   for (const t of ["copy", "dragenter"]) {
@@ -168,7 +168,7 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
       const {head} = sels[0]
       const index = Spans.span_from_offset(spans, cm_main.getDoc().indexFromPos(head))[0]
       set_spans(Spans.revert(index, spans, tokens))
-      update_view()
+      full_view_update()
     }
   }
 
@@ -180,7 +180,7 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
       const index = Spans.span_from_offset(spans, cm_main.getDoc().indexFromPos(head))[0]
       const [pre, [me], post] = Utils.splitAt3(spans, index, index+1)
       set_spans([...pre, {...me, labels: [...me.labels, "ABCXYZ"[Math.floor(Math.random()*6)]]}, ...post])
-      update_view()
+      full_view_update()
     }
   }
 
@@ -224,7 +224,7 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
       log(from, to, here)
       log(spans.map(({text}) => text))
       set_spans(Spans.rearrange(spans, from, to, here))
-      update_view()
+      full_view_update()
     })
   }
 
@@ -237,7 +237,7 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
     if (rhs != lhs && (Utils.ltrim(rhs) == lhs || Utils.ltrim(rhs) == '')) {
       // everything deleted! just update view
       cm_main.getDoc().setValue(lhs.slice(0, lhs.length - 1))
-      update_view()
+      full_view_update()
     } else if (lhs != rhs) {
       log("Editor and internal state out of sync:", {lhs, rhs})
     }
@@ -267,7 +267,7 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
           console.error(check)
         } else {
           set_spans(res.spans, res.tokens)
-          update_view()
+          full_view_update()
         }
       } catch (e) {
         console.error(e)
