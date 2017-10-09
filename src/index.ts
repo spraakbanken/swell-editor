@@ -59,7 +59,7 @@ declare const module: any;
 
 if (debug) {
   if (module.hot) {
-    module.hot.accept('./App.ts', (_: any) => {
+    module.hot.accept(['./App.ts', './AppTypes.ts'], (_: any) => {
       try {
         App = require('./App.ts')
         get = App.bind(root, get())
