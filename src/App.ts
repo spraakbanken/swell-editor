@@ -33,20 +33,68 @@ export function CM(opts: CodeMirror.EditorConfiguration): CodeMirror.Editor {
   return CodeMirror(div, {lineWrapping: true, ...opts})
 }
 
-export function ladder_keydown(evt: KeyboardEvent, state: AppState): Partial<AppState> {
-  const {current_prefix} = state
-  if (evt.key.length == 1) {
-    return {
-      current_prefix: current_prefix + evt.key
-    }
-  } else if (evt.key == 'Backspace') {
-    return {
-      current_prefix: current_prefix.slice(0,current_prefix.length - 1)
-    }
-  } else {
-    return {}
-  }
+function iife<A>(f: () => A): A {
+  return f()
 }
+
+function
+  ladder_keydown(
+    evt_key: string,
+    semi_rich_diff: Spans.SemiRichDiff[],
+    state: AppState
+  ): {
+    new_prefix?: string,
+    new_spans?: Span[]
+  }
+{
+  if (state.selected_group != null) {
+    const {current_prefix} = state
+
+    log(evt_key)
+
+    const spacelike = evt_key == " " || evt_key == ","
+
+    const new_prefix = iife(() => {
+      if (evt_key.length == 1 && !spacelike) {
+        return current_prefix + evt_key
+      } else if (evt_key == 'Backspace') {
+        return current_prefix.slice(0, current_prefix.length - 1)
+      } else {
+        return current_prefix
+      }
+    })
+
+    // if key is enter then we should advance the selected group
+
+    if (new_prefix.length > 0) {
+      const filter = (spacelike || evt_key == "Enter") ? AppTypes.exactMatches : AppTypes.prefixMatches
+      const matches = filter(new_prefix, state.taxonomy)
+      log('matches:', matches)
+      if (matches.length == 1) {
+        const index = Spans.lookup_group(state.selected_group, semi_rich_diff)
+        if (index) {
+          return {
+            new_prefix: '',
+            new_spans: Spans.modify_label_state(state.editor_state.now.spans, index, matches[0].code, v => !v)
+          }
+        } else {
+          console.error('group index out of bounds')
+          return { new_prefix: '' }
+        }
+      } else if (matches.length == 0) {
+        // don't allow inserting this
+        return {}
+      } else {
+        return { new_prefix }
+      }
+    }
+  }
+  return {}
+}
+
+
+
+
 
 export function bind(root_element: HTMLElement, init_state: AppState): () => AppState {
 
@@ -178,33 +226,13 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
         set_state({selected_group})
       },
       ladder_keydown(evt: KeyboardEvent) {
-        set_state(ladder_keydown(evt, state))
-        if (state.selected_group != null && state.current_prefix.length > 0) {
-          const matches = state.taxonomy.filter(e => e.code.indexOf(state.current_prefix) == 0)
-          log('matches:', matches)
-          if (matches.length == 1) {
-            set_state({
-              current_prefix: '',
-            })
-            const index = Spans.lookup_group(state.selected_group, semi_rich_diff)
-            log('updating at:', index)
-            if (index) {
-              const [pre, [me], post] = Utils.splitAt3(spans, index, index+1)
-              const w = me.labels.indexOf(matches[0].code)
-              if (w != -1) {
-                const [a, [_], z] = Utils.splitAt3(me.labels, w, w+1)
-                advance_spans([...pre, {...me, labels: [...a, ...z]}, ...post])
-              } else {
-                advance_spans([...pre, {...me, labels: [...me.labels, matches[0].code]}, ...post])
-              }
-            }
-          } else if (matches.length == 0) {
-            set_state({
-              current_prefix: '', // or just don't allow inserting this
-            })
-          }
+        const res = ladder_keydown(evt.key, semi_rich_diff, state)
+        if (res.new_prefix != undefined) {
+          set_state({current_prefix: res.new_prefix})
         }
-        console.log(evt, state)
+        if (res.new_spans != undefined) {
+          advance_spans(res.new_spans)
+        }
       },
       selected_labels,
     })

@@ -87,23 +87,33 @@ export const taxonomy: Taxonomy = [
   ['PUNCM', 'punctuation mark missing'],
   ['PUNCR', 'punctuation mark redundant'],
 
-  ['F-AGR', 'deviant selection of morphosyntactic category: “agreement errors,” i.e. errors following logically from, and triggered by, previous errors, the agreement itself being in accordance with the target language norm'],
-  ['CAP-AGR', 'deviant letter case (upper/lower): “agreement errors,” i.e. errors following logically from, and triggered by, previous errors, the agreement itself being in accordance with the target language norm'],
-  ['PUNC-AGR', 'wrong selection of punctuation mark: “agreement errors,” i.e. errors following logically from, and triggered by, previous errors, the agreement itself being in accordance with the target language norm'],
-  ['PUNCM-AGR', 'punctuation mark missing: “agreement errors,” i.e. errors following logically from, and triggered by, previous errors, the agreement itself being in accordance with the target language norm'],
-  ['PUNCR-AGR', 'punctuation mark redundant: “agreement errors,” i.e. errors following logically from, and triggered by, previous errors, the agreement itself being in accordance with the target language norm'],
-
-  ['INFL', 'deviant paradigm selection, but interpreted to be in accordance with the morphosyntactical form in Norwegian'],
+  ['INFL', 'deviant paradigm selection'],
 
   ['M', 'word or phrase missing'],
   ['R', 'word or phrase redundant'],
 
   ['O', 'word or phrase order'],
 
-  ['O-INV', 'word or phrase order: non-application of subject/verb inversion'],
-  ['O-OINV', 'word or phrase order: application of subject/verb inversion in inappropriate contexts'],
-  ['O-MCA', 'word or phrase order: incorrect position for main clause adverbial'],
-  ['O-SCA', 'word or phrase order: incorrect position for subsidiary clause adverbial'],
+  ['O-INV', 'non-application of subject/verb inversion'],
+  ['O-OINV', 'inappropriate subject/verb inversion'],
+  ['O-MCA', 'deviant position for main clause adverbial'],
+  ['O-SCA', 'deviant position for subsidiary clause adverbial'],
 
-  ['X', 'impossible to interpret the writer’s intention with the passage)'],
+  ['X', 'impossible to interpret'],
 ].map(([code, description]: [string, string]) => ({code, description}))
+
+export const prefixOf =
+  (prefix: string, s: string) =>
+  0 == s.toLowerCase().indexOf(prefix.toLowerCase())
+
+export const exactMatch =
+  (prefix: string, s: string) =>
+  s.toLowerCase() == prefix.toLowerCase()
+
+export const prefixMatches =
+  (prefix: string, t: Taxonomy) =>
+  t.filter(e => prefixOf(prefix, e.code))
+
+export const exactMatches =
+  (prefix: string, t: Taxonomy) =>
+  t.filter(e => exactMatch(prefix, e.code))

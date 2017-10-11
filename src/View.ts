@@ -1,5 +1,6 @@
 import * as CodeMirror from "codemirror"
 import * as Spans from "./Spans"
+import * as AppTypes from "./AppTypes"
 import * as Classes from './Classes'
 import * as ViewDiff from "./ViewDiff"
 import * as Positions from "./Positions"
@@ -54,6 +55,7 @@ const view = (parts: ViewParts, ladder: VNode) =>
     ),
     (parts.state.selected_group || null) &&
     div(Classes.Vertical, {}, typestyle.style({'background': '#333'}))(
+      span()(parts.state.current_prefix),
       ...parts.state.taxonomy.map(e => {
         const cls = [] as string[]
         const active = parts.selected_labels.some(l => l == e.code)
@@ -64,7 +66,7 @@ const view = (parts: ViewParts, ladder: VNode) =>
         }
 
         if (parts.state.current_prefix.length > 0) {
-          if (e.code.indexOf(parts.state.current_prefix) == 0) {
+          if (AppTypes.prefixOf(parts.state.current_prefix, e.code)) {
             cls.push(typestyle.style({'color': 'yellow !important'}))
           } else {
             if (active) {

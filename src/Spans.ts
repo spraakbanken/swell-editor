@@ -322,6 +322,33 @@ export function span_from_offset(spans: Span[], offset: number): [number, number
   throw new Error('Out of bounds')
 }
 
+export function modify_label_state(
+    spans: Span[],
+    index: number,
+    code: string,
+    f: (current: boolean) => boolean
+  ): Span[]
+{
+  const [pre, [me], post] = Utils.splitAt3(spans, index, index+1)
+  const i = me.labels.indexOf(code)
+  let excluded
+  let exists
+  if (i != -1) {
+    const [a, [_], z] = Utils.splitAt3(me.labels, i, i+1)
+    excluded = [...a, ...z]
+    exists = true
+  } else {
+    excluded = me.labels
+    exists = false
+  }
+  const remain = f(exists)
+  return [
+    ...pre,
+    {...me, labels: [...excluded, ...(remain ? [code] : [])]},
+    ...post
+  ]
+}
+
 export type Diff
   = { edit: 'Unchanged', source: string }
   | { edit: 'Edited', target: string[], source: string[], labels: string[] }
