@@ -7,7 +7,7 @@ import * as Positions from "./Positions"
 import * as Snabbdom from "./Snabbdom"
 import * as typestyle from "typestyle"
 
-import { div, span, checkbox, wrapCM } from "./Snabbdom"
+import { tag, div, span, checkbox, wrapCM } from "./Snabbdom"
 import { VNode } from "snabbdom/vnode"
 import { AppState } from './AppTypes'
 
@@ -54,31 +54,35 @@ const view = (parts: ViewParts, ladder: VNode) =>
       ladder
     ),
     (parts.state.selected_group || null) &&
-    div(Classes.Vertical, {}, typestyle.style({'background': '#333'}))(
-      span()(parts.state.current_prefix),
-      ...parts.state.taxonomy.map(e => {
-        const cls = [] as string[]
-        const active = parts.selected_labels.some(l => l == e.code)
-        if (active) {
-          cls.push(typestyle.style({'color': 'orange'}))
-        } else {
-          cls.push(typestyle.style({'color': '#ccc'}))
-        }
-
-        if (parts.state.current_prefix.length > 0) {
-          if (AppTypes.prefixOf(parts.state.current_prefix, e.code)) {
-            cls.push(typestyle.style({'color': 'yellow !important'}))
+    tag('table')(Classes.Vertical, {}, typestyle.style({'background': '#333'}))(
+      tag('tbody')()(
+        tag('tr')('', {attrs: {colspan: 2}})(
+          tag('td')(typestyle.style({'color': '#eee'}))(
+            span()(parts.state.current_prefix + '|'))),
+        ...parts.state.taxonomy.map(e => {
+          const cls = [] as string[]
+          const active = parts.selected_labels.some(l => l == e.code)
+          if (active) {
+            cls.push(typestyle.style({'color': 'orange'}))
           } else {
-            if (active) {
-              cls.push(typestyle.style({'color': 'brown !important'}))
-            } else {
-              cls.push(typestyle.style({'color': '#999 !important'}))
-            }
+            cls.push(typestyle.style({'color': '#ccc'}))
           }
-        } else {
-        }
-        return div('', {}, ...cls)(span()(e.code), span()(e.description))
-      })
+
+          if (parts.state.current_prefix.length > 0) {
+            if (AppTypes.prefixOf(parts.state.current_prefix, e.code)) {
+              cls.push(typestyle.style({'color': 'yellow !important'}))
+            } else {
+              if (active) {
+                cls.push(typestyle.style({'color': '#ddd !important'}))
+              } else {
+                cls.push(typestyle.style({'color': '#999 !important'}))
+              }
+            }
+          } else {
+          }
+          return tag('tr')('', {}, ...cls)(tag('td')()(e.code), tag('td')()(e.description))
+        })
+      )
     ),
     div()(
       span(Classes.FlushRight)(

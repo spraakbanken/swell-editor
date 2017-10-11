@@ -115,6 +115,7 @@ export const LadderTable = style(
 
 export const Cell = style(
   debug_name('Cell'),
+  { cursor: 'pointer' },
   csstips.horizontal,
   csstips.aroundJustified,
   csstips.horizontallySpaced(5),
