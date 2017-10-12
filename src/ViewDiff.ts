@@ -3,7 +3,7 @@ import * as Utils from "./Utils"
 import { TokenDiff }  from "./Utils"
 import * as Positions from "./Positions"
 import * as Classes from './Classes'
-import { div, VNode, h, on } from "./Snabbdom"
+import { div, VNode, h, on, withClass } from "./Snabbdom"
 import * as Snabbdom from "./Snabbdom"
 import * as csstips from "csstips"
 import { style } from "typestyle"
@@ -34,6 +34,7 @@ type Link
 
 export function ladder_diff(
     diff: Spans.SemiRichDiff[], pos_dict: Positions.PosDict,
+    selected_index: number | null,
     select_index: (span_index: number) => void
   ): VNode
 {
@@ -81,7 +82,7 @@ export function ladder_diff(
       }
     }
     const col = elements().map(x => x == null ? [] : [
-      on(x, {
+      on(withClass(selected_index == d.span_index ? Classes.Selected : '', x), {
         click(e: MouseEvent) {
           if (d.span_index != null) {
             select_index(d.span_index)

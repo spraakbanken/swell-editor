@@ -95,3 +95,14 @@ export const on = (old: VNode, new_on: eventlisteners.On) => ({
   }
 })
 
+export const withClass = (new_class: string, old: VNode) => ({
+  ...old,
+  data: {
+    ...(old.data || {}),
+    classes: [
+      ...((old.data || {}).classes || []),
+      new_class
+    ]
+  }
+})
+

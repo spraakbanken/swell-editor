@@ -106,9 +106,15 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
   let state = init_state
 
   function set_state(new_state: Partial<AppState>) {
+    console.log('new state:', new_state)
     Object.getOwnPropertyNames(state).map((k: keyof AppState) => {
-      if (new_state[k] != undefined) {
+      if(new_state[k] != undefined) {
         state = {...state, [k]: new_state[k]}
+        if (new_state[k] == -1) {
+          console.log('null-like')
+          state = {...state, [k]: null}
+        }
+        console.log('after setting', k, state)
       }
     })
     partial_update_view()
@@ -224,17 +230,29 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
       set_show_xml(show_xml: boolean) {
         set_state({show_xml})
       },
-      select_index(selected_index: number) {
-        console.log('select group', selected_index)
+      select_index(selected_index: number | null) {
+        console.log('select index', selected_index)
         set_state({selected_index})
+        console.log('after select_index:', state)
       },
       ladder_keydown(evt: KeyboardEvent) {
-        const res = ladder_keydown(evt.key, state)
+        const key = evt.key
+        const res = ladder_keydown(key, state)
         if (res.new_prefix != undefined) {
           set_state({current_prefix: res.new_prefix})
         }
         if (res.new_spans != undefined) {
           advance_spans(res.new_spans)
+        }
+        if (state.selected_index) {
+          if (key == 'Enter' || key == 'ArrowRight') {
+            let x
+            set_state({selected_index: x = Spans.next_group(state.selected_index, semi_rich_diff)})
+            console.log({x})
+          }
+          if (key == 'ArrowLeft') {
+            set_state({selected_index: Spans.prev_group(state.selected_index, semi_rich_diff)})
+          }
         }
       },
       selected_labels,

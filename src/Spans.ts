@@ -427,6 +427,34 @@ function typehelp<A>(x: A): A {
   return x
 }
 
+export function next_group(span_index: number, diff: SemiRichDiff[]): number | null {
+  let p = undefined as undefined | number
+  for (let i = 0; i < diff.length; i++) {
+    const d = diff[i]
+    if (d.span_index == span_index) {
+       p = i
+       break;
+    }
+  }
+  console.log({p})
+  if (p != undefined) {
+    for (let i = p + 1; i < diff.length; i++) {
+      const d = diff[i]
+      console.log({i, ...d})
+      if (d.span_index != span_index && d.edit != 'Unchanged') {
+        console.log({span_index: d.span_index})
+        return d.span_index
+      }
+    }
+  }
+  return null
+}
+
+export const prev_group =
+  (span_index: number, diff: SemiRichDiff[]) =>
+  next_group(span_index, diff.slice().reverse())
+
+
 /*
 export function lookup_group(join_id: string, diff: SemiRichDiff[]): number | null {
   console.log(diff)

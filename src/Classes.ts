@@ -142,6 +142,10 @@ export const Path = style({
   fill: "none"
 })
 
+export const Selected = style({
+  fontWeight: 800
+})
+
 export const Row = style(debug_name('Row'), csstips.horizontal, csstips.horizontallySpaced(5))
 export const Column = style(debug_name('Column'), csstips.content, csstips.vertical, csstips.betweenJustified)
 

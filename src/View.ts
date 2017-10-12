@@ -20,7 +20,7 @@ export interface ViewParts {
   state: AppState,
   selected_labels: string[],
   set_show_xml: (b: boolean) => void,
-  select_index: (span_index: number) => void,
+  select_index: (span_index: number | null) => void,
   ladder_keydown: (evt: KeyboardEvent) => void,
 }
 
@@ -49,7 +49,11 @@ const view = (parts: ViewParts, ladder: VNode) =>
     ),
     div(Classes.Vertical, {
       on: {
-        keydown: parts.ladder_keydown
+        keydown: parts.ladder_keydown,
+        blur: (_: Event) => {
+          console.log('blur')
+          parts.select_index(-1)
+        }
       },
       attrs: {
         tabIndex: -1
@@ -119,7 +123,7 @@ export function setup(root_element: HTMLElement): (parts: ViewParts) => void {
     typestyle.forceRenderStyles()
     do {
       pos_dict.modified = false
-      const ladder = ViewDiff.ladder_diff(parts.semi_rich_diff, pos_dict, parts.select_index)
+      const ladder = ViewDiff.ladder_diff(parts.semi_rich_diff, pos_dict, parts.state.selected_index, parts.select_index)
       vnode = Snabbdom.patch(vnode, view(parts, ladder))
     } while (pos_dict.modified)
   }
