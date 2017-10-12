@@ -20,14 +20,19 @@ export interface ViewParts {
   state: AppState,
   selected_labels: string[],
   set_show_xml: (b: boolean) => void,
-  select_group: (group_id: string) => void,
+  select_index: (span_index: number) => void,
   ladder_keydown: (evt: KeyboardEvent) => void,
 }
 
 const noborderfocus = typestyle.style({outline: '0px solid transparent'})
 
+const table = tag('table')
+const tbody = tag('tbody')
+const tr = tag('tr')
+const td = tag('td')
+
 const view = (parts: ViewParts, ladder: VNode) =>
-  div(Classes.MainStyle)(
+  div(Classes.MainStyle, {}, typestyle.style({padding: '10px'}))(
     div(Classes.SideBySide)(
       div('cm_orig')(
         div(Classes.Caption)('Source text'),
@@ -53,11 +58,11 @@ const view = (parts: ViewParts, ladder: VNode) =>
       div(Classes.Caption)('Alignment of source text and normalised text'),
       ladder
     ),
-    (parts.state.selected_group || null) &&
-    tag('table')(Classes.Vertical, {}, typestyle.style({'background': '#333'}))(
-      tag('tbody')()(
-        tag('tr')('', {attrs: {colspan: 2}})(
-          tag('td')(typestyle.style({'color': '#eee'}))(
+    parts.state.selected_index == null ? null :
+    table(Classes.Vertical, {}, typestyle.style({'background': '#333'}))(
+      tbody()(
+        tr('', {attrs: {colspan: 2}})(
+          td(typestyle.style({'color': '#eee'}))(
             span()(parts.state.current_prefix + '|'))),
         ...parts.state.taxonomy.map(e => {
           const cls = [] as string[]
@@ -80,7 +85,7 @@ const view = (parts: ViewParts, ladder: VNode) =>
             }
           } else {
           }
-          return tag('tr')('', {}, ...cls)(tag('td')()(e.code), tag('td')()(e.description))
+          return tr('', {}, ...cls)(td()(e.code), td()(e.description))
         })
       )
     ),
@@ -114,7 +119,7 @@ export function setup(root_element: HTMLElement): (parts: ViewParts) => void {
     typestyle.forceRenderStyles()
     do {
       pos_dict.modified = false
-      const ladder = ViewDiff.ladder_diff(parts.semi_rich_diff, pos_dict, parts.select_group)
+      const ladder = ViewDiff.ladder_diff(parts.semi_rich_diff, pos_dict, parts.select_index)
       vnode = Snabbdom.patch(vnode, view(parts, ladder))
     } while (pos_dict.modified)
   }

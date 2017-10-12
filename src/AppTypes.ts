@@ -43,7 +43,7 @@ export function init_undoable<S>(now: S): Undoable<S> {
 export interface AppState {
   readonly editor_state: Undoable<EditorState>,
   readonly show_xml: boolean,
-  readonly selected_group: string | null,
+  readonly selected_index: number | null,
   readonly current_prefix: string,
   readonly taxonomy: Taxonomy,
 }
@@ -60,7 +60,7 @@ export function init_app(original: string): AppState {
   return {
     editor_state: init_undoable({tokens, spans}),
     show_xml: false,
-    selected_group: null,
+    selected_index: null,
     current_prefix: '',
     taxonomy
   }

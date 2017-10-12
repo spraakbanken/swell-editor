@@ -367,9 +367,9 @@ export type RichDiff
   | { edit: 'Dropped', target: string, ids: string[], rev_id: string, target_diff: TokenDiff, join_id: string, labels: string[] }
 
 export type SemiRichDiff
-  = { edit: 'Unchanged', span_index: number | undefined, source: string }
-  | { edit: 'Dragged', span_index: number | undefined, source: string, id: string, source_diff: TokenDiff, join_id: string, float: boolean, nullary: boolean, move: boolean, labels: string[] }
-  | { edit: 'Dropped', span_index: number | undefined, target: string, ids: string[], target_diff: TokenDiff, join_id: string, float: boolean, nullary: boolean, move: boolean, labels: string[] }
+  = { edit: 'Unchanged', span_index: number | null, source: string }
+  | { edit: 'Dragged', span_index: number | null, source: string, id: string, source_diff: TokenDiff, join_id: string, float: boolean, nullary: boolean, move: boolean, labels: string[] }
+  | { edit: 'Dropped', span_index: number | null, target: string, ids: string[], target_diff: TokenDiff, join_id: string, float: boolean, nullary: boolean, move: boolean, labels: string[] }
 
 export function pos_diff(diff: Diff[]): PosDiff[] {
   let s = 0
@@ -427,16 +427,22 @@ function typehelp<A>(x: A): A {
   return x
 }
 
-export function lookup_group(join_id: string, diff: SemiRichDiff[]): number | undefined {
+/*
+export function lookup_group(join_id: string, diff: SemiRichDiff[]): number | null {
   console.log(diff)
   for (const d of diff) {
     if (d.edit != 'Unchanged' && d.join_id == join_id) {
       console.log(d.join_id, join_id, d, d.span_index)
-      return d.span_index
+      if (d.span_index == undefined) {
+        return null
+      } else {
+        return d.span_index
+      }
     }
   }
   return undefined
 }
+*/
 
 export function semirich(diff: RichDiff[]): SemiRichDiff[] {
   let u = 0

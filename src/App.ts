@@ -33,28 +33,25 @@ export function CM(opts: CodeMirror.EditorConfiguration): CodeMirror.Editor {
   return CodeMirror(div, {lineWrapping: true, ...opts})
 }
 
-function iife<A>(f: () => A): A {
+function invoke<A>(f: () => A): A {
   return f()
 }
 
 function
   ladder_keydown(
     evt_key: string,
-    semi_rich_diff: Spans.SemiRichDiff[],
     state: AppState
   ): {
     new_prefix?: string,
     new_spans?: Span[]
   }
 {
-  if (state.selected_group != null) {
+  if (state.selected_index != null) {
     const {current_prefix} = state
-
-    log(evt_key)
 
     const spacelike = evt_key == " " || evt_key == ","
 
-    const new_prefix = iife(() => {
+    const new_prefix = invoke(() => {
       if (evt_key.length == 1 && !spacelike) {
         return current_prefix + evt_key
       } else if (evt_key == 'Backspace') {
@@ -64,18 +61,26 @@ function
       }
     })
 
+    log({evt_key, current_prefix, new_prefix, spacelike})
+
     // if key is enter then we should advance the selected group
 
-    if (new_prefix.length > 0) {
+    if (new_prefix == '') {
+      return { new_prefix }
+    } else {
       const filter = (spacelike || evt_key == "Enter") ? AppTypes.exactMatches : AppTypes.prefixMatches
       const matches = filter(new_prefix, state.taxonomy)
       log('matches:', matches)
       if (matches.length == 1) {
-        const index = Spans.lookup_group(state.selected_group, semi_rich_diff)
-        if (index) {
+        if (state.selected_index) {
           return {
             new_prefix: '',
-            new_spans: Spans.modify_label_state(state.editor_state.now.spans, index, matches[0].code, v => !v)
+            new_spans:
+              Spans.modify_label_state(
+                state.editor_state.now.spans,
+                state.selected_index,
+                matches[0].code,
+                v => !v)
           }
         } else {
           console.error('group index out of bounds')
@@ -202,16 +207,14 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
     const diff = Spans.calculate_diff(spans, tokens)
     const rich_diff = Spans.enrichen_diff(diff)
     const semi_rich_diff = Spans.semirich(rich_diff)
-    //debug_table(semi_rich_diff)
+    debug_table(semi_rich_diff)
     ViewDiff.draw_diff(semi_rich_diff, cm_diff)
     typestyle.forceRenderStyles()
 
     let selected_labels = [] as string[]
-    if (state.selected_group) {
-      const i = Spans.lookup_group(state.selected_group, semi_rich_diff)
-      if (i != undefined) {
-        selected_labels = spans[i].labels
-      }
+    if (state.selected_index) {
+      //const i = Spans.lookup_group(state.selected_index, semi_rich_diff)
+      selected_labels = spans[state.selected_index].labels
     }
 
     patch({
@@ -221,12 +224,12 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
       set_show_xml(show_xml: boolean) {
         set_state({show_xml})
       },
-      select_group(selected_group: string) {
-        console.log('select group', selected_group)
-        set_state({selected_group})
+      select_index(selected_index: number) {
+        console.log('select group', selected_index)
+        set_state({selected_index})
       },
       ladder_keydown(evt: KeyboardEvent) {
-        const res = ladder_keydown(evt.key, semi_rich_diff, state)
+        const res = ladder_keydown(evt.key, state)
         if (res.new_prefix != undefined) {
           set_state({current_prefix: res.new_prefix})
         }

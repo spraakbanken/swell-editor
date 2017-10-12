@@ -32,7 +32,11 @@ type Link
 //  | { type: 'upper', from: string, converge: string }
 //  | { type: 'lower', to: string, converge: string }
 
-export function ladder_diff(diff: Spans.SemiRichDiff[], pos_dict: Positions.PosDict, select_group: (join_id: string) => void): VNode {
+export function ladder_diff(
+    diff: Spans.SemiRichDiff[], pos_dict: Positions.PosDict,
+    select_index: (span_index: number) => void
+  ): VNode
+{
   const links = [] as Link[]
   const cols = [] as [VNode[], VNode[], VNode[]][]
   const name = (vnode: VNode, prefix: string, i: number, j: number|undefined = undefined) => {
@@ -79,8 +83,8 @@ export function ladder_diff(diff: Spans.SemiRichDiff[], pos_dict: Positions.PosD
     const col = elements().map(x => x == null ? [] : [
       on(x, {
         click(e: MouseEvent) {
-          if (d.edit != 'Unchanged') {
-            select_group(d.join_id)
+          if (d.span_index != null) {
+            select_index(d.span_index)
           }
         }
       })
@@ -205,13 +209,15 @@ export const draw_diff = (diff: Spans.SemiRichDiff[], editor: CodeMirror.Editor)
       }
       push(m.whitespace)
     } else if (d.edit == 'Dragged') {
-      const m = diff_and_whitespace(d.source_diff.filter(([t, _]) => t != 1))
-      const cl = d.move ? Classes.Dragged : ''
-      push_diff(m.diff, cl)
-      if (cl != '') {
-        push(rename(d.id), Classes.Subscript)
+      if (d.move) {
+        const m = diff_and_whitespace(d.source_diff.filter(([t, _]) => t != 1))
+        const cl = d.move ? Classes.Dragged : ''
+        push_diff(m.diff, cl)
+        if (cl != '') {
+          push(rename(d.id), Classes.Subscript)
+        }
+        push(m.whitespace)
       }
-      push(m.whitespace)
     } else {
       push(d)
     }
