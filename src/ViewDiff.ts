@@ -81,8 +81,22 @@ export function ladder_diff(
           return d
       }
     }
-    const col = elements().map(x => x == null ? [] : [
-      on(withClass(selected_index == d.span_index ? Classes.Selected : '', x), {
+    function midsel(i: number, cd: Spans.SemiRichDiff) {
+      if (i == 1) {
+        if (selected_index != null) {
+          const sd = diff[selected_index]
+          const sj = (sd as any).join_id
+          const cj = (cd as any).join_id
+          console.log({i, selected_index, sj, cj})
+          if (sd && cj && sj == cj) {
+            return true
+          }
+        }
+      }
+      return false
+    }
+    const col = elements().map((x, i) => x == null ? [] : [
+      on(withClass((selected_index == d.span_index || midsel(i, d)) ? Classes.Selected : '', x), {
         click(e: MouseEvent) {
           if (d.span_index != null) {
             select_index(d.span_index)

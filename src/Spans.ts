@@ -431,7 +431,7 @@ export function next_group(span_index: number, diff: SemiRichDiff[]): number | n
   let p = undefined as undefined | number
   for (let i = 0; i < diff.length; i++) {
     const d = diff[i]
-    if (d.span_index == span_index) {
+    if (d.span_index == span_index && d.edit == 'Dropped') {
        p = i
        break;
     }
@@ -441,7 +441,7 @@ export function next_group(span_index: number, diff: SemiRichDiff[]): number | n
     for (let i = p + 1; i < diff.length; i++) {
       const d = diff[i]
       console.log({i, ...d})
-      if (d.span_index != span_index && d.edit != 'Unchanged') {
+      if (d.span_index != span_index && d.edit == 'Dropped') {
         console.log({span_index: d.span_index})
         return d.span_index
       }
