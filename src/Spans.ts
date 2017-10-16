@@ -790,7 +790,8 @@ export function diff_to_xml(diff: Diff[]): Element {
           })
         }
       case 'Dragged':
-        return enqueue({...d, ids: [d.id]})
+        const {id, labels, ...d_smaller} = d
+        return enqueue({...d_smaller, ids: [d.id]})
       case 'Dropped':
         return enqueue(d)
     }

@@ -8,7 +8,8 @@ const plugins = [
   }),
   new webpack.LoaderOptionsPlugin({
     debug: !production
-  })
+  }),
+  new webpack.optimize.ModuleConcatenationPlugin()
 ]
 if (!production) {
   plugins.push(new webpack.NamedModulesPlugin())

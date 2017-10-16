@@ -103,7 +103,7 @@ export function ladder_diff(
           }
         }
       })
-    ])
+    ]) as [VNode[], VNode[], VNode[]]
     // If we are only doing drag or drop and previous did as well,
     // we don't need to start a new column, we can just push onto its parts
     let new_col = true

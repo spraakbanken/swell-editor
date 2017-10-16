@@ -1,5 +1,5 @@
 
-import Dmp = require("diff-match-patch")
+import * as Dmp from "diff-match-patch"
 export const dmp = new Dmp.diff_match_patch()
 
 export type TokenDiff = [number, string][]
