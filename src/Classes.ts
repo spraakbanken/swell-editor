@@ -113,6 +113,14 @@ export const LadderTable = style(
   ]
 })
 
+export const FitContent = style(
+  debug_name('FitContent'), {
+  width: [
+    '-webkit-fit-content',
+    'fit-content',
+  ]
+})
+
 export const Cell = style(
   debug_name('Cell'),
   { cursor: 'pointer' },

@@ -79,13 +79,13 @@ export const taxonomy: Taxonomy = [
   ['PART', 'overcompounding'],
   ['SPL', 'oversplitting'],
   ['DER', 'deviant derivational affix used'],
-  ['FL', 'Non-Norwegian word'],
+  //['FL', 'Non-Norwegian word'],
 
   ['F', 'deviant selection of morphosyntactic category'],
   ['CAP', 'deviant letter case (upper/lower)'],
   ['PUNC', 'wrong selection of punctuation mark'],
-  ['PUNCM', 'punctuation mark missing'],
-  ['PUNCR', 'punctuation mark redundant'],
+  //['PUNCM', 'punctuation mark missing'],
+  //['PUNCR', 'punctuation mark redundant'],
 
   ['INFL', 'deviant paradigm selection'],
 

@@ -7,7 +7,7 @@ page.onConsoleMessage = function(msg) {
 }
 
 function Render(filename, view, example, k) {
-  console.log('view:', view)
+  console.log('view:', view, 'filename:', filename)
   page.viewportSize = { width: 1100, height: 800 }
   page.open("http://localhost:8080#ingenting", function start(status) {
     size = page.evaluate(function(view, spans, tokens) {
@@ -31,7 +31,7 @@ function Render(filename, view, example, k) {
       body.style.background = '#ffffff'
       if (view == 'root') {
         body.appendChild(root)
-      } else if (view == 'ladder') {
+      } else if (view == 'ladder' || view == 'ladder_black') {
         body.appendChild(ladder)
       } else {
         throw 'view not root nor ladder'
@@ -44,9 +44,14 @@ function Render(filename, view, example, k) {
       var table = ladder.firstChild
       //console.log('paths:', m(document.getElementsByTagName('path')));
       //console.log('svg:', m(document.getElementsByTagName('svg')));
+      if (view == 'ladder_black') {
+        var head = document.getElementsByTagName('head')[0].innerHTML
+        document.getElementsByTagName('head')[0].innerHTML = head + "<style>.black * { color: black !important; text-decoration: none !important; }</style>"
+        ladder.className += ' black'
+      }
       return {
-        width: (view == 'ladder' ? table : root).clientWidth,
-        height: (view == 'ladder' ? ladder : root).clientHeight + 4
+        width:  (view == 'root' ? root : table).clientWidth,
+        height: (view == 'root' ? root : ladder).clientHeight + 4
       }
     }, view, example.spans, example.tokens)
     console.log('size:', JSON.stringify(size))
@@ -61,10 +66,15 @@ function Render(filename, view, example, k) {
 }
 
 var example = {"spans":[{"text":"Jag ","links":[0],"labels":[],"moved":false},{"text":"bor ","links":[1],"labels":[],"moved":false},{"text":"i ","labels":[],"links":[2],"moved":false},{"text":"en ","labels":[],"links":[],"moved":false},{"text":"lägenhet ","labels":[],"links":[3],"moved":false},{"text":". ","links":[4],"labels":[],"moved":false},{"text":"Jag ","links":[5],"labels":[],"moved":false},{"text":"har ","labels":[],"links":[7],"moved":false},{"text":"bott ","labels":[],"links":[7],"moved":false},{"text":"ett ","links":[8],"labels":[],"moved":false},{"text":"år ","links":[9],"labels":[],"moved":false},{"text":"där ","links":[6],"labels":[],"moved":true},{"text":". ","links":[10],"labels":[],"moved":false},{"text":"Jag ","links":[11],"labels":[],"moved":false},{"text":"skulle ","links":[12],"labels":[],"moved":false},{"text":"vilja ","links":[13],"labels":[],"moved":false},{"text":"ha ","links":[14],"labels":[],"moved":false},{"text":"ett ","labels":[],"links":[15,16],"moved":false},{"text":"stort ","labels":[],"links":[15,16],"moved":false},{"text":"hus ","labels":[],"links":[15,16],"moved":false},{"text":". ","links":[17],"labels":[],"moved":false}],"tokens":["Jag ","bor ","på ","legenhet ",". ","Jag ","där ","bott ","ett ","år ",". ","Jag ","skulle ","vilja ","ha ","stor ","huset ",". "]}
+var example_labelled = {"spans":[{"text":"Jag ","links":[0],"labels":[],"moved":false},{"text":"bor ","links":[1],"labels":[],"moved":false},{"text":"i ","labels":["W"],"links":[2],"moved":false},{"text":"en ","labels":["M"],"links":[],"moved":false},{"text":"lägenhet ","labels":["ORT"],"links":[3],"moved":false},{"text":". ","links":[4],"labels":[],"moved":false},{"text":"Jag ","links":[5],"labels":[],"moved":false},{"text":"har ","labels":["M"],"links":[7],"moved":true},{"text":"bott ","labels":[],"links":[7],"moved":true},{"text":"ett ","links":[8],"labels":[],"moved":false},{"text":"år ","links":[9],"labels":[],"moved":false},{"text":"där ","links":[6],"labels":["O"],"moved":true},{"text":". ","links":[10],"labels":[],"moved":false},{"text":"Jag ","links":[11],"labels":[],"moved":false},{"text":"skulle ","links":[12],"labels":[],"moved":false},{"text":"vilja ","links":[13],"labels":[],"moved":false},{"text":"ha ","links":[14],"labels":[],"moved":false},{"text":"ett ","labels":["M","F","INFL"],"links":[15,16],"moved":false},{"text":"stort ","labels":[],"links":[15,16],"moved":false},{"text":"hus ","labels":[],"links":[15,16],"moved":false},{"text":". ","links":[17],"labels":[],"moved":false}],"tokens":["Jag ","bor ","på ","legenhet ",". ","Jag ","där ","bott ","ett ","år ",". ","Jag ","skulle ","vilja ","ha ","stor ","huset ",". "]}
 
 var xs = [
   ['screenshot', 'root', example],
   ['ladder', 'ladder', example],
+  ['ladder_black', 'ladder_black', example],
+  ['labelled_screenshot', 'root', example_labelled],
+  ['labelled_ladder', 'ladder', example_labelled],
+  ['labelled_ladder_black', 'ladder_black', example_labelled],
 ]
 
 var features = [

@@ -13,7 +13,9 @@ const root = document.getElementById('root') as HTMLElement
 
 const hash_text = decodeURIComponent(window.location.hash.slice(1))
 
-const example_text = hash_text || "En dag jag vaknade när larmet på min telefon ringde. De väder var inte fint."
+const example_text = hash_text || "Jag bor på legenhet . Jag där bott ett år . Jag skulle vilja ha stor huset ."
+
+// || "En dag jag vaknade när larmet på min telefon ringde. De väder var inte fint."
 
 let App_bind = App.bind
 

@@ -33,20 +33,7 @@ const td = tag('td')
 
 const view = (parts: ViewParts, ladder: VNode) =>
   div(Classes.MainStyle, {}, typestyle.style({padding: '10px'}))(
-    div(Classes.SideBySide)(
-      div('cm_orig')(
-        div(Classes.Caption)('Source text'),
-        wrapCM(parts.cm_orig, Classes.TextEditor, Classes.Editor),
-      ),
-      div('cm_main')(
-        div(Classes.Caption)('Normalised text'),
-        wrapCM(parts.cm_main, Classes.TextEditor, Classes.Editor),
-      ),
-      div('cm_diff')(
-        div(Classes.Caption)('Changes'),
-        wrapCM(parts.cm_diff, Classes.TextEditor, Classes.Editor),
-      ),
-    ),
+    tag('h3')()('Normaliseringseditorsprototyp'),
     div(Classes.Vertical, {
       on: {
         keydown: parts.ladder_keydown,
@@ -59,40 +46,46 @@ const view = (parts: ViewParts, ladder: VNode) =>
         tabIndex: -1
       }
     }, noborderfocus)(
-      div(Classes.Caption)('Alignment of source text and normalised text'),
+      // div(Classes.Caption)('Alignment of source text and normalised text'),
       ladder
     ),
-    parts.state.selected_index == null ? null :
-    table(Classes.Vertical, {}, typestyle.style({'background': '#333'}))(
-      tbody()(
-        tr('', {attrs: {colspan: 2}})(
-          td(typestyle.style({'color': '#eee'}))(
-            span()(parts.state.current_prefix + '|'))),
-        ...parts.state.taxonomy.map(e => {
-          const cls = [] as string[]
-          const active = parts.selected_labels.some(l => l == e.code)
-          if (active) {
-            cls.push(typestyle.style({'color': 'orange'}))
-          } else {
-            cls.push(typestyle.style({'color': '#ccc'}))
-          }
-
-          if (parts.state.current_prefix.length > 0) {
-            if (AppTypes.prefixOf(parts.state.current_prefix, e.code)) {
-              cls.push(typestyle.style({'color': 'yellow !important'}))
+    (parts.state.selected_index == null || parts.state.selected_index == -1)
+    ?
+    div()(wrapCM(parts.cm_main, Classes.TextEditor, Classes.Editor))
+    :
+    div(Classes.FitContent)(
+      table(Classes.Vertical, {}, typestyle.style({'background': '#333'}))(
+        tbody()(
+          tr('', {attrs: {colspan: 2}})(
+            td(typestyle.style({'color': '#eee'}))(
+              span()(parts.state.current_prefix + '|'))),
+          ...parts.state.taxonomy.map(e => {
+            const cls = [] as string[]
+            const active = parts.selected_labels.some(l => l == e.code)
+            if (active) {
+              cls.push(typestyle.style({'color': 'orange'}))
             } else {
-              if (active) {
-                cls.push(typestyle.style({'color': '#ddd !important'}))
-              } else {
-                cls.push(typestyle.style({'color': '#999 !important'}))
-              }
+              cls.push(typestyle.style({'color': '#ccc'}))
             }
-          } else {
-          }
-          return tr('', {}, ...cls)(td()(e.code), td()(e.description))
-        })
+
+            if (parts.state.current_prefix.length > 0) {
+              if (AppTypes.prefixOf(parts.state.current_prefix, e.code)) {
+                cls.push(typestyle.style({'color': 'yellow !important'}))
+              } else {
+                if (active) {
+                  cls.push(typestyle.style({'color': '#ddd !important'}))
+                } else {
+                  cls.push(typestyle.style({'color': '#999 !important'}))
+                }
+              }
+            } else {
+            }
+            return tr('', {}, ...cls)(td()(e.code), td()(e.description))
+          })
+        )
       )
     ),
+    /*
     div()(
       span(Classes.FlushRight)(
         checkbox(parts.state.show_xml, parts.set_show_xml),
@@ -105,6 +98,7 @@ const view = (parts: ViewParts, ladder: VNode) =>
         wrapCM(parts.cm_xml, Classes.CodeEditor, Classes.Editor)
       )
     )
+    */
   )
 
 
