@@ -1,5 +1,5 @@
 {
-  "name": "code-mirror-editor",
+  "name": "swell-editor",
   "license": "MIT",
   "version": "0.1.0",
   "author": "Dan Rosén",
@@ -10,7 +10,10 @@
     "csstips": "^0.2.2",
     "diff-match-patch": "^1.0.0",
     "prettify-xml": "^1.2.0",
+    "reactive-lens": "^0.1.2",
+    "reactive-lens-snabbdom": "^0.1.2",
     "snabbdom": "^0.7.0",
+    "snabbis": "^0.1.2",
     "typestyle": "^1.4.1"
   },
   "devDependencies": {

@@ -72,7 +72,7 @@ export const MainStyle = style(debug_name('MainStyle'), {
 
 export const Editor = style(debug_name('Editor'), {
   $nest: {
-    '& > .CodeMirror': {
+    '& .CodeMirror': {
       border: '1px solid #ddd',
       height: '300px',
       minWidth: '250px',
@@ -82,7 +82,7 @@ export const Editor = style(debug_name('Editor'), {
 
 export const TextEditor = style(debug_name('TextEditor'), {
   $nest: {
-    '& > .CodeMirror': {
+    '& .CodeMirror': {
       fontFamily: "'Lato', sans-serif",
       fontSize: '15px'
     }
@@ -91,7 +91,7 @@ export const TextEditor = style(debug_name('TextEditor'), {
 
 export const CodeEditor = style(debug_name('CodeEditor'), {
   $nest: {
-    '& > .CodeMirror': {
+    '& .CodeMirror': {
       fontFamily: "'Consolas', monospace",
       fontSize: '15px'
     }
@@ -158,7 +158,9 @@ export const Row = style(debug_name('Row'), csstips.horizontal, csstips.horizont
 export const Column = style(debug_name('Column'), csstips.content, csstips.vertical, csstips.betweenJustified)
 
 export const Pointer = style(debug_name('Pointer'),
-  { cursor: 'pointer' }
+  { cursor: 'pointer' ,
+    userSelect: 'none'
+  }
 )
 
 /*

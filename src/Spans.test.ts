@@ -243,7 +243,7 @@ function restrictModify(spans: Spans.Span[], r: Modify): {begin: number, end: nu
 describe("Utils", () => {
   jsc.property("multi_token_diff", nearray(nealphabet('ab ')), alphabet('ab '), (ss, s2) => {
     const md = Utils.multi_token_diff(ss, s2)
-    const flatten_md = [].concat(...md)
+    const flatten_md = Utils.flatten(md)
     const info = {ss, s2, md, flatten_md}
     return eq(md.map(Utils.dmp.diff_text1), ss, ['ss', info]) &&
            eq(Utils.dmp.diff_text2(flatten_md), s2, ['s2', info])
@@ -256,7 +256,7 @@ describe("Spans", () => {
   })
 
   jsc.property("shrinking conforms to invariant", arb_spans, (spans) => {
-    const shrunk = (arb_spans.shrink(spans) as any).headValue
+    const shrunk = (arb_spans.shrink as any)(spans).headValue
     return (shrunk == undefined) || check(shrunk)
   })
 
@@ -312,7 +312,7 @@ describe("Spans", () => {
       const {begin, end} = restrictModify(spans, m)
       const text = s.slice(begin, end)
       const mods = Spans.auto_revert(Spans.modify(spans, begin, end, text), tokens)
-      return check(mods) && eq(spans, mods)
+      return check(mods.spans) && eq(spans, mods.spans)
     })
   })
 

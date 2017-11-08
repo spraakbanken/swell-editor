@@ -1,75 +1,130 @@
 import * as CodeMirror from "codemirror"
 import * as Spans from "./Spans"
-import * as AppTypes from "./AppTypes"
+import * as Model from "./Model"
 import * as Classes from './Classes'
 import * as ViewDiff from "./ViewDiff"
 import * as Positions from "./Positions"
 import * as Snabbdom from "./Snabbdom"
 import * as typestyle from "typestyle"
 
-import { tag, div, span, checkbox, wrapCM } from "./Snabbdom"
+import { checkbox } from "./Snabbdom"
 import { VNode } from "snabbdom/vnode"
-import { AppState } from './AppTypes'
+import { AppState } from './Model'
+import { tag, Content as S } from "snabbis"
 
-export interface ViewParts {
-  cm_orig: CodeMirror.Editor,
-  cm_main: CodeMirror.Editor,
-  cm_diff: CodeMirror.Editor,
-  cm_xml: CodeMirror.Editor,
-  semi_rich_diff: Spans.SemiRichDiff[],
+import { Store, Lens, Undo } from "reactive-lens"
+
+export interface CodeMirrors {
+  vn_orig: VNode, // CodeMirror.Editor,
+  vn_main: VNode, // CodeMirror.Editor,
+  vn_diff: VNode, // CodeMirror.Editor,
+  vn_xml:  VNode, // CodeMirror.Editor,
+}
+
+// no @types for prettify-xml
+declare function require(module_name: string): any
+const format: (xml_string: string) => string = require('prettify-xml')
+
+/*
   state: AppState,
   selected_labels: string[],
   set_show_xml: (b: boolean) => void,
   select_index: (span_index: number | null) => void,
   ladder_keydown: (evt: KeyboardEvent) => void,
+  toggle_code: (code: string) => void
 }
+*/
+
+export const InputField = (store: Store<string>, ...bs: S[]) =>
+  tag('input',
+    S.props({ value: store.get() }),
+    S.on('input')((e: Event) => store.set((e.target as HTMLInputElement).value)),
+    ...bs)
 
 const noborderfocus = typestyle.style({outline: '0px solid transparent'})
 
-const table = tag('table')
-const tbody = tag('tbody')
-const tr = tag('tr')
-const td = tag('td')
+export const mktag = (name: string) => (...bs: S[]) => tag(name, ...bs)
 
-const view = (parts: ViewParts, ladder: VNode) =>
-  div(Classes.MainStyle, {}, typestyle.style({padding: '10px'}))(
-    tag('h3')()('Normaliseringseditorsprototyp'),
-    div(Classes.Vertical, {
-      on: {
-        keydown: parts.ladder_keydown,
-        blur: (_: Event) => {
-          console.log('blur')
-          parts.select_index(-1)
-        }
-      },
-      attrs: {
-        tabIndex: -1
-      }
-    }, noborderfocus)(
+export const div = mktag('div')
+export const span = mktag('span')
+export const table = mktag('table')
+export const tbody = mktag('tbody')
+export const tr = mktag('tr')
+export const td = mktag('td')
+
+export const view = (store: Store<AppState>, cms: CodeMirrors) => {
+  const {spans, tokens} = store.get().editor_state.now
+  const diff = Spans.calculate_diff(spans, tokens)
+  const rich_diff = Spans.enrichen_diff(diff)
+  const semi_rich_diff = Spans.semirich(rich_diff)
+
+/*
+  const pretty_xml = format(new XMLSerializer().serializeToString(Spans.diff_to_xml(diff)))
+  if (pretty_xml != cms.vn_xml.getDoc().getValue()) {
+    const cursor = cms.vn_xml.getDoc().getCursor()
+    cms.vn_xml.getDoc().setValue(pretty_xml)
+    cms.vn_xml.getDoc().setSelection(cursor, cursor)
+  }
+  */
+
+  const state = store.get()
+
+  let selected_labels = [] as string[]
+  if (state.selected_index && state.selected_index in spans) {
+    //const i = Spans.lookup_group(state.selected_index, semi_rich_diff)
+    selected_labels = spans[state.selected_index].labels
+  }
+
+  typestyle.forceRenderStyles()
+
+  // ViewDiff.draw_diff(semi_rich_diff, cms.vn_diff)
+
+  const ladder = ViewDiff.ladder_diff(
+    store.at('positions'),
+    semi_rich_diff,
+    state.selected_index,
+    (span_index: number) => Model.select_index(store, span_index)
+  )
+  const spans_store = store.at('editor_state').at('now').at('spans')
+
+  return div(
+    S.classed(Classes.MainStyle, typestyle.style({padding: '10px'})),
+    tag('h3', 'Normaliseringseditorsprototyp'),
+    tag('div', S.classed(Classes.TextEditor, Classes.Editor), cms.vn_orig),
+    div(
+      S.classed(Classes.Vertical, noborderfocus),
+      S.on('keydown')((e: KeyboardEvent) => Model.ladder_keydown(store, semi_rich_diff, e.key)),
+      S.attrs({ tabIndex: -1 }),
       // div(Classes.Caption)('Alignment of source text and normalised text'),
       ladder
     ),
-    (parts.state.selected_index == null || parts.state.selected_index == -1)
+    (state.selected_index == null || state.selected_index == -1)
     ?
-    div()(wrapCM(parts.cm_main, Classes.TextEditor, Classes.Editor))
+    tag('div', S.classed(Classes.TextEditor, Classes.Editor), cms.vn_main)
     :
-    div(Classes.FitContent)(
-      table(Classes.Vertical, {}, typestyle.style({'background': '#333'}))(
-        tbody()(
-          tr('', {attrs: {colspan: 2}})(
-            td(typestyle.style({'color': '#eee'}))(
-              span()(parts.state.current_prefix + '|'))),
-          ...parts.state.taxonomy.map(e => {
+    div(
+      S.on('keydown')((evt: KeyboardEvent) => Model.ladder_keydown(store, semi_rich_diff, evt.key)),
+      S.classed(Classes.FitContent),
+      S.attrs({ tabIndex: 1 }),
+      table(
+        S.classed(
+          Classes.Vertical,
+          typestyle.style({'background': '#333'})),
+        tbody(
+          tr(S.attrs({colspan: 2}),
+            td(S.classed(typestyle.style({'color': '#eee'})),
+              span(state.current_prefix + '|'))),
+          ...state.taxonomy.map(e => {
             const cls = [] as string[]
-            const active = parts.selected_labels.some(l => l == e.code)
+            const active = selected_labels.some(l => l == e.code)
             if (active) {
               cls.push(typestyle.style({'color': 'orange'}))
             } else {
               cls.push(typestyle.style({'color': '#ccc'}))
             }
 
-            if (parts.state.current_prefix.length > 0) {
-              if (AppTypes.prefixOf(parts.state.current_prefix, e.code)) {
+            if (state.current_prefix.length > 0) {
+              if (Model.prefixOf(state.current_prefix, e.code)) {
                 cls.push(typestyle.style({'color': 'yellow !important'}))
               } else {
                 if (active) {
@@ -80,7 +135,12 @@ const view = (parts: ViewParts, ladder: VNode) =>
               }
             } else {
             }
-            return tr('', {}, ...cls)(td()(e.code), td()(e.description))
+            return tr(
+              S.classed(Classes.Pointer, ...cls),
+              S.on('keydown')((evt: KeyboardEvent) => Model.ladder_keydown(store, semi_rich_diff, evt.key)),
+              S.on('click')((_: MouseEvent) => Model.toggle_code(store, e.code)),
+              td(e.code),
+              td(e.description))
           })
         )
       )
@@ -88,38 +148,21 @@ const view = (parts: ViewParts, ladder: VNode) =>
     /*
     div()(
       span(Classes.FlushRight)(
-        checkbox(parts.state.show_xml, parts.set_show_xml),
+        checkbox(state.show_xml, set_show_xml),
         span()('Show XML')
       ),
-      (parts.state.show_xml || null) &&
-      div('cm_xml')(
+      (state.show_xml || null) &&
+      div('cms.vn_xml')(
         div(Classes.Caption)('XML representation'),
         // someone else has put the right XML into the editor:
-        wrapCM(parts.cm_xml, Classes.CodeEditor, Classes.Editor)
+        wrapCM(cms.vn_xml, Classes.CodeEditor, Classes.Editor)
       )
     )
     */
   )
-
-
-export function setup(root_element: HTMLElement): (parts: ViewParts) => void {
-  while (root_element.lastChild) {
-    root_element.removeChild(root_element.lastChild)
-  }
-
-  const container = document.createElement('div')
-  root_element.appendChild(container)
-  let vnode = Snabbdom.patch(container, div()())
-  let pos_dict = Positions.init_pos_dict()
-
-  return (parts: ViewParts) => {
-    ViewDiff.draw_diff(parts.semi_rich_diff, parts.cm_diff)
-    typestyle.forceRenderStyles()
-    do {
-      pos_dict.modified = false
-      const ladder = ViewDiff.ladder_diff(parts.semi_rich_diff, pos_dict, parts.state.selected_index, parts.select_index)
-      vnode = Snabbdom.patch(vnode, view(parts, ladder))
-    } while (pos_dict.modified)
-  }
 }
 
+
+/*
+    document.getElementsByTagName('body')[0].onkeydown = parts.ladder_keydown
+*/

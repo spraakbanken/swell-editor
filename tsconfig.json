@@ -7,9 +7,10 @@
         "module": "es6",
         "moduleResolution": "node",
         "allowUnreachableCode": true,
-        "target": "es5"
+        "target": "es6",
+        "noEmitOnError": true
     },
-    "files": [
-        "./src/**/*"
+    "include": [
+        "./src/*"
     ]
 }

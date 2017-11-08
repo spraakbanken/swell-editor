@@ -7,178 +7,64 @@ import * as CodeMirror from "codemirror"
 import * as typestyle from "typestyle"
 import * as Utils from "./Utils"
 import * as ViewDiff from "./ViewDiff"
-import * as AppTypes from "./AppTypes"
 import * as View from "./View"
 import * as Spans from "./Spans"
 
+import * as Snabbdom from "./Snabbdom"
+import { CM } from "./Snabbdom"
+
+import { span, div, InputField } from "./View"
+import { tag, Content as S } from "snabbis"
+
+import * as Model from "./Model"
+import { AppState, EditorState } from "./Model"
+export { Model }
+
+import { Store, Lens, Undo } from "reactive-lens"
+
 import { Span } from "./Spans"
 import { log, debug, debug_table } from "./dev"
-import { AppState, EditorState, Undoable } from "./AppTypes"
+import { VNode } from "snabbis"
 
-// no @types for prettify-xml
-declare function require(module_name: string): any
-const format: (xml_string: string) => string = require('prettify-xml')
-
-function whitespace_start(s: string): number {
-  const m = s.match(/\s*$/)
-  if (m) {
-    return m.index || s.length
-  } else {
-    return s.length
+export function App(store: Store<AppState>) {
+  const global = window as any
+  global.store = store
+  global.reset = (text: string) => store.set(Model.init(text))
+  console.log('making new view')
+  return {
+    view: Viewish(store),
+    services: [
+      Model.WithoutHistory(store).storage_connect(),
+      // store.location_connect(to_hash, from_hash),
+      // store.on(x => console.log(JSON.stringify(x, undefined, 2))),
+    ]
   }
 }
 
-export function CM(opts: CodeMirror.EditorConfiguration): CodeMirror.Editor {
-  const div = document.createElement('div')
-  return CodeMirror(div, {lineWrapping: true, ...opts})
-}
+// export function CM(opts: CodeMirror.EditorConfiguration): {cm: CodeMirror.Editor, vn: VNode} {
+//   const div = document.createElement('div')
+//   return CodeMirror(div, {lineWrapping: true, ...opts})
+// }
 
-function invoke<A>(f: () => A): A {
-  return f()
-}
+export function Viewish(store: Store<AppState>): () => VNode {
 
-function
-  ladder_keydown(
-    evt_key: string,
-    state: AppState
-  ): {
-    new_prefix?: string,
-    new_spans?: Span[]
-  }
-{
-  if (state.selected_index != null) {
-    const {current_prefix} = state
+  const es = store.at('editor_state')
+  const es_now = store.at('editor_state').at('now')
 
-    const spacelike = evt_key == " " || evt_key == ","
-
-    const new_prefix = invoke(() => {
-      if (evt_key.length == 1 && !spacelike) {
-        return current_prefix + evt_key
-      } else if (evt_key == 'Backspace') {
-        return current_prefix.slice(0, current_prefix.length - 1)
-      } else {
-        return current_prefix
-      }
-    })
-
-    log({evt_key, current_prefix, new_prefix, spacelike})
-
-    // if key is enter then we should advance the selected group
-
-    if (new_prefix == '') {
-      return { new_prefix }
-    } else {
-      const filter = (spacelike || evt_key == "Enter") ? AppTypes.exactMatches : AppTypes.prefixMatches
-      const matches = filter(new_prefix, state.taxonomy)
-      log('matches:', matches)
-      if (matches.length == 1) {
-        if (state.selected_index) {
-          return {
-            new_prefix: '',
-            new_spans:
-              Spans.modify_label_state(
-                state.editor_state.now.spans,
-                state.selected_index,
-                matches[0].code,
-                v => !v)
-          }
-        } else {
-          console.error('group index out of bounds')
-          return { new_prefix: '' }
-        }
-      } else if (matches.length == 0) {
-        // don't allow inserting this
-        return {}
-      } else {
-        return { new_prefix }
-      }
-    }
-  }
-  return {}
-}
-
-
-
-
-
-export function bind(root_element: HTMLElement, init_state: AppState): () => AppState {
-
-  let state = init_state
-
-  function set_state(new_state: Partial<AppState>) {
-    console.log('new state:', new_state)
-    Object.getOwnPropertyNames(state).map((k: keyof AppState) => {
-      if(new_state[k] != undefined) {
-        state = {...state, [k]: new_state[k]}
-        if (new_state[k] == -1) {
-          console.log('null-like')
-          state = {...state, [k]: null}
-        }
-        console.log('after setting', k, state)
-      }
-    })
-    partial_update_view()
-  }
-
-  function mod_state(f: (state: AppState) => Partial<AppState>) {
-    set_state(f(state))
-  }
-
-  function advance_spans(new_spans : Span[], new_tokens: string[] = []) {
-    //log(JSON.stringify({spans, tokens}))
-    if (new_spans.length == 0) {
-      log('not updating to empty spans')
-      // full_view_update will be run on('change')
-      return
-    }
-    if (debug) {
-      const errors = Spans.check_invariant(new_spans)
-      if (errors.length > 0) {
-        console.error(new_spans)
-        console.error(errors)
-        throw errors
-      }
-    }
-    const spans = new_spans
-    const tokens = new_tokens.length > 0 ? new_tokens : state.editor_state.now.tokens
-    mod_editor_state(
-      (editor_state: AppTypes.Undoable<EditorState>) =>
-        AppTypes.advance(
-          editor_state,
-          {spans, tokens}
-    ))
-    //debug_state()
-  }
-
-  ; (window as any).set_state = (spans: Span[], tokens: string[]) => { advance_spans(spans, tokens); full_view_update() }
-  ; (window as any).get_state = () => (state.editor_state.now)
   const debug_state = () => {
-    const {spans, tokens} = state.editor_state.now
+    const {spans, tokens} = es_now.get()
     debug_table(spans.map(({...s}) => ({...s, original: s.links.map(i => tokens[i]) })))
   }
   ; (window as any).debug_state = debug_state
   ; (window as any).invert = () => {
-    const {spans, tokens} = state.editor_state.now
+    const {spans, tokens} = es_now.get()
     const res = Spans.invert(spans, tokens)
-    advance_spans(res.spans, res.tokens)
+    Model.advance_spans(es, res.spans, res.tokens)
     full_view_update()
   }
 
-  function mod_editor_state(f: (s0: Undoable<EditorState>) => Undoable<EditorState>): void {
-    mod_state(AppTypes.on_editor_state(f))
-  }
-
-  function mod_state_undoable(f: (spans: Span[], tokens: string[]) => Spans.CursorUpdateInfo<Span>): void {
-    const {spans, tokens} = state.editor_state.now
-    const r = f(spans, tokens)
-    if (r.updated) {
-      console.log('updated', r.spans)
-      advance_spans(r.spans)
-    }
-  }
-
-  const undo = () => { mod_editor_state(AppTypes.undo); full_view_update() }
-  const redo = () => { mod_editor_state(AppTypes.redo); full_view_update() }
+  const undo = () => { es.modify(Undo.undo); full_view_update() }
+  const redo = () => { es.modify(Undo.redo); full_view_update() }
 
   const history_keys = {
     "Ctrl-Z": undo,
@@ -188,83 +74,30 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
   }
   console.log('debug', debug)
 
-  // only create CMs here, move wrapping business to someone else to deal with
-  const cm_orig = CM({readOnly: true})
-  const cm_main = CM({extraKeys: history_keys})
-  const cm_diff = CM({readOnly: true})
-  const cm_xml = CM({lineWrapping: false, mode: 'xml', extraKeys: history_keys})
+  const {cm: cm_orig, vn: vn_orig} = CM({readOnly: true})
+  const {cm: cm_main, vn: vn_main} = CM({extraKeys: history_keys})
+  const {cm: cm_diff, vn: vn_diff} = CM({readOnly: true})
+  const {cm: cm_xml, vn: vn_xml} = CM({lineWrapping: false, mode: 'xml', extraKeys: history_keys})
+  const needs_full_update = store.at('needs_full_update')
 
-  const patch = View.setup(root_element)
-
-  /** Updates all views, run this when the state is completely new */
+  /** Updates all CM views, run this when the state is completely new */
   function full_view_update() {
-    const {spans, tokens} = state.editor_state.now
+    const {spans, tokens} = es_now.get()
     const cursor = cm_main.getDoc().getCursor()
     const upd = spans.map(s => s.text).join('')
     cm_orig.getDoc().setValue(tokens.join(''))
     cm_main.getDoc().setValue(upd.slice(0, upd.length - 1))
     cm_main.getDoc().setSelection(cursor, cursor)
-    partial_update_view()
+    console.log('full_view_update', {spans, tokens}, cm_main.getDoc().getValue())
+    // increment timestamp?
+    needs_full_update.set(false)
   }
 
-  /** Updates all views but cm_main */
-  function partial_update_view() {
-    const {spans, tokens} = state.editor_state.now
-    const diff = Spans.calculate_diff(spans, tokens)
-    const rich_diff = Spans.enrichen_diff(diff)
-    const semi_rich_diff = Spans.semirich(rich_diff)
-    debug_table(semi_rich_diff)
-    ViewDiff.draw_diff(semi_rich_diff, cm_diff)
-    typestyle.forceRenderStyles()
-
-    let selected_labels = [] as string[]
-    if (state.selected_index) {
-      //const i = Spans.lookup_group(state.selected_index, semi_rich_diff)
-      selected_labels = spans[state.selected_index].labels
-    }
-
-    patch({
-      semi_rich_diff,
-      cm_orig, cm_main, cm_diff, cm_xml,
-      state,
-      set_show_xml(show_xml: boolean) {
-        set_state({show_xml})
-      },
-      select_index(selected_index: number | null) {
-        console.log('select index', selected_index)
-        set_state({selected_index})
-        console.log('after select_index:', state)
-      },
-      ladder_keydown(evt: KeyboardEvent) {
-        const key = evt.key
-        const res = ladder_keydown(key, state)
-        if (res.new_prefix != undefined) {
-          set_state({current_prefix: res.new_prefix})
-        }
-        if (res.new_spans != undefined) {
-          advance_spans(res.new_spans)
-        }
-        if (state.selected_index) {
-          if (key == 'Enter' || key == 'ArrowRight') {
-            let x
-            set_state({selected_index: x = Spans.next_group(state.selected_index, semi_rich_diff)})
-            console.log({x})
-          }
-          if (key == 'ArrowLeft') {
-            set_state({selected_index: Spans.prev_group(state.selected_index, semi_rich_diff)})
-          }
-        }
-      },
-      selected_labels,
-    })
-
-    const pretty_xml = format(new XMLSerializer().serializeToString(Spans.diff_to_xml(diff)))
-    if (pretty_xml != cm_xml.getDoc().getValue()) {
-      const cursor = cm_xml.getDoc().getCursor()
-      cm_xml.getDoc().setValue(pretty_xml)
-      cm_xml.getDoc().setSelection(cursor, cursor)
-    }
-  }
+  const with_full_update = (cb: () => void) => store.transaction(() => {
+    cb()
+    needs_full_update.set(true)
+    // full_view_update()
+  })
 
   cm_main.focus()
   full_view_update()
@@ -278,6 +111,7 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
   }
 
   (cm_main.on as any)('cut', (_cm_main: CodeMirror.Editor, evt: Event) => {
+    console.log('cut')
     log('cut', evt)
     evt.preventDefault()
     cut()
@@ -290,32 +124,34 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
   });
 
   function revert() {
-    const {spans, tokens} = state.editor_state.now
+    const {spans, tokens} = es_now.get()
     const sels = cm_main.getDoc().listSelections()
     if (sels) {
       const {head} = sels[0]
       const index = Spans.span_from_offset(spans, cm_main.getDoc().indexFromPos(head))[0]
-      advance_spans(Spans.revert(index, spans, tokens))
-      full_view_update()
+      with_full_update(() => {
+        Model.advance_spans(es, Spans.revert(index, spans, tokens))
+      })
     }
   }
 
   function label() {
-    const {spans, tokens} = state.editor_state.now
+    const {spans, tokens} = es_now.get()
     const sels = cm_main.getDoc().listSelections()
     if (sels) {
       const {head} = sels[0]
       const index = Spans.span_from_offset(spans, cm_main.getDoc().indexFromPos(head))[0]
       const [pre, [me], post] = Utils.splitAt3(spans, index, index+1)
-      advance_spans([...pre, {...me, labels: [...me.labels, "ABCXYZ"[Math.floor(Math.random()*6)]]}, ...post])
-      full_view_update()
+      with_full_update(() => {
+        Model.advance_spans(es, [...pre, {...me, labels: [...me.labels, "ABCXYZ"[Math.floor(Math.random()*6)]]}, ...post])
+      })
     }
   }
 
   function cut() {
     const sels = cm_main.getDoc().listSelections()
     if (sels) {
-      const {spans, tokens} = state.editor_state.now
+      const {spans, tokens} = es_now.get()
       const {anchor, head} = sels[0]
       const a = cm_main.getDoc().indexFromPos(anchor)
       const b = cm_main.getDoc().indexFromPos(head)
@@ -323,6 +159,7 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
       const to = Spans.span_from_offset(spans, Math.max(a, b))[0]
       const conv = (off: number) => cm_main.getDoc().posFromIndex(off)
       remove_marks_by_class(cm_main, 'cut')
+      console.log({spans, from, to})
       cm_main.getDoc().markText(
         conv(Spans.span_offset(spans, from)),
         conv(Spans.span_offset(spans, to) + whitespace_start(spans[to].text)), {
@@ -339,7 +176,7 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
 
   function paste() {
     cm_main.getDoc().getAllMarks().map((m) => {
-      const {spans, tokens} = state.editor_state.now
+      const {spans, tokens} = es_now.get()
       const mark = m.find()
       const span_from_pos = (pos: CodeMirror.Position) => Spans.span_from_offset(spans, cm_main.getDoc().indexFromPos(pos))[0]
       const from = span_from_pos(mark.from as any)
@@ -351,23 +188,26 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
       }
       log(from, to, here)
       log(spans.map(({text}) => text))
-      advance_spans(Spans.rearrange(spans, from, to, here))
-      full_view_update()
+      with_full_update(() => {
+        Model.advance_spans(es, Spans.rearrange(spans, from, to, here))
+      })
     })
   }
 
   // invariant check
   cm_main.on('update', () => {
-    const {spans, tokens} = state.editor_state.now
+    const {spans, tokens} = es_now.get()
     const lhs = spans.map(s => s.text).join('')
     const rhs = cm_main.getDoc().getValue() + ' '
     //log('update', Utils.show({lhs, rhs}))
     if (rhs != lhs && (Utils.ltrim(rhs) == lhs || Utils.ltrim(rhs) == '')) {
       // everything deleted! just update view
       cm_main.getDoc().setValue(lhs.slice(0, lhs.length - 1))
-      full_view_update()
+      needs_full_update.set(true)
     } else if (lhs != rhs) {
       log("Editor and internal state out of sync:", {lhs, rhs})
+      log('Doing full update:')
+      needs_full_update.set(true)
     }
   })
 
@@ -394,8 +234,9 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
         if (check != '') {
           console.error(check)
         } else {
-          advance_spans(res.spans, res.tokens)
-          full_view_update()
+          with_full_update(() => {
+            Model.advance_spans(es, res.spans, res.tokens)
+          })
         }
       } catch (e) {
         console.error(e)
@@ -408,6 +249,11 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
     // otherwise indexFromPos does not work anymore
     // since the position might be removed
     //log('beforeChange', change.origin, change)
+
+    // route this through somewhere else?
+    // then the
+
+    console.log(change.origin)
 
     if (change.origin == 'undo') {
       log('undo')
@@ -428,18 +274,26 @@ export function bind(root_element: HTMLElement, init_state: AppState): () => App
     } else if (change.origin != 'setValue') {
       const from = cm_main.getDoc().indexFromPos(change.from)
       const to = cm_main.getDoc().indexFromPos(change.to)
-      const {spans, tokens} = state.editor_state.now
-      const new_spans = Spans.modify(spans, from, to, change.text.join('\n'))
-      advance_spans(Spans.chop_up_insertions(false)(new_spans, tokens).spans)
-      mod_state_undoable(_ => Spans.chop_up_insertions(true)(new_spans, tokens))
-      mod_state_undoable(_ => Spans.auto_revert(new_spans, tokens))
+      const {spans, tokens} = es_now.get()
+      store.transaction(() => {
+        Model.advance_spans(es, Spans.modify(spans, from, to, change.text.join('\n')))
+        Model.modify_spans(es, (spans, tokens) => Spans.chop_up_insertions(false)(spans, tokens).spans)
+        Model.modify_spans(es, (spans, tokens) => Spans.chop_up_insertions(true)(spans, tokens).spans)
+        Model.modify_spans(es, (spans, tokens) => Spans.auto_revert(spans, tokens).spans)
+        needs_full_update.set(false)
+      })
       // bug: fix duplicate states next to each other in undo history
-      partial_update_view()
       //log(spans.map(({text}) => text))
     }
   })
 
-  return () => state
+  needs_full_update.ondiff(v => (console.log({v}), v) && full_view_update())
+
+  const cms = {vn_orig, vn_main, vn_diff, vn_xml}
+
+  return function partial_update_view() {
+    return View.view(store, cms)
+  }
 }
 
 function index_from_offset(xs: string[], offset: number): number | null {
@@ -460,6 +314,16 @@ function remove_marks_by_class(editor: CodeMirror.Editor, name: string) {
     }
   })
 }
+
+function whitespace_start(s: string): number {
+  const m = s.match(/\s*$/)
+  if (m) {
+    return m.index || s.length
+  } else {
+    return s.length
+  }
+}
+
 
 /*
 

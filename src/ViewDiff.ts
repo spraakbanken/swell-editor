@@ -2,22 +2,27 @@ import * as Spans from "./Spans"
 import * as Utils from "./Utils"
 import { TokenDiff }  from "./Utils"
 import * as Positions from "./Positions"
+import { PosDict } from "./Positions"
 import * as Classes from './Classes'
-import { div, VNode, h, on, withClass } from "./Snabbdom"
 import * as Snabbdom from "./Snabbdom"
 import * as csstips from "csstips"
 import { style } from "typestyle"
 import { log } from './dev'
+import { Store } from "reactive-lens"
+// import { div, VNode, h, on, withClass } from "./Snabbdom"
+import { tag, VNode, Content as S } from "snabbis"
+import { on } from "./Snabbdom"
 
 function table(cols: VNode[][], classes: string[] = []): VNode {
-  return div(Classes.Row, {}, ...classes)(
-    ...cols.map(col => div(Classes.Column)(...col)))
+  return tag('div',
+    S.classed(Classes.Row, ...classes),
+    ...cols.map(col => tag('div', S.classed(Classes.Column), col)))
 }
 
 // todo: keys on VNodes
 
 const span = (t ?: string, cls: string[] = []) =>
-  Snabbdom.span(Classes.InnerCell, {}, ...cls)(...(t ? [t] : []))
+  tag('span', S.classed(Classes.InnerCell, ...cls), t)
 
 const avg = (xs: number[]) => {
   if (xs.length == 0) {
@@ -33,7 +38,8 @@ type Link
 //  | { type: 'lower', to: string, converge: string }
 
 export function ladder_diff(
-    diff: Spans.SemiRichDiff[], pos_dict: Positions.PosDict,
+    pos_dict: Store<PosDict>,
+    diff: Spans.SemiRichDiff[],
     selected_index: number | null,
     select_index: (span_index: number) => void
   ): VNode
@@ -67,20 +73,21 @@ export function ladder_diff(
           links.push({type: 'segment', from: 'top'+i, to: d.join_id + '0'})
           if (d.nullary) {
             //Delete
-            mid = name(h('span', {classes: [Classes.BorderCell]}, d.labels.join(', ')), d.join_id, 0)
+            mid = name(tag('span', S.classed(Classes.BorderCell), d.labels.join(', ')), d.join_id, 0)
           }
-          return [name(h('span', {classes: [Classes.InnerCell]}, deletes(d.source_diff)), 'top', i), mid, null]
+          return [name(tag('span', S.classed(Classes.InnerCell), deletes(d.source_diff)), 'top', i), mid, null]
         case 'Dropped':
           links.push({type: 'segment', to: 'bot'+i, from: d.join_id + '0'})
           if (!labels[d.join_id]) {
             labels[d.join_id] = true
-            mid = name(h('span', {classes: [Classes.BorderCell]}, d.labels.join(', ')), d.join_id, 0)
+            mid = name(tag('span', S.classed(Classes.BorderCell), d.labels.join(', ')), d.join_id, 0)
           }
-          return [null, mid, name(h('span', {classes: [Classes.InnerCell]}, inserts(d.target_diff)), 'bot', i)]
+          return [null, mid, name(tag('span', S.classed(Classes.InnerCell), inserts(d.target_diff)), 'bot', i)]
         default:
           return d
       }
     }
+    /*
     function midsel(i: number, cd: Spans.SemiRichDiff) {
       if (i == 1) {
         if (selected_index != null) {
@@ -95,8 +102,9 @@ export function ladder_diff(
       }
       return false
     }
+    */
     const col = elements().map((x, i) => x == null ? [] : [
-      on(withClass((selected_index == d.span_index || midsel(i, d)) ? Classes.Selected : '', x), {
+      on(x, { // withClass((selected_index == d.span_index || midsel(i, d)) ? Classes.Selected : '', x), {
         click(e: MouseEvent) {
           if (d.span_index != null) {
             select_index(d.span_index)
@@ -128,27 +136,27 @@ export function ladder_diff(
     }
   })
   const ladder = Positions.posid('table', pos_dict, table(cols.map(([u, m, d], i) => [
-    h('div', {classes: [Classes.Cell]}, u.length == 0 ? [h('div', {classes: [Classes.InnerCell]}, '\u200b')] : u),
-    h('div', {classes: [Classes.Cell]}, m.length == 0 ? []                                                   : m),
-    h('div', {classes: [Classes.Cell]}, d.length == 0 ? [h('div', {classes: [Classes.InnerCell]}, '\u200b')] : d)
+    tag('div', S.classed(Classes.Cell), u.length != 0 ? u : tag('div', S.classed(Classes.InnerCell), '\u200b')),
+    tag('div', S.classed(Classes.Cell), m.length != 0 ? m : tag('div')),
+    tag('div', S.classed(Classes.Cell), d.length != 0 ? d : tag('div', S.classed(Classes.InnerCell), '\u200b')),
   ]), [Classes.LadderTable, Classes.MainStyle]))
 
-  const svg = h('svg', {classes: [Classes.Width100Pct]}, links.map(link => {
+  const svg = tag('svg', S.classed(Classes.Width100Pct), links.map(link => {
       if (link.type == 'segment') {
-        const top = pos_dict.dict[link.from]
-        const bot = pos_dict.dict[link.to]
+        const top = pos_dict.get()[link.from]
+        const bot = pos_dict.get()[link.to]
         if (!top || !bot) return;
         const x1 = Positions.hmid(top)
         const y1 = Positions.bot(top)
         const x2 = Positions.hmid(bot)
         const y2 = bot.top // Positions.top(bot)
         const d = 25 * (-1 / (Math.abs(x1 - x2) + 1) + 1)
-        return h('path', {
-          attrs: {
+        return tag('path',
+          S.attrs({
             d: ['M', x1, y1, 'C', x1, y1 + d, x2, y2 - d, x2, y2].join(' '),
-          },
-          classes: [Classes.Path]
-        })
+          }),
+          S.classed(Classes.Path)
+        )
       }
     }).filter(x => x != null)
   )
@@ -156,7 +164,7 @@ export function ladder_diff(
 }
 
 const diff_to_spans = (rules: (string | null)[]) => (d: [number, string][]) =>
-  diff_helper(d, rules, (text, cls) => h('span', { classes: [cls] }, text))
+  diff_helper(d, rules, (text, cls) => tag('span', S.classed(cls), text))
 
 const inserts = diff_to_spans([null, '', Classes.Insert])
 
