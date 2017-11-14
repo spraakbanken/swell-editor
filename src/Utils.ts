@@ -101,6 +101,12 @@ export function flatten<A>(xss: A[][]): A[] {
   return ([] as any).concat(...xss)
 }
 
+/** Flatten an array of arrays */
+export function flatMap<A, B>(xs: A[], f: (a: A) => B[]): B[] {
+  return flatten(xs.map(f))
+}
+
+
 /** Split an array into two pieces */
 export function splitAt<A>(xs: A[], i: number): [A[], A[]] {
   return [xs.slice(0, i), xs.slice(i)]
@@ -167,8 +173,13 @@ export function minimum(xs: number[]) {
   return xs.reduce((x,y) => Math.min(x,y), xs[0])
 }
 
-/** Returns a copy of the array with duplicates removed */
-export function uniq(xs: number[]): number[] {
+/** Maximum of a non-empty array */
+export function maximum(xs: number[]) {
+  return xs.reduce((x,y) => Math.max(x,y), xs[0])
+}
+
+/** Returns a copy of the array with duplicates removed, via toString */
+export function uniq<A>(xs: A[]): A[] {
   const seen = {} as Record<string, boolean>
   return xs.filter(x => {
     const s = x.toString()
@@ -211,4 +222,11 @@ export function UnionFind(): UnionFind {
   }
   return {find, union, unions}
 }
+
+export function splice<A>(xs: A[], start: number, count: number, ...insert: A[]): [A[], A[]] {
+  const ys = xs.slice()
+  const zs = ys.splice(start, count, ...insert)
+  return [ys, zs]
+}
+
 
