@@ -168,8 +168,22 @@ quickCheck('invariant', arb_graph, g =>
     return lhs === rhs
   })
 
+  let skips = 0
+  let nonskips = 0
+  const skip = (reason: string) => {
+    skips++
+  }
+  test.onFinish(() => {
+    console.warn()
+    console.warn('skipped: ' + skips + '/' + nonskips + ' (' + Math.round((skips * 100.0) / nonskips) + '%)')
+    console.warn()
+  })
+
   quickCheck('modify links', arb_modify, ({g, from, to, text}, assert) => {
-    return true
+    if (text.match(/^\s*$/)) {
+      skip('whitespace-only replacement')
+      return true
+    }
     const mod = G.modify(g, from, to, text)
     const inside_before = new Set<string>()
     for (let i = from; i <= to; i++) {
@@ -178,14 +192,14 @@ quickCheck('invariant', arb_graph, g =>
     const inside_after = new Set<string>()
     for (let i = from; i <= from + text.length; i++) {
       if (i >= G.target_text(mod).length) {
-        console.error('too big!')
+        skip('too big!')
         continue
       }
       G.related(mod, G.token_at(G.target_texts(mod), i).token).forEach(id => inside_after.add(id))
     }
     const w = to - from
     for (const before of range(G.target_text(g).length)) {
-      console.log(Utils.show({g, from, to, text, mod, before}))
+      // console.log(Utils.show({g, from, to, text, mod, before}))
       let after
       if (before < from) {
         after = before
@@ -193,28 +207,25 @@ quickCheck('invariant', arb_graph, g =>
       } else if (before >= to) {
         after = before - w + text.length
         if (after >= G.target_text(mod).length) {
-          console.error('skipping post', after)
+          skip('post ' + after)
           continue
         }
         assert.equal(G.target_text(g)[before], G.target_text(mod)[after], "post: " + after)
       } else {
         after = before
         if (after >= from + text.length) {
-          console.error('skipping replaced', after)
+          skip('replaced ' + after)
           continue
         }
         if (after >= G.target_text(mod).length) {
-          console.error('skipping replaced', after)
+          console.error('replaced ' + after)
           continue
         }
         assert.equal(text[before - from], G.target_text(mod)[after], "replaced: " + after)
       }
-      if (to == from) {
-        // continue; // ?
-      }
-      console.log(Utils.show({after}))
+      // console.log(Utils.show({after}))
       if (after >= G.target_text(mod).length) {
-        console.error('After too big!')
+        skip('after too big')
         continue
       }
       const rel_before = new Set(G.related(g, G.token_at(G.target_texts(g), before).token))
@@ -229,8 +240,9 @@ quickCheck('invariant', arb_graph, g =>
         before: Utils.overlaps(rel_before, inside_before),
         after: Utils.overlaps(rel_after, inside_after)
       }
-      console.log(Utils.show({sets, overlaps}))
+      // console.log(Utils.show({sets, overlaps}))
       assert.equal(overlaps.before, overlaps.after)
+      nonskips++
     }
     return true
   })

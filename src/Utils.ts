@@ -92,7 +92,7 @@ export function whitespace_split(s: string): [string, string] {
   return [s, ''] // unreachable (the regexp matches any string)
 }
 
-/** Splits a string up in the initial part and all trailing whitespace
+/** Splits a string up in the initial whitespace part and the rest of the string
 
   initial_whitespace_split('  XY  ') // => ['  ', 'XY  ']
   initial_whitespace_split('XY  ')   // => ['', 'XY  ']

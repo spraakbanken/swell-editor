@@ -261,11 +261,12 @@ export function modify_tokens(g: Graph, from: number, to: number, text: string):
   if (text.match(/^\s+$/)) {
     // replacement text is only whitespace, need to find some token to put it on
     if (from > 0) {
+      // does this mean to prefer to merge with previous?
       return modify_tokens(g, from - 1, to, g.target[from - 1].text + text)
     } else if (to < g.target.length) {
       return modify_tokens(g, from, to + 1, text + g.target[to].text)
     } else {
-      console.warn('Introducing whitespace into empty graph')
+      // console.warn('Introducing whitespace into empty graph')
     }
   }
   // console.error(JSON.stringify({g, from, to, text}, undefined, 2))
