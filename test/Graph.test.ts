@@ -1,10 +1,10 @@
 import * as G from "../src/Graph"
 import { Graph } from "../src/Graph"
 import * as Utils from "../src/Utils"
+import { range } from "../src/Utils"
 import * as test from 'tape'
 ;(global as any).it = () => { throw "don't use 'it'" }
 import * as jsc from "jsverify"
-
 
 function permute<A>(xs: A[]): jsc.Generator<A[]> {
   return jsc.generator.bless(() => {
@@ -58,21 +58,6 @@ const Ss_text: jsc.Arbitrary<string> =
 const token_text: jsc.Arbitrary<string> =
   jsc.pair(alphabet(' '), Ss_text)
      .smap(([a, b]) => a + b, Utils.initial_whitespace_split)
-
-/** All numbers up to and excluding the argument number
-
-  range(0) // => []
-  range(1) // => [0]
-  range(4) // => [0, 1, 2, 3]
-
-*/
-function range(to: number) {
-  const out = []
-  for (let i = 0; i < to; ++i) {
-    out.push(i)
-  }
-  return out
-}
 
 function replicate<A>(n: number, g: jsc.Arbitrary<A>): jsc.Arbitrary<A[]> {
   const gs = [] as jsc.Arbitrary<A>[]

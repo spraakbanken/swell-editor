@@ -29,6 +29,8 @@ export type Diff<A> = [Change, A][]
   diff('abc'.split(''), 'cab'.split('')) // => [[1, 'c'], [0, 'a'], [0, 'b'], [-1, 'c']]
   diff('bca'.split(''), 'a1234bc'.split('')) // => [[1, 'a'], [1, '1'], [1, '2'], [1, '3'], [1, '4'], [0, 'b'], [0, 'c'], [-1, 'a']]
   diff(['anything', 'everything'], ['anything']) // => [[0, 'anything'], [-1, 'everything']]
+  const n = 10
+  diff(range(n), range(2*n)) // => range(2*n).map(i => [i < n ? 0 : 1, i])
 
 */
 export function diff<A>(xs: A[], ys: A[], cmp: (a: A) => string = a => a.toString()) {
@@ -418,5 +420,20 @@ export function rearrange<A>(xs: A[], begin: number, end: number, dest: number):
   }
   const [pre, post] = splitAt(a.concat(z), dest)
   return pre.concat(mid, post)
+}
+
+/** All numbers up to and excluding the argument number
+
+  range(0) // => []
+  range(1) // => [0]
+  range(4) // => [0, 1, 2, 3]
+
+*/
+export function range(to: number) {
+  const out = []
+  for (let i = 0; i < to; ++i) {
+    out.push(i)
+  }
+  return out
 }
 
