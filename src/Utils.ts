@@ -43,9 +43,30 @@ export function shallow_array_eq<A>(xs: A[], ys: A[]): boolean {
   return xs.length == ys.length && xs.every((x, i) => x == ys[i])
 }
 
-/** Check if two lists are a permutation of each other */
-export function array_multiset_eq(xs: number[], ys: number[]): boolean {
-  return shallow_array_eq(numsort(xs), numsort(ys))
+/** Check if two lists are a permutation of each other
+
+  array_multiset_eq(['apa', 'bepa', 'apa'], ['bepa', 'apa', 'apa', 'apa']) // => false
+  array_multiset_eq(['apa', 'bepa', 'apa'], ['bepa', 'apa', 'apa']) // => true
+  array_multiset_eq(['apa', 'bepa', 'apa'], ['bepa', 'apa']) // => false
+  array_multiset_eq(['apa', 'bepa', 'apa'], ['bepa']) // => false
+
+*/
+export function array_multiset_eq<A>(xs: A[], ys: A[]): boolean {
+  const xm = new Map<A, number>()
+  const ym = new Map<A, number>()
+  let tmp
+  xs.map(x => xm.set(x, (tmp = xm.get(x), tmp === undefined ? 1 : tmp + 1)))
+  ys.map(y => ym.set(y, (tmp = ym.get(y), tmp === undefined ? 1 : tmp + 1)))
+  return map_equal(xm, ym)
+}
+
+/** Are these two maps equal? */
+export function map_equal<A, B>(a: Map<A, B>, b: Map<A, B>): boolean {
+  let ok = true
+  a.forEach((k, v) => ok = ok && b.get(v) == k)
+  b.forEach((k, v) => ok = ok && a.get(v) == k)
+  return ok
+
 }
 
 /** map for strings */
@@ -330,3 +351,23 @@ export function raise(s: string): any {
 export function overlaps<A>(s: Set<A>, t: Set<A>) {
   return [...s.keys()].some(k => t.has(k))
 }
+
+/** Moves a slice of the items and puts back them at some destination.
+
+  rearrange([0, 1, 2, 3], 1, 2, 0) // => [1, 2, 0, 3]
+  rearrange([0, 1, 2, 3], 1, 2, 3) // => [0, 3, 1, 2]
+
+  rearrange([0, 1, 2, 3], 1, 2, 1) // => [0, 1, 2, 3]
+  rearrange([0, 1, 2, 3], 1, 2, 2) // => [0, 1, 2, 3]
+
+*/
+export function rearrange<A>(xs: A[], begin: number, end: number, dest: number): A[] {
+  const [a, mid, z] = splitAt3(xs, begin, end + 1)
+  const w = end - begin
+  if (dest > begin) {
+    dest -= w
+  }
+  const [pre, post] = splitAt(a.concat(z), dest)
+  return pre.concat(mid, post)
+}
+

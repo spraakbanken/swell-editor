@@ -302,12 +302,14 @@ export function modify_tokens(g: Graph, from: number, to: number, text: string):
   return {source: g.source, target, edges}
 }
 
-/** Moves a slice of the spans and puts it at a new destination (marking them as moved).
+/** Moves a slice of the target tokens and puts it at a new destination.
+
+  target_text(rearrange(init('apa bepa cepa depa'), 1, 2, 0)) // => 'bepa cepa apa depa'
 
 Indexes are token offsets
 */
-export function rearrange(graph: Graph, begin: number, end: number, dest: number): Graph {
-  return Utils.raise('todo')
+export function rearrange(g: Graph, begin: number, end: number, dest: number): Graph {
+  return {...g, target: Utils.rearrange(g.target, begin, end, dest)}
 }
 
 /** Calculate the diff */

@@ -137,7 +137,6 @@ quickCheck('invariant', arb_graph, g =>
     // assert.equal(lhs, rhs)
     return lhs === rhs
   })
-
 }
 
 {
@@ -180,6 +179,11 @@ quickCheck('invariant', arb_graph, g =>
   })
 
   quickCheck('modify links', arb_modify, ({g, from, to, text}, assert) => {
+    // properties about links:
+    // within segment: superset of all links that are within bound
+    // partially outside segment: now part of the new component
+    // wholly outside segment: preserved
+
     if (text.match(/^\s*$/)) {
       skip('whitespace-only replacement')
       return true
@@ -207,18 +211,18 @@ quickCheck('invariant', arb_graph, g =>
       } else if (before >= to) {
         after = before - w + text.length
         if (after >= G.target_text(mod).length) {
-          skip('post ' + after)
+          skip('post')
           continue
         }
         assert.equal(G.target_text(g)[before], G.target_text(mod)[after], "post: " + after)
       } else {
         after = before
         if (after >= from + text.length) {
-          skip('replaced ' + after)
+          skip('replaced')
           continue
         }
         if (after >= G.target_text(mod).length) {
-          console.error('replaced ' + after)
+          console.error('replaced')
           continue
         }
         assert.equal(text[before - from], G.target_text(mod)[after], "replaced: " + after)
@@ -247,8 +251,37 @@ quickCheck('invariant', arb_graph, g =>
     return true
   })
 
-  // properties about links:
-  // within segment: superset of all links that are within bound
-  // partially outside segment: now part of the new component
-  // wholly outside segment: preserved
+}
+
+{
+  const arb_rearrange =
+    jsc.record({
+      g: arb_graph,
+      begin: jsc.nat,
+      end: jsc.nat,
+      dest: jsc.nat,
+    }).smap(({g, begin, end, dest}) => {
+      const n = g.target.length
+      const [a, b] = Utils.numsort([begin % n, end % n])
+      return {g, begin: a, end: b, dest: dest % n}
+    }, t => t)
+
+  quickCheck('rearrange invariant', arb_rearrange, ({g, begin, end, dest}) =>
+    G.check_invariant(G.rearrange(g, begin, end, dest)) == "ok"
+  )
+
+  quickCheck('rearrange length', arb_rearrange, ({g, begin, end, dest}) => {
+    const mod = G.rearrange(g, begin, end, dest)
+    return G.target_text(mod).length == G.target_text(g).length
+  })
+
+  quickCheck('rearrange tokens', arb_rearrange, ({g, begin, end, dest}) => {
+    const mod = G.rearrange(g, begin, end, dest)
+    return G.target_texts(mod).length == G.target_texts(g).length
+  })
+
+  quickCheck('rearrange permutation', arb_rearrange, ({g, begin, end, dest}) => {
+    const mod = G.rearrange(g, begin, end, dest)
+    return Utils.array_multiset_eq(G.target_texts(mod), G.target_texts(g))
+  })
 }
