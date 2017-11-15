@@ -126,11 +126,12 @@ quickCheck('invariant', arb_graph, g =>
   )
 
   quickCheck('modify_tokens content', arb_modify_tokens, ({g, from, to, text}, assert) => {
-    const [a, mid, z] = Utils.splitAt3(g.target.map(t => t.text), from, to)
+    const [a, mid, z] = Utils.splitAt3(G.target_texts(g), from, to)
     const lhs = a.concat([text], z).join('').trim()
-    const rhs = G.modify_tokens(g, from, to, text).target.map(t => t.text).join('').trim()
+    const rhs = G.target_text(G.modify_tokens(g, from, to, text)).trim()
     return lhs === rhs
   })
+
 }
 
 {
@@ -151,11 +152,23 @@ quickCheck('invariant', arb_graph, g =>
   )
 
   quickCheck('modify content', arb_modify, ({g, from, to, text}, assert) => {
-    const [a, mid, z] = Utils.stringSplitAt3(g.target.map(t => t.text).join(''), from, to)
+    const [a, mid, z] = Utils.stringSplitAt3(G.target_text(g), from, to)
     const lhs = (a + text + z).trim()
     const mod = G.modify(g, from, to, text)
     const rhs = mod.target.map(t => t.text).join('').trim()
-    // assert.isEqual(lhs, rhs, JSON.stringify({g, from, to, text, mod, lhs, rhs, a, mid, z}, undefined, 2))
     return lhs === rhs
   })
+
+  quickCheck('modify links', arb_modify, ({g, from, to, text}, assert) => {
+    const [a, mid, z] = Utils.stringSplitAt3(G.target_text(g), from, to)
+    const lhs = (a + text + z).trim()
+    const mod = G.modify(g, from, to, text)
+    const rhs = G.target_text(mod).trim()
+    return lhs === rhs
+  })
+
+  // properties about links:
+  // within segment: superset of all links that are within bound
+  // partially outside segment: now part of the new component
+  // wholly outside segment: preserved
 }

@@ -264,4 +264,44 @@ export function splice<A>(xs: A[], start: number, count: number, ...insert: A[])
   return [ys, zs]
 }
 
+/** True iff this function throws an exception
+
+  throws(() => '123')        // => false
+  throws(() => raise('123')) // => true
+
+*/
+export function throws(m: () => any): boolean {
+  try {
+    return (m(), false)
+  } catch (e) {
+    return true
+  }
+}
+
+/**
+
+  const u = unique_check()
+  u(1) // => true
+  u(1) // => false
+  u(1) // => false
+  u(2) // => true
+  u(3) // => true
+  u(2) // => false
+
+*/
+export function unique_check<S>(): (s: S) => boolean {
+  const seen = new Set<S>()
+  return s => {
+    if (seen.has(s)) {
+      return false
+    }
+    seen.add(s)
+    return true
+  }
+}
+
+/** Raise an exception */
+export function raise(s: string): any {
+  throw s
+}
 

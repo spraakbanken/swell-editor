@@ -17,32 +17,6 @@ export interface Edge {
   readonly labels: string[]
 }
 
-/**
-
-  const u = unique_check()
-  u(1) // => true
-  u(1) // => false
-  u(1) // => false
-  u(2) // => true
-  u(3) // => true
-  u(2) // => false
-
-*/
-function unique_check<S>(): (s: S) => boolean {
-  const seen = new Set<S>()
-  return s => {
-    if (seen.has(s)) {
-      return false
-    }
-    seen.add(s)
-    return true
-  }
-}
-
-function raise<A>(s: string): A {
-  throw s
-}
-
 /** Checks that the invariant of the graph holds
 
   check_invariant(init('apa bepa cepa')) // => 'ok'
@@ -56,17 +30,17 @@ export function check_invariant(g: Graph): 'ok' | {violation: string, g: Graph} 
   try {
     const tokens = g.source.concat(g.target)
     {
-      const unique_id = unique_check<string>()
-      tokens.forEach(t => unique_id(t.id) || raise('Duplicate id: ' + t))
+      const unique_id = Utils.unique_check<string>()
+      tokens.forEach(t => unique_id(t.id) || Utils.raise('Duplicate id: ' + t))
     }
-    tokens.forEach(t => t.text.match(/^\S+\s+$/) || raise('Bad text token: ' + JSON.stringify(t.text)))
+    tokens.forEach(t => t.text.match(/^\S+\s+$/) || Utils.raise('Bad text token: ' + JSON.stringify(t.text)))
     const ids = new Set(tokens.map(t => t.id))
     {
-      const unique_id = unique_check<string>()
+      const unique_id = Utils.unique_check<string>()
       g.edges.forEach(e =>
         e.ids.forEach(id => {
-          unique_id(id) || raise('Duplicate id in edge id list: ' + id)
-          ids.has(id) || raise('Edge talks about unknown id: ' + id)
+          unique_id(id) || Utils.raise('Duplicate id in edge id list: ' + id)
+          ids.has(id) || Utils.raise('Edge talks about unknown id: ' + id)
         }))
     }
   } catch (e) {
@@ -125,6 +99,89 @@ export function init_from(tokens: string[]): Graph {
   }
 }
 
+/** The edge at a position (in the target text)
+
+  const g = init('apa bepa cepa')
+  edge_at(g, 1) // => {ids: ['s1', 't1'], labels: []}
+
+*/
+export function edge_at(g: Graph, index: number): Edge {
+  const target_id  = g.target[index].id
+  for (const e of g.edges) {
+    for (const id of  e.ids) {
+      if (id == target_id) {
+        return e
+      }
+    }
+  }
+  throw 'Out of bounds'
+}
+
+/** The related ids at a position (in the target text)
+
+  const g = init('apa bepa cepa')
+  related(g, 1) // => ['s1', 't1']
+
+*/
+export function related(g: Graph, index: number): string[] {
+  return edge_at(g, index).ids
+}
+
+/** The text in some tokens
+
+  text(init('apa bepa cepa ').target) // => 'apa bepa cepa '
+
+*/
+export function text(ts: Token[]): string {
+  return texts(ts).join('')
+}
+
+/** The texts in some tokens
+
+  texts(init('apa bepa cepa ').target) // => ['apa ', 'bepa ', 'cepa ']
+
+*/
+export function texts(ts: Token[]): string[] {
+  return ts.map(t => t.text)
+}
+
+
+/** The text in the target
+
+  target_text(init('apa bepa cepa ')) // => 'apa bepa cepa '
+
+*/
+export function target_text(g: Graph): string {
+  return text(g.target)
+}
+
+/** The text in the source
+
+  source_text(init('apa bepa cepa ')) // => 'apa bepa cepa '
+
+*/
+export function source_text(g: Graph): string {
+  return text(g.source)
+}
+
+/** The texts in the target
+
+  target_texts(init('apa bepa cepa ')) // => ['apa ', 'bepa ', 'cepa ']
+
+*/
+export function target_texts(g: Graph): string[] {
+  return texts(g.target)
+}
+
+/** The texts in the source
+
+  source_texts(init('apa bepa cepa ')) // => ['apa ', 'bepa ', 'cepa ']
+
+*/
+export function source_texts(g: Graph): string[] {
+  return texts(g.source)
+}
+
 /**
 
   const abc = ['012', '3456', '789']
@@ -134,6 +191,7 @@ export function init_from(tokens: string[]): Graph {
   token_at(abc, 6) // => {token: 1, offset: 3}
   token_at(abc, 7) // => {token: 2, offset: 0}
   token_at(abc, 9) // => {token: 2, offset: 2}
+  Utils.throws(() => token_at(abc, 10)) // => true
 
 */
 export function token_at(tokens: string[], character_offset: number): {token: number, offset: number} {
@@ -238,12 +296,12 @@ export function modify_tokens(g: Graph, from: number, to: number, text: string):
 Indexes are token offsets
 */
 export function rearrange(graph: Graph, begin: number, end: number, dest: number): Graph {
-  return raise('todo')
+  return Utils.raise('todo')
 }
 
 /** Calculate the diff */
 export function calculate_diff(graph: Graph): Spans.Diff[] {
-  return raise('todo')
+  return Utils.raise('todo')
 }
 
 /** Calculate the next id to use from these identifiers
