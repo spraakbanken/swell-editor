@@ -175,7 +175,7 @@ export function modify(g: Graph, from: number, to: number, text: string): Graph 
   const slice = g.target.slice(from_token, to_token + 1)
   const pre = slice.length > 0 ? slice[0].text.slice(0, from_ix) : ""
   const post = slice.length > 0 ? slice[slice.length - 1].text.slice(to_ix) : ""
-  return modify_tokens(g, from_token, to_token, pre + text + post)
+  return modify_tokens(g, from_token, to_token + 1, pre + text + post)
 }
 
 /** Replace the text at some position, merging the spans it touches upon.
@@ -184,17 +184,19 @@ export function modify(g: Graph, from: number, to: number, text: string): Graph 
   const ids = (g: Graph) => g.target.map(t => t.id).join(' ')
   const g = init('test graph hello')
   show(g) // => ['test ', 'graph ', 'hello ']
-  show(modify_tokens(g, 0, 0, 'this '))     // => ['this ', 'graph ', 'hello ']
-  show(modify_tokens(g, 0, 0, 'this'))      // => ['thisgraph ', 'hello ']
-  show(modify_tokens(g, 1, 1, 'graph'))     // => ['test ', 'graphhello ']
-  show(modify_tokens(g, 1, 1, ' graph '))   // => ['test  ', 'graph ', 'hello ']
-  show(modify_tokens(g, 0, 0, 'for this ')) // => ['for ', 'this ', 'graph ', 'hello ']
+  show(modify_tokens(g, 0, 0, 'this '))     // => ['this ', 'test ', 'graph ', 'hello ']
+  show(modify_tokens(g, 0, 1, 'this '))     // => ['this ', 'graph ', 'hello ']
+  show(modify_tokens(g, 0, 1, 'this'))      // => ['thisgraph ', 'hello ']
+  show(modify_tokens(g, 1, 2, 'graph'))     // => ['test ', 'graphhello ']
+  show(modify_tokens(g, 1, 2, ' graph '))   // => ['test  ', 'graph ', 'hello ']
+  show(modify_tokens(g, 0, 1, 'for this ')) // => ['for ', 'this ', 'graph ', 'hello ']
   ids(g) // => 't0 t1 t2'
-  ids(modify_tokens(g, 0, 0, 'this '))     // => 't3 t1 t2'
-  ids(modify_tokens(g, 0, 0, 'this'))      // => 't3 t2'
-  ids(modify_tokens(g, 1, 1, 'graph'))     // => 't0 t3'
-  ids(modify_tokens(g, 1, 1, ' graph '))   // => 't3 t4 t2'
-  ids(modify_tokens(g, 0, 0, 'for this ')) // => 't3 t4 t1 t2'
+  ids(modify_tokens(g, 0, 0, 'this '))     // => 't3 t0 t1 t2'
+  ids(modify_tokens(g, 0, 1, 'this '))     // => 't3 t1 t2'
+  ids(modify_tokens(g, 0, 1, 'this'))      // => 't3 t2'
+  ids(modify_tokens(g, 1, 2, 'graph'))     // => 't0 t3'
+  ids(modify_tokens(g, 1, 2, ' graph '))   // => 't3 t4 t2'
+  ids(modify_tokens(g, 0, 1, 'for this ')) // => 't3 t4 t1 t2'
 
 Indexes are token offsets */
 export function modify_tokens(g: Graph, from: number, to: number, text: string): Graph {
@@ -203,18 +205,18 @@ export function modify_tokens(g: Graph, from: number, to: number, text: string):
     // if replacement text starts with whitespace, grab the previous word as well
     return modify_tokens(g, from - 1, to, g.target[from-1].text + text)
   }
-  if (text.match(/\S$/) && to < g.target.length - 1) {
+  if (text.match(/\S$/) && to < g.target.length) {
     // if replacement text does not end with whitespace, grab the next word as well
-    return modify_tokens(g, from, to + 1, text + g.target[to + 1].text)
+    return modify_tokens(g, from, to + 1, text + g.target[to].text)
   }
-  if (text.match(/\S$/) && to == g.target.length - 1) {
+  if (text.match(/\S$/) && to == g.target.length) {
     // if replacement text does not end with whitespace and we're at the end of text, add some whitespace
     return modify_tokens(g, from, to, text + ' ')
   }
 
   const id_offset = next_id(g.target.map(t => t.id))
   const tokens = tokenize(text).map((t, i) => ({text: t, id: 't' + (id_offset + i)}))
-  const [target, removed] = Utils.splice(g.target, from, to - from + 1, ...tokens)
+  const [target, removed] = Utils.splice(g.target, from, to - from, ...tokens)
   const ids_removed = new Set(removed.map(t => t.id))
   const new_edge_ids = new Set<string>(tokens.map(t => t.id))
   const new_edge_labels = new Set<string>()

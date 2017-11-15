@@ -2,7 +2,7 @@ import * as G from "../src/Graph"
 import { Graph } from "../src/Graph"
 import * as Utils from "../src/Utils"
 import * as test from 'tape'
-;(global as any).it = () => void 0
+;(global as any).it = () => { throw "don't use 'it'" }
 import * as jsc from "jsverify"
 
 
@@ -18,14 +18,14 @@ function permute<A>(xs: A[]): jsc.Generator<A[]> {
   })
 }
 
-function forall<A>(name: string, arb: jsc.Arbitrary<A>, k: (a: A, assert: test.Test) => boolean) {
+function quickCheck<A>(name: string, arb: jsc.Arbitrary<A>, k: (a: A, assert: test.Test) => boolean) {
   test(name, assert => {
     assert.is(jsc.checkForall(arb, a => k(a, assert)), true)
     assert.end()
   })
 }
 
-forall('permute', jsc.array(jsc.integer),
+quickCheck('permute', jsc.array(jsc.integer),
   xs => Utils.array_multiset_eq(xs, permute(xs)(0))
 )
 
@@ -35,7 +35,7 @@ function nearray<A>(g: jsc.Arbitrary<A>) {
     as => [as[0], as.slice(1)])
 }
 
-forall('nearray', nearray(jsc.integer),
+quickCheck('nearray', nearray(jsc.integer),
   xs => xs.length > 0
 )
 
@@ -82,7 +82,7 @@ function replicate<A>(n: number, g: jsc.Arbitrary<A>): jsc.Arbitrary<A[]> {
 /** Generate a random graph */
 const gen_graph = jsc.generator.bless(
   (sizein: number) => {
-    const size = Math.max(2, sizein)
+    const size = Math.max(2, Math.round(sizein / 8))
     const ssize = jsc.random(1, size - 1)
     const tsize = size - ssize
     const source = replicate(ssize, token_text).generator(sizein).map((text, i) => ({text, id: 's' + i}))
@@ -104,30 +104,58 @@ const arb_graph: jsc.Arbitrary<Graph> =
     shrink: jsc.shrink.noop
   })
 
-forall('invariant', arb_graph, g =>
+quickCheck('invariant', arb_graph, g =>
   G.check_invariant(g) == "ok"
 )
 
-const arb_modify =
-  jsc.record({
-    g: arb_graph,
-    from: jsc.nat,
-    to: jsc.nat,
-    text: alphabet('ab ')
-  }).smap(({g, from, to, text}) => {
-    const n = g.target.length
-    const [a, b] = Utils.numsort([from % n, to % n])
-    return {g, from: a, to: b, text}
-  }, t => t)
+{
+  const arb_modify_tokens =
+    jsc.record({
+      g: arb_graph,
+      from: jsc.nat,
+      to: jsc.nat,
+      text: alphabet('ab ')
+    }).smap(({g, from, to, text}) => {
+      const n = g.target.length
+      const [a, b] = Utils.numsort([from % n, to % n])
+      return {g, from: a, to: b, text}
+    }, t => t)
 
-forall('modify invariant', arb_modify, ({g, from, to, text}) =>
-  G.check_invariant(G.modify_tokens(g, from, to, text)) == "ok"
-)
+  quickCheck('modify_tokens invariant', arb_modify_tokens, ({g, from, to, text}) =>
+    G.check_invariant(G.modify_tokens(g, from, to, text)) == "ok"
+  )
 
-forall('modify content', arb_modify, ({g, from, to, text}, assert) => {
-  const [a, mid, z] = Utils.splitAt3(g.target.map(t => t.text), from, to + 1)
-  const lhs = a.concat([text], z).join('').trim()
-  const rhs = G.modify_tokens(g, from, to, text).target.map(t => t.text).join('').trim()
-  return lhs === rhs
-})
+  quickCheck('modify_tokens content', arb_modify_tokens, ({g, from, to, text}, assert) => {
+    const [a, mid, z] = Utils.splitAt3(g.target.map(t => t.text), from, to)
+    const lhs = a.concat([text], z).join('').trim()
+    const rhs = G.modify_tokens(g, from, to, text).target.map(t => t.text).join('').trim()
+    return lhs === rhs
+  })
+}
 
+{
+  const arb_modify =
+    jsc.record({
+      g: arb_graph,
+      from: jsc.nat,
+      to: jsc.nat,
+      text: alphabet('ab ')
+    }).smap(({g, from, to, text}) => {
+      const n = g.target.map(t => t.text).join('').length
+      const [a, b] = Utils.numsort([from % n, to % n])
+      return {g, from: a, to: b, text}
+    }, t => t)
+
+  quickCheck('modify invariant', arb_modify, ({g, from, to, text}) =>
+    G.check_invariant(G.modify(g, from, to, text)) == "ok"
+  )
+
+  quickCheck('modify content', arb_modify, ({g, from, to, text}, assert) => {
+    const [a, mid, z] = Utils.stringSplitAt3(g.target.map(t => t.text).join(''), from, to)
+    const lhs = (a + text + z).trim()
+    const mod = G.modify(g, from, to, text)
+    const rhs = mod.target.map(t => t.text).join('').trim()
+    // assert.isEqual(lhs, rhs, JSON.stringify({g, from, to, text, mod, lhs, rhs, a, mid, z}, undefined, 2))
+    return lhs === rhs
+  })
+}

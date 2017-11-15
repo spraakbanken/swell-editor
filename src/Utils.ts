@@ -86,12 +86,26 @@ export function whitespace_split(s: string): [string, string] {
   return [s, ''] // unreachable (the regexp matches any string)
 }
 
-/** Is every element larger than the previous? */
+/** Is every element larger than the previous?
+
+  increases([1,2,3,4]) // => true
+  increases([1,3,4,5]) // => true
+  increases([3,1]    ) // => false
+  increases([])        // => true
+
+*/
 export function increases(xs: number[]): boolean {
   return xs.every((v, i) => i == 0 || v > xs[i-1])
 }
 
-/** Is every element exactly one larger than the previous? */
+/** Is every element exactly one larger than the previous?
+
+  contiguous([1,2,3,4]) // => true
+  contiguous([1,3,4,5]) // => false
+  contiguous([3,1]    ) // => false
+  contiguous([])        // => true
+
+*/
 export function contiguous(xs: number[]): boolean {
   return xs.every((x, i) => i == 0 || xs[i-1] + 1 == x)
 }
@@ -117,10 +131,31 @@ export function stringSplitAt<A>(s: string, i: number): [string, string] {
   return [s.slice(0, i), s.slice(i)]
 }
 
-/** Split an array into three pieces */
+/** Split an array into three pieces
+
+  splitAt3('0123456'.split(''), 2, 4).map(xs => xs.join('')) // => ['01', '23', '456']
+  splitAt3('0123456'.split(''), 2, 2).map(xs => xs.join('')) // => ['01', '', '23456']
+  splitAt3('0123456'.split(''), 2, 9).map(xs => xs.join('')) // => ['01', '23456', '']
+  splitAt3('0123456'.split(''), 0, 2).map(xs => xs.join('')) // => ['', '01', '23456']
+
+*/
 export function splitAt3<A>(xs: A[], start: number, end: number): [A[], A[], A[]] {
   const [ab,c] = splitAt(xs, end)
   const [a,b] = splitAt(ab, start)
+  return [a,b,c]
+}
+
+/** Split an array into three pieces
+
+  stringSplitAt3('0123456', 2, 4) // => ['01', '23', '456']
+  stringSplitAt3('0123456', 2, 2) // => ['01', '', '23456']
+  stringSplitAt3('0123456', 2, 9) // => ['01', '23456', '']
+  stringSplitAt3('0123456', 0, 2) // => ['', '01', '23456']
+
+*/
+export function stringSplitAt3(xs: string, start: number, end: number): [string, string, string] {
+  const [ab,c] = stringSplitAt(xs, end)
+  const [a,b] = stringSplitAt(ab, start)
   return [a,b,c]
 }
 
