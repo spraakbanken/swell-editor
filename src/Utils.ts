@@ -4,6 +4,55 @@ export const dmp = new Dmp.diff_match_patch()
 
 export type TokenDiff = [number, string][]
 
+/** Make a stream of all unicode characters
+
+  const next = char_stream()
+  next().charCodeAt(0) = 0
+  next().charCodeAt(0) = 1
+  next().charCodeAt(0) = 2
+  next().charCodeAt(0) = 3
+
+*/
+export function char_stream(): () => string {
+  let i = 0
+  return () => {
+    return String.fromCharCode(parseInt((i++).toString(), 16))
+  }
+}
+
+export type Change = -1 | 0 | 1
+export type Diff<A> = [Change, A][]
+
+/**
+
+  diff('abca'.split(''), 'bac'.split('')) // => [[-1, 'a'], [0, 'b'], [1, 'a'], [0, 'c'], [-1, 'a']]
+  diff('abc'.split(''), 'cab'.split('')) // => [[1, 'c'], [0, 'a'], [0, 'b'], [-1, 'c']]
+  diff('bca'.split(''), 'a1234bc'.split('')) // => [[1, 'a'], [1, '1'], [1, '2'], [1, '3'], [1, '4'], [0, 'b'], [0, 'c'], [-1, 'a']]
+  diff(['anything', 'everything'], ['anything']) // => [[0, 'anything'], [-1, 'everything']]
+
+*/
+export function diff<A>(xs: A[], ys: A[], cmp: (a: A) => string = a => a.toString()) {
+  const to = new Map<string, string>()
+  const from = new Map<string, A>()
+  const next = char_stream()
+  const assign = (a: A) => {
+    const s = cmp(a)
+    if (to.has(s)) {
+      return to.get(s) as string
+    } else {
+      const u = next()
+      to.set(s, u)
+      from.set(u, a)
+      return u
+    }
+  }
+  const s1 = xs.map(assign).join('')
+  const s2 = ys.map(assign).join('')
+  return flatMap(dmp.diff_main(s1, s2), ([cmp, cs]) => {
+    return str_map(cs, (c: string) => [cmp as Change, from.get(c)])
+  })
+}
+
 export function token_diff(s1: string, s2: string) {
   const d = dmp.diff_main(s1, s2)
   dmp.diff_cleanupSemantic(d)
