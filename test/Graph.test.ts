@@ -51,9 +51,13 @@ function nealphabet(cs: string): jsc.Arbitrary<string> {
   ).smap((ss) => ss.join(''), (s) => Utils.str_map(s, c => c))
 }
 
-const token_text: jsc.Arbitrary<string> =
+const Ss_text: jsc.Arbitrary<string> =
   jsc.pair(nealphabet('abc'), nealphabet(' '))
      .smap(([a, b]) => a + b, Utils.whitespace_split)
+
+const token_text: jsc.Arbitrary<string> =
+  jsc.pair(alphabet(' '), Ss_text)
+     .smap(([a, b]) => a + b, Utils.initial_whitespace_split)
 
 /** All numbers up to and excluding the argument number
 
@@ -127,8 +131,10 @@ quickCheck('invariant', arb_graph, g =>
 
   quickCheck('modify_tokens content', arb_modify_tokens, ({g, from, to, text}, assert) => {
     const [a, mid, z] = Utils.splitAt3(G.target_texts(g), from, to)
-    const lhs = a.concat([text], z).join('').trim()
-    const rhs = G.target_text(G.modify_tokens(g, from, to, text)).trim()
+    const lhs = a.concat([text], z).join('')
+    const mod = G.modify_tokens(g, from, to, text)
+    const rhs = G.target_text(mod)
+    // assert.equal(lhs, rhs)
     return lhs === rhs
   })
 
@@ -153,18 +159,80 @@ quickCheck('invariant', arb_graph, g =>
 
   quickCheck('modify content', arb_modify, ({g, from, to, text}, assert) => {
     const [a, mid, z] = Utils.stringSplitAt3(G.target_text(g), from, to)
-    const lhs = (a + text + z).trim()
+    const lhs0 = (a + text + z)
+    const lhs = lhs0.match(/^\s*$/) ? '' : lhs0
     const mod = G.modify(g, from, to, text)
-    const rhs = mod.target.map(t => t.text).join('').trim()
+    const rhs = G.target_text(mod)
+    console.log(Utils.show({g, from, to, text, mod, a, mid, z, lhs, rhs}))
+    assert.equal(lhs, rhs)
     return lhs === rhs
   })
 
   quickCheck('modify links', arb_modify, ({g, from, to, text}, assert) => {
-    const [a, mid, z] = Utils.stringSplitAt3(G.target_text(g), from, to)
-    const lhs = (a + text + z).trim()
+    return true
     const mod = G.modify(g, from, to, text)
-    const rhs = G.target_text(mod).trim()
-    return lhs === rhs
+    const inside_before = new Set<string>()
+    for (let i = from; i <= to; i++) {
+      G.related(g, G.token_at(G.target_texts(g), i).token).forEach(id => inside_before.add(id))
+    }
+    const inside_after = new Set<string>()
+    for (let i = from; i <= from + text.length; i++) {
+      if (i >= G.target_text(mod).length) {
+        console.error('too big!')
+        continue
+      }
+      G.related(mod, G.token_at(G.target_texts(mod), i).token).forEach(id => inside_after.add(id))
+    }
+    const w = to - from
+    for (const before of range(G.target_text(g).length)) {
+      console.log(Utils.show({g, from, to, text, mod, before}))
+      let after
+      if (before < from) {
+        after = before
+        assert.equal(G.target_text(g)[before], G.target_text(g)[after], "pre " + after)
+      } else if (before >= to) {
+        after = before - w + text.length
+        if (after >= G.target_text(mod).length) {
+          console.error('skipping post', after)
+          continue
+        }
+        assert.equal(G.target_text(g)[before], G.target_text(mod)[after], "post: " + after)
+      } else {
+        after = before
+        if (after >= from + text.length) {
+          console.error('skipping replaced', after)
+          continue
+        }
+        if (after >= G.target_text(mod).length) {
+          console.error('skipping replaced', after)
+          continue
+        }
+        assert.equal(text[before - from], G.target_text(mod)[after], "replaced: " + after)
+      }
+      if (to == from) {
+        // continue; // ?
+      }
+      console.log(Utils.show({after}))
+      if (after >= G.target_text(mod).length) {
+        console.error('After too big!')
+        continue
+      }
+      const rel_before = new Set(G.related(g, G.token_at(G.target_texts(g), before).token))
+      const rel_after = new Set(G.related(mod, G.token_at(G.target_texts(mod), after).token))
+      const sets = {
+        inside_before: [...inside_before.keys()],
+        inside_after: [...inside_after.keys()],
+        rel_before: [...rel_before.keys()],
+        rel_after: [...rel_after.keys()]
+      }
+      const overlaps = {
+        before: Utils.overlaps(rel_before, inside_before),
+        after: Utils.overlaps(rel_after, inside_after)
+      }
+      console.log(Utils.show({sets, overlaps}))
+      assert.equal(overlaps.before, overlaps.after)
+    }
+    return true
   })
 
   // properties about links:

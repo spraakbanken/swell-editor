@@ -33,7 +33,15 @@ export function check_invariant(g: Graph): 'ok' | {violation: string, g: Graph} 
       const unique_id = Utils.unique_check<string>()
       tokens.forEach(t => unique_id(t.id) || Utils.raise('Duplicate id: ' + t))
     }
-    tokens.forEach(t => t.text.match(/^\S+\s+$/) || Utils.raise('Bad text token: ' + JSON.stringify(t.text)))
+    const check_tokens = (toks: string[]) => toks.forEach((t, i) => {
+      if (i != toks.length - 1) {
+        t.match(/^\s*\S+\s+$/) || Utils.raise('Bad text token: ' + JSON.stringify(t))
+      } else {
+        t.match(/^\s*\S+\s*$/) || Utils.raise('Bad last token: ' + JSON.stringify(t))
+      }
+    })
+    check_tokens(target_texts(g))
+    check_tokens(source_texts(g))
     const ids = new Set(tokens.map(t => t.id))
     {
       const unique_id = Utils.unique_check<string>()
@@ -51,43 +59,31 @@ export function check_invariant(g: Graph): 'ok' | {violation: string, g: Graph} 
   return 'ok'
 }
 
-/** Tokenizes text on whitespace, with a trailing whitespace
+/** Tokenizes text on whitespace, prefers to have trailing whitespace
 
-  init_tokenize('apa bepa cepa') // => ['apa ', 'bepa ', 'cepa ']
-  init_tokenize('apa bepa cepa ') // => ['apa ', 'bepa ', 'cepa ']
-  init_tokenize('apa bepa cepa  ') // => ['apa ', 'bepa ', 'cepa ']
-
-*/
-export function init_tokenize(s: string): string[] {
-  const lts = s.trim()
-  if (lts.length > 0) {
-    return tokenize(lts + ' ')
-  } else {
-    return [] as string[]
-  }
-}
-
-/** Tokenizes text on whitespace
-
+  tokenize('') // => []
+  tokenize('    ') // => []
   tokenize('apa bepa cepa') // => ['apa ', 'bepa ', 'cepa']
+  tokenize('  apa bepa cepa') // => ['  apa ', 'bepa ', 'cepa']
+  tokenize('  apa bepa cepa  ') // => ['  apa ', 'bepa ', 'cepa  ']
 
 */
 export function tokenize(s: string): string[] {
-  return s.match(/\S+\s*/g) || []
+  return s.match(/\s*\S+\s*/g) || []
 }
 
 
 /** Makes spans from an original text by tokenizing it and assumes no changes
 
   const g = init('w1 w2')
-  const source = [{text: 'w1 ', id: 's0'}, {text: 'w2 ', id: 's1'}]
-  const target = [{text: 'w1 ', id: 't0'}, {text: 'w2 ', id: 't1'}]
+  const source = [{text: 'w1 ', id: 's0'}, {text: 'w2', id: 's1'}]
+  const target = [{text: 'w1 ', id: 't0'}, {text: 'w2', id: 't1'}]
   const edges = [{ids: ['s0', 't0'], labels: []}, {ids: ['s1', 't1'], labels: []}]
   g // => {source, target, edges}
 
 */
 export function init(s: string): Graph {
-  return init_from(init_tokenize(s))
+  return init_from(tokenize(s))
 }
 
 /** Makes a graph from tokens */
@@ -114,7 +110,7 @@ export function edge_at(g: Graph, index: number): Edge {
       }
     }
   }
-  throw 'Out of bounds'
+  return Utils.raise('Out of bounds: ' + JSON.stringify({g, index}))
 }
 
 /** The related ids at a position (in the target text)
@@ -203,7 +199,7 @@ export function token_at(tokens: string[], character_offset: number): {token: nu
       return {token: i, offset: character_offset - passed + w}
     }
   }
-  throw new Error('Out of bounds')
+  return Utils.raise('Out of bounds: ' + JSON.stringify({tokens, character_offset}))
 }
 
 /** Replace the text at some position, merging the spans it touches upon.
@@ -211,13 +207,13 @@ export function token_at(tokens: string[], character_offset: number): {token: nu
   const show = (g: Graph) => g.target.map(t => t.text)
   const ids = (g: Graph) => g.target.map(t => t.id).join(' ')
   const g = init('test graph hello')
-  show(g) // => ['test ', 'graph ', 'hello ']
-  show(modify(g, 0, 0, 'NEW')) // => ['NEWtest ', 'graph ', 'hello ']
-  show(modify(g, 0, 1, 'NEW')) // => ['NEWest ', 'graph ', 'hello ']
-  show(modify(g, 0, 5, 'NEW ')) // => ['NEW ', 'graph ', 'hello ']
-  show(modify(g, 0, 5, 'NEW')) // => ['NEWgraph ', 'hello ']
-  show(modify(g, 5, 5, ' ')) // => ['test  ', 'graph ', 'hello ']
-  show(modify(g, 5, 6, ' ')) // => ['test  ', 'raph ', 'hello ']
+  show(g) // => ['test ', 'graph ', 'hello']
+  show(modify(g, 0, 0, 'NEW')) // => ['NEWtest ', 'graph ', 'hello']
+  show(modify(g, 0, 1, 'NEW')) // => ['NEWest ', 'graph ', 'hello']
+  show(modify(g, 0, 5, 'NEW ')) // => ['NEW ', 'graph ', 'hello']
+  show(modify(g, 0, 5, 'NEW')) // => ['NEWgraph ', 'hello']
+  show(modify(g, 5, 5, ' ')) // => ['test ', ' graph ', 'hello']
+  show(modify(g, 5, 6, ' ')) // => ['test ', ' raph ', 'hello']
   check_invariant(modify(g, 0, 0, 'NEW'))  // => 'ok'
   check_invariant(modify(g, 0, 1, 'NEW'))  // => 'ok'
   check_invariant(modify(g, 0, 5, 'NEW ')) // => 'ok'
@@ -227,9 +223,9 @@ export function token_at(tokens: string[], character_offset: number): {token: nu
 
 Indexes are character offsets (use CodeMirror's doc.posFromIndex and doc.indexFromPos to convert) */
 export function modify(g: Graph, from: number, to: number, text: string): Graph {
-  const target_tokens = g.target.map(t => t.text)
-  const {token: from_token, offset: from_ix} = token_at(target_tokens, from)
-  const {token: to_token, offset: to_ix} = token_at(target_tokens, to)
+  const tokens = target_texts(g)
+  const {token: from_token, offset: from_ix} = token_at(tokens, from)
+  const {token: to_token, offset: to_ix} = token_at(tokens, to)
   const slice = g.target.slice(from_token, to_token + 1)
   const pre = slice.length > 0 ? slice[0].text.slice(0, from_ix) : ""
   const post = slice.length > 0 ? slice[slice.length - 1].text.slice(to_ix) : ""
@@ -241,36 +237,50 @@ export function modify(g: Graph, from: number, to: number, text: string): Graph 
   const show = (g: Graph) => g.target.map(t => t.text)
   const ids = (g: Graph) => g.target.map(t => t.id).join(' ')
   const g = init('test graph hello')
-  show(g) // => ['test ', 'graph ', 'hello ']
-  show(modify_tokens(g, 0, 0, 'this '))     // => ['this ', 'test ', 'graph ', 'hello ']
-  show(modify_tokens(g, 0, 1, 'this '))     // => ['this ', 'graph ', 'hello ']
-  show(modify_tokens(g, 0, 1, 'this'))      // => ['thisgraph ', 'hello ']
-  show(modify_tokens(g, 1, 2, 'graph'))     // => ['test ', 'graphhello ']
-  show(modify_tokens(g, 1, 2, ' graph '))   // => ['test  ', 'graph ', 'hello ']
-  show(modify_tokens(g, 0, 1, 'for this ')) // => ['for ', 'this ', 'graph ', 'hello ']
+  show(g) // => ['test ', 'graph ', 'hello']
+  show(modify_tokens(g, 0, 0, 'this '))     // => ['this ', 'test ', 'graph ', 'hello']
+  show(modify_tokens(g, 0, 1, 'this '))     // => ['this ', 'graph ', 'hello']
+  show(modify_tokens(g, 0, 1, '  white '))  // => ['  white ', 'graph ', 'hello']
+  show(modify_tokens(g, 0, 1, 'this'))      // => ['thisgraph ', 'hello']
+  show(modify_tokens(g, 1, 2, 'graph'))     // => ['test ', 'graphhello']
+  show(modify_tokens(g, 1, 2, ' graph '))   // => ['test ', ' graph ', 'hello']
+  show(modify_tokens(g, 0, 1, 'for this ')) // => ['for ', 'this ', 'graph ', 'hello']
+  show(modify_tokens(g, 0, 2, '')) // => ['hello']
+  show(modify_tokens(g, 0, 2, '  ')) // => ['  hello']
+  show(modify_tokens(g, 1, 3, '  ')) // => ['test   ']
   ids(g) // => 't0 t1 t2'
   ids(modify_tokens(g, 0, 0, 'this '))     // => 't3 t0 t1 t2'
   ids(modify_tokens(g, 0, 1, 'this '))     // => 't3 t1 t2'
   ids(modify_tokens(g, 0, 1, 'this'))      // => 't3 t2'
   ids(modify_tokens(g, 1, 2, 'graph'))     // => 't0 t3'
-  ids(modify_tokens(g, 1, 2, ' graph '))   // => 't3 t4 t2'
+  ids(modify_tokens(g, 1, 2, ' graph '))   // => 't0 t3 t2'
   ids(modify_tokens(g, 0, 1, 'for this ')) // => 't3 t4 t1 t2'
 
 Indexes are token offsets */
 export function modify_tokens(g: Graph, from: number, to: number, text: string): Graph {
-  // console.error(JSON.stringify({g, from, to, text}, undefined, 2))
-  if (text.match(/^\s/) && from > 0) {
-    // if replacement text starts with whitespace, grab the previous word as well
-    return modify_tokens(g, from - 1, to, g.target[from-1].text + text)
+  if (text.match(/^\s+$/)) {
+    // replacement text is only whitespace, need to find some token to put it on
+    if (from > 0) {
+      return modify_tokens(g, from - 1, to, g.target[from - 1].text + text)
+    } else if (to < g.target.length) {
+      return modify_tokens(g, from, to + 1, text + g.target[to].text)
+    } else {
+      console.warn('Introducing whitespace into empty graph')
+    }
   }
+  // console.error(JSON.stringify({g, from, to, text}, undefined, 2))
+  // if (text.match(/^\s/) && from > 0) {
+  //   // if replacement text starts with whitespace, grab the previous word as well
+  //   return modify_tokens(g, from - 1, to, g.target[from-1].text + text)
+  // }
   if (text.match(/\S$/) && to < g.target.length) {
     // if replacement text does not end with whitespace, grab the next word as well
     return modify_tokens(g, from, to + 1, text + g.target[to].text)
   }
-  if (text.match(/\S$/) && to == g.target.length) {
-    // if replacement text does not end with whitespace and we're at the end of text, add some whitespace
-    return modify_tokens(g, from, to, text + ' ')
-  }
+  // if (text.match(/\S$/) && to == g.target.length) {
+  //   // if replacement text does not end with whitespace and we're at the end of text, add some whitespace
+  //   return modify_tokens(g, from, to, text + ' ')
+  // }
 
   const id_offset = next_id(g.target.map(t => t.id))
   const tokens = tokenize(text).map((t, i) => ({text: t, id: 't' + (id_offset + i)}))

@@ -77,7 +77,13 @@ export function ltrim(s: string): string {
   }
 }
 
-/** Splits a string up in the initial part and all trailing whitespace */
+/** Splits a string up in the initial part and all trailing whitespace
+
+  whitespace_split('  XY  ') // => ['  XY', '  ']
+  whitespace_split('XY  ') // => ['XY', '  ']
+  whitespace_split('  XY') // => ['  XY', '']
+
+*/
 export function whitespace_split(s: string): [string, string] {
   const m = s.match(/^(.*?)(\s*)$/)
   if (m && m.length == 3) {
@@ -85,6 +91,22 @@ export function whitespace_split(s: string): [string, string] {
   }
   return [s, ''] // unreachable (the regexp matches any string)
 }
+
+/** Splits a string up in the initial part and all trailing whitespace
+
+  initial_whitespace_split('  XY  ') // => ['  ', 'XY  ']
+  initial_whitespace_split('XY  ')   // => ['', 'XY  ']
+  initial_whitespace_split('  XY')   // => ['  ', 'XY']
+
+*/
+export function initial_whitespace_split(s: string): [string, string] {
+  const m = s.match(/^(\s*)(.*)$/)
+  if (m && m.length == 3) {
+    return [m[1], m[2]]
+  }
+  return [s, ''] // unreachable (the regexp matches any string)
+}
+
 
 /** Is every element larger than the previous?
 
@@ -305,3 +327,6 @@ export function raise(s: string): any {
   throw s
 }
 
+export function overlaps<A>(s: Set<A>, t: Set<A>) {
+  return [...s.keys()].some(k => t.has(k))
+}
