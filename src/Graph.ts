@@ -1,5 +1,6 @@
 import * as Utils from './Utils'
 import * as Spans from './Spans'
+import { Token } from './Token'
 
 export interface Graph {
   readonly source: Token[],
@@ -7,14 +8,13 @@ export interface Graph {
   readonly edges: Edge[]
 }
 
-export interface Token {
-  readonly text: string,
-  readonly id: string
-}
-
 export interface Edge {
   readonly ids: string[],
   readonly labels: string[]
+}
+
+export function edge_map(g: Graph): Map<string, Edge> {
+  return new Map(Utils.flatMap(g.edges, e => e.ids.map(id => [id, e] as [string, Edge])))
 }
 
 /** Checks that the invariant of the graph holds
@@ -283,7 +283,7 @@ export function modify_tokens(g: Graph, from: number, to: number, text: string):
   //   return modify_tokens(g, from, to, text + ' ')
   // }
 
-  const id_offset = next_id(g.target.map(t => t.id))
+  const id_offset = Utils.next_id(g.target.map(t => t.id))
   const tokens = tokenize(text).map((t, i) => ({text: t, id: 't' + (id_offset + i)}))
   const [target, removed] = Utils.splice(g.target, from, to - from, ...tokens)
   const ids_removed = new Set(removed.map(t => t.id))
@@ -313,21 +313,9 @@ export function rearrange(g: Graph, begin: number, end: number, dest: number): G
 }
 
 /** Calculate the diff */
-export function calculate_diff(graph: Graph): Spans.Diff[] {
+export function calculate_diff(g: Graph): Spans.Diff[] {
+  const m = edge_map(g)
+  const d = Utils.diff<Token>(g.source, g.target, (tok: Token) => (m.get(tok.id) as Edge).ids.join('-'))
   return Utils.raise('todo')
-}
-
-/** Calculate the next id to use from these identifiers
-
-  next_id([]) // => 0
-  next_id(['t1', 't2', 't3']) // => 4
-  next_id(['u2v5k1', 'b3', 'a0']) // => 6
-  next_id(['77j66']) // => 78
-
-*/
-export function next_id(xs: string[]): number {
-  let max = -1
-  xs.forEach(x => (x.match(/\d+/g) || []).forEach(i => max = Math.max(max, parseInt(i))))
-  return max + 1
 }
 

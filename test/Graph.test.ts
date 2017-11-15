@@ -1,10 +1,11 @@
+;(global as any).it = () => { throw "don't use 'it'" }
+import * as jsc from "jsverify"
+import * as test from 'tape'
+
 import * as G from "../src/Graph"
 import { Graph } from "../src/Graph"
 import * as Utils from "../src/Utils"
 import { range } from "../src/Utils"
-import * as test from 'tape'
-;(global as any).it = () => { throw "don't use 'it'" }
-import * as jsc from "jsverify"
 
 function permute<A>(xs: A[]): jsc.Generator<A[]> {
   return jsc.generator.bless(() => {

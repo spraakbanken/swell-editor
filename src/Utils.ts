@@ -2,6 +2,24 @@
 import * as Dmp from "diff-match-patch"
 export const dmp = new Dmp.diff_match_patch()
 
+export interface Pair<A, B> {
+  readonly first: A,
+  readonly second: B
+}
+
+export function Pair<A, B>(first: A, second: B): Pair<A, B> {
+  return {first, second}
+}
+
+export function pair<A, B>({first, second}: Pair<A, B>): [A, B] {
+  return [first, second]
+}
+
+export function triple<A, B, C>({first, second}: Pair<A, Pair<B, C>>): [A, B, C] {
+  return [first, second.first, second.second]
+}
+
+
 export type TokenDiff = [number, string][]
 
 /** Make a stream of all unicode characters
@@ -20,38 +38,95 @@ export function char_stream(): () => string {
   }
 }
 
-export type Change = -1 | 0 | 1
-export type Diff<A> = [Change, A][]
+export type ChangeInt = -1 | 0 | 1
+export type Diff<A> = Pair<ChangeInt, A>[]
 
 /**
 
-  diff('abca'.split(''), 'bac'.split('')) // => [[-1, 'a'], [0, 'b'], [1, 'a'], [0, 'c'], [-1, 'a']]
-  diff('abc'.split(''), 'cab'.split('')) // => [[1, 'c'], [0, 'a'], [0, 'b'], [-1, 'c']]
-  diff('bca'.split(''), 'a1234bc'.split('')) // => [[1, 'a'], [1, '1'], [1, '2'], [1, '3'], [1, '4'], [0, 'b'], [0, 'c'], [-1, 'a']]
-  diff(['anything', 'everything'], ['anything']) // => [[0, 'anything'], [-1, 'everything']]
-  const n = 10
-  diff(range(n), range(2*n)) // => range(2*n).map(i => [i < n ? 0 : 1, i])
+  diff('abca'.split(''), 'bac'.split('')).map(pair) // => [[-1, 'a'], [0, 'b'], [1, 'a'], [0, 'c'], [-1, 'a']]
+  diff('abc'.split(''), 'cab'.split('')).map(pair) // => [[1, 'c'], [0, 'a'], [0, 'b'], [-1, 'c']]
+  diff('bca'.split(''), 'a1234bc'.split('')).map(pair) // => [[1, 'a'], [1, '1'], [1, '2'], [1, '3'], [1, '4'], [0, 'b'], [0, 'c'], [-1, 'a']]
+  diff(['anything', 'everything'], ['anything']).map(pair) // => [[0, 'anything'], [-1, 'everything']]
+  const n = 10000
+  diff(range(n), range(2*n)) // => range(2*n).map(i => Pair(i < n ? 0 : 1, i))
 
 */
-export function diff<A>(xs: A[], ys: A[], cmp: (a: A) => string = a => a.toString()) {
+export function diff<A>(xs: A[], ys: A[], cmp: (a: A) => string = a => a.toString()): Pair<ChangeInt, A>[] {
+  return hdiff(xs, ys, cmp, cmp).map(c => Pair(c.change, c.change == 1 ? c.b : c.a))
+}
+
+interface Deleted<A> {
+  change: -1,
+  a: A
+}
+
+interface Constant<A, B> {
+  change: 0,
+  a: A,
+  b: B,
+}
+
+interface Inserted<B> {
+  change: 1,
+  b: B,
+}
+
+export type Change<A, B> = Deleted<A> | Constant<A, B> | Inserted<B>
+
+/** Hetrogenuous diff
+
+  const abca = 'abca'.split('')
+  const BAC = 'BAC'.split('')
+  const lower = (s: string) => s.toLowerCase()
+  const expect = [
+    {change: -1, a: 'a'},
+    {change: 0, a: 'b', b: 'B'},
+    {change: 1, b: 'A'},
+    {change: 0, a: 'c', b: 'C'},
+    {change: -1, a: 'a'}
+  ] as Change<string, string>[]
+  hdiff(abca, BAC, lower, lower) // => expect
+
+*/
+export function hdiff<A, B>(xs: A[], ys: B[],
+    a_cmp: (a: A) => string = a => a.toString(),
+    b_cmp: (b: B) => string = b => b.toString()): Change<A, B>[] {
   const to = new Map<string, string>()
-  const from = new Map<string, A>()
+  const a_from = new Map<string, A[]>()
+  const b_from = new Map<string, B[]>()
   const next = char_stream()
-  const assign = (a: A) => {
-    const s = cmp(a)
-    if (to.has(s)) {
-      return to.get(s) as string
-    } else {
-      const u = next()
+  function assign<C>(c: C, c_cmp: (c: C) => string, c_from: Map<string, C[]>): string {
+    const s = c_cmp(c)
+    let u = to.get(s)
+    if (u === undefined) {
+      u = next()
       to.set(s, u)
-      from.set(u, a)
-      return u
     }
+    let arr = c_from.get(u)
+    if (!arr) {
+      arr = []
+      c_from.set(u, arr)
+    }
+    arr.push(c)
+    return u
   }
-  const s1 = xs.map(assign).join('')
-  const s2 = ys.map(assign).join('')
-  return flatMap(dmp.diff_main(s1, s2), ([cmp, cs]) => {
-    return str_map(cs, (c: string) => [cmp as Change, from.get(c)])
+  const s1 = xs.map(a => assign(a, a_cmp, a_from)).join('')
+  const s2 = ys.map(b => assign(b, b_cmp, b_from)).join('')
+  return flatMap(dmp.diff_main(s1, s2), ([change, cs]) => {
+    return str_map(cs, (c: string) => {
+      if (change == 0) {
+        const a = (a_from.get(c) as A[]).shift() as A
+        const b = (b_from.get(c) as B[]).shift() as B
+        return {change: 0 as 0, a, b}
+      } else if (change == -1) {
+        const a = (a_from.get(c) as A[]).shift() as A
+        return {change: -1 as -1, a}
+      } else if (change == 1) {
+        const b = (b_from.get(c) as B[]).shift() as B
+        return {change: 1 as 1, b}
+      }
+      throw 'diff match patch returned change not in range [-1, 1]: ' + change
+    })
   })
 }
 
@@ -435,5 +510,19 @@ export function range(to: number) {
     out.push(i)
   }
   return out
+}
+
+/** Calculate the next id to use from these identifiers
+
+  next_id([]) // => 0
+  next_id(['t1', 't2', 't3']) // => 4
+  next_id(['u2v5k1', 'b3', 'a0']) // => 6
+  next_id(['77j66']) // => 78
+
+*/
+export function next_id(xs: string[]): number {
+  let max = -1
+  xs.forEach(x => (x.match(/\d+/g) || []).forEach(i => max = Math.max(max, parseInt(i))))
+  return max + 1
 }
 
