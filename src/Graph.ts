@@ -1,5 +1,7 @@
 import * as Utils from './Utils'
 import * as Spans from './Spans'
+import { Diff, Dragged, Dropped } from './Diff'
+import * as D from './Diff'
 import { Token } from './Token'
 
 export interface Graph {
@@ -312,10 +314,122 @@ export function rearrange(g: Graph, begin: number, end: number, dest: number): G
   return {...g, target: Utils.rearrange(g.target, begin, end, dest)}
 }
 
-/** Calculate the diff */
-export function calculate_diff(g: Graph): Spans.Diff[] {
+/** Calculate the ladder diff without merging contiguous edits */
+export function calculate_raw_diff(g: Graph): (Dragged | Dropped)[] {
   const m = edge_map(g)
-  const d = Utils.diff<Token>(g.source, g.target, (tok: Token) => (m.get(tok.id) as Edge).ids.join('-'))
-  return Utils.raise('todo')
+  const lookup = (id: string) => m.get(id) as Edge
+  const edge_id = (tok: Token) => lookup(tok.id).ids.join('-')
+  const d = Utils.hdiff<Token, Token>(g.source, g.target, edge_id, edge_id)
+  return Utils.flatMap(d, c => {
+    if (c.change == 0) {
+      return [
+        D.Dragged(c.a, edge_id(c.a), lookup(c.a.id).labels),
+        D.Dropped(c.b, edge_id(c.b), lookup(c.b.id).labels),
+      ]
+    } else if (c.change == -1) {
+      return [D.Dragged(c.a, edge_id(c.a), lookup(c.a.id).labels)]
+    } else if (c.change == 1) {
+      return [D.Dropped(c.b, edge_id(c.b), lookup(c.b.id).labels)]
+    } else {
+      return Utils.absurd(c)
+    }
+  })
 }
 
+/** Merging contiguous edits */
+export function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
+  const rev = new Map<string, number[]>()
+  diff.forEach((d, i) => {
+    let m = rev.get(d.id)
+    if (m === undefined) {
+      m = []
+      rev.set(d.id, m)
+    }
+    m.push(i)
+  })
+  const out = [] as Diff[]
+  for (let i = 0; i < diff.length; i++) {
+    const d = diff[i]
+    const m = rev.get(d.id)
+    if (m && Utils.contiguous(m)) {
+      const {dragged, dropped} = D.partition(diff.slice(i, i + m.length))
+      out.push(
+        D.Edited(
+          dragged.map(c => c.source),
+          dropped.map(c => c.target),
+          d.id,
+          d.labels))
+      i += m.length - 1
+    } else {
+      out.push(d)
+    }
+  }
+  return out
+}
+
+/** Calculate the diff
+
+  const expect = [
+    {
+      edit: 'Dragged',
+      source: {text: 'apa ', id: 's0'},
+      id: "s0-t0",
+      labels: []
+    },
+    {
+      edit: 'Edited',
+      source: [{text: 'bepa ', id: 's1'}],
+      target: [{text: 'bepa ', id: 't1'}],
+      id: "s1-t1",
+      labels: []
+    },
+    {
+      edit: 'Edited',
+      source: [{text: 'cepa ', id: 's2'}],
+      target: [{text: 'cepa ', id: 't2'}],
+      id: "s2-t2",
+      labels: []
+    },
+    {
+      edit: 'Dropped',
+      target: {text: 'apa ', id: 't0'},
+      id: "s0-t0",
+      labels: []
+    }
+  ]
+  const g = calculate_diff(rearrange(init('apa bepa cepa '), 1, 2, 0))
+  g // => expect
+
+  const expect = [
+    {
+      edit: 'Edited',
+      source: [{text: 'apa ', id: 's0'}],
+      target: [{text: 'apa ', id: 't0'}],
+      id: "s0-t0",
+      labels: []
+    }
+    {
+      edit: 'Edited',
+      source: [{text: 'bepa ', id: 's1'}],
+      target: [
+        {text: 'depa ', id: 't3'},
+        {text: 'epa ', id: 't4'}
+      ],
+      id: "t3-t4-s1",
+      labels: []
+    },
+    {
+      edit: 'Edited',
+      source: [{text: 'cepa ', id: 's2'}],
+      target: [{text: 'cepa ', id: 't2'}],
+      id: "s2-t2",
+      labels: []
+    }
+  ]
+  const g = calculate_diff(modify_tokens(init('apa bepa cepa '), 1, 2, 'depa epa '))
+  g // => expect
+
+*/
+export function calculate_diff(g: Graph): Diff[] {
+  return merge_diff(calculate_raw_diff(g))
+}

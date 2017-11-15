@@ -39,19 +39,18 @@ export function char_stream(): () => string {
 }
 
 export type ChangeInt = -1 | 0 | 1
-export type Diff<A> = Pair<ChangeInt, A>[]
 
 /**
 
-  diff('abca'.split(''), 'bac'.split('')).map(pair) // => [[-1, 'a'], [0, 'b'], [1, 'a'], [0, 'c'], [-1, 'a']]
-  diff('abc'.split(''), 'cab'.split('')).map(pair) // => [[1, 'c'], [0, 'a'], [0, 'b'], [-1, 'c']]
-  diff('bca'.split(''), 'a1234bc'.split('')).map(pair) // => [[1, 'a'], [1, '1'], [1, '2'], [1, '3'], [1, '4'], [0, 'b'], [0, 'c'], [-1, 'a']]
-  diff(['anything', 'everything'], ['anything']).map(pair) // => [[0, 'anything'], [-1, 'everything']]
+  raw_diff('abca'.split(''), 'bac'.split('')).map(pair) // => [[-1, 'a'], [0, 'b'], [1, 'a'], [0, 'c'], [-1, 'a']]
+  raw_diff('abc'.split(''), 'cab'.split('')).map(pair) // => [[1, 'c'], [0, 'a'], [0, 'b'], [-1, 'c']]
+  raw_diff('bca'.split(''), 'a1234bc'.split('')).map(pair) // => [[1, 'a'], [1, '1'], [1, '2'], [1, '3'], [1, '4'], [0, 'b'], [0, 'c'], [-1, 'a']]
+  raw_diff(['anything', 'everything'], ['anything']).map(pair) // => [[0, 'anything'], [-1, 'everything']]
   const n = 10000
-  diff(range(n), range(2*n)) // => range(2*n).map(i => Pair(i < n ? 0 : 1, i))
+  raw_diff(range(n), range(2*n)) // => range(2*n).map(i => Pair(i < n ? 0 : 1, i))
 
 */
-export function diff<A>(xs: A[], ys: A[], cmp: (a: A) => string = a => a.toString()): Pair<ChangeInt, A>[] {
+export function raw_diff<A>(xs: A[], ys: A[], cmp: (a: A) => string = a => a.toString()): Pair<ChangeInt, A>[] {
   return hdiff(xs, ys, cmp, cmp).map(c => Pair(c.change, c.change == 1 ? c.b : c.a))
 }
 
@@ -526,3 +525,7 @@ export function next_id(xs: string[]): number {
   return max + 1
 }
 
+/** Reductio ad Absurdum */
+export function absurd<A>(c: never): A {
+  return c
+}
