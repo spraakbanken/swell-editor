@@ -610,6 +610,18 @@ export function span_merge(s1: Span, s2: Span): Span {
   return {begin: Math.min(s1.begin, s2.begin), end: Math.max(s1.end, s2.end)}
 }
 
+/** Is this index within the span?
+
+  span_within(0, {begin: 1, end: 2}) // => false
+  span_within(1, {begin: 1, end: 2}) // => true
+  span_within(2, {begin: 1, end: 2}) // => true
+  span_within(3, {begin: 1, end: 2}) // => false
+
+*/
+export function span_within(i: number, s: Span): boolean {
+  return s.begin <= i && i <= s.end
+}
+
 /** Gets the sentence around some offset in a string of tokens
 
   const s = tokenize('apa bepa . Cepa depa . epa')

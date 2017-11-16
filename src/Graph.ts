@@ -452,6 +452,28 @@ export function target_sentence(g: Graph, i: number): Span {
   return Utils.sentence(target_texts(g), i)
 }
 
+/** Gets the sentence in the target text around some offset, following edges */
+export function target_sentence_with_edits(g: Graph, i: number): Span {
+  let target = target_sentence(g, i)
+  const em = edge_map(g)
+  const tm = target_map(g)
+  let stable = false
+  while (!stable) {
+    stable = true
+    for (let i = target.begin; i <= target.end; ++i) {
+      for (let id of (em.get(g.target[i].id) as Edge).ids) {
+        let j = tm.get(id)
+        if (j !== undefined && !Utils.span_within(j, target)) {
+          target = Utils.span_merge(target, target_sentence(g, j))
+          stable = false
+        }
+      }
+    }
+  }
+  return target
+}
+
+
 /** Gets the sentence in the target text around some offset
 
   const g = init('apa bepa . Cepa depa . epa')
@@ -459,23 +481,24 @@ export function target_sentence(g: Graph, i: number): Span {
   sentence(g, 1) // => {source: {begin: 0, end: 2}, target: {begin: 0, end: 2}}
   sentence(g, 2) // => {source: {begin: 0, end: 2}, target: {begin: 0, end: 2}}
   sentence(g, 3) // => {source: {begin: 3, end: 5}, target: {begin: 3, end: 5}}
+  const g2 = modify_tokens(g, 1, 4, 'uff ! Hepp plepp ')
+  target_text(g2) // => 'apa uff ! Hepp plepp depa . epa'
+  sentence(g2, 0) // => {source: {begin: 0, end: 5}, target: {begin: 0, end: 6}}
+  sentence(g2, 1) // => {source: {begin: 0, end: 5}, target: {begin: 0, end: 6}}
+  sentence(g2, 2) // => {source: {begin: 0, end: 5}, target: {begin: 0, end: 6}}
+  sentence(g2, 3) // => {source: {begin: 0, end: 5}, target: {begin: 0, end: 6}}
 
 */
 export function sentence(g: Graph, i: number): {source: Span, target: Span} {
-  let target = target_sentence(g, i)
+  let target = target_sentence_with_edits(g, i)
   const em = edge_map(g)
   const sm = source_map(g)
-  const tm = target_map(g)
   let source = {begin: g.source.length - 1, end: 0}
   for (let i = target.begin; i <= target.end; ++i) {
     for (let id of (em.get(g.target[i].id) as Edge).ids) {
       let j = sm.get(id)
       if (j !== undefined) {
         source = Utils.span_merge(source, {begin: j, end: j})
-      }
-      let k = tm.get(id)
-      if (k !== undefined) {
-        target = Utils.span_merge(target, {begin: k, end: k})
       }
     }
   }
