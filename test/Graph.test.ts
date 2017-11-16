@@ -2,6 +2,7 @@
 import * as jsc from "jsverify"
 import * as test from 'tape'
 
+import * as T from "../src/Token"
 import * as G from "../src/Graph"
 import { Graph } from "../src/Graph"
 import * as Utils from "../src/Utils"
@@ -283,7 +284,7 @@ quickCheck('invariant', arb_graph, g =>
         return []
       }
     })
-    return G.target_text(g) == G.text(target)
+    return G.target_text(g) == T.text(target)
   })
 
   quickCheck('diff source text preversed', arb_graph, g => {
@@ -297,7 +298,7 @@ quickCheck('invariant', arb_graph, g =>
         return []
       }
     })
-    return G.source_text(g) == G.text(source)
+    return G.source_text(g) == T.text(source)
   })
 
   quickCheck('diff edge set preserved', arb_graph, g => {

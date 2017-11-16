@@ -1,9 +1,9 @@
 import * as Utils from './Utils'
-import { Pair, Span } from './Utils'
 import * as Spans from './Spans'
 import { Diff, Dragged, Dropped } from './Diff'
 import * as D from './Diff'
-import { Token } from './Token'
+import { Token, Span } from './Token'
+import * as T from './Token'
 import { Lens, Store } from 'reactive-lens'
 
 export interface Graph {
@@ -85,14 +85,14 @@ export function check_invariant(g: Graph): 'ok' | {violation: string, g: Graph} 
 
 */
 export function init(s: string): Graph {
-  return init_from(Utils.tokenize(s))
+  return init_from(T.tokenize(s))
 }
 
 /** Makes a graph from tokens */
 export function init_from(tokens: string[]): Graph {
   return {
-    source: tokens.map((t, i) => ({text: t, id: 's' + i})),
-    target: tokens.map((t, i) => ({text: t, id: 't' + i})),
+    source: T.identify(tokens, 's'),
+    target: T.identify(tokens, 't'),
     edges: edge_record(tokens.map((_, i) => Edge(['s' + i, 't' + i], []))),
   }
 }
@@ -159,32 +159,13 @@ export function related(g: Graph, index: number): string[] {
   return edge_at(g, index).ids
 }
 
-/** The text in some tokens
-
-  text(init('apa bepa cepa ').target) // => 'apa bepa cepa '
-
-*/
-export function text(ts: Token[]): string {
-  return texts(ts).join('')
-}
-
-/** The texts in some tokens
-
-  texts(init('apa bepa cepa ').target) // => ['apa ', 'bepa ', 'cepa ']
-
-*/
-export function texts(ts: Token[]): string[] {
-  return ts.map(t => t.text)
-}
-
-
 /** The text in the target
 
   target_text(init('apa bepa cepa ')) // => 'apa bepa cepa '
 
 */
 export function target_text(g: Graph): string {
-  return text(g.target)
+  return T.text(g.target)
 }
 
 /** The text in the source
@@ -193,7 +174,7 @@ export function target_text(g: Graph): string {
 
 */
 export function source_text(g: Graph): string {
-  return text(g.source)
+  return T.text(g.source)
 }
 
 /** The texts in the target
@@ -202,7 +183,7 @@ export function source_text(g: Graph): string {
 
 */
 export function target_texts(g: Graph): string[] {
-  return texts(g.target)
+  return T.texts(g.target)
 }
 
 /** The texts in the source
@@ -211,7 +192,7 @@ export function target_texts(g: Graph): string[] {
 
 */
 export function source_texts(g: Graph): string[] {
-  return texts(g.source)
+  return T.texts(g.source)
 }
 
 /**
@@ -311,7 +292,7 @@ export function modify_tokens(g: Graph, from: number, to: number, text: string):
   // }
 
   const id_offset = Utils.next_id(g.target.map(t => t.id))
-  const tokens = Utils.tokenize(text).map((t, i) => ({text: t, id: 't' + (id_offset + i)}))
+  const tokens = T.tokenize(text).map((t, i) => ({text: t, id: 't' + (id_offset + i)}))
   const [target, removed] = Utils.splice(g.target, from, to - from, ...tokens)
   const ids_removed = new Set(removed.map(t => t.id))
   const new_edge_ids = new Set<string>(tokens.map(t => t.id))
@@ -456,7 +437,7 @@ export function calculate_diff(g: Graph): Diff[] {
 
 /** Gets the sentence in the target text around some offset, without thinking about edits */
 export function proto_target_sentence(g: Graph, i: number): Span {
-  return Utils.sentence(target_texts(g), i)
+  return T.sentence(target_texts(g), i)
 }
 
 /** Gets the sentence in the target text around some offset, following edges */
@@ -470,8 +451,8 @@ export function target_sentence(g: Graph, i: number): Span {
     for (let i = target.begin; i <= target.end; ++i) {
       for (let id of (em.get(g.target[i].id) as Edge).ids) {
         let j = tm.get(id)
-        if (j !== undefined && !Utils.span_within(j, target)) {
-          target = Utils.span_merge(target, proto_target_sentence(g, j))
+        if (j !== undefined && !T.span_within(j, target)) {
+          target = T.span_merge(target, proto_target_sentence(g, j))
           stable = false
         }
       }
@@ -506,7 +487,7 @@ export function sentence(g: Graph, i: number): Subspans {
     for (let id of (em.get(g.target[i].id) as Edge).ids) {
       let j = sm.get(id)
       if (j !== undefined) {
-        source = Utils.span_merge(source, {begin: j, end: j})
+        source = T.span_merge(source, {begin: j, end: j})
       }
     }
   }

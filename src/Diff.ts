@@ -86,3 +86,43 @@ export function prev(diff: Diff[], i: number): number {
   return diff.length - 1
 }
 
+export type RichDiff
+  = { edit: 'Edited', source: Token[], target: Token[], id: string, target_diffs: TokenDiff[], source_diffs: TokenDiff[] }
+  | { edit: 'Dragged', source: Token, id: string, source_diff: TokenDiff }
+  | { edit: 'Dropped', target: Token, id: string, target_diff: TokenDiff }
+
+/*
+export function enrichen(diff: Diff[]): RichDiff[] {
+  diff.map((d: Diff) => {
+    switch (d.edit) {
+      case 'Edited':
+        return {
+          ...d,
+          source_diffs: Utils.multi_token_diff(Utilsd.source, d.target.join('')),
+          target_diffs: Utils.multi_token_diff(Utilsd.target, d.source.join('')).map(Utils.invert_token_diff)
+        }
+
+      case 'Dragged': {
+        const ji = join_id[d.id]
+        return {
+          ...d,
+          source_diff: source_diffs[ji][join_ids[ji].indexOf(d.id)],
+          join_id: join_id[d.id],
+          rev_ids: join_target[ji].map((_, i) => ji + '_' + i)
+        }
+      }
+
+      case 'Dropped': {
+        const ji = Utils.pipesep(d.ids)
+        return {
+          ...d,
+          target_diff: target_diffs[ji].shift() || [[0, "?"]],
+          join_id: ji,
+          rev_id: ji + '_' + join_seen[ji]++
+        }
+      }
+    }
+  })
+  return []
+}
+*/
