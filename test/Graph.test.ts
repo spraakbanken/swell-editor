@@ -10,7 +10,7 @@ import { range } from "../src/Utils"
 function permute<A>(xs: A[]): jsc.Generator<A[]> {
   return jsc.generator.bless(() => {
     let ys = xs.slice()
-    // fisher-yates shuffle
+    // Fisher-Yates shuffle
     for (let i = 0; i < ys.length - 1; i++) {
       const j = jsc.random(i + 1, ys.length - 1);
       [ys[i], ys[j]] = [ys[j], ys[i]]
@@ -19,10 +19,20 @@ function permute<A>(xs: A[]): jsc.Generator<A[]> {
   })
 }
 
-function quickCheck<A>(name: string, arb: jsc.Arbitrary<A>, k: (a: A, assert: test.Test) => boolean) {
+function quickCheck<A>(name: string, arb: jsc.Arbitrary<A>, k: (a: A, assert: test.Test, skip: (reason?: string) => void, count: () => void) => boolean) {
+  let skips = 0
+  let counted = 0
+  const skip = (reason: string = '') => {
+    skips++
+  }
   test(name, assert => {
-    assert.is(jsc.checkForall(arb, a => k(a, assert)), true)
+    assert.is(jsc.checkForall(arb, a => k(a, assert, skip, () => counted++)), true)
     assert.end()
+    if (counted > 0) {
+      console.warn()
+      console.warn(name, 'skipped: ' + skips + '/' + counted + ' (' + Math.round((skips * 100.0) / counted) + '%)')
+      console.warn()
+    }
   })
 }
 
@@ -153,18 +163,7 @@ quickCheck('invariant', arb_graph, g =>
     return lhs === rhs
   })
 
-  let skips = 0
-  let nonskips = 0
-  const skip = (reason: string) => {
-    skips++
-  }
-  test.onFinish(() => {
-    console.warn()
-    console.warn('skipped: ' + skips + '/' + nonskips + ' (' + Math.round((skips * 100.0) / nonskips) + '%)')
-    console.warn()
-  })
-
-  quickCheck('modify links', arb_modify, ({g, from, to, text}, assert) => {
+  quickCheck('modify links', arb_modify, ({g, from, to, text}, assert, skip, count) => {
     // properties about links:
     // within segment: superset of all links that are within bound
     // partially outside segment: now part of the new component
@@ -232,7 +231,7 @@ quickCheck('invariant', arb_graph, g =>
       }
       // console.log(Utils.show({sets, overlaps}))
       assert.equal(overlaps.before, overlaps.after)
-      nonskips++
+      count()
     }
     return true
   })
