@@ -1,4 +1,5 @@
 import * as Utils from './Utils'
+import { Pair } from './Utils'
 import * as Spans from './Spans'
 import { Diff, Dragged, Dropped } from './Diff'
 import * as D from './Diff'
@@ -11,8 +12,13 @@ export interface Graph {
 }
 
 export interface Edge {
+  readonly id: string,
   readonly ids: string[],
   readonly labels: string[]
+}
+
+export function Edge(ids: string[], labels: string[]): Edge {
+  return { id: ids.join('-'), ids, labels }
 }
 
 export function edge_map(g: Graph): Map<string, Edge> {
@@ -80,7 +86,7 @@ export function tokenize(s: string): string[] {
   const g = init('w1 w2')
   const source = [{text: 'w1 ', id: 's0'}, {text: 'w2', id: 's1'}]
   const target = [{text: 'w1 ', id: 't0'}, {text: 'w2', id: 't1'}]
-  const edges = [{ids: ['s0', 't0'], labels: []}, {ids: ['s1', 't1'], labels: []}]
+  const edges = [Edge(['s0', 't0'], []), Edge(['s1', 't1'], [])]
   g // => {source, target, edges}
 
 */
@@ -93,14 +99,14 @@ export function init_from(tokens: string[]): Graph {
   return {
     source: tokens.map((t, i) => ({text: t, id: 's' + i})),
     target: tokens.map((t, i) => ({text: t, id: 't' + i})),
-    edges: tokens.map((_, i) => ({ids: ['s' + i, 't' + i], labels: []})),
+    edges: tokens.map((_, i) => Edge(['s' + i, 't' + i], [])),
   }
 }
 
 /** The edge at a position (in the target text)
 
   const g = init('apa bepa cepa')
-  edge_at(g, 1) // => {ids: ['s1', 't1'], labels: []}
+  edge_at(g, 1) // => Edge(['s1', 't1'], [])
 
 */
 export function edge_at(g: Graph, index: number): Edge {
@@ -300,7 +306,7 @@ export function modify_tokens(g: Graph, from: number, to: number, text: string):
       return true
     }
   })
-  edges.push({ids: [...new_edge_ids], labels: [...new_edge_labels]})
+  edges.push(Edge([...new_edge_ids], [...new_edge_labels]))
   return {source: g.source, target, edges}
 }
 
@@ -318,7 +324,7 @@ export function rearrange(g: Graph, begin: number, end: number, dest: number): G
 export function calculate_raw_diff(g: Graph): (Dragged | Dropped)[] {
   const m = edge_map(g)
   const lookup = (id: string) => m.get(id) as Edge
-  const edge_id = (tok: Token) => lookup(tok.id).ids.join('-')
+  const edge_id = (tok: Token) => lookup(tok.id).id
   const d = Utils.hdiff<Token, Token>(g.source, g.target, edge_id, edge_id)
   return Utils.flatMap(d, c => {
     if (c.change == 0) {

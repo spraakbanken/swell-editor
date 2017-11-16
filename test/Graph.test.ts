@@ -82,18 +82,18 @@ function replicate<A>(n: number, g: jsc.Arbitrary<A>): jsc.Arbitrary<A[]> {
 /** Generate a random graph */
 const gen_graph = jsc.generator.bless(
   (sizein: number) => {
-    const size = Math.max(2, Math.round(sizein / 8))
+    const size = Math.max(2, Math.round(sizein))
     const ssize = jsc.random(1, size - 1)
     const tsize = size - ssize
     const source = replicate(ssize, token_text).generator(sizein).map((text, i) => ({text, id: 's' + i}))
     const target = replicate(tsize, token_text).generator(sizein).map((text, i) => ({text, id: 't' + i}))
     const esize = jsc.random(1, Math.min(ssize, tsize))
-    const edges = replicate(esize, token_text).generator(sizein).map((label) => ({labels: [label], ids: [] as string[]}))
+    const proto_edges = replicate(esize, token_text).generator(sizein).map((label) => ({ids: [] as string[], labels: [label]}))
     const sedges = permute(range(ssize).map(i => i % esize))(sizein)
     const tedges = permute(range(tsize).map(i => i % esize))(sizein)
-    source.forEach(s => edges[sedges.pop() as number].ids.push(s.id))
-    target.forEach(t => edges[tedges.pop() as number].ids.push(t.id))
-    return {source, target, edges}
+    source.forEach(s => proto_edges[sedges.pop() as number].ids.push(s.id))
+    target.forEach(t => proto_edges[tedges.pop() as number].ids.push(t.id))
+    return {source, target, edges: proto_edges.map(e => G.Edge(e.ids, e.labels))}
   }
 )
 
