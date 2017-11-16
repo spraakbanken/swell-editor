@@ -25,9 +25,7 @@ export function Edge(ids: string[], labels: string[]): Edge {
 
   check_invariant(init('apa bepa cepa')) // => 'ok'
 
-Do we need that each token is associated with some edge?
-If an edge is associated with at least two nodes on one side, it should be
-associated with some on the other side too? (This is not checked)
+It's ok for edges to be connected with only tokens from one side.
 
 */
 export function check_invariant(g: Graph): 'ok' | {violation: string, g: Graph} {
@@ -55,6 +53,10 @@ export function check_invariant(g: Graph): 'ok' | {violation: string, g: Graph} 
           ids.has(id) || Utils.raise('Edge talks about unknown id: ' + id)
         }))
     }
+    g.edges.forEach(e =>
+      e.ids.length > 0 ||
+      Utils.raise('Edge without any associated identifiers')
+    )
   } catch (e) {
     console.error(e)
     console.error(JSON.stringify(g, undefined, 2))
