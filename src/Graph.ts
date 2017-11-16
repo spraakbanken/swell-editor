@@ -18,7 +18,7 @@ export interface Edge {
 }
 
 export function Edge(ids: string[], labels: string[]): Edge {
-  return { id: ids.join('-'), ids, labels }
+  return { id: 'e-' + ids.join('-'), ids, labels }
 }
 
 /** Checks that the invariant of the graph holds
@@ -52,6 +52,9 @@ export function check_invariant(g: Graph): 'ok' | {violation: string, g: Graph} 
           unique_id(id) || Utils.raise('Duplicate id in edge id list: ' + id)
           ids.has(id) || Utils.raise('Edge talks about unknown id: ' + id)
         }))
+      g.edges.forEach(e =>
+        unique_id(e.id) || Utils.raise('Duplicate edge id: ' + e.id)
+      )
     }
     g.edges.forEach(e =>
       e.ids.length > 0 ||
@@ -90,9 +93,9 @@ export function init_from(tokens: string[]): Graph {
 /** Map from token and edge identifiers to edges
 
   const g = init('w')
-  const e = {id: 's0-t0', ids: ['s0', 't0'], labels: []}
+  const e = Edge(['s0', 't0'], [])
   const lhs = [...edge_map(g).entries()]
-  const rhs = [['s0-t0', e], ['s0', e], ['t0', e]]
+  const rhs = [['e-s0-t0', e], ['s0', e], ['t0', e]]
   lhs // => rhs
 
 */
@@ -390,27 +393,27 @@ function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
     {
       edit: 'Dragged',
       source: {text: 'apa ', id: 's0'},
-      id: "s0-t0",
+      id: "e-s0-t0",
       labels: []
     },
     {
       edit: 'Edited',
       source: [{text: 'bepa ', id: 's1'}],
       target: [{text: 'bepa ', id: 't1'}],
-      id: "s1-t1",
+      id: "e-s1-t1",
       labels: []
     },
     {
       edit: 'Edited',
       source: [{text: 'cepa ', id: 's2'}],
       target: [{text: 'cepa ', id: 't2'}],
-      id: "s2-t2",
+      id: "e-s2-t2",
       labels: []
     },
     {
       edit: 'Dropped',
       target: {text: 'apa ', id: 't0'},
-      id: "s0-t0",
+      id: "e-s0-t0",
       labels: []
     }
   ]
@@ -422,7 +425,7 @@ function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
       edit: 'Edited',
       source: [{text: 'apa ', id: 's0'}],
       target: [{text: 'apa ', id: 't0'}],
-      id: "s0-t0",
+      id: "e-s0-t0",
       labels: []
     }
     {
@@ -432,14 +435,14 @@ function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
         {text: 'depa ', id: 't3'},
         {text: 'epa ', id: 't4'}
       ],
-      id: "t3-t4-s1",
+      id: "e-t3-t4-s1",
       labels: []
     },
     {
       edit: 'Edited',
       source: [{text: 'cepa ', id: 's2'}],
       target: [{text: 'cepa ', id: 't2'}],
-      id: "s2-t2",
+      id: "e-s2-t2",
       labels: []
     }
   ]
