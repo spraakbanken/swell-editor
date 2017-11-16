@@ -1,83 +1,135 @@
+import { Diff, Dragged, Dropped } from './Diff'
+import * as D from './Diff'
+import { RichDiff } from './RichDiff'
+import * as R from './RichDiff'
+import { Graph } from "./Graph"
+import * as G from "./Graph"
+import { Token, Span } from './Token'
+import * as T from './Token'
+import { TokenDiff } from "./Utils"
+import * as Utils from "./Utils"
+
 import { Store, Lens, Undo } from "reactive-lens"
-import * as Spans from "./Spans"
 import { PosDict } from "./Positions"
 import { log, debug, debug_table } from "./dev"
 
-export interface EditorState {
-  readonly spans: Spans.Span[],
-  readonly tokens: string[]
-}
-
 export interface AppState {
-  readonly editor_state: Undo<EditorState>,
-  /** if the last edit was into the main editor itself */
+  /** The parallel corpus */
+  readonly graph: Undo<Graph>,
+  /** If the last edit was into the main editor itself */
   readonly needs_full_update: boolean,
+  /** Positions of divs in the ladder graph diagram */
   readonly positions: PosDict,
-  /** Index we are currently labelling */
+  /** Index we are currently labelling: selected index in the diff */
   readonly selected_index: number | null,
-  readonly current_prefix: string,
+  /** Current diff (calculated from the graph) */
+  readonly diff: Diff[],
+  /** Current rich diff (calculated from the graph) */
+  readonly rich_diff: RichDiff[],
+  /** The whole taxonomy */
   readonly taxonomy: Taxonomy,
-  readonly show_xml: boolean,
 }
 
-export function WithoutHistory(store: Store<AppState>) {
+export function Essentials(store: Store<AppState>) {
   return store
-    .omit('editor_state')
+    .pick('selected_index', 'taxonomy')
     .merge(
       store.relabel({
-        editor_state: store.at('editor_state').at('now')
+        graph: store.at('graph').at('now')
       }))
 }
 
 export function init(original: string): AppState {
-  const tokens = Spans.tokenize(original)
-  const spans = Spans.init(tokens)
+  const graph = G.init(original)
   return {
-    editor_state: Undo.init({tokens, spans}),
+    graph: Undo.init(graph),
     needs_full_update: true,
     positions: {},
     selected_index: null,
-    current_prefix: '',
+    diff: [],
+    rich_diff: [],
     taxonomy,
-    show_xml: false,
   }
 }
+
+export function sync_diffs(store: Store<AppState>) {
+  const graph = store.get().graph.now
+  const diff = G.calculate_diff(graph)
+  return store.update({
+    diff,
+    rich_diff: R.enrichen(graph, diff)
+  })
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Normalizing
+
+export function advance_graph(gs: Store<Undo<Graph>>, new_graph: Graph) {
+  if (debug) {
+    const inv = G.check_invariant(new_graph)
+    if (inv != 'ok') {
+      console.error(inv.violation)
+      console.error(inv.g)
+      throw inv.violation
+    }
+  }
+
+  gs.modify(Undo.advance_to(new_graph))
+}
+
+export function modify_graph(gs: Store<Undo<Graph>>, f: (g: Graph) => Graph) {
+  const gs_now = gs.at('now')
+  const graph = gs_now.get()
+  const new_graph = f(graph)
+  if (graph !== new_graph) {
+    advance_graph(gs, new_graph)
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Labelling
 
 export interface TaxonomyEntry {
   code: string,
   description: string
 }
 
+function entry(code: string, description: string): TaxonomyEntry {
+  return {code, description}
+}
+
 export type Taxonomy = TaxonomyEntry[]
 
+// https://spraakbanken.gu.se/eng/swell/swell_codebook
 export const taxonomy: Taxonomy = [
-  ['W', 'wrong word'],
-  ['ORT', 'orthographic error'],
-  ['PART', 'overcompounding'],
-  ['SPL', 'oversplitting'],
-  ['DER', 'deviant derivational affix used'],
-  //['FL', 'Non-Norwegian word'],
-
-  ['F', 'deviant selection of morphosyntactic category'],
-  ['CAP', 'deviant letter case (upper/lower)'],
-  ['PUNC', 'wrong selection of punctuation mark'],
-  //['PUNCM', 'punctuation mark missing'],
-  //['PUNCR', 'punctuation mark redundant'],
-
-  ['INFL', 'deviant paradigm selection'],
-
-  ['M', 'word or phrase missing'],
-  ['R', 'word or phrase redundant'],
-
-  ['O', 'word or phrase order'],
-
-  ['O-INV', 'non-application of subject/verb inversion'],
-  ['O-OINV', 'inappropriate subject/verb inversion'],
-  ['O-MCA', 'deviant position for main clause adverbial'],
-  ['O-SCA', 'deviant position for subsidiary clause adverbial'],
-
-  ['X', 'impossible to interpret'],
-].map(([code, description]: [string, string]) => ({code, description}))
+  entry('W', 'Wrong word or punctuation'),
+  entry('W-REF', 'Reference error'),
+  entry('ORT', 'Orthographic/spelling error'),
+  entry('PART', 'Overcompounding'),
+  entry('SPL', 'Oversplitting'),
+  entry('DER', 'Deviant derivational affix used'),
+  entry('CAP', 'Deviant letter case (upper/lower)'),
+  entry('ID', 'Idiomaticity'),
+  entry('FL', 'Non-Swedish word'),
+  entry('F', 'Deviant selection of morphosyntactic category'),
+  entry('F-DEF', 'Deviation in definite/indefinite forms, may apply to groups of words'),
+  entry('F-TENSE', 'Covers all deviations with verbs and verb groups, incl aspect'),
+  entry('F-NUM', 'Deviation in number agreement'),
+  entry('F-AGR', 'Agreement error (kongruensfel), e.g. between adjective and noun; pronoun and noun, etc.'),
+  entry('INFL', 'Deviant paradigm selection, but interpreted to be in accordance with the morphosyntactical form in Swedish; overgeneralization'),
+  entry('M', 'Word, phrase or punctuation missing'),
+  entry('M-SUBJ', 'Subject missing'),
+  entry('R', 'Word or phrase redundant'),
+  entry('R-PREP', 'Preposition redundant'),
+  entry('R-PUNC', 'Punctuation mark redundant'),
+  entry('O', 'Word or phrase order'),
+  entry('INV', 'Non-application of subject/verb inversion '),
+  entry('OINV', 'Application of subject/verb inversion in inappropriate contexts'),
+  entry('MCA', 'Incorrect position for main clause adverbial'),
+  entry('SCA', 'Incorrect position for subsidiary clause adverbial'),
+  entry('X', 'impossible to interpret the writer’s intention with a word, phrase or sentence.'),
+  entry('AGR', 'Agreement errors'),
+]
 
 export const prefixOf =
   (prefix: string, s: string) =>
@@ -95,6 +147,11 @@ export const exactMatches =
   (prefix: string, t: Taxonomy) =>
   t.filter(e => exactMatch(prefix, e.code))
 
+export function select_index(store: Store<AppState>, selected_index: number | null) {
+  store.update({selected_index})
+}
+
+/*
 export function ladder_keydown(store: Store<AppState>, semi_rich_diff: Spans.SemiRichDiff[], key: string) {
   const state = store.get()
   const res = ladder_keydown_helper(key, state)
@@ -183,44 +240,4 @@ export function toggle_code(store: Store<AppState>, code: string) {
         v => !v))
   }
 }
-
-export function advance_spans(es: Store<Undo<EditorState>>, new_spans: Spans.Span[], new_tokens?: string[]) {
-  if (new_spans.length == 0) {
-    log('not updating to empty spans')
-    // full_view_update will be run on('change')
-    return
-  }
-  if (debug) {
-    const errors = Spans.check_invariant(new_spans)
-    if (errors.length > 0) {
-      console.error(new_spans)
-      console.error(errors)
-      throw errors
-    }
-  }
-
-  const es_now = es.at('now')
-  const spans_store = es_now.at('spans')
-  const tokens_store = es_now.at('tokens')
-
-  es.transaction(() => {
-    es.modify(Undo.advance)
-    spans_store.set(new_spans)
-    if (new_tokens) {
-      tokens_store.set(new_tokens)
-    }
-  })
-}
-
-export function modify_spans(es: Store<Undo<EditorState>>, f: (spans: Spans.Span[], tokens: string[]) => Spans.Span[]) {
-  const es_now = es.at('now')
-  const {spans, tokens} = es_now.get()
-  const new_spans = f(spans, tokens)
-  if (spans !== new_spans) {
-    advance_spans(es, new_spans)
-  }
-}
-
-export function select_index(store: Store<AppState>, selected_index: number | null) {
-  store.update({selected_index})
-}
+*/

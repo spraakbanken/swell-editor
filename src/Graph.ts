@@ -1,3 +1,14 @@
+/** Parallel corpus as a graph
+
+Missing functions:
+
+    revert           // revert (i.e. undo) at a certain position
+    auto_insert      // split prefix or suffixes token if they are the only change
+    auto_revert      // split up edges into smaller pieces if there is no diff anymore
+    invert           // swap source and target
+    trail_whitespace // makes all whitespace be trailing whitesapec
+
+*/
 import * as Utils from './Utils'
 import { Diff, Dragged, Dropped } from './Diff'
 import * as D from './Diff'
@@ -11,12 +22,6 @@ export interface Graph {
   readonly edges: Record<string, Edge>
 }
 
-export function edge_record(es: Edge[]): Record<string, Edge> {
-  const out = {} as Record<string, Edge>
-  es.forEach(e => out[e.id] = e)
-  return out
-}
-
 export interface Edge {
   readonly id: string,
   readonly ids: string[],
@@ -25,6 +30,12 @@ export interface Edge {
 
 export function Edge(ids: string[], labels: string[]): Edge {
   return { id: 'e-' + ids.join('-'), ids, labels }
+}
+
+export function edge_record(es: Edge[]): Record<string, Edge> {
+  const out = {} as Record<string, Edge>
+  es.forEach(e => out[e.id] = e)
+  return out
 }
 
 /** Checks that the invariant of the graph holds
@@ -295,9 +306,8 @@ export function modify(g: Graph, from: number, to: number, text: string): Graph 
 Indexes are token offsets */
 export function modify_tokens(g: Graph, from: number, to: number, text: string): Graph {
   if (text.match(/^\s+$/)) {
-    // replacement text is only whitespace, need to find some token to put it on
+    // replacement text is only whitespace: need to find some token to put it on
     if (from > 0) {
-      // does this mean to prefer to merge with previous?
       return modify_tokens(g, from - 1, to, g.target[from - 1].text + text)
     } else if (to < g.target.length) {
       return modify_tokens(g, from, to + 1, text + g.target[to].text)
@@ -305,19 +315,10 @@ export function modify_tokens(g: Graph, from: number, to: number, text: string):
       // console.warn('Introducing whitespace into empty graph')
     }
   }
-  // console.error(JSON.stringify({g, from, to, text}, undefined, 2))
-  // if (text.match(/^\s/) && from > 0) {
-  //   // if replacement text starts with whitespace, grab the previous word as well
-  //   return modify_tokens(g, from - 1, to, g.target[from-1].text + text)
-  // }
   if (text.match(/\S$/) && to < g.target.length) {
     // if replacement text does not end with whitespace, grab the next word as well
     return modify_tokens(g, from, to + 1, text + g.target[to].text)
   }
-  // if (text.match(/\S$/) && to == g.target.length) {
-  //   // if replacement text does not end with whitespace and we're at the end of text, add some whitespace
-  //   return modify_tokens(g, from, to, text + ' ')
-  // }
 
   const id_offset = Utils.next_id(g.target.map(t => t.id))
   const tokens = T.tokenize(text).map((t, i) => ({text: t, id: 't' + (id_offset + i)}))
