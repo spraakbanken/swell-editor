@@ -330,7 +330,7 @@ export function rearrange(g: Graph, begin: number, end: number, dest: number): G
 }
 
 /** Calculate the ladder diff without merging contiguous edits */
-export function calculate_raw_diff(g: Graph): (Dragged | Dropped)[] {
+function calculate_raw_diff(g: Graph): (Dragged | Dropped)[] {
   const m = edge_map(g)
   const lookup = (id: string) => m.get(id) as Edge
   const edge_id = (tok: Token) => lookup(tok.id).id
@@ -352,7 +352,7 @@ export function calculate_raw_diff(g: Graph): (Dragged | Dropped)[] {
 }
 
 /** Merging contiguous edits */
-export function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
+function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
   const rev = new Map<string, number[]>()
   diff.forEach((d, i) => {
     let m = rev.get(d.id)
@@ -449,14 +449,14 @@ export function calculate_diff(g: Graph): Diff[] {
   return merge_diff(calculate_raw_diff(g))
 }
 
-/** Gets the sentence in the target text around some offset */
-export function target_sentence(g: Graph, i: number): Span {
+/** Gets the sentence in the target text around some offset, without thinking about edits */
+export function proto_target_sentence(g: Graph, i: number): Span {
   return Utils.sentence(target_texts(g), i)
 }
 
 /** Gets the sentence in the target text around some offset, following edges */
-export function target_sentence_with_edits(g: Graph, i: number): Span {
-  let target = target_sentence(g, i)
+export function target_sentence(g: Graph, i: number): Span {
+  let target = proto_target_sentence(g, i)
   const em = edge_map(g)
   const tm = target_map(g)
   let stable = false
@@ -466,7 +466,7 @@ export function target_sentence_with_edits(g: Graph, i: number): Span {
       for (let id of (em.get(g.target[i].id) as Edge).ids) {
         let j = tm.get(id)
         if (j !== undefined && !Utils.span_within(j, target)) {
-          target = Utils.span_merge(target, target_sentence(g, j))
+          target = Utils.span_merge(target, proto_target_sentence(g, j))
           stable = false
         }
       }
@@ -492,7 +492,7 @@ export function target_sentence_with_edits(g: Graph, i: number): Span {
 
 */
 export function sentence(g: Graph, i: number): {source: Span, target: Span} {
-  let target = target_sentence_with_edits(g, i)
+  let target = target_sentence(g, i)
   const em = edge_map(g)
   const sm = source_map(g)
   let source = {begin: g.source.length - 1, end: 0}
