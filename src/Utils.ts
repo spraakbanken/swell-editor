@@ -655,3 +655,23 @@ export function sentence(tokens: string[], i: number): Span {
 export function tokenize(s: string): string[] {
   return s.match(/\s*\S+\s*/g) || []
 }
+
+export function record_forEach<A>(x: Record<string, A>, k: (a: A, id: string) => void): void {
+  Object.keys(x).forEach(id => k(x[id], id))
+}
+
+export function record_traverse<A, B>(x: Record<string, A>, k: (a: A, id: string) => B): B[] {
+  return Object.keys(x).map(id => k(x[id], id))
+}
+
+export function record_map<A, B>(x: Record<string, A>, k: (a: A, id: string) => B): Record<string, B> {
+  const out = {} as Record<string, B>
+  record_forEach(x, (a, id) => out[id] = k(a, id))
+  return out
+}
+
+export function record_filter<A>(x: Record<string, A>, k: (a: A, id: string) => boolean): Record<string, A> {
+  const out = {} as Record<string, A>
+  record_forEach(x, (a, id) => k(a, id) && (out[id] = a))
+  return out
+}

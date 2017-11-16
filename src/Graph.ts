@@ -4,11 +4,18 @@ import * as Spans from './Spans'
 import { Diff, Dragged, Dropped } from './Diff'
 import * as D from './Diff'
 import { Token } from './Token'
+import { Lens, Store } from 'reactive-lens'
 
 export interface Graph {
   readonly source: Token[],
   readonly target: Token[],
-  readonly edges: Edge[]
+  readonly edges: Record<string, Edge>
+}
+
+export function edge_record(es: Edge[]): Record<string, Edge> {
+  const out = {} as Record<string, Edge>
+  es.forEach(e => out[e.id] = e)
+  return out
 }
 
 export interface Edge {
@@ -47,16 +54,16 @@ export function check_invariant(g: Graph): 'ok' | {violation: string, g: Graph} 
     const ids = new Set(tokens.map(t => t.id))
     {
       const unique_id = Utils.unique_check<string>()
-      g.edges.forEach(e =>
+      Utils.record_forEach(g.edges, e =>
         e.ids.forEach(id => {
           unique_id(id) || Utils.raise('Duplicate id in edge id list: ' + id)
           ids.has(id) || Utils.raise('Edge talks about unknown id: ' + id)
         }))
-      g.edges.forEach(e =>
+      Utils.record_forEach(g.edges, e =>
         unique_id(e.id) || Utils.raise('Duplicate edge id: ' + e.id)
       )
     }
-    g.edges.forEach(e =>
+    Utils.record_forEach(g.edges, e =>
       e.ids.length > 0 ||
       Utils.raise('Edge without any associated identifiers')
     )
@@ -73,7 +80,7 @@ export function check_invariant(g: Graph): 'ok' | {violation: string, g: Graph} 
   const g = init('w1 w2')
   const source = [{text: 'w1 ', id: 's0'}, {text: 'w2', id: 's1'}]
   const target = [{text: 'w1 ', id: 't0'}, {text: 'w2', id: 't1'}]
-  const edges = [Edge(['s0', 't0'], []), Edge(['s1', 't1'], [])]
+  const edges = edge_record([Edge(['s0', 't0'], []), Edge(['s1', 't1'], [])])
   g // => {source, target, edges}
 
 */
@@ -86,7 +93,7 @@ export function init_from(tokens: string[]): Graph {
   return {
     source: tokens.map((t, i) => ({text: t, id: 's' + i})),
     target: tokens.map((t, i) => ({text: t, id: 't' + i})),
-    edges: tokens.map((_, i) => Edge(['s' + i, 't' + i], [])),
+    edges: edge_record(tokens.map((_, i) => Edge(['s' + i, 't' + i], []))),
   }
 }
 
@@ -95,13 +102,13 @@ export function init_from(tokens: string[]): Graph {
   const g = init('w')
   const e = Edge(['s0', 't0'], [])
   const lhs = [...edge_map(g).entries()]
-  const rhs = [['e-s0-t0', e], ['s0', e], ['t0', e]]
+  const rhs = [['s0', e], ['t0', e]]
   lhs // => rhs
 
 */
 export function edge_map(g: Graph): Map<string, Edge> {
-  return new Map(Utils.flatMap(g.edges,
-    e => [[e.id, e] as [string, Edge]].concat(e.ids.map(id => [id, e] as [string, Edge]))))
+  return new Map(Utils.flatten(Utils.record_traverse(g.edges,
+    e => e.ids.map(id => [id, e] as [string, Edge]))))
 }
 
 /** Map from source identifiers to offsets
@@ -309,7 +316,7 @@ export function modify_tokens(g: Graph, from: number, to: number, text: string):
   const ids_removed = new Set(removed.map(t => t.id))
   const new_edge_ids = new Set<string>(tokens.map(t => t.id))
   const new_edge_labels = new Set<string>()
-  const edges = g.edges.filter(e => {
+  const edges = Utils.record_filter(g.edges, e => {
     if (e.ids.some(id => ids_removed.has(id))) {
       e.ids.forEach(id => ids_removed.has(id) || new_edge_ids.add(id))
       e.labels.forEach(lbl => new_edge_labels.add(lbl))
@@ -319,7 +326,8 @@ export function modify_tokens(g: Graph, from: number, to: number, text: string):
     }
   })
   if (new_edge_ids.size > 0) {
-    edges.push(Edge([...new_edge_ids], [...new_edge_labels]))
+    const e = Edge([...new_edge_ids], [...new_edge_labels])
+    edges[e.id] = e
   }
   return {source: g.source, target, edges}
 }
@@ -522,9 +530,28 @@ export function sentence(g: Graph, i: number): Subspans {
 export function subgraph(g: Graph, s: Subspans): Graph {
   const source = g.source.slice(s.source.begin, s.source.end + 1)
   const target = g.target.slice(s.target.begin, s.target.end + 1)
-  const proto_g = {source, target, edges: [] as Edge[]}
+  const proto_g = {source, target, edges: edge_record([])}
   const sm = source_map(proto_g)
   const tm = target_map(proto_g)
-  const edges = g.edges.filter(e => e.ids.some(id => sm.has(id) || tm.has(id)))
+  const edges = Utils.record_filter(g.edges, e => e.ids.some(id => sm.has(id) || tm.has(id)))
   return {source, target, edges}
+}
+
+/** Modify the labels at an identifier
+
+  const g = init('word')
+  const g2 = modify_labels(g, 'e-s0-t0', (labels: string[]) => [...labels, 'ABC'])
+  const g3 = modify_labels(g2, 'e-s0-t0', (labels: string[]) => [...labels, 'DEF'])
+  g3.edges['e-s0-t0'].labels // => ['ABC', 'DEF']
+
+*/
+export function modify_labels(g: Graph, edge_id: string, k: (labels: string[]) => string[]): Graph {
+  const store = Store.init(g)
+  const labels = label_store(store, edge_id)
+  labels.modify(k)
+  return store.get()
+}
+
+export function label_store(g: Store<Graph>, edge_id: string): Store<string[]> {
+  return g.at('edges').via(Lens.key(edge_id)).via(Lens.def(Edge([], []))).at('labels')
 }
