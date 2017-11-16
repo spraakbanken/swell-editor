@@ -93,7 +93,7 @@ const gen_graph = jsc.generator.bless(
     const tedges = permute(range(tsize).map(i => i % esize))(sizein)
     source.forEach(s => proto_edges[sedges.pop() as number].ids.push(s.id))
     target.forEach(t => proto_edges[tedges.pop() as number].ids.push(t.id))
-    return {source, target, edges: proto_edges.map(e => G.Edge(e.ids, e.labels))}
+    return {source, target, edges: G.edge_record(proto_edges.map(e => G.Edge(e.ids, e.labels)))}
   }
 )
 
@@ -300,10 +300,10 @@ quickCheck('invariant', arb_graph, g =>
     return G.source_text(g) == G.text(source)
   })
 
-  quickCheck('diff label set preserved', arb_graph, g => {
+  quickCheck('diff edge set preserved', arb_graph, g => {
     const diff = G.calculate_diff(g)
-    const labels = diff.map(d => d.labels)
-    return Utils.array_set_eq(labels, g.edges.map(e => e.labels))
+    const edge_ids = diff.map(d => d.id)
+    return Utils.array_set_eq(edge_ids, Utils.record_traverse(g.edges, e => e.id))
   })
 }
 

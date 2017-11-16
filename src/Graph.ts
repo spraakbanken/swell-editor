@@ -351,13 +351,13 @@ function calculate_raw_diff(g: Graph): (Dragged | Dropped)[] {
   return Utils.flatMap(d, c => {
     if (c.change == 0) {
       return [
-        D.Dragged(c.a, edge_id(c.a), lookup(c.a.id).labels),
-        D.Dropped(c.b, edge_id(c.b), lookup(c.b.id).labels),
+        D.Dragged(c.a, edge_id(c.a)),
+        D.Dropped(c.b, edge_id(c.b)),
       ]
     } else if (c.change == -1) {
-      return [D.Dragged(c.a, edge_id(c.a), lookup(c.a.id).labels)]
+      return [D.Dragged(c.a, edge_id(c.a))]
     } else if (c.change == 1) {
-      return [D.Dropped(c.b, edge_id(c.b), lookup(c.b.id).labels)]
+      return [D.Dropped(c.b, edge_id(c.b))]
     } else {
       return Utils.absurd(c)
     }
@@ -385,8 +385,7 @@ function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
         D.Edited(
           dragged.map(c => c.source),
           dropped.map(c => c.target),
-          d.id,
-          d.labels))
+          d.id))
       i += m.length - 1
     } else {
       out.push(d)
@@ -402,27 +401,23 @@ function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
       edit: 'Dragged',
       source: {text: 'apa ', id: 's0'},
       id: "e-s0-t0",
-      labels: []
     },
     {
       edit: 'Edited',
       source: [{text: 'bepa ', id: 's1'}],
       target: [{text: 'bepa ', id: 't1'}],
       id: "e-s1-t1",
-      labels: []
     },
     {
       edit: 'Edited',
       source: [{text: 'cepa ', id: 's2'}],
       target: [{text: 'cepa ', id: 't2'}],
       id: "e-s2-t2",
-      labels: []
     },
     {
       edit: 'Dropped',
       target: {text: 'apa ', id: 't0'},
       id: "e-s0-t0",
-      labels: []
     }
   ]
   const g = calculate_diff(rearrange(init('apa bepa cepa '), 1, 2, 0))
@@ -434,7 +429,6 @@ function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
       source: [{text: 'apa ', id: 's0'}],
       target: [{text: 'apa ', id: 't0'}],
       id: "e-s0-t0",
-      labels: []
     }
     {
       edit: 'Edited',
@@ -444,14 +438,12 @@ function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
         {text: 'epa ', id: 't4'}
       ],
       id: "e-t3-t4-s1",
-      labels: []
     },
     {
       edit: 'Edited',
       source: [{text: 'cepa ', id: 's2'}],
       target: [{text: 'cepa ', id: 't2'}],
       id: "e-s2-t2",
-      labels: []
     }
   ]
   const g = calculate_diff(modify_tokens(init('apa bepa cepa '), 1, 2, 'depa epa '))
