@@ -315,7 +315,9 @@ export function modify_tokens(g: Graph, from: number, to: number, text: string):
       return true
     }
   })
-  edges.push(Edge([...new_edge_ids], [...new_edge_labels]))
+  if (new_edge_ids.size > 0) {
+    edges.push(Edge([...new_edge_ids], [...new_edge_labels]))
+  }
   return {source: g.source, target, edges}
 }
 
@@ -475,6 +477,7 @@ export function target_sentence(g: Graph, i: number): Span {
   return target
 }
 
+export type Subspans = {source: Span, target: Span}
 
 /** Gets the sentence in the target text around some offset
 
@@ -491,7 +494,7 @@ export function target_sentence(g: Graph, i: number): Span {
   sentence(g2, 3) // => {source: {begin: 0, end: 5}, target: {begin: 0, end: 6}}
 
 */
-export function sentence(g: Graph, i: number): {source: Span, target: Span} {
+export function sentence(g: Graph, i: number): Subspans {
   let target = target_sentence(g, i)
   const em = edge_map(g)
   const sm = source_map(g)
@@ -507,3 +510,18 @@ export function sentence(g: Graph, i: number): {source: Span, target: Span} {
   return {source, target}
 }
 
+/** The subgraph from a subspan
+
+  const g = init('apa bepa . cepa depa . epa')
+  target_text(subgraph(g, sentence(g, 3))) // => 'cepa depa . '
+
+*/
+export function subgraph(g: Graph, s: Subspans): Graph {
+  const source = g.source.slice(s.source.begin, s.source.end + 1)
+  const target = g.target.slice(s.target.begin, s.target.end + 1)
+  const proto_g = {source, target, edges: [] as Edge[]}
+  const sm = source_map(proto_g)
+  const tm = target_map(proto_g)
+  const edges = g.edges.filter(e => e.ids.some(id => sm.has(id) || tm.has(id)))
+  return {source, target, edges}
+}

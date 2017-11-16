@@ -306,3 +306,18 @@ quickCheck('invariant', arb_graph, g =>
     return Utils.array_set_eq(labels, g.edges.map(e => e.labels))
   })
 }
+
+{
+  const arb_sentence =
+    jsc.record({
+      g: arb_graph,
+      i: jsc.nat,
+    }).smap(
+      ({g, i}) => ({g, i: i % g.target.length}),
+      t => t
+    )
+
+  quickCheck('sentence subgraph invariant', arb_sentence, ({g, i}) =>
+    G.check_invariant(G.subgraph(g, G.sentence(g, i))) === 'ok'
+  )
+}
