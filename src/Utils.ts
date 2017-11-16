@@ -548,3 +548,87 @@ export function next_id(xs: string[]): number {
 export function absurd<A>(c: never): A {
   return c
 }
+
+/** Is this a token of punctation?
+
+  punc('. ')   // => true
+  punc('... ') // => true
+  punc(' !')   // => true
+  punc('!?')   // => true
+  punc(', ')    // => false
+  punc('apa. ') // => false
+  punc('?.., ') // => false
+
+*/
+export function punc(s: string): boolean {
+  return !!s.match(/^\s*[.!?]+\s*$/)
+}
+
+/** Where is the previous punctuation token?
+
+  const s = tokenize('apa bepa . Cepa depa')
+  prev_punc(s, 1) // => -1
+  prev_punc(s, 2) // => 2
+  prev_punc(s, 3) // => 2
+
+*/
+export function prev_punc(tokens: string[], i: number): number {
+  for (let j = i; j >= 0; --j) {
+    if (punc(tokens[j])) {
+      return j
+    }
+  }
+  return -1
+}
+
+/** Where is the next punctuation token?
+
+  const s = tokenize('apa bepa . Cepa depa')
+  next_punc(s, 1) // => 2
+  next_punc(s, 2) // => 2
+  next_punc(s, 3) // => -1
+
+*/
+export function next_punc(tokens: string[], i: number): number {
+  for (let j = i; j < tokens.length; ++j) {
+    if (punc(tokens[j])) {
+      return j
+    }
+  }
+  return -1
+}
+
+
+/** Gets the sentence around some offset in a string of tokens
+
+  const s = tokenize('apa bepa . Cepa depa . epa')
+  sentence(s, 0) // => {begin: 0, end: 2}
+  sentence(s, 1) // => {begin: 0, end: 2}
+  sentence(s, 2) // => {begin: 0, end: 2}
+  sentence(s, 3) // => {begin: 3, end: 5}
+  sentence(s, 4) // => {begin: 3, end: 5}
+  sentence(s, 5) // => {begin: 3, end: 5}
+  sentence(s, 6) // => {begin: 6, end: 6}
+
+*/
+export function sentence(tokens: string[], i: number): {begin: number, end: number} {
+  const begin = prev_punc(tokens, i - 1) + 1
+  let end = next_punc(tokens, i)
+  if (end == -1) {
+    end = tokens.length - 1
+  }
+  return {begin, end}
+}
+
+/** Tokenizes text on whitespace, prefers to have trailing whitespace
+
+  tokenize('') // => []
+  tokenize('    ') // => []
+  tokenize('apa bepa cepa') // => ['apa ', 'bepa ', 'cepa']
+  tokenize('  apa bepa cepa') // => ['  apa ', 'bepa ', 'cepa']
+  tokenize('  apa bepa cepa  ') // => ['  apa ', 'bepa ', 'cepa  ']
+
+*/
+export function tokenize(s: string): string[] {
+  return s.match(/\s*\S+\s*/g) || []
+}

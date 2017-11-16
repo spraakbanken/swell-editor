@@ -67,20 +67,6 @@ export function check_invariant(g: Graph): 'ok' | {violation: string, g: Graph} 
   return 'ok'
 }
 
-/** Tokenizes text on whitespace, prefers to have trailing whitespace
-
-  tokenize('') // => []
-  tokenize('    ') // => []
-  tokenize('apa bepa cepa') // => ['apa ', 'bepa ', 'cepa']
-  tokenize('  apa bepa cepa') // => ['  apa ', 'bepa ', 'cepa']
-  tokenize('  apa bepa cepa  ') // => ['  apa ', 'bepa ', 'cepa  ']
-
-*/
-export function tokenize(s: string): string[] {
-  return s.match(/\s*\S+\s*/g) || []
-}
-
-
 /** Makes spans from an original text by tokenizing it and assumes no changes
 
   const g = init('w1 w2')
@@ -91,7 +77,7 @@ export function tokenize(s: string): string[] {
 
 */
 export function init(s: string): Graph {
-  return init_from(tokenize(s))
+  return init_from(Utils.tokenize(s))
 }
 
 /** Makes a graph from tokens */
@@ -216,18 +202,12 @@ export function token_at(tokens: string[], character_offset: number): {token: nu
   const ids = (g: Graph) => g.target.map(t => t.id).join(' ')
   const g = init('test graph hello')
   show(g) // => ['test ', 'graph ', 'hello']
-  show(modify(g, 0, 0, 'NEW')) // => ['NEWtest ', 'graph ', 'hello']
-  show(modify(g, 0, 1, 'NEW')) // => ['NEWest ', 'graph ', 'hello']
-  show(modify(g, 0, 5, 'NEW ')) // => ['NEW ', 'graph ', 'hello']
-  show(modify(g, 0, 5, 'NEW')) // => ['NEWgraph ', 'hello']
+  show(modify(g, 0, 0, 'new')) // => ['newtest ', 'graph ', 'hello']
+  show(modify(g, 0, 1, 'new')) // => ['newest ', 'graph ', 'hello']
+  show(modify(g, 0, 5, 'new ')) // => ['new ', 'graph ', 'hello']
+  show(modify(g, 0, 5, 'new')) // => ['newgraph ', 'hello']
   show(modify(g, 5, 5, ' ')) // => ['test ', ' graph ', 'hello']
   show(modify(g, 5, 6, ' ')) // => ['test ', ' raph ', 'hello']
-  check_invariant(modify(g, 0, 0, 'NEW'))  // => 'ok'
-  check_invariant(modify(g, 0, 1, 'NEW'))  // => 'ok'
-  check_invariant(modify(g, 0, 5, 'NEW ')) // => 'ok'
-  check_invariant(modify(g, 0, 5, 'NEW'))  // => 'ok'
-  check_invariant(modify(g, 5, 5, ' '))    // => 'ok'
-  check_invariant(modify(g, 5, 6, ' '))    // => 'ok'
 
 Indexes are character offsets (use CodeMirror's doc.posFromIndex and doc.indexFromPos to convert) */
 export function modify(g: Graph, from: number, to: number, text: string): Graph {
@@ -260,9 +240,6 @@ export function modify(g: Graph, from: number, to: number, text: string): Graph 
   ids(modify_tokens(g, 0, 0, 'this '))     // => 't3 t0 t1 t2'
   ids(modify_tokens(g, 0, 1, 'this '))     // => 't3 t1 t2'
   ids(modify_tokens(g, 0, 1, 'this'))      // => 't3 t2'
-  ids(modify_tokens(g, 1, 2, 'graph'))     // => 't0 t3'
-  ids(modify_tokens(g, 1, 2, ' graph '))   // => 't0 t3 t2'
-  ids(modify_tokens(g, 0, 1, 'for this ')) // => 't3 t4 t1 t2'
 
 Indexes are token offsets */
 export function modify_tokens(g: Graph, from: number, to: number, text: string): Graph {
@@ -292,7 +269,7 @@ export function modify_tokens(g: Graph, from: number, to: number, text: string):
   // }
 
   const id_offset = Utils.next_id(g.target.map(t => t.id))
-  const tokens = tokenize(text).map((t, i) => ({text: t, id: 't' + (id_offset + i)}))
+  const tokens = Utils.tokenize(text).map((t, i) => ({text: t, id: 't' + (id_offset + i)}))
   const [target, removed] = Utils.splice(g.target, from, to - from, ...tokens)
   const ids_removed = new Set(removed.map(t => t.id))
   const new_edge_ids = new Set<string>(tokens.map(t => t.id))
@@ -439,3 +416,9 @@ export function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
 export function calculate_diff(g: Graph): Diff[] {
   return merge_diff(calculate_raw_diff(g))
 }
+
+/** Gets the sentence in the target text around some offset */
+export function target_sentence(g: Graph, i: number): {begin: number, end: number} {
+  return Utils.sentence(target_texts(g), i)
+}
+
