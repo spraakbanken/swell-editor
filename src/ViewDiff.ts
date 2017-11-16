@@ -1,17 +1,130 @@
+import { Token } from "./Token"
+import { RichDiff } from './RichDiff'
+import * as R from './RichDiff'
+import { Graph, Edge } from "./Graph"
+import * as G from "./Graph"
+
+import { Store, Lens, Undo } from "reactive-lens"
+
+import * as Classes from './Classes'
+import * as csstips from "csstips"
+import * as Positions from "./Positions"
+import * as Snabbdom from "./Snabbdom"
 import * as Spans from "./Spans"
 import * as Utils from "./Utils"
-import { TokenDiff }  from "./Utils"
-import * as Positions from "./Positions"
-import { PosDict } from "./Positions"
-import * as Classes from './Classes'
-import * as Snabbdom from "./Snabbdom"
-import * as csstips from "csstips"
-import { style } from "typestyle"
 import { log } from './dev'
-import { Store } from "reactive-lens"
-// import { div, VNode, h, on, withClass } from "./Snabbdom"
+import { on, span } from "./Snabbdom"
+import { PosDict } from "./Positions"
+import { style } from "typestyle"
 import { tag, VNode, Content as S } from "snabbis"
-import { on } from "./Snabbdom"
+import { TokenDiff }  from "./Utils"
+
+export interface ViewDiffState {
+  readonly graph: Undo<Graph>,
+  readonly positions: PosDict,
+  readonly rich_diff: RichDiff[],
+  readonly selected_index: number | null,
+}
+
+interface Column {
+  readonly up: VNode[],
+  readonly mid: VNode[],
+  readonly down: VNode[]
+}
+
+type Link = {
+  readonly from: string,
+  readonly to: string
+}
+
+function Link(from: string, to: string): Link {
+  return {from, to}
+}
+
+export function ViewDiff(store: Store<ViewDiffState>): VNode {
+  const em = G.edge_map(store.get().graph.now)
+  const positions = store.at('positions')
+  const track = (id: string, vnode: VNode) => {
+    return Positions.posid(id, positions, vnode)
+  }
+  const links = [] as Link[]
+  const columns = [] as Column[]
+  let column: Column
+  let up: VNode[]
+  let mid: VNode[]
+  let down: VNode[]
+  const new_column = () => {
+    up = []
+    mid = []
+    down = []
+    column = {up, mid, down}
+    columns.push(column)
+  }
+  new_column()
+
+  const new_source = (s: Token, diff: TokenDiff, edge_id: string) => {
+    up.push(track(s.id, span(deletes(diff), Classes.InnerCell)))
+    links.push(Link(s.id, edge_id))
+  }
+  const new_target = (t: Token, diff: TokenDiff, edge_id: string) => {
+    down.push(track(t.id, span(inserts(diff), Classes.InnerCell)))
+    links.push(Link(edge_id, t.id))
+  }
+  const edges_done = new Set<string>()
+  const new_label = (edge_id: string) => {
+    if (!edges_done.has(edge_id)) {
+      edges_done.add(edge_id)
+      track(edge_id, span((em.get(edge_id) as Edge).labels.join(' '), Classes.BorderCell))
+    }
+  }
+
+  store.get().rich_diff.forEach(d => {
+    switch(d.edit) {
+      case 'Edited':
+        new_column()
+        d.source.map((s, i) => new_source(s, d.source_diffs[i], d.id))
+        new_label(d.id)
+        d.target.map((t, i) => new_target(t, d.target_diffs[i], d.id))
+        return
+
+      case 'Dragged':
+        new_source(d.source, d.source_diff, d.id)
+        new_label(d.id)
+        return
+
+      case 'Dropped':
+        new_label(d.id)
+        new_target(d.target, d.target_diff, d.id)
+        return
+    }
+  })
+
+  const ladder = track('table', table(columns.map(({up: u, mid: m, down: d}, i) => [
+    tag('div', S.classed(Classes.Cell), u.length != 0 ? u : tag('div', S.classed(Classes.InnerCell), '\u200b')),
+    tag('div', S.classed(Classes.Cell), m.length != 0 ? m : tag('div')),
+    tag('div', S.classed(Classes.Cell), d.length != 0 ? d : tag('div', S.classed(Classes.InnerCell), '\u200b')),
+  ]), [Classes.LadderTable, Classes.MainStyle]))
+
+  const pos_dict = store.get().positions
+  const svg = tag('svg', S.classed(Classes.Width100Pct), links.map(link => {
+      const top = pos_dict[link.from]
+      const bot = pos_dict[link.to]
+      if (!top || !bot) return;
+      const x1 = Positions.hmid(top)
+      const y1 = Positions.bot(top)
+      const x2 = Positions.hmid(bot)
+      const y2 = bot.top // Positions.top(bot)
+      const d = 25 * (-1 / (Math.abs(x1 - x2) + 1) + 1)
+      return tag('path',
+        S.attrs({
+          d: ['M', x1, y1, 'C', x1, y1 + d, x2, y2 - d, x2, y2].join(' '),
+        }),
+        S.classed(Classes.Path)
+      )
+    }).filter(x => x != null)
+  )
+  return Positions.relative(ladder, svg, ['LadderRoot'])
+}
 
 function table(cols: VNode[][], classes: string[] = []): VNode {
   return tag('div',
@@ -19,148 +132,12 @@ function table(cols: VNode[][], classes: string[] = []): VNode {
     ...cols.map(col => tag('div', S.classed(Classes.Column), col)))
 }
 
-// todo: keys on VNodes
-
-const span = (t ?: string, cls: string[] = []) =>
-  tag('span', S.classed(Classes.InnerCell, ...cls), t)
-
 const avg = (xs: number[]) => {
   if (xs.length == 0) {
     return null
   } else {
     return xs.reduce((x,y) => x+y, 0) / xs.length
   }
-}
-
-type Link
-  = { type: 'segment', from: string, to: string }
-//  | { type: 'upper', from: string, converge: string }
-//  | { type: 'lower', to: string, converge: string }
-
-export function ladder_diff(
-    pos_dict: Store<PosDict>,
-    diff: Spans.SemiRichDiff[],
-    selected_index: number | null,
-    select_index: (span_index: number) => void
-  ): VNode
-{
-  const links = [] as Link[]
-  const cols = [] as [VNode[], VNode[], VNode[]][]
-  const name = (vnode: VNode, prefix: string, i: number, j: number|undefined = undefined) => {
-    const key = prefix+i+(j == undefined ? '' : '.'+j)
-    return Positions.posid(key, pos_dict, on(vnode, {
-      mouseover(e: MouseEvent) {
-        log('over', key, e)
-      },
-      click(e: MouseEvent) {
-        log('click', key, e)
-      }
-    }))
-  }
-  const labels = {} as Record<string, boolean>
-  diff.map((d, i) => {
-    function elements(): [VNode | null, VNode | null, VNode | null] {
-      let mid = null
-      switch (d.edit) {
-        case 'Unchanged':
-          links.push({ type: 'segment', from: 'top'+i, to: 'bot'+i })
-          return [
-            name(span(d.source), 'top', i),
-            null,
-            name(span(d.source), 'bot', i)
-          ]
-        case 'Dragged':
-          links.push({type: 'segment', from: 'top'+i, to: d.join_id + '0'})
-          if (d.nullary) {
-            //Delete
-            mid = name(tag('span', S.classed(Classes.BorderCell), d.labels.join(', ')), d.join_id, 0)
-          }
-          return [name(tag('span', S.classed(Classes.InnerCell), deletes(d.source_diff)), 'top', i), mid, null]
-        case 'Dropped':
-          links.push({type: 'segment', to: 'bot'+i, from: d.join_id + '0'})
-          if (!labels[d.join_id]) {
-            labels[d.join_id] = true
-            mid = name(tag('span', S.classed(Classes.BorderCell), d.labels.join(', ')), d.join_id, 0)
-          }
-          return [null, mid, name(tag('span', S.classed(Classes.InnerCell), inserts(d.target_diff)), 'bot', i)]
-        default:
-          return d
-      }
-    }
-    /*
-    function midsel(i: number, cd: Spans.SemiRichDiff) {
-      if (i == 1) {
-        if (selected_index != null) {
-          const sd = diff[selected_index]
-          const sj = (sd as any).join_id
-          const cj = (cd as any).join_id
-          console.log({i, selected_index, sj, cj})
-          if (sd && cj && sj == cj) {
-            return true
-          }
-        }
-      }
-      return false
-    }
-    */
-    const col = elements().map((x, i) => x == null ? [] : [
-      on(x, { // withClass((selected_index == d.span_index || midsel(i, d)) ? Classes.Selected : '', x), {
-        click(e: MouseEvent) {
-          if (d.span_index != null) {
-            select_index(d.span_index)
-          }
-        }
-      })
-    ]) as [VNode[], VNode[], VNode[]]
-    // If we are only doing drag or drop and previous did as well,
-    // we don't need to start a new column, we can just push onto its parts
-    let new_col = true
-    if (i > 0) {
-      const prev = diff[i-1]
-      // floats: drag, drop, insert, delete: can float into previous
-      if (d.edit != 'Unchanged' && prev.edit != 'Unchanged' && d.float && prev.float) {
-        new_col = false
-      }
-      // non-floats: edits. merge them unless they are Dropped followed by Dragged
-      if (d.edit != 'Unchanged' && prev.edit == d.edit && !d.float && !prev.float) {
-        new_col = false
-      }
-      if (prev.edit == 'Dragged' && d.edit == 'Dropped' && !d.float && !prev.float) {
-        new_col = false
-      }
-    }
-    if (new_col) {
-      cols.push(col)
-    } else {
-      col.map((e, i) => cols[cols.length-1][i].push(...e))
-    }
-  })
-  const ladder = Positions.posid('table', pos_dict, table(cols.map(([u, m, d], i) => [
-    tag('div', S.classed(Classes.Cell), u.length != 0 ? u : tag('div', S.classed(Classes.InnerCell), '\u200b')),
-    tag('div', S.classed(Classes.Cell), m.length != 0 ? m : tag('div')),
-    tag('div', S.classed(Classes.Cell), d.length != 0 ? d : tag('div', S.classed(Classes.InnerCell), '\u200b')),
-  ]), [Classes.LadderTable, Classes.MainStyle]))
-
-  const svg = tag('svg', S.classed(Classes.Width100Pct), links.map(link => {
-      if (link.type == 'segment') {
-        const top = pos_dict.get()[link.from]
-        const bot = pos_dict.get()[link.to]
-        if (!top || !bot) return;
-        const x1 = Positions.hmid(top)
-        const y1 = Positions.bot(top)
-        const x2 = Positions.hmid(bot)
-        const y2 = bot.top // Positions.top(bot)
-        const d = 25 * (-1 / (Math.abs(x1 - x2) + 1) + 1)
-        return tag('path',
-          S.attrs({
-            d: ['M', x1, y1, 'C', x1, y1 + d, x2, y2 - d, x2, y2].join(' '),
-          }),
-          S.classed(Classes.Path)
-        )
-      }
-    }).filter(x => x != null)
-  )
-  return Positions.relative(ladder, svg, ['LadderRoot'])
 }
 
 const diff_to_spans = (rules: (string | null)[]) => (d: [number, string][]) =>
@@ -181,68 +158,3 @@ function diff_helper<A>(token_diff: [number, string][], rules: (string | null)[]
   return out
 }
 
-const diff_and_whitespace = (diff: TokenDiff) => {
-  if (diff.length == 0) {
-    return {diff, whitespace: ''}
-  } else {
-    const [type, string] = diff[diff.length - 1]
-    const [word, whitespace] = Utils.whitespace_split(string)
-    const init = diff.slice(0, diff.length-1)
-    if (word.length > 0) {
-      return {diff: [...init, [type, word]] as TokenDiff, whitespace}
-    } else {
-      return {diff: init, whitespace}
-    }
-  }
-}
-
-/** Draws a diff onto a code mirror */
-export const draw_diff = (diff: Spans.SemiRichDiff[], editor: CodeMirror.Editor) => editor.operation(() => {
-  const diff_doc = editor.getDoc()
-  diff_doc.setValue('')
-  diff_doc.getAllMarks().map((m) => m.clear())
-  function push(text: string, className: string = '') {
-  diff_doc.replaceSelection(text)
-    if (className) {
-      const end = diff_doc.getCursor()
-      const begin = diff_doc.posFromIndex(diff_doc.indexFromPos(end) - text.length)
-      diff_doc.markText(begin, end, {className})
-    }
-  }
-  function push_diff(token_diff: TokenDiff, className: string = '') {
-    diff_helper(token_diff, [' ' + Classes.Delete, '', ' ' + Classes.Insert], (text, cls) => push(text, className + cls))
-  }
-  const rename_map = {} as {[x: string]: string}
-  let i = 0
-  diff.map(d => {
-    if (d.edit == 'Dropped' && d.move) {
-      d.ids.map(id => id in rename_map || (rename_map[id] = ++i + ''))
-    }
-  })
-  const rename = (id: string) => rename_map[id] || '?'
-  diff.map(d => {
-    if (d.edit == 'Unchanged') {
-      push(d.source)
-    } else if (d.edit == 'Dropped') {
-      const m = diff_and_whitespace(d.target_diff.filter(([t, _]) => t != -1))
-      const cl = d.move ? Classes.Dropped : ''
-      push_diff(m.diff, cl)
-      if (cl != '') {
-        push(d.ids.map(rename).join(','), Classes.Subscript)
-      }
-      push(m.whitespace)
-    } else if (d.edit == 'Dragged') {
-      if (d.move) {
-        const m = diff_and_whitespace(d.source_diff.filter(([t, _]) => t != 1))
-        const cl = d.move ? Classes.Dragged : ''
-        push_diff(m.diff, cl)
-        if (cl != '') {
-          push(rename(d.id), Classes.Subscript)
-        }
-        push(m.whitespace)
-      }
-    } else {
-      push(d)
-    }
-  })
-})

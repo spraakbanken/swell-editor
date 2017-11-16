@@ -13,6 +13,23 @@ const h = snabbdom.h
 type VNode = vnode.VNode
 type VNodeData = vnode.VNodeData
 
+export const mktag = (name: string) => (...bs: S[]) => tag(name, ...bs)
+
+export const div = mktag('div')
+export const span = mktag('span')
+export const table = mktag('table')
+export const tbody = mktag('tbody')
+export const tr = mktag('tr')
+export const td = mktag('td')
+
+export const noborderfocus = typestyle.style({outline: '0px solid transparent'})
+
+export const InputField = (store: Store<string>, ...bs: S[]) =>
+  tag('input',
+    S.props({ value: store.get() }),
+    S.on('input')((e: Event) => store.set((e.target as HTMLInputElement).value)),
+    ...bs)
+
 export function checkbox(value: boolean, update: (new_value: boolean) => void): VNode {
   return tag('input',
     S.attrs({type: 'checkbox'}),
