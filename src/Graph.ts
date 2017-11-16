@@ -1,5 +1,4 @@
 import * as Utils from './Utils'
-import * as Spans from './Spans'
 import { Diff, Dragged, Dropped } from './Diff'
 import * as D from './Diff'
 import { Token, Span } from './Token'
@@ -109,6 +108,35 @@ export function init_from(tokens: string[]): Graph {
 export function edge_map(g: Graph): Map<string, Edge> {
   return new Map(Utils.flatten(Utils.record_traverse(g.edges,
     e => e.ids.map(id => [id, e] as [string, Edge]))))
+}
+
+/**
+
+  const g = init('a b c')
+  const e = Edge(['s1', 't1'], [])
+  const source = [g.source[1]]
+  const target = [g.target[1]]
+  partition_ids(g)(e) // => {source, target}
+
+*/
+export function partition_ids(g: Graph): (edge: Edge) => {source: Token[], target: Token[]} {
+  const sm = source_map(g)
+  const tm = target_map(g)
+  return (edge: Edge) => {
+    const source = [] as Token[]
+    const target = [] as Token[]
+    edge.ids.forEach(id => {
+      const s = sm.get(id)
+      if (s !== undefined) {
+        source.push(g.source[s])
+      }
+      const t = tm.get(id)
+      if (t !== undefined) {
+        target.push(g.target[t])
+      }
+    })
+    return {source, target}
+  }
 }
 
 /** Map from source identifiers to offsets

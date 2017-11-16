@@ -695,24 +695,24 @@ export function calculate_diff(spans: Span[], tokens: string[]): Diff[] {
 
 
 
- type Children = (Element | string | [string, string])[]
+type Children = (Element | string | [string, string])[]
 
- const xml: Document = document.implementation.createDocument(null, null, null);
- function node(tag_name: string): (...children: Children) => Element {
-   return (...children) => {
-     const ret = xml.createElement(tag_name)
-     for (const child of children) {
-       if (typeof child === 'string') {
-         ret.appendChild(xml.createTextNode(child))
-       } else if (Array.isArray(child)) {
-         ret.setAttribute(child[0], child[1])
-       } else {
-         ret.appendChild(child)
-       }
-     }
-     return ret
-   }
- }
+const xml: Document = document.implementation.createDocument(null, null, null);
+function node(tag_name: string): (...children: Children) => Element {
+  return (...children) => {
+    const ret = xml.createElement(tag_name)
+    for (const child of children) {
+      if (typeof child === 'string') {
+        ret.appendChild(xml.createTextNode(child))
+      } else if (Array.isArray(child)) {
+        ret.setAttribute(child[0], child[1])
+      } else {
+        ret.appendChild(child)
+      }
+    }
+    return ret
+  }
+}
 
 
 // these are exported for testing
