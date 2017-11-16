@@ -598,6 +598,17 @@ export function next_punc(tokens: string[], i: number): number {
   return -1
 }
 
+export type Span = {begin: number, end: number}
+
+/** Merge two spans: makes a span that contains both spans
+
+  span_merge({begin: 1, end: 2}, {begin: 3, end: 4}) // => {begin: 1, end: 4}
+  span_merge({begin: 2, end: 4}, {begin: 1, end: 3}) // => {begin: 1, end: 4}
+
+*/
+export function span_merge(s1: Span, s2: Span): Span {
+  return {begin: Math.min(s1.begin, s2.begin), end: Math.max(s1.end, s2.end)}
+}
 
 /** Gets the sentence around some offset in a string of tokens
 
@@ -611,7 +622,7 @@ export function next_punc(tokens: string[], i: number): number {
   sentence(s, 6) // => {begin: 6, end: 6}
 
 */
-export function sentence(tokens: string[], i: number): {begin: number, end: number} {
+export function sentence(tokens: string[], i: number): Span {
   const begin = prev_punc(tokens, i - 1) + 1
   let end = next_punc(tokens, i)
   if (end == -1) {

@@ -1,5 +1,5 @@
 import * as Utils from './Utils'
-import { Pair } from './Utils'
+import { Pair, Span } from './Utils'
 import * as Spans from './Spans'
 import { Diff, Dragged, Dropped } from './Diff'
 import * as D from './Diff'
@@ -19,10 +19,6 @@ export interface Edge {
 
 export function Edge(ids: string[], labels: string[]): Edge {
   return { id: ids.join('-'), ids, labels }
-}
-
-export function edge_map(g: Graph): Map<string, Edge> {
-  return new Map(Utils.flatMap(g.edges, e => e.ids.map(id => [id, e] as [string, Edge])))
 }
 
 /** Checks that the invariant of the graph holds
@@ -89,6 +85,47 @@ export function init_from(tokens: string[]): Graph {
   }
 }
 
+/** Map from token and edge identifiers to edges
+
+  const g = init('w')
+  const e = {id: 's0-t0', ids: ['s0', 't0'], labels: []}
+  const lhs = [...edge_map(g).entries()]
+  const rhs = [['s0-t0', e], ['s0', e], ['t0', e]]
+  lhs // => rhs
+
+*/
+export function edge_map(g: Graph): Map<string, Edge> {
+  return new Map(Utils.flatMap(g.edges,
+    e => [[e.id, e] as [string, Edge]].concat(e.ids.map(id => [id, e] as [string, Edge]))))
+}
+
+/** Map from source identifiers to offsets
+
+  const g = init('a b c')
+  const m = source_map(g)
+  m.get('s0') // => 0
+  m.get('s1') // => 1
+  m.has('t0') // => false
+
+*/
+export function source_map(g: Graph): Map<string, number> {
+  return new Map(g.source.map((s, i) => [s.id, i] as [string, number]))
+}
+
+/** Map from target identifiers to offsets
+
+  const g = init('a b c')
+  const m = target_map(g)
+  m.get('t0') // => 0
+  m.get('t1') // => 1
+  m.has('s0') // => false
+
+*/
+export function target_map(g: Graph): Map<string, number> {
+  return new Map(g.target.map((t, i) => [t.id, i] as [string, number]))
+}
+
+
 /** The edge at a position (in the target text)
 
   const g = init('apa bepa cepa')
@@ -97,14 +134,7 @@ export function init_from(tokens: string[]): Graph {
 */
 export function edge_at(g: Graph, index: number): Edge {
   const target_id  = g.target[index].id
-  for (const e of g.edges) {
-    for (const id of  e.ids) {
-      if (id == target_id) {
-        return e
-      }
-    }
-  }
-  return Utils.raise('Out of bounds: ' + JSON.stringify({g, index}))
+  return edge_map(g).get(target_id) || Utils.raise('Out of bounds: ' + JSON.stringify({g, index}))
 }
 
 /** The related ids at a position (in the target text)
@@ -418,7 +448,37 @@ export function calculate_diff(g: Graph): Diff[] {
 }
 
 /** Gets the sentence in the target text around some offset */
-export function target_sentence(g: Graph, i: number): {begin: number, end: number} {
+export function target_sentence(g: Graph, i: number): Span {
   return Utils.sentence(target_texts(g), i)
+}
+
+/** Gets the sentence in the target text around some offset
+
+  const g = init('apa bepa . Cepa depa . epa')
+  sentence(g, 0) // => {source: {begin: 0, end: 2}, target: {begin: 0, end: 2}}
+  sentence(g, 1) // => {source: {begin: 0, end: 2}, target: {begin: 0, end: 2}}
+  sentence(g, 2) // => {source: {begin: 0, end: 2}, target: {begin: 0, end: 2}}
+  sentence(g, 3) // => {source: {begin: 3, end: 5}, target: {begin: 3, end: 5}}
+
+*/
+export function sentence(g: Graph, i: number): {source: Span, target: Span} {
+  let target = target_sentence(g, i)
+  const em = edge_map(g)
+  const sm = source_map(g)
+  const tm = target_map(g)
+  let source = {begin: g.source.length - 1, end: 0}
+  for (let i = target.begin; i <= target.end; ++i) {
+    for (let id of (em.get(g.target[i].id) as Edge).ids) {
+      let j = sm.get(id)
+      if (j !== undefined) {
+        source = Utils.span_merge(source, {begin: j, end: j})
+      }
+      let k = tm.get(id)
+      if (k !== undefined) {
+        target = Utils.span_merge(target, {begin: k, end: k})
+      }
+    }
+  }
+  return {source, target}
 }
 
