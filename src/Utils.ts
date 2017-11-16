@@ -191,7 +191,26 @@ export function map_equal<A, B>(a: Map<A, B>, b: Map<A, B>): boolean {
   a.forEach((k, v) => ok = ok && b.get(v) == k)
   b.forEach((k, v) => ok = ok && a.get(v) == k)
   return ok
+}
 
+/** Are these two sets equal? */
+export function set_equal<A>(a: Set<A>, b: Set<A>): boolean {
+  let ok = true
+  a.forEach(k => ok = ok && b.has(k))
+  b.forEach(k => ok = ok && a.has(k))
+  return ok
+}
+
+/** Check if two lists are a permutation of each other
+
+  array_set_eq(['apa', 'bepa', 'apa'], ['bepa', 'apa', 'apa', 'apa']) // => true
+  array_set_eq(['apa', 'bepa', 'apa'], ['bepa', 'apa', 'apa']) // => true
+  array_set_eq(['apa', 'bepa', 'apa'], ['bepa', 'apa']) // => true
+  array_set_eq(['apa', 'bepa', 'apa'], ['bepa']) // => false
+
+*/
+export function array_set_eq<A>(xs: A[], ys: A[]): boolean {
+  return set_equal(new Set(xs), new Set(ys))
 }
 
 /** map for strings */

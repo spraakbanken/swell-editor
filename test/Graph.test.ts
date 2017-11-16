@@ -270,3 +270,39 @@ quickCheck('invariant', arb_graph, g =>
     return Utils.array_multiset_eq(G.target_texts(mod), G.target_texts(g))
   })
 }
+
+{
+  quickCheck('diff target text preversed', arb_graph, g => {
+    const diff = G.calculate_diff(g)
+    const target = Utils.flatMap(diff, d => {
+      if (d.edit == 'Dropped') {
+        return [d.target]
+      } else if (d.edit == 'Edited') {
+        return d.target
+      } else {
+        return []
+      }
+    })
+    return G.target_text(g) == G.text(target)
+  })
+
+  quickCheck('diff source text preversed', arb_graph, g => {
+    const diff = G.calculate_diff(g)
+    const source = Utils.flatMap(diff, d => {
+      if (d.edit == 'Dragged') {
+        return [d.source]
+      } else if (d.edit == 'Edited') {
+        return d.source
+      } else {
+        return []
+      }
+    })
+    return G.source_text(g) == G.text(source)
+  })
+
+  quickCheck('diff label set preserved', arb_graph, g => {
+    const diff = G.calculate_diff(g)
+    const labels = diff.map(d => d.labels)
+    return Utils.array_set_eq(labels, g.edges.map(e => e.labels))
+  })
+}
