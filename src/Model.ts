@@ -20,8 +20,8 @@ export interface AppState {
   readonly needs_full_update: boolean,
   /** Positions of divs in the ladder graph diagram */
   readonly positions: PosDict,
-  /** Index we are currently labelling: selected index in the diff */
-  readonly selected_index: number | null,
+  /** Index we are currently labelling: selected index in the diff (todo: change to selected edge id?) */
+  readonly selected_edge: number | null,
   /** The whole taxonomy */
   readonly taxonomy: Taxonomy,
   /** Login information */

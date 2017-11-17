@@ -10,14 +10,16 @@ import { Store, Lens, Undo } from "reactive-lens"
 import * as Classes from './Classes'
 import * as csstips from "csstips"
 import * as Positions from "./Positions"
+
 import * as Snabbdom from "./Snabbdom"
-import * as Spans from "./Spans"
-import * as Utils from "./Utils"
+import { CatchSubmit, InputField, button, div, span, on } from "./Snabbdom"
+
 import { log } from './dev'
-import { on, span } from "./Snabbdom"
 import { PosDict } from "./Positions"
 import { style } from "typestyle"
 import { tag, VNode, Content as S } from "snabbis"
+
+import * as Utils from "./Utils"
 import { TokenDiff }  from "./Utils"
 
 export interface ViewDiffState {
@@ -41,10 +43,38 @@ function Link(from: string, to: string): Link {
   return {from, to}
 }
 
-function LabelEditor(store: Store<string[]>, taxonomy: Taxonomy) {
-
-
-
+function LabelEditor(store: Store<string[]>, taxonomy: Taxonomy): VNode {
+  // TODO: fiddle with focus change too:
+  // see Diff.next and Diff.prev (but they should be adapted to go over sentence boundaries)
+  return div(
+    S.on('click')((e: MouseEvent) => {
+      // if we click anywhere but here we should deselect. so there's another listener somewhere
+      e.stopPropagation()
+    }),
+    div(
+      CatchSubmit(
+        () => console.debug('Enter pressed, move to next/previous sentence'),
+        InputField(Utils.store_join(store))
+      ),
+    ),
+    div(
+      taxonomy.map(t => {
+        const tstore = Utils.array_store_key(store, t.code)
+        const active = tstore.get()
+        return span(
+          t.code,
+          S.styles({cursor: 'pointer'}),
+          S.on('click')(() => tstore.modify(x => !x)),
+          active && S.styles({color: 'orange'})
+        )
+      }),
+      tag('a', 'info', S.styles({flush: 'right'}),
+        S.attrs({
+          href: 'https://spraakbanken.gu.se/eng/swell/swell_codebook',
+          target: '_blank'
+        }))
+    )
+  )
 }
 
 export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[], taxonomy: Taxonomy): VNode {
@@ -76,32 +106,39 @@ export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[], tax
     down.push(track(t.id, span(inserts(diff), Classes.InnerCell)))
     links.push(Link(edge_id, t.id))
   }
+  const {selected_index} = store.get()
   const edges_done = new Set<string>()
-  const new_label = (edge_id: string) => {
+  const new_label = (edge_id: string, diff_index: number) => {
     if (!edges_done.has(edge_id)) {
       edges_done.add(edge_id)
-      track(edge_id, span((em.get(edge_id) as Edge).labels.join(' '), Classes.BorderCell))
-
-      // Here: if this is the selected edge, instead add the component for editing the label set
+      let vn: VNode | string
+      if (diff_index == selected_index) {
+        // If this is the selected edge, instead add the component for editing the label set
+        // NB: TODO: Add Undo functionality to labels
+        vn = LabelEditor(G.label_store(store.at('graph').at('now'), edge_id), taxonomy)
+      } else {
+        vn = (em.get(edge_id) as Edge).labels.join(' ')
+      }
+      track(edge_id, span(vn, Classes.BorderCell))
     }
   }
 
-  rich_diff.forEach(d => {
+  rich_diff.forEach((d, ix) => {
     switch(d.edit) {
       case 'Edited':
         new_column()
         d.source.map((s, i) => new_source(s, d.source_diffs[i], d.id))
-        new_label(d.id)
+        new_label(d.id, ix)
         d.target.map((t, i) => new_target(t, d.target_diffs[i], d.id))
         return
 
       case 'Dragged':
         new_source(d.source, d.source_diff, d.id)
-        new_label(d.id)
+        new_label(d.id, ix)
         return
 
       case 'Dropped':
-        new_label(d.id)
+        new_label(d.id, ix)
         new_target(d.target, d.target_diff, d.id)
         return
     }
@@ -131,7 +168,10 @@ export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[], tax
       )
     }).filter(x => x != null)
   )
-  return Positions.relative(ladder, svg, ['LadderRoot'])
+  return div(
+    Positions.relative(ladder, svg, ['LadderRoot']),
+    S.on('click')(_ => store.at('selected_index').set(null))
+  )
 }
 
 function table(cols: VNode[][], classes: string[] = []): VNode {

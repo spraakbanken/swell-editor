@@ -55,6 +55,7 @@ export function partition(diff: (Dropped | Dragged)[]) {
   return {dropped, dragged}
 }
 
+// should these take an edge id instead ?
 export function next(diff: Diff[], i: number): number {
   if (i >= diff.length) {
     return 0

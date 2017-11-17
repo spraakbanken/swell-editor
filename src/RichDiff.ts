@@ -1,4 +1,4 @@
-import { Diff, Dragged, Dropped } from './Diff'
+import { Diff, Edited, Dragged, Dropped } from './Diff'
 import * as D from './Diff'
 import { Graph } from "./Graph"
 import * as G from "./Graph"
@@ -8,9 +8,9 @@ import { TokenDiff } from "./Utils"
 import * as Utils from "./Utils"
 
 export type RichDiff
-  = { edit: 'Edited', source: Token[], target: Token[], id: string, target_diffs: TokenDiff[], source_diffs: TokenDiff[] }
-  | { edit: 'Dragged', source: Token, id: string, source_diff: TokenDiff }
-  | { edit: 'Dropped', target: Token, id: string, target_diff: TokenDiff }
+  = Edited & { target_diffs: TokenDiff[], source_diffs: TokenDiff[] }
+  | Dragged & { source_diff: TokenDiff }
+  | Dropped & { target_diff: TokenDiff }
 
 /** Enrichen a diff with detailed intra-token diffs
 
