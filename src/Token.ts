@@ -1,3 +1,4 @@
+import * as Utils from './Utils'
 
 export interface Token {
   readonly text: string,
@@ -136,5 +137,34 @@ export function tokenize(s: string): string[] {
 */
 export function identify(toks: string[], prefix: string): Token[] {
   return toks.map((text, i) => ({text, id: prefix + i}))
+}
+
+/** The offset in the text at an index. */
+export function text_offset(texts: string[], index: number): number {
+  return texts.slice(0, index).reduce((x, s: string) => x + s.length, 0)
+}
+
+/**
+
+  const abc = ['012', '3456', '789']
+  token_at(abc, 0) // => {token: 0, offset: 0}
+  token_at(abc, 2) // => {token: 0, offset: 2}
+  token_at(abc, 3) // => {token: 1, offset: 0}
+  token_at(abc, 6) // => {token: 1, offset: 3}
+  token_at(abc, 7) // => {token: 2, offset: 0}
+  token_at(abc, 9) // => {token: 2, offset: 2}
+  Utils.throws(() => token_at(abc, 10)) // => true
+
+*/
+export function token_at(tokens: string[], character_offset: number): {token: number, offset: number} {
+  let passed = 0
+  for (let i = 0; i < tokens.length; i++) {
+    const w = tokens[i].length
+    passed += w
+    if (passed > character_offset) {
+      return {token: i, offset: character_offset - passed + w}
+    }
+  }
+  return Utils.raise('Out of bounds: ' + JSON.stringify({tokens, character_offset}))
 }
 

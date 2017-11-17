@@ -62,7 +62,8 @@ export const FlushRight = style(debug_name('FlushRight'),
 )
 
 export const Vertical = style(debug_name('Vertical'),
-  csstips.vertical
+  csstips.vertical,
+  csstips.centerJustified,
 )
 
 export const MainStyle = style(debug_name('MainStyle'), {
@@ -105,7 +106,7 @@ export const Caption = style(debug_name('Caption'), {
 
 export const LadderTable = style(
   debug_name('LadderTable'), {
-  height: '120px',
+  minHeight: '120px',
   padding: '10px',
   width: [
     '-webkit-fit-content',

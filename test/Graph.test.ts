@@ -177,7 +177,7 @@ quickCheck('invariant', arb_graph, g =>
     const mod = G.modify(g, from, to, text)
     const inside_before = new Set<string>()
     for (let i = from; i <= to; i++) {
-      G.related(g, G.token_at(G.target_texts(g), i).token).forEach(id => inside_before.add(id))
+      G.related(g, T.token_at(G.target_texts(g), i).token).forEach(id => inside_before.add(id))
     }
     const inside_after = new Set<string>()
     for (let i = from; i <= from + text.length; i++) {
@@ -185,7 +185,7 @@ quickCheck('invariant', arb_graph, g =>
         skip('too big!')
         continue
       }
-      G.related(mod, G.token_at(G.target_texts(mod), i).token).forEach(id => inside_after.add(id))
+      G.related(mod, T.token_at(G.target_texts(mod), i).token).forEach(id => inside_after.add(id))
     }
     const w = to - from
     for (const before of range(G.target_text(g).length)) {
@@ -218,8 +218,8 @@ quickCheck('invariant', arb_graph, g =>
         skip('after too big')
         continue
       }
-      const rel_before = new Set(G.related(g, G.token_at(G.target_texts(g), before).token))
-      const rel_after = new Set(G.related(mod, G.token_at(G.target_texts(mod), after).token))
+      const rel_before = new Set(G.related(g, T.token_at(G.target_texts(g), before).token))
+      const rel_after = new Set(G.related(mod, T.token_at(G.target_texts(mod), after).token))
       const sets = {
         inside_before: [...inside_before.keys()],
         inside_after: [...inside_after.keys()],

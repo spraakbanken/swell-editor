@@ -16,12 +16,12 @@ import { log, debug, debug_table } from "./dev"
 export interface AppState {
   /** The parallel corpus */
   readonly graph: Undo<Graph>,
-  /** If the last edit was into the main editor itself */
+  /** If the last target text edit wasn't into the main editor itself */
   readonly needs_full_update: boolean,
   /** Positions of divs in the ladder graph diagram */
   readonly positions: PosDict,
   /** Index we are currently labelling: selected index in the diff (todo: change to selected edge id?) */
-  readonly selected_edge: number | null,
+  readonly selected_index: number | null,
   /** The whole taxonomy */
   readonly taxonomy: Taxonomy,
   /** Login information */
@@ -35,8 +35,8 @@ export interface Login {
   readonly password: string
 }
 
-export function ForLocalStorage(store: Store<AppState>): Store<AppState['login']> {
-  return store.at('login')
+export function ForLocalStorage(store: Store<AppState>) {
+  return store.pick('login', 'login_state')
 }
 
 export function Essentials(store: Store<AppState>) {
@@ -48,10 +48,9 @@ export function Essentials(store: Store<AppState>) {
       }))
 }
 
-export function init(original: string): AppState {
-  const graph = G.init(original)
+export function init(text?: string): AppState {
   return {
-    graph: Undo.init(graph),
+    graph: Undo.init(G.init(text || '')),
     needs_full_update: true,
     positions: {},
     selected_index: null,
@@ -68,10 +67,18 @@ export interface Diffs {
   readonly rich_diff: RichDiff[],
 }
 
-export function calculate_diffs(store: Store<AppState>): Diffs {
-  const graph = store.get().graph.now
+export function calculate_diffs(state: AppState): Diffs {
+  const graph = state.graph.now
   const diff = G.calculate_diff(graph)
   return {diff, rich_diff: R.enrichen(graph, diff)}
+}
+
+// TODO: set example sentences from the code book
+export const example_sentence = 'Jag har en katt . En hund och en häst . '
+
+export function load_example(store: Store<Undo<Graph>>, example?: string) {
+  const ex = example || 'Jag har en katt . En hund och en häst . '
+  store.set(Undo.init(G.init(ex)))
 }
 
 ////////////////////////////////////////////////////////////////////////////////

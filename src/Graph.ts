@@ -234,30 +234,6 @@ export function source_texts(g: Graph): string[] {
   return T.texts(g.source)
 }
 
-/**
-
-  const abc = ['012', '3456', '789']
-  token_at(abc, 0) // => {token: 0, offset: 0}
-  token_at(abc, 2) // => {token: 0, offset: 2}
-  token_at(abc, 3) // => {token: 1, offset: 0}
-  token_at(abc, 6) // => {token: 1, offset: 3}
-  token_at(abc, 7) // => {token: 2, offset: 0}
-  token_at(abc, 9) // => {token: 2, offset: 2}
-  Utils.throws(() => token_at(abc, 10)) // => true
-
-*/
-export function token_at(tokens: string[], character_offset: number): {token: number, offset: number} {
-  let passed = 0
-  for (let i = 0; i < tokens.length; i++) {
-    const w = tokens[i].length
-    passed += w
-    if (passed > character_offset) {
-      return {token: i, offset: character_offset - passed + w}
-    }
-  }
-  return Utils.raise('Out of bounds: ' + JSON.stringify({tokens, character_offset}))
-}
-
 /** Replace the text at some position, merging the spans it touches upon.
 
   const show = (g: Graph) => g.target.map(t => t.text)
@@ -274,8 +250,8 @@ export function token_at(tokens: string[], character_offset: number): {token: nu
 Indexes are character offsets (use CodeMirror's doc.posFromIndex and doc.indexFromPos to convert) */
 export function modify(g: Graph, from: number, to: number, text: string): Graph {
   const tokens = target_texts(g)
-  const {token: from_token, offset: from_ix} = token_at(tokens, from)
-  const {token: to_token, offset: to_ix} = token_at(tokens, to)
+  const {token: from_token, offset: from_ix} = T.token_at(tokens, from)
+  const {token: to_token, offset: to_ix} = T.token_at(tokens, to)
   const slice = g.target.slice(from_token, to_token + 1)
   const pre = slice.length > 0 ? slice[0].text.slice(0, from_ix) : ""
   const post = slice.length > 0 ? slice[slice.length - 1].text.slice(to_ix) : ""

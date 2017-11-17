@@ -3,6 +3,7 @@ import { ViewDiff } from "./ViewDiff"
 import * as Classes from './Classes'
 import { VNode } from "snabbdom/vnode"
 import { AppState, Diffs } from './Model'
+import * as M from './Model'
 import { tag, Content as S } from "snabbis"
 import { CatchSubmit, InputField, button, div, span, table, tbody, tr, td } from "./Snabbdom"
 
@@ -30,10 +31,9 @@ export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
         button('login', () => login_state.set('in'))
       ),
       tag('hr'),
-      button('try an example anyway', () =>
+      button('try an example anyway', () => {
         login_state.set('anonymous')
-        // TODO: set example sentences from the code book
-      )
+      })
     )
   } else {
     return div(

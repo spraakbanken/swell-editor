@@ -5,98 +5,110 @@ Right now we use the cut word part of the CM state using a CM mark
 */
 import * as CodeMirror from "codemirror"
 import * as typestyle from "typestyle"
-import * as Utils from "./Utils"
-import * as ViewDiff from "./ViewDiff"
-import * as View from "./View"
-import * as Spans from "./Spans"
 
 import * as Snabbdom from "./Snabbdom"
 import { CM } from "./Snabbdom"
 
-import { span, div, InputField } from "./View"
+import { View } from "./View"
 import { tag, Content as S } from "snabbis"
 
 import * as Model from "./Model"
-import { AppState, EditorState } from "./Model"
+import { AppState } from "./Model"
 export { Model }
 
-import { Store, Lens, Undo } from "reactive-lens"
-
-import { Span } from "./Spans"
 import { log, debug, debug_table } from "./dev"
 import { VNode } from "snabbis"
 
+import { Diff, Dragged, Dropped } from './Diff'
+import * as D from './Diff'
+import { RichDiff } from './RichDiff'
+import * as R from './RichDiff'
+import { Graph } from "./Graph"
+import * as G from "./Graph"
+import { Token, Span } from './Token'
+import * as T from './Token'
+import { TokenDiff } from "./Utils"
+import * as Utils from "./Utils"
+
+import { Store, Lens, Undo } from "reactive-lens"
+
+const global = window as any
+global.Model = Model
+global.G = G
+global.R = R
+global.D = D
+global.T = T
+global.Utils = Utils
+global.Lens = Lens
+global.Undo = Undo
+global.Store = Store
+
 export function App(store: Store<AppState>) {
-  const global = window as any
   global.store = store
-  global.reset = (text: string) => store.set(Model.init(text))
+  global.reset = (text: string) => {
+    store.set(Model.init(text))
+  }
   console.log('making new view')
   return {
-    view: Viewish(store),
+    view: Controller(store),
     services: [
-      Model.WithoutHistory(store).storage_connect(),
+      Model.ForLocalStorage(store).storage_connect(),
       // store.location_connect(to_hash, from_hash),
       // store.on(x => console.log(JSON.stringify(x, undefined, 2))),
     ]
   }
 }
 
-// export function CM(opts: CodeMirror.EditorConfiguration): {cm: CodeMirror.Editor, vn: VNode} {
-//   const div = document.createElement('div')
-//   return CodeMirror(div, {lineWrapping: true, ...opts})
-// }
+export function Controller(store: Store<AppState>): () => VNode {
 
-export function Viewish(store: Store<AppState>): () => VNode {
+  const undo_graph = store.at('graph')
+  const graph = undo_graph.at('now')
 
-  const es = store.at('editor_state')
-  const es_now = store.at('editor_state').at('now')
-
-  const debug_state = () => {
-    const {spans, tokens} = es_now.get()
-    debug_table(spans.map(({...s}) => ({...s, original: s.links.map(i => tokens[i]) })))
-  }
-  ; (window as any).debug_state = debug_state
-  ; (window as any).invert = () => {
-    const {spans, tokens} = es_now.get()
-    const res = Spans.invert(spans, tokens)
-    Model.advance_spans(es, res.spans, res.tokens)
-    full_view_update()
-  }
-
-  const undo = () => { es.modify(Undo.undo); full_view_update() }
-  const redo = () => { es.modify(Undo.redo); full_view_update() }
+  const undo = () => { undo_graph.modify(Undo.undo); full_view_update() }
+  const redo = () => { undo_graph.modify(Undo.redo); full_view_update() }
 
   const history_keys = {
     "Ctrl-Z": undo,
     "Ctrl-Y": redo,
-    "Ctrl-R": revert,
-    "Alt-L": label
+    // "Ctrl-R": revert,
+    // "Alt-L": label
   }
   console.log('debug', debug)
 
   const {cm: cm_orig, vn: vn_orig} = CM({readOnly: true})
   const {cm: cm_main, vn: vn_main} = CM({extraKeys: history_keys})
-  const {cm: cm_diff, vn: vn_diff} = CM({readOnly: true})
-  const {cm: cm_xml, vn: vn_xml} = CM({lineWrapping: false, mode: 'xml', extraKeys: history_keys})
+  // const {cm: cm_diff, vn: vn_diff} = CM({readOnly: true})
+  // const {cm: cm_xml, vn: vn_xml} = CM({lineWrapping: false, mode: 'xml', extraKeys: history_keys})
   const needs_full_update = store.at('needs_full_update')
 
   /** Updates all CM views, run this when the state is completely new */
   function full_view_update() {
-    const {spans, tokens} = es_now.get()
+    const g = graph.get()
+    const text = G.target_text(g)
     const cursor = cm_main.getDoc().getCursor()
-    const upd = spans.map(s => s.text).join('')
-    cm_orig.getDoc().setValue(tokens.join(''))
-    cm_main.getDoc().setValue(upd.slice(0, upd.length - 1))
+    const target_text = G.target_text(g)
+    cm_orig.getDoc().setValue(G.source_text(g))
+    cm_main.getDoc().setValue(target_text.slice(0, target_text.length - 1)) // minus last token
     cm_main.getDoc().setSelection(cursor, cursor)
-    console.log('full_view_update', {spans, tokens}, cm_main.getDoc().getValue())
+    cm_main.refresh()
+    cm_orig.refresh()
+    console.log('full_view_update', {g}, cm_main.getDoc().getValue())
     // increment timestamp?
     needs_full_update.set(false)
   }
 
+  store.at('login_state').ondiff(state => {
+    if (state == 'anonymous') {
+      if (cm_orig.getDoc().getValue() != Model.example_sentence) {
+        with_full_update(() => Model.load_example(undo_graph))
+      }
+    }
+  })
+
   const with_full_update = (cb: () => void) => store.transaction(() => {
     cb()
-    needs_full_update.set(true)
-    // full_view_update()
+    full_view_update()
+    // needs_full_update.set(true)
   })
 
   cm_main.focus()
@@ -124,26 +136,14 @@ export function Viewish(store: Store<AppState>): () => VNode {
   });
 
   function revert() {
-    const {spans, tokens} = es_now.get()
     const sels = cm_main.getDoc().listSelections()
     if (sels) {
       const {head} = sels[0]
-      const index = Spans.span_from_offset(spans, cm_main.getDoc().indexFromPos(head))[0]
+      const pos = cm_main.getDoc().indexFromPos(head)
+      const index = T.token_at(G.target_texts(graph.get()), pos)
       with_full_update(() => {
-        Model.advance_spans(es, Spans.revert(index, spans, tokens))
-      })
-    }
-  }
-
-  function label() {
-    const {spans, tokens} = es_now.get()
-    const sels = cm_main.getDoc().listSelections()
-    if (sels) {
-      const {head} = sels[0]
-      const index = Spans.span_from_offset(spans, cm_main.getDoc().indexFromPos(head))[0]
-      const [pre, [me], post] = Utils.splitAt3(spans, index, index+1)
-      with_full_update(() => {
-        Model.advance_spans(es, [...pre, {...me, labels: [...me.labels, "ABCXYZ"[Math.floor(Math.random()*6)]]}, ...post])
+        console.debug('todo: revert at index', {index, head, pos})
+        // revert at index
       })
     }
   }
@@ -151,18 +151,17 @@ export function Viewish(store: Store<AppState>): () => VNode {
   function cut() {
     const sels = cm_main.getDoc().listSelections()
     if (sels) {
-      const {spans, tokens} = es_now.get()
       const {anchor, head} = sels[0]
-      const a = cm_main.getDoc().indexFromPos(anchor)
-      const b = cm_main.getDoc().indexFromPos(head)
-      const from = Spans.span_from_offset(spans, Math.min(a, b))[0]
-      const to = Spans.span_from_offset(spans, Math.max(a, b))[0]
+      const target_texts = G.target_texts(graph.get())
+      const Anchor = T.token_at(target_texts, cm_main.getDoc().indexFromPos(anchor))
+      const Head = T.token_at(target_texts, cm_main.getDoc().indexFromPos(head))
+      const [from, to] = Utils.numsort([Anchor.token, Head.token])
       const conv = (off: number) => cm_main.getDoc().posFromIndex(off)
       remove_marks_by_class(cm_main, 'cut')
-      console.log({spans, from, to})
+      log({what: 'cut', from, to})
       cm_main.getDoc().markText(
-        conv(Spans.span_offset(spans, from)),
-        conv(Spans.span_offset(spans, to) + whitespace_start(spans[to].text)), {
+        conv(T.text_offset(target_texts, from)),
+        conv(T.text_offset(target_texts, to) + whitespace_start(target_texts[to])), {
           className: 'cut'
         })
     }
@@ -176,71 +175,43 @@ export function Viewish(store: Store<AppState>): () => VNode {
 
   function paste() {
     cm_main.getDoc().getAllMarks().map((m) => {
-      const {spans, tokens} = es_now.get()
+      const target_texts = G.target_texts(graph.get())
       const mark = m.find()
-      const span_from_pos = (pos: CodeMirror.Position) => Spans.span_from_offset(spans, cm_main.getDoc().indexFromPos(pos))[0]
-      const from = span_from_pos(mark.from as any)
-      const to = span_from_pos(mark.to as any)
+      const token_index = (pos: CodeMirror.Position) => T.token_at(target_texts, cm_main.getDoc().indexFromPos(pos)).token
+      const from = token_index(mark.from as any)
+      const to = token_index(mark.to as any)
       const cursor = cm_main.getDoc().getCursor()
-      let here = span_from_pos(cursor)
+      let here = token_index(cursor)
       if (here > to) {
         here++
       }
-      log(from, to, here)
-      log(spans.map(({text}) => text))
+      log({what: 'paste', from, to, here})
       with_full_update(() => {
-        Model.advance_spans(es, Spans.rearrange(spans, from, to, here))
+        Model.advance_graph(undo_graph, G.rearrange(graph.get(), from, to, here))
       })
     })
   }
 
   // invariant check
   cm_main.on('update', () => {
-    const {spans, tokens} = es_now.get()
-    const lhs = spans.map(s => s.text).join('')
+    const g = graph.get()
+    const lhs = G.target_text(g)
     const rhs = cm_main.getDoc().getValue() + ' '
+    if (debug) {
+      const inv = G.check_invariant(g)
+      if (inv != 'ok') {
+        console.error(inv)
+      }
+    }
     //log('update', Utils.show({lhs, rhs}))
     if (rhs != lhs && (Utils.ltrim(rhs) == lhs || Utils.ltrim(rhs) == '')) {
-      // everything deleted! just update view
+      // everything deleted! just update view ??
       cm_main.getDoc().setValue(lhs.slice(0, lhs.length - 1))
       needs_full_update.set(true)
     } else if (lhs != rhs) {
       log("Editor and internal state out of sync:", {lhs, rhs})
       log('Doing full update:')
       needs_full_update.set(true)
-    }
-  })
-
-  cm_xml.on('beforeChange', (_, change) => {
-    const {origin} = change
-    if (origin == 'undo') {
-      change.cancel()
-      undo()
-    } else if (origin == 'redo') {
-      change.cancel()
-      redo()
-    }
-  })
-
-  cm_xml.on('change', (_, {origin}) => {
-    if (origin != 'setValue') {
-      try {
-        const diff = Spans.xml_to_diff(cm_xml.getDoc().getValue())
-        const res = Spans.diff_to_spans(diff)
-        log('xml change', origin)
-        //debug_table(diff)
-        //debug_table(res.spans)
-        const check = Spans.check_invariant(res.spans)
-        if (check != '') {
-          console.error(check)
-        } else {
-          with_full_update(() => {
-            Model.advance_spans(es, res.spans, res.tokens)
-          })
-        }
-      } catch (e) {
-        console.error(e)
-      }
     }
   })
 
@@ -274,37 +245,22 @@ export function Viewish(store: Store<AppState>): () => VNode {
     } else if (change.origin != 'setValue') {
       const from = cm_main.getDoc().indexFromPos(change.from)
       const to = cm_main.getDoc().indexFromPos(change.to)
-      const {spans, tokens} = es_now.get()
+      const g = graph.get()
       store.transaction(() => {
-        Model.advance_spans(es, Spans.modify(spans, from, to, change.text.join('\n')))
-        Model.modify_spans(es, (spans, tokens) => Spans.chop_up_insertions(false)(spans, tokens).spans)
-        Model.modify_spans(es, (spans, tokens) => Spans.chop_up_insertions(true)(spans, tokens).spans)
-        Model.modify_spans(es, (spans, tokens) => Spans.auto_revert(spans, tokens).spans)
+        Model.advance_graph(undo_graph, G.modify(g, from, to, change.text.join('\n')))
+        // Model.modify_spans(es, (spans, tokens) => Spans.auto_revert(spans, tokens).spans)
         needs_full_update.set(false)
       })
-      // bug: fix duplicate states next to each other in undo history
-      //log(spans.map(({text}) => text))
     }
   })
 
   needs_full_update.ondiff(v => (console.log({v}), v) && full_view_update())
 
-  const cms = {vn_orig, vn_main, vn_diff, vn_xml}
+  const cms = {vn_orig, vn_main}
 
   return function partial_update_view() {
-    return View.view(store, cms)
+    return View(store, Model.calculate_diffs(store.get()), cms)
   }
-}
-
-function index_from_offset(xs: string[], offset: number): number | null {
-  let p = 0
-  for (let i=0; i<xs.length; i++) {
-    p += xs[i].length
-    if (p > offset) {
-      return i
-    }
-  }
-  return null
 }
 
 function remove_marks_by_class(editor: CodeMirror.Editor, name: string) {

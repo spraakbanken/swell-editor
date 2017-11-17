@@ -12,12 +12,12 @@ import { Store } from "reactive-lens"
 csstips.normalize()
 csstips.setupPage('#top')
 
-const hash_text = decodeURIComponent(window.location.hash.slice(1))
-const example_text = hash_text || "Jag bor på legenhet . Jag där bott ett år . Jag skulle vilja ha stor huset ."
+// const hash_text = decodeURIComponent(window.location.hash.slice(1))
+// const example_text = hash_text || "Jag bor på legenhet . Jag där bott ett år . Jag skulle vilja ha stor huset ."
 
 // || "En dag jag vaknade när larmet på min telefon ringde. De väder var inte fint."
 
-const store = Store.init(Model.init(example_text))
+const store = Store.init(Model.init(''))
 const root = document.getElementById('root') as HTMLElement
 
 const patcher = setup(patch, root)
