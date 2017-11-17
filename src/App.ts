@@ -81,6 +81,8 @@ export function Controller(store: Store<AppState>): () => VNode {
   // const {cm: cm_xml, vn: vn_xml} = CM({lineWrapping: false, mode: 'xml', extraKeys: history_keys})
   const needs_full_update = store.at('needs_full_update')
 
+  const navigation = store.at('navigation')
+  const selected_index = store.at('selected_index')
   const ci = store.at('cursor_index')
   function update_cursor_index() {
     const g = graph.get()
@@ -89,10 +91,49 @@ export function Controller(store: Store<AppState>): () => VNode {
     const i = T.token_at(G.target_texts(g), cm_main.getDoc().indexFromPos(cursor)).token
     if (ci.get() != i) {
       ci.set(i)
-      console.log({i})
     }
   }
   cm_main.on('cursorActivity', () => update_cursor_index())
+  navigation.ondiff(nav => navigation.transaction(() => {
+    const {diff} = Model.calculate_diffs(store.get())
+    const si = selected_index.get()
+    if (nav != 'stay') {
+      navigation.set('stay')
+    }
+    if (si != null) {
+      if (nav == 'next') {
+        const ni = D.next(diff, si)
+        ni != null && selected_index.set(ni)
+        if (ni == null) {
+          const g = graph.get()
+          const {end} = G.target_sentence(g, ci.get())
+          if (end + 1 < G.target_texts(g).length) {
+            ci.set(end + 1)
+            selected_index.set(0)
+          }
+        }
+      }
+      if (nav == 'prev') {
+        const pi = D.prev(diff, si)
+        pi != null && selected_index.set(pi)
+        if (pi == null) {
+          const g = graph.get()
+          const {begin} = G.target_sentence(g, ci.get())
+          if (begin - 1 >= 0) {
+            ci.set(begin - 1)
+            selected_index.set(Model.calculate_diffs(store.get()).diff.length - 2)
+          }
+        }
+      }
+    }
+  }))
+  ci.ondiff(() => {
+    const {diff} = Model.calculate_diffs(store.get())
+    const si = selected_index.get()
+    if (si != null && si >= diff.length) {
+      selected_index.set(null)
+    }
+  })
 
   /** Updates all CM views, run this when the state is completely new */
   function full_view_update() {
@@ -105,7 +146,6 @@ export function Controller(store: Store<AppState>): () => VNode {
     cm_main.getDoc().setSelection(cursor, cursor)
     cm_main.refresh()
     cm_orig.refresh()
-    console.log('full_view_update', {g}, cm_main.getDoc().getValue())
     // increment timestamp?
     needs_full_update.set(false)
   }
@@ -136,7 +176,6 @@ export function Controller(store: Store<AppState>): () => VNode {
   }
 
   (cm_main.on as any)('cut', (_cm_main: CodeMirror.Editor, evt: Event) => {
-    console.log('cut')
     log('cut', evt)
     evt.preventDefault()
     cut()
@@ -259,7 +298,7 @@ export function Controller(store: Store<AppState>): () => VNode {
 
   needs_full_update.ondiff(v => (console.log({v}), v) && full_view_update())
 
-  const cms = {vn_orig, vn_main}
+    const cms = {vn_orig, vn_main}
 
   return function partial_update_view() {
     return View(store, Model.calculate_diffs(store.get()), cms)

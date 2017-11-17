@@ -24,6 +24,8 @@ export interface AppState {
   readonly cursor_index: number,
   /** Index we are currently labelling: selected index in the diff (todo: change to selected edge id?) */
   readonly selected_index: number | null,
+  /** Navigation request */
+  readonly navigation: Navigation,
   /** The whole taxonomy */
   readonly taxonomy: Taxonomy,
   /** Login information */
@@ -31,6 +33,8 @@ export interface AppState {
   /** Login information */
   readonly login: Login
 }
+
+export type Navigation = 'prev' | 'next' | 'stay' | 'end'
 
 export interface Login {
   readonly user: string,
@@ -57,6 +61,7 @@ export function init(text?: string): AppState {
     positions: {},
     cursor_index: 0,
     selected_index: null,
+    navigation: 'stay',
     taxonomy,
     login: {user: '', password: ''},
     login_state: 'out'

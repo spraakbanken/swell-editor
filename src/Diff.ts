@@ -56,9 +56,9 @@ export function partition(diff: (Dropped | Dragged)[]) {
 }
 
 // should these take an edge id instead ?
-export function next(diff: Diff[], i: number): number {
+export function next(diff: Diff[], i: number): number | null {
   if (i >= diff.length) {
-    return 0
+    return null
   }
   const visit = Utils.unique_check<string>()
   for (let j = 0; j <= i; j++) {
@@ -69,12 +69,12 @@ export function next(diff: Diff[], i: number): number {
       return i
     }
   }
-  return 0
+  return null
 }
 
-export function prev(diff: Diff[], i: number): number {
+export function prev(diff: Diff[], i: number): number | null {
   if (i <= 0) {
-    return diff.length - 1
+    return null
   }
   const visit = Utils.unique_check<string>()
   for (let j = diff.length - 1; j >= i; j--) {
@@ -85,6 +85,6 @@ export function prev(diff: Diff[], i: number): number {
       return i
     }
   }
-  return diff.length - 1
+  return null
 }
 

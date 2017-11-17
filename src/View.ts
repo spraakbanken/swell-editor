@@ -41,7 +41,7 @@ export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
       tag('h3', 'Normaliseringseditorsprototyp'),
       tag('div', cms.vn_orig, S.classed(Classes.TextEditor, Classes.Editor)),
       ViewDiff(
-        store.pick('graph', 'selected_index', 'positions'),
+        store.pick('graph', 'selected_index', 'positions', 'navigation'),
         diffs.rich_diff,
         store.get().taxonomy
       ),
