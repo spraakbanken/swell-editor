@@ -20,6 +20,8 @@ export interface AppState {
   readonly needs_full_update: boolean,
   /** Positions of divs in the ladder graph diagram */
   readonly positions: PosDict,
+  /** Index in target text for the sentence */
+  readonly cursor_index: number,
   /** Index we are currently labelling: selected index in the diff (todo: change to selected edge id?) */
   readonly selected_index: number | null,
   /** The whole taxonomy */
@@ -53,6 +55,7 @@ export function init(text?: string): AppState {
     graph: Undo.init(G.init(text || '')),
     needs_full_update: true,
     positions: {},
+    cursor_index: 0,
     selected_index: null,
     taxonomy,
     login: {user: '', password: ''},
@@ -68,7 +71,8 @@ export interface Diffs {
 }
 
 export function calculate_diffs(state: AppState): Diffs {
-  const graph = state.graph.now
+  const g = state.graph.now
+  const graph = G.subgraph(g, G.sentence(g, state.cursor_index))
   const diff = G.calculate_diff(graph)
   return {diff, rich_diff: R.enrichen(graph, diff)}
 }

@@ -7,7 +7,7 @@ import * as G from "./Graph"
 
 import { Store, Lens, Undo } from "reactive-lens"
 
-import * as Classes from './Classes'
+import * as C from './Classes'
 import * as csstips from "csstips"
 import * as Positions from "./Positions"
 
@@ -51,7 +51,7 @@ function LabelEditor(store: Store<string[]>, taxonomy: Taxonomy): VNode {
   // see Diff.next and Diff.prev (but they should be adapted to go over sentence boundaries)
   return div(
     S.styles({marginTop: '20px', marginBottom: '20px'}),
-    S.classed(Classes.BorderCell),
+    S.classed(C.BorderCell),
     S.on('click')((e: MouseEvent) => {
       // if we click anywhere but here we should deselect. so there's another listener somewhere
       e.stopPropagation()
@@ -60,7 +60,7 @@ function LabelEditor(store: Store<string[]>, taxonomy: Taxonomy): VNode {
       CatchSubmit(
         () => console.log('Enter pressed, move to next/previous sentence'),
         InputField(
-          Utils.store_join(store).via(Lens.iso(s => s.toUpperCase(), s => s)),
+          Utils.store_join(store).via(Lens.iso(s => s.toUpperCase(), s => s.toUpperCase())),
           S.attrs({autofocus: true}),
           S.hook({insert: (vn) => (vn.elm as HTMLInputElement).focus()})
          )
@@ -76,7 +76,7 @@ function LabelEditor(store: Store<string[]>, taxonomy: Taxonomy): VNode {
           S.styles({display: 'inline-block'}),
           t.code + ' ',
           S.styles({cursor: 'pointer'}),
-          S.on('click')(() => (console.log(tstore, tstore.get()), tstore.modify(x => !x))),
+          S.on('click')(() => tstore.modify(x => !x)),
           S.classes({[orange]: tstore.get()}),
         )
       }),
@@ -115,11 +115,11 @@ export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[], tax
   }
 
   const new_source = (s: Token, diff: TokenDiff, edge_id: string) => {
-    up.push(track(s.id, span(deletes(diff), S.classed(Classes.InnerCell))))
+    up.push(track(s.id, span(deletes(diff), S.classed(C.InnerCell))))
     links.push(Link(s.id, edge_id))
   }
   const new_target = (t: Token, diff: TokenDiff, edge_id: string) => {
-    down.push(track(t.id, span(inserts(diff), S.classed(Classes.InnerCell))))
+    down.push(track(t.id, span(inserts(diff), S.classed(C.InnerCell))))
     links.push(Link(edge_id, t.id))
   }
   const {selected_index} = store.get()
@@ -135,14 +135,14 @@ export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[], tax
         vn = LabelEditor(G.label_store(store.at('graph').at('now'), edge_id), taxonomy)
       } else {
         vn = div(
-          S.classed(Classes.Vertical),
+          S.classed(C.Vertical),
           S.on('click')((e: MouseEvent) => {
             e.stopPropagation()
             store.at('selected_index').set(diff_index)
           }),
           span(
             edges[edge_id].labels.join(' '),
-            S.classed(Classes.BorderCell),
+            S.classed(C.BorderCell),
             S.styles({height: 'min-content'}),
           )
         )
@@ -175,15 +175,15 @@ export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[], tax
     S.on('click')(_ => store.at('selected_index').set(null))
 
   const ladder = track('table', table(columns.map(({up: u, mid: m, down: d, ix}, i) => [
-    tag('div', select_index(ix), S.classed(Classes.Cell), u.length != 0 ? u : tag('div', S.classed(Classes.InnerCell), '\u200b')),
-    tag('div', select_index(ix), S.classed(Classes.Cell), m.length != 0 ? m : tag('div')),
-    tag('div', select_index(ix), S.classed(Classes.Cell), d.length != 0 ? d : tag('div', S.classed(Classes.InnerCell), '\u200b')),
-  ]), [Classes.LadderTable, Classes.MainStyle]))
+    tag('div', select_index(ix), S.classed(C.Cell), u.length != 0 ? u : tag('div', S.classed(C.InnerCell), '\u200b')),
+    tag('div', select_index(ix), S.classed(C.Cell), m.length != 0 ? m : tag('div')),
+    tag('div', select_index(ix), S.classed(C.Cell), d.length != 0 ? d : tag('div', S.classed(C.InnerCell), '\u200b')),
+  ]), [C.LadderTable, C.MainStyle]))
 
   const pos_dict = store.get().positions
   const svg = tag(
     'svg',
-    S.classed(Classes.Width100Pct),
+    S.classed(C.Width100Pct),
     S.styles({height: '500px'}),
     links.map(link => {
       const top = pos_dict[link.from]
@@ -198,20 +198,21 @@ export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[], tax
         S.attrs({
           d: ['M', x1, y1, 'C', x1, y1 + d, x2, y2 - d, x2, y2].join(' '),
         }),
-        S.classed(Classes.Path)
+        S.classed(C.Path)
       )
     }).filter(x => x != null)
   )
   return div(
     Positions.relative(ladder, svg, ['LadderRoot']),
-    select_index(null)
+    select_index(null),
+    S.styles({userSelect: 'none'})
   )
 }
 
 function table(cols: VNode[][], classes: string[] = []): VNode {
   return tag('div',
-    S.classed(Classes.Row, ...classes),
-    ...cols.map(col => tag('div', S.classed(Classes.Column), col)))
+    S.classed(C.Row, ...classes),
+    ...cols.map(col => tag('div', S.classed(C.Column), col)))
 }
 
 const avg = (xs: number[]) => {
@@ -225,9 +226,9 @@ const avg = (xs: number[]) => {
 const diff_to_spans = (rules: (string | null)[]) => (d: [number, string][]) =>
   diff_helper(d, rules, (text, cls) => tag('span', S.classed(cls), text))
 
-const inserts = diff_to_spans([null, '', Classes.Insert])
+const inserts = diff_to_spans([null, '', C.Insert])
 
-const deletes = diff_to_spans([Classes.Delete, '', null])
+const deletes = diff_to_spans([C.Delete, '', null])
 
 function diff_helper<A>(token_diff: [number, string][], rules: (string | null)[], cb: (text: string, className: string) => A): A[] {
   const out = [] as A[]

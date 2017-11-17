@@ -81,6 +81,19 @@ export function Controller(store: Store<AppState>): () => VNode {
   // const {cm: cm_xml, vn: vn_xml} = CM({lineWrapping: false, mode: 'xml', extraKeys: history_keys})
   const needs_full_update = store.at('needs_full_update')
 
+  const ci = store.at('cursor_index')
+  function update_cursor_index() {
+    const g = graph.get()
+    const text = G.target_text(g)
+    const cursor = cm_main.getDoc().getCursor()
+    const i = T.token_at(G.target_texts(g), cm_main.getDoc().indexFromPos(cursor)).token
+    if (ci.get() != i) {
+      ci.set(i)
+      console.log({i})
+    }
+  }
+  cm_main.on('cursorActivity', () => update_cursor_index())
+
   /** Updates all CM views, run this when the state is completely new */
   function full_view_update() {
     const g = graph.get()
@@ -216,42 +229,32 @@ export function Controller(store: Store<AppState>): () => VNode {
   })
 
   cm_main.on('beforeChange', (_, change) => {
-    // need to do this /beforeChange/ (not after),
-    // otherwise indexFromPos does not work anymore
-    // since the position might be removed
-    //log('beforeChange', change.origin, change)
-
-    // route this through somewhere else?
-    // then the
-
-    console.log(change.origin)
-
-    if (change.origin == 'undo') {
-      log('undo')
-      // we will do our undos ourselves
-      change.cancel();
-      undo();
-    } else if (change.origin == 'redo') {
-      log('redo')
-      // we will do our undos ourselves
-      change.cancel();
-      redo();
-    } else if (change.origin == 'drag') {
-      change.cancel()
-    } else if (change.origin == 'paste') {
-      // drag-and-drop makes this paste:
-      change.cancel()
-      paste()
-    } else if (change.origin != 'setValue') {
-      const from = cm_main.getDoc().indexFromPos(change.from)
-      const to = cm_main.getDoc().indexFromPos(change.to)
-      const g = graph.get()
-      store.transaction(() => {
+    store.transaction(() => {
+      if (change.origin == 'undo') {
+        log('undo')
+        // we will do our undos ourselves
+        change.cancel();
+        undo();
+      } else if (change.origin == 'redo') {
+        log('redo')
+        // we will do our undos ourselves
+        change.cancel();
+        redo();
+      } else if (change.origin == 'drag') {
+        change.cancel()
+      } else if (change.origin == 'paste') {
+        // drag-and-drop makes this paste:
+        change.cancel()
+        paste()
+      } else if (change.origin != 'setValue') {
+        const g = graph.get()
+        const from = cm_main.getDoc().indexFromPos(change.from)
+        const to = cm_main.getDoc().indexFromPos(change.to)
         Model.advance_graph(undo_graph, G.modify(g, from, to, change.text.join('\n')))
         // Model.modify_spans(es, (spans, tokens) => Spans.auto_revert(spans, tokens).spans)
         needs_full_update.set(false)
-      })
-    }
+      }
+    })
   })
 
   needs_full_update.ondiff(v => (console.log({v}), v) && full_view_update())
