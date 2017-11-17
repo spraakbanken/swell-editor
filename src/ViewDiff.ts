@@ -47,6 +47,7 @@ function LabelEditor(store: Store<string[]>, taxonomy: Taxonomy): VNode {
   // TODO: fiddle with focus change too:
   // see Diff.next and Diff.prev (but they should be adapted to go over sentence boundaries)
   return div(
+    S.classed(Classes.BorderCell),
     S.on('click')((e: MouseEvent) => {
       // if we click anywhere but here we should deselect. so there's another listener somewhere
       e.stopPropagation()
@@ -111,15 +112,22 @@ export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[], tax
   const new_label = (edge_id: string, diff_index: number) => {
     if (!edges_done.has(edge_id)) {
       edges_done.add(edge_id)
-      let vn: VNode | string
+      let vn: VNode
       if (diff_index == selected_index) {
         // If this is the selected edge, instead add the component for editing the label set
         // NB: TODO: Add Undo functionality to labels
         vn = LabelEditor(G.label_store(store.at('graph').at('now'), edge_id), taxonomy)
       } else {
-        vn = (em.get(edge_id) as Edge).labels.join(' ')
+        vn = span(
+          (em.get(edge_id) as Edge).labels.join(' '),
+          Classes.BorderCell,
+          S.on('click')((e: MouseEvent) => {
+            e.stopPropagation()
+            store.at('selected_index').set(diff_index)
+          })
+        )
       }
-      track(edge_id, span(vn, Classes.BorderCell))
+      return track(edge_id, vn)
     }
   }
 
