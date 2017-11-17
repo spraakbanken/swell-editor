@@ -22,7 +22,6 @@ import { TokenDiff }  from "./Utils"
 export interface ViewDiffState {
   readonly graph: Undo<Graph>,
   readonly positions: PosDict,
-  readonly rich_diff: RichDiff[],
   readonly selected_index: number | null,
 }
 
@@ -41,7 +40,7 @@ function Link(from: string, to: string): Link {
   return {from, to}
 }
 
-export function ViewDiff(store: Store<ViewDiffState>): VNode {
+export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[]): VNode {
   const em = G.edge_map(store.get().graph.now)
   const positions = store.at('positions')
   const track = (id: string, vnode: VNode) => {
@@ -75,10 +74,12 @@ export function ViewDiff(store: Store<ViewDiffState>): VNode {
     if (!edges_done.has(edge_id)) {
       edges_done.add(edge_id)
       track(edge_id, span((em.get(edge_id) as Edge).labels.join(' '), Classes.BorderCell))
+
+      // Here: if this is the selected edge, instead add the component for editing the label set
     }
   }
 
-  store.get().rich_diff.forEach(d => {
+  rich_diff.forEach(d => {
     switch(d.edit) {
       case 'Edited':
         new_column()

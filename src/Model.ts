@@ -22,12 +22,21 @@ export interface AppState {
   readonly positions: PosDict,
   /** Index we are currently labelling: selected index in the diff */
   readonly selected_index: number | null,
-  /** Current diff (calculated from the graph) */
-  readonly diff: Diff[],
-  /** Current rich diff (calculated from the graph) */
-  readonly rich_diff: RichDiff[],
   /** The whole taxonomy */
   readonly taxonomy: Taxonomy,
+  /** Login information */
+  readonly login_state: 'out' | 'anonymous' | 'in'
+  /** Login information */
+  readonly login: Login
+}
+
+export interface Login {
+  readonly user: string,
+  readonly password: string
+}
+
+export function ForLocalStorage(store: Store<AppState>): Store<AppState['login']> {
+  return store.at('login')
 }
 
 export function Essentials(store: Store<AppState>) {
@@ -46,19 +55,23 @@ export function init(original: string): AppState {
     needs_full_update: true,
     positions: {},
     selected_index: null,
-    diff: [],
-    rich_diff: [],
     taxonomy,
+    login: {user: '', password: ''},
+    login_state: 'out'
   }
 }
 
-export function sync_diffs(store: Store<AppState>) {
+export interface Diffs {
+  /** Current diff (calculated from the graph) */
+  readonly diff: Diff[],
+  /** Current rich diff (calculated from the graph) */
+  readonly rich_diff: RichDiff[],
+}
+
+export function calculate_diffs(store: Store<AppState>): Diffs {
   const graph = store.get().graph.now
   const diff = G.calculate_diff(graph)
-  return store.update({
-    diff,
-    rich_diff: R.enrichen(graph, diff)
-  })
+  return {diff, rich_diff: R.enrichen(graph, diff)}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

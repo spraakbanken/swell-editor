@@ -8,6 +8,10 @@ import * as snabbis from "snabbis"
 import { tag, Content as S } from "snabbis"
 import { Hooks } from 'snabbdom/hooks';
 
+import { Store } from "reactive-lens"
+
+import * as typestyle from "typestyle"
+
 // reexports
 const h = snabbdom.h
 type VNode = vnode.VNode
@@ -30,6 +34,9 @@ export const InputField = (store: Store<string>, ...bs: S[]) =>
     S.on('input')((e: Event) => store.set((e.target as HTMLInputElement).value)),
     ...bs)
 
+export const button = (caption: string, k: () => void, ...bs: S[]) =>
+  tag('button', caption, S.on('click')(k), ...bs)
+
 export function checkbox(value: boolean, update: (new_value: boolean) => void): VNode {
   return tag('input',
     S.attrs({type: 'checkbox'}),
@@ -37,6 +44,14 @@ export function checkbox(value: boolean, update: (new_value: boolean) => void): 
     S.on('change')((evt: Event) => update((evt.target as any).checked))
   )
 }
+
+export const CatchSubmit = (cb: () => void, ...bs: S[]) =>
+  tag('form',
+    S.on('submit')((e: Event) => {
+        cb()
+        e.preventDefault()
+      }),
+    ...bs)
 
 export function CM(opts: CodeMirror.EditorConfiguration) {
   const div = document.createElement('div')
