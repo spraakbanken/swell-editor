@@ -48,19 +48,21 @@ export function App(store: Store<AppState>) {
   global.reset = (text: string) => {
     store.set(Model.init(text))
   }
-  console.log('making new view')
+  const {view, services} = Controller(store)
   return {
-    view: Controller(store),
+    view,
     services: [
+      ...Model.setup_sync(store),
       Model.ForLocalStorage(store).storage_connect(),
+      ...services
       // store.location_connect(to_hash, from_hash),
       // store.on(x => console.log(JSON.stringify(x, undefined, 2))),
     ]
   }
 }
 
-export function Controller(store: Store<AppState>): () => VNode {
-
+export function Controller(store: Store<AppState>): {services: (() => void)[], view: () => VNode} {
+  const services = [] as (() => void)[]
   const undo_graph = store.at('graph')
   const graph = undo_graph.at('now')
 
@@ -88,52 +90,58 @@ export function Controller(store: Store<AppState>): () => VNode {
     const g = graph.get()
     const text = G.target_text(g)
     const cursor = cm_main.getDoc().getCursor()
-    const i = T.token_at(G.target_texts(g), cm_main.getDoc().indexFromPos(cursor)).token
-    if (ci.get() != i) {
-      ci.set(i)
+    try {
+      const i = T.token_at(G.target_texts(g), cm_main.getDoc().indexFromPos(cursor)).token
+      if (ci.get() != i) {
+        ci.set(i)
+      }
+    } catch (e) {
+      console.debug(e)
     }
   }
   cm_main.on('cursorActivity', () => update_cursor_index())
-  navigation.ondiff(nav => navigation.transaction(() => {
-    const {diff} = Model.calculate_diffs(store.get())
-    const si = selected_index.get()
-    if (nav != 'stay') {
-      navigation.set('stay')
-    }
-    if (si != null) {
-      if (nav == 'next') {
-        const ni = D.next(diff, si)
-        ni != null && selected_index.set(ni)
-        if (ni == null) {
-          const g = graph.get()
-          const {end} = G.target_sentence(g, ci.get())
-          if (end + 1 < G.target_texts(g).length) {
-            ci.set(end + 1)
-            selected_index.set(0)
+  services.push(
+    navigation.ondiff(nav => navigation.transaction(() => {
+      const {diff} = Model.calculate_diffs(store.get())
+      const si = selected_index.get()
+      if (nav != 'stay') {
+        navigation.set('stay')
+      }
+      if (si != null) {
+        if (nav == 'next') {
+          const ni = D.next(diff, si)
+          ni != null && selected_index.set(ni)
+          if (ni == null) {
+            const g = graph.get()
+            const {end} = G.target_sentence(g, ci.get())
+            if (end + 1 < G.target_texts(g).length) {
+              ci.set(end + 1)
+              selected_index.set(0)
+            }
+          }
+        }
+        if (nav == 'prev') {
+          const pi = D.prev(diff, si)
+          pi != null && selected_index.set(pi)
+          if (pi == null) {
+            const g = graph.get()
+            const {begin} = G.target_sentence(g, ci.get())
+            if (begin - 1 >= 0) {
+              ci.set(begin - 1)
+              selected_index.set(Model.calculate_diffs(store.get()).diff.length - 2)
+            }
           }
         }
       }
-      if (nav == 'prev') {
-        const pi = D.prev(diff, si)
-        pi != null && selected_index.set(pi)
-        if (pi == null) {
-          const g = graph.get()
-          const {begin} = G.target_sentence(g, ci.get())
-          if (begin - 1 >= 0) {
-            ci.set(begin - 1)
-            selected_index.set(Model.calculate_diffs(store.get()).diff.length - 2)
-          }
-        }
+    })),
+    ci.ondiff(() => {
+      const {diff} = Model.calculate_diffs(store.get())
+      const si = selected_index.get()
+      if (si != null && si >= diff.length) {
+        selected_index.set(null)
       }
-    }
-  }))
-  ci.ondiff(() => {
-    const {diff} = Model.calculate_diffs(store.get())
-    const si = selected_index.get()
-    if (si != null && si >= diff.length) {
-      selected_index.set(null)
-    }
-  })
+    })
+  )
 
   /** Updates all CM views, run this when the state is completely new */
   function full_view_update() {
@@ -150,13 +158,15 @@ export function Controller(store: Store<AppState>): () => VNode {
     needs_full_update.set(false)
   }
 
-  store.at('login_state').ondiff(state => {
-    if (state == 'anonymous') {
-      if (cm_orig.getDoc().getValue() != Model.example_sentence) {
-        with_full_update(() => Model.load_example(undo_graph))
+  services.push(
+    store.at('login_state').ondiff(state => {
+      if (state == 'anonymous') {
+        if (cm_orig.getDoc().getValue() != Model.example_sentence) {
+          with_full_update(() => Model.load_example(undo_graph))
+        }
       }
-    }
-  })
+    })
+  )
 
   const with_full_update = (cb: () => void) => store.transaction(() => {
     cb()
@@ -296,12 +306,15 @@ export function Controller(store: Store<AppState>): () => VNode {
     })
   })
 
-  needs_full_update.ondiff(v => (console.log({v}), v) && full_view_update())
+  services.push(needs_full_update.ondiff(v => v && full_view_update()))
 
-    const cms = {vn_orig, vn_main}
+  const cms = {vn_orig, vn_main}
 
-  return function partial_update_view() {
-    return View(store, Model.calculate_diffs(store.get()), cms)
+  return {
+    services,
+    view: function partial_update_view() {
+      return View(store, Model.calculate_diffs(store.get()), cms)
+    }
   }
 }
 

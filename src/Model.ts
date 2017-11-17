@@ -31,10 +31,64 @@ export interface AppState {
   /** Login information */
   readonly login_state: 'out' | 'anonymous' | 'in'
   /** Login information */
-  readonly login: Login
+  readonly login: Login,
+  /** Sync request */
+  readonly sync_request: boolean
+  /** Synced */
+  readonly synced: boolean
 }
 
-export type Navigation = 'prev' | 'next' | 'stay' | 'end'
+const backend = 'https://ws.spraakbanken.gu.se/ws/sparv/swell/'
+
+export function setup_sync(store: Store<AppState>): (() => void)[] {
+  const post = Utils.debounce(1000, (state: any) => {
+    const {login_state, login, synced} = store.get()
+    if (login_state == 'in' && synced) {
+      Utils.POST(
+        backend + 'set',
+        {
+          user: login.user,
+          pw: login.password,
+          state
+        },
+        (r: any) => console.log(r))
+     }
+  })
+  return [
+    Essentials(store).ondiff(post),
+    store.at('login_state').ondiff(login_state => {
+      console.log({login_state})
+      if (login_state == 'in') {
+        store.at('sync_request').set(true)
+      }
+    }),
+    store.at('sync_request').ondiff(sync_request => {
+      store.at('sync_request').set(false)
+      const {login_state, login} = store.get()
+      console.log('sync_request', {sync_request})
+      if (sync_request && login_state == 'in') {
+        Utils.POST(
+          backend + 'get',
+          {
+            user: login.user,
+            pw: login.password
+          },
+          essentials => {
+            const e = JSON.parse(essentials)
+            console.log({e})
+            store.transaction(() => {
+              Essentials(store).set(e)
+              store.at('needs_full_update').set(true)
+              store.at('synced').set(true)
+            })
+          }
+        )
+       }
+    })
+  ]
+}
+
+export type Navigation = 'prev' | 'next' | 'stay'
 
 export interface Login {
   readonly user: string,
@@ -47,7 +101,7 @@ export function ForLocalStorage(store: Store<AppState>) {
 
 export function Essentials(store: Store<AppState>) {
   return store
-    .pick('selected_index', 'taxonomy')
+    .pick('selected_index')
     .merge(
       store.relabel({
         graph: store.at('graph').at('now')
@@ -64,7 +118,9 @@ export function init(text?: string): AppState {
     navigation: 'stay',
     taxonomy,
     login: {user: '', password: ''},
-    login_state: 'out'
+    login_state: 'out',
+    sync_request: false,
+    synced: false
   }
 }
 
@@ -180,93 +236,3 @@ export function select_index(store: Store<AppState>, selected_index: number | nu
   store.update({selected_index})
 }
 
-/*
-export function ladder_keydown(store: Store<AppState>, semi_rich_diff: Spans.SemiRichDiff[], key: string) {
-  const state = store.get()
-  const res = ladder_keydown_helper(key, state)
-  if (res.new_prefix != undefined) {
-    store.update({current_prefix: res.new_prefix})
-  }
-  if (res.new_spans != undefined) {
-    advance_spans(store.at('editor_state'), res.new_spans)
-  }
-  console.log(key)
-  if (state.selected_index) {
-    if (key == 'Escape') {
-      store.update({selected_index: -1}) // TODO: fix this ugly hax
-    }
-    if (key == 'Enter' || key == 'ArrowRight') {
-      let x
-      store.update({selected_index: x = Spans.next_group(state.selected_index, semi_rich_diff)})
-      console.log({x})
-    }
-    if (key == 'ArrowLeft') {
-      store.update({selected_index: Spans.prev_group(state.selected_index, semi_rich_diff)})
-    }
-  }
-}
-
-function ladder_keydown_helper(evt_key: string, state: AppState): { new_prefix?: string, new_spans?: Spans.Span[] } {
-  if (state.selected_index != null) {
-    const {current_prefix} = state
-
-    const spacelike = evt_key == " " || evt_key == ","
-
-    const new_prefix = (function () {
-      if (evt_key.length == 1 && !spacelike) {
-        return current_prefix + evt_key
-      } else if (evt_key == 'Backspace') {
-        return current_prefix.slice(0, current_prefix.length - 1)
-      } else {
-        return current_prefix
-      }
-    })()
-
-    log({evt_key, current_prefix, new_prefix, spacelike})
-
-    // if key is enter then we should advance the selected group
-
-    if (new_prefix == '') {
-      return { new_prefix }
-    } else {
-      const filter = (spacelike || evt_key == "Enter") ? exactMatches : prefixMatches
-      const matches = filter(new_prefix, state.taxonomy)
-      log('matches:', matches)
-      if (matches.length == 1) {
-        if (state.selected_index) {
-          return {
-            new_prefix: '',
-            new_spans:
-              Spans.modify_label_state(
-                state.editor_state.now.spans,
-                state.selected_index,
-                matches[0].code,
-                v => !v)
-          }
-        } else {
-          console.error('group index out of bounds')
-          return { new_prefix: '' }
-        }
-      } else if (matches.length == 0) {
-        // don't allow inserting this
-        return {}
-      } else {
-        return { new_prefix }
-      }
-    }
-  }
-  return {}
-}
-
-export function toggle_code(store: Store<AppState>, code: string) {
-  const state = store.get()
-  if (state.selected_index != null) {
-    advance_spans(store.at('editor_state'),
-      Spans.modify_label_state(
-        state.editor_state.now.spans,
-        state.selected_index,
-        code,
-        v => !v))
-  }
-}
-*/

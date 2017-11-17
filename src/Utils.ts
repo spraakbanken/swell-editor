@@ -635,3 +635,35 @@ whitespace and strings do not mix whitespace and non-whitespace
 export function store_join(store: Store<string[]>): Store<string> {
   return store.via(Lens.iso((ss: string[]) => ss.join(' '), s => s.split(/\s+/g)))
 }
+
+/** POST request */
+export function POST(url: string, data: any, k: (response: any) => void): void {
+  const r = new XMLHttpRequest()
+  r.onreadystatechange = () => {
+    if (r.readyState == 4 && r.status == 200) {
+      k(r.response)
+    }
+  }
+  r.open("POST", url, true)
+  r.setRequestHeader('Content-Type', 'application/json')
+  r.send(JSON.stringify(data))
+}
+
+/** Debounce from underscore.js
+
+Returns a function, that, as long as it continues to be invoked, will not
+be triggered. The function will be called after it stops being called for
+N milliseconds.
+*/
+export function debounce(wait: number, k: (...args: any[]) => void): (...args: any[]) => void {
+  let id: NodeJS.Timer | null;
+  return (...args: any[]) => {
+    if (id != null) {
+      clearTimeout(id)
+    }
+    id = setTimeout(() => {
+      id = null;
+      k(...args)
+    }, wait) as any as NodeJS.Timer
+  }
+}

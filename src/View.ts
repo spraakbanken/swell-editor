@@ -19,10 +19,15 @@ export interface CodeMirrors {
 export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VNode => {
   const login = store.at('login')
   const login_state = store.at('login_state')
+  const header = tag('h3',
+    'Normaliseringseditorsprototyp',
+    S.on('click')(_ => store.set(M.init())),
+    S.classed(Classes.Pointer)
+  )
   if (login_state.get() == 'out') {
     return div(
       S.classed(Classes.MainStyle, typestyle.style({padding: '10px'})),
-      tag('h3', 'Normaliseringseditorsprototyp'),
+      header,
       'you need to login',
       CatchSubmit(
         () => login_state.set('in'),
@@ -38,7 +43,7 @@ export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
   } else {
     return div(
       S.classed(Classes.MainStyle, typestyle.style({padding: '10px'})),
-      tag('h3', 'Normaliseringseditorsprototyp'),
+      header,
       tag('div', cms.vn_orig, S.classed(Classes.TextEditor, Classes.Editor)),
       ViewDiff(
         store.pick('graph', 'selected_index', 'positions', 'navigation'),
@@ -47,7 +52,16 @@ export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
       ),
       tag('div', cms.vn_main, S.classed(Classes.TextEditor, Classes.Editor)),
       tag('hr'),
-      button('logout', () => login_state.set('out'))
+      login_state.get() == 'anonymous'
+      ?
+      [
+        button('back to login menu', () => login_state.set('out')),
+      ]
+      :
+      [
+        button('logout', () => login_state.set('out')),
+        button('sync', () => store.at('sync_request').set(true))
+      ]
     )
   }
 }
