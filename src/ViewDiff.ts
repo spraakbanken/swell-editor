@@ -1,3 +1,4 @@
+import { Taxonomy } from "./Model"
 import { Token } from "./Token"
 import { RichDiff } from './RichDiff'
 import * as R from './RichDiff'
@@ -40,7 +41,13 @@ function Link(from: string, to: string): Link {
   return {from, to}
 }
 
-export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[]): VNode {
+function LabelEditor(store: Store<string[]>, taxonomy: Taxonomy) {
+
+
+
+}
+
+export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[], taxonomy: Taxonomy): VNode {
   const em = G.edge_map(store.get().graph.now)
   const positions = store.at('positions')
   const track = (id: string, vnode: VNode) => {

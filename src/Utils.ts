@@ -1,4 +1,5 @@
 
+import { Lens, Store } from 'reactive-lens'
 import * as Dmp from "diff-match-patch"
 export const dmp = new Dmp.diff_match_patch()
 
@@ -567,4 +568,70 @@ export function record_filter<A>(x: Record<string, A>, k: (a: A, id: string) => 
   const out = {} as Record<string, A>
   record_forEach(x, (a, id) => k(a, id) && (out[id] = a))
   return out
+}
+
+// Store stuff
+
+/**
+
+    const store = Store.init('apa bepa cepa'.split(' '))
+    const bepa = array_store_key(store, 'bepa')
+    bepa.get() // => true
+    bepa.set(false)
+    store.get() // => ['apa', 'cepa']
+    bepa.set(true)
+    store.get() // => ['apa', 'cepa', 'bepa']
+    store.set(['bepa'])
+    bepa.get() // => true
+    store.set(['bepa', 'bepa'])
+    bepa.get() // => true
+    bepa.set(true)
+    store.get() // => ['bepa']
+    bepa.set(false)
+    store.get() // => []
+
+This only obeys store laws if the equality of the store is relaxed to array set equality
+
+*/
+export function array_store_key(store: Store<string[]>, key: string): Store<boolean> {
+  return array_store(store)
+    .via(Lens.key(key))
+    .via(
+      Lens.iso(
+        (tu: true | undefined) => tu || false,
+        (b: boolean) => b || undefined))
+}
+
+export function fromPairs<A extends string, B>(xs: [A, B][]): Record<A, B> {
+    return Object.assign({}, ...xs.map(([a, b]) => ({[a as string]: b})))
+}
+
+export function array_store(store: Store<string[]>): Store<Record<string, true>> {
+  return store.via(
+    Lens.iso(
+      (xs: string[]) => fromPairs(xs.map(x => [x, true] as [string, true])),
+      (r: Record<string, true>) => record_traverse(r, (_, s) => s)))
+}
+
+/**
+
+    const store = Store.init('apa bepa cepa'.split(' '))
+    const str = store_join(store)
+    str.get() // => 'apa bepa cepa'
+    str.set('cepa apa bepa')
+    store.get() // => ['cepa', 'apa', 'bepa']
+    str.set('  cepa         apa     bepa  ')
+    store.get() // => ['', 'cepa', 'apa', 'bepa', '']
+    str.get() // => ' cepa apa bepa '
+    str.set('apa')
+    str.modify(x => x + ' ')
+    store.get() // => ['apa', '']
+    str.modify(x => x + 'z')
+    store.get() // => ['apa', 'z']
+
+This only obeys store laws if the equality of the store is relaxed about
+whitespace and strings do not mix whitespace and non-whitespace
+*/
+export function store_join(store: Store<string[]>): Store<string> {
+  return store.via(Lens.iso((ss: string[]) => ss.join(' '), s => s.split(/\s+/g)))
 }

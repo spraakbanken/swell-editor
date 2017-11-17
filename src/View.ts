@@ -40,7 +40,11 @@ export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
       S.classed(Classes.MainStyle, typestyle.style({padding: '10px'})),
       tag('h3', 'Normaliseringseditorsprototyp'),
       tag('div', cms.vn_orig, S.classed(Classes.TextEditor, Classes.Editor)),
-      ViewDiff(store.pick('graph', 'selected_index', 'positions'), diffs.rich_diff),
+      ViewDiff(
+        store.pick('graph', 'selected_index', 'positions'),
+        diffs.rich_diff,
+        store.get().taxonomy
+      ),
       tag('div', cms.vn_main, S.classed(Classes.TextEditor, Classes.Editor)),
       tag('hr'),
       button('logout', () => login_state.set('out'))
