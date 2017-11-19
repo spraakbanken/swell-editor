@@ -25,6 +25,7 @@
     "@types/tape": "^4.2.31",
     "assert": "^1.4.1",
     "awesome-typescript-loader": "^3.0.3",
+    "closure-compiler": "^0.2.12",
     "css-loader": "^0.28.1",
     "file-loader": "^0.11.1",
     "jsverify": "^0.8.3",
@@ -37,6 +38,7 @@
     "uglifyjs-webpack-plugin": "^0.4.6",
     "url-loader": "^0.5.8",
     "webpack": "^3.7.1",
+    "webpack-closure-compiler": "^2.1.5",
     "webpack-dev-server": "2.3.0",
     "xmlshim": "^0.2.1"
   },
