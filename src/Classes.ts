@@ -77,6 +77,7 @@ export const Editor = style(debug_name('Editor'), {
       border: '1px solid #ddd',
       height: '300px',
       minWidth: '250px',
+      lineHeight: '1.5em',
     }
   }
 })

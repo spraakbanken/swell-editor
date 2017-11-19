@@ -13,17 +13,24 @@ import { Store, Lens, Undo } from "reactive-lens"
 import { PosDict } from "./Positions"
 import { log, debug, debug_table } from "./dev"
 
-export interface AppState {
+export interface GraphState {
   /** The parallel corpus */
   readonly graph: Undo<Graph>,
-  /** If the last target text edit wasn't into the main editor itself */
-  readonly needs_full_update: boolean,
-  /** Positions of divs in the ladder graph diagram */
-  readonly positions: PosDict,
   /** Index in target text for the sentence */
   readonly cursor_index: number,
   /** Index we are currently labelling: selected index in the diff (todo: change to selected edge id?) */
   readonly selected_index: number | null,
+}
+
+export interface AppState {
+  /** The parallel corpus */
+  readonly graphs: Record<string, GraphState>,
+  /** The current graph */
+  readonly current: string,
+  /** If the last target text edit wasn't into the main editor itself */
+  readonly needs_full_update: boolean,
+  /** Positions of divs in the ladder graph diagram */
+  readonly positions: PosDict,
   /** Navigation request */
   readonly navigation: Navigation,
   /** The whole taxonomy */
@@ -35,7 +42,9 @@ export interface AppState {
   /** Sync request */
   readonly sync_request: boolean
   /** Synced */
-  readonly synced: boolean
+  readonly synced: boolean,
+  /** Edit source text */
+  readonly ro_source: boolean,
 }
 
 const backend = 'https://ws.spraakbanken.gu.se/ws/sparv/swell/'
@@ -44,6 +53,7 @@ let reloads = 0
 
 export function setup_sync(store: Store<AppState>): (() => void)[] {
   const i = reloads++
+  console.log('sync setup')
   const post = Utils.debounce(1000, (state: any) => {
     const {login_state, login, synced} = store.get()
     if (login_state == 'in' && synced) {
@@ -103,27 +113,42 @@ export function ForLocalStorage(store: Store<AppState>) {
 }
 
 export function Essentials(store: Store<AppState>) {
-  return store
-    .pick('selected_index')
-    .merge(
-      store.relabel({
-        graph: store.at('graph').at('now')
-      }))
+  const graphs = store.at('graphs')
+  return store.relabel({
+    current: store.at('current'),
+    graphs: Utils.value_lens(
+      store.at('graphs'),
+      Lens.lens(
+        (gs: GraphState) =>  ({...gs, graph: gs.graph.now}),
+        (gs: GraphState, gg) => ({...gs, graph: {...gs.graph, now: gg.graph}}))
+    )
+  })
 }
+
+export function init_graph_state(text?: string): GraphState {
+  return {
+    graph: Undo.init(G.init(text || '')),
+    cursor_index: 0,
+    selected_index: null,
+  }
+}
+
 
 export function init(text?: string): AppState {
   return {
-    graph: Undo.init(G.init(text || '')),
+    graphs: {
+      example: init_graph_state(text || '')
+    },
+    current: 'example',
     needs_full_update: true,
     positions: {},
-    cursor_index: 0,
-    selected_index: null,
     navigation: 'stay',
     taxonomy,
     login: {user: '', password: ''},
     login_state: 'out',
     sync_request: false,
-    synced: false
+    synced: false,
+    ro_source: false
   }
 }
 
@@ -134,9 +159,23 @@ export interface Diffs {
   readonly rich_diff: RichDiff[],
 }
 
+export const current_lens: Lens<AppState, GraphState> =
+  Lens.lens(
+    state => state.graphs[state.current],
+    (state, st) => ({...state, graphs: {...state.graphs, [state.current]: st}}))
+
+export function current(store: Store<AppState>): Store<GraphState> {
+  return store.via(current_lens)
+}
+
+export function current_state(state: AppState): GraphState {
+  return current_lens.get(state)
+}
+
 export function calculate_diffs(state: AppState): Diffs {
-  const g = state.graph.now
-  const graph = G.subgraph(g, G.sentence(g, state.cursor_index))
+  const st = current_state(state)
+  const g = st.graph.now
+  const graph = G.subgraph(g, G.sentence(g, st.cursor_index))
   const diff = G.calculate_diff(graph)
   return {diff, rich_diff: R.enrichen(graph, diff)}
 }
@@ -234,8 +273,4 @@ export const prefixMatches =
 export const exactMatches =
   (prefix: string, t: Taxonomy) =>
   t.filter(e => exactMatch(prefix, e.code))
-
-export function select_index(store: Store<AppState>, selected_index: number | null) {
-  store.update({selected_index})
-}
 

@@ -50,14 +50,15 @@ export function App(store: Store<AppState>) {
     Model.setup_sync(store)
 
     const storage_key = 'state'
-    Model.ForLocalStorage(store).storage_connect(storage_key)
+    Model.ForLocalStorage(store).storage_connect(storage_key, item => item.login_state != 'anonymous')
     global.reset = (text: string) => {
       store.set(Model.init(text))
       localStorage.removeItem(storage_key)
     }
   }
 
-  const undo_graph = store.at('graph')
+  const current = Model.current(store)
+  const undo_graph = current.at('graph')
   const graph = undo_graph.at('now')
 
   const undo = () => { undo_graph.modify(Undo.undo); full_view_update() }
@@ -71,15 +72,32 @@ export function App(store: Store<AppState>) {
   }
   console.log('debug', debug)
 
-  const {cm: cm_orig, vn: vn_orig} = CM({readOnly: true})
+  const needs_full_update = store.at('needs_full_update')
+  const with_full_update = (cb: () => void) => store.transaction(() => {
+    cb()
+    full_view_update()
+    // needs_full_update.set(true)
+  })
+
   const {cm: cm_main, vn: vn_main} = CM({extraKeys: history_keys})
+  const {cm: cm_orig, vn: vn_orig} = CM({readOnly: store.get().ro_source})
+  store.at('ro_source').ondiff(ro => cm_orig.setOption('readOnly', ro))
+
+  // Utils.debounce(1000, () => {
+  cm_orig.on('change', (_, change) => {
+    if (change.origin != 'setValue' && !store.get().ro_source) {
+      with_full_update(() => {
+        current.set(Model.init_graph_state(cm_orig.getDoc().getValue()))
+      })
+    }
+  })
+
   // const {cm: cm_diff, vn: vn_diff} = CM({readOnly: true})
   // const {cm: cm_xml, vn: vn_xml} = CM({lineWrapping: false, mode: 'xml', extraKeys: history_keys})
-  const needs_full_update = store.at('needs_full_update')
 
   const navigation = store.at('navigation')
-  const selected_index = store.at('selected_index')
-  const ci = store.at('cursor_index')
+  const selected_index = current.at('selected_index')
+  const ci = current.at('cursor_index')
   function update_cursor_index() {
     const g = graph.get()
     const text = G.target_text(g)
@@ -136,10 +154,12 @@ export function App(store: Store<AppState>) {
     const g = graph.get()
     const text = G.target_text(g)
     const cursor = cm_main.getDoc().getCursor()
+    const orig_cursor = cm_orig.getDoc().getCursor()
     const target_text = G.target_text(g)
     cm_orig.getDoc().setValue(G.source_text(g))
     cm_main.getDoc().setValue(target_text.slice(0, target_text.length - 1)) // minus last token
     cm_main.getDoc().setSelection(cursor, cursor)
+    cm_orig.getDoc().setSelection(orig_cursor, orig_cursor)
     cm_main.refresh()
     cm_orig.refresh()
     // increment timestamp?
@@ -152,12 +172,6 @@ export function App(store: Store<AppState>) {
         with_full_update(() => Model.load_example(undo_graph))
       }
     }
-  })
-
-  const with_full_update = (cb: () => void) => store.transaction(() => {
-    cb()
-    full_view_update()
-    // needs_full_update.set(true)
   })
 
   cm_main.focus()
@@ -257,7 +271,7 @@ export function App(store: Store<AppState>) {
       cm_main.getDoc().setValue(lhs.slice(0, lhs.length - 1))
       needs_full_update.set(true)
     } else if (lhs != rhs) {
-      log("Editor and internal state out of sync:", {lhs, rhs})
+      log("Editor and internal state out of sync:", Utils.show({lhs, rhs}))
       log('Doing full update:')
       needs_full_update.set(true)
     }

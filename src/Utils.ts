@@ -564,6 +564,10 @@ export function record_map<A, B>(x: Record<string, A>, k: (a: A, id: string) => 
   return out
 }
 
+export function value_lens<A, B>(store: Store<Record<string, A>>, lens: Lens<A | undefined, B>): Store<Record<string, B>> {
+  return store.via(Lens.lens(ka => record_map(ka, a => lens.get(a)), (ka, kb) => record_map(kb, (b, k) => lens.set(ka[k], b) as A)))
+}
+
 export function record_filter<A>(x: Record<string, A>, k: (a: A, id: string) => boolean): Record<string, A> {
   const out = {} as Record<string, A>
   record_forEach(x, (a, id) => k(a, id) && (out[id] = a))
@@ -640,10 +644,12 @@ export function store_join(store: Store<string[]>): Store<string> {
 export function POST(url: string, data: any, k: (response: any) => void): void {
   const r = new XMLHttpRequest()
   r.onreadystatechange = () => {
+    console.log('POST reply', r.response, r)
     if (r.readyState == 4 && r.status == 200) {
       k(r.response)
     }
   }
+  console.log('makign request')
   r.open("POST", url, true)
   r.setRequestHeader('Content-Type', 'application/json')
   r.send(JSON.stringify(data))
