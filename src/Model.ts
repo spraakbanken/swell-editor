@@ -40,7 +40,10 @@ export interface AppState {
 
 const backend = 'https://ws.spraakbanken.gu.se/ws/sparv/swell/'
 
+let reloads = 0
+
 export function setup_sync(store: Store<AppState>): (() => void)[] {
+  const i = reloads++
   const post = Utils.debounce(1000, (state: any) => {
     const {login_state, login, synced} = store.get()
     if (login_state == 'in' && synced) {
@@ -51,7 +54,7 @@ export function setup_sync(store: Store<AppState>): (() => void)[] {
           pw: login.password,
           state
         },
-        (r: any) => console.log(r))
+        (r: any) => console.log({i}, r))
      }
   })
   return [

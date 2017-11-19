@@ -32,37 +32,31 @@ import * as Utils from "./Utils"
 
 import { Store, Lens, Undo } from "reactive-lens"
 
-const global = window as any
-global.Model = Model
-global.G = G
-global.R = R
-global.D = D
-global.T = T
-global.Utils = Utils
-global.Lens = Lens
-global.Undo = Undo
-global.Store = Store
 
 export function App(store: Store<AppState>) {
-  global.store = store
-  global.reset = (text: string) => {
-    store.set(Model.init(text))
-  }
-  const {view, services} = Controller(store)
-  return {
-    view,
-    services: [
-      ...Model.setup_sync(store),
-      Model.ForLocalStorage(store).storage_connect(),
-      ...services
-      // store.location_connect(to_hash, from_hash),
-      // store.on(x => console.log(JSON.stringify(x, undefined, 2))),
-    ]
-  }
-}
+  {
+    const global = window as any
+    global.Model = Model
+    global.G = G
+    global.R = R
+    global.D = D
+    global.T = T
+    global.Utils = Utils
+    global.Lens = Lens
+    global.Undo = Undo
+    global.Store = Store
+    global.store = store
 
-export function Controller(store: Store<AppState>): {services: (() => void)[], view: () => VNode} {
-  const services = [] as (() => void)[]
+    Model.setup_sync(store)
+
+    const storage_key = 'state'
+    Model.ForLocalStorage(store).storage_connect(storage_key)
+    global.reset = (text: string) => {
+      store.set(Model.init(text))
+      localStorage.removeItem(storage_key)
+    }
+  }
+
   const undo_graph = store.at('graph')
   const graph = undo_graph.at('now')
 
@@ -90,58 +84,52 @@ export function Controller(store: Store<AppState>): {services: (() => void)[], v
     const g = graph.get()
     const text = G.target_text(g)
     const cursor = cm_main.getDoc().getCursor()
-    try {
-      const i = T.token_at(G.target_texts(g), cm_main.getDoc().indexFromPos(cursor)).token
-      if (ci.get() != i) {
-        ci.set(i)
-      }
-    } catch (e) {
-      console.debug(e)
+    const i = T.token_at(G.target_texts(g), cm_main.getDoc().indexFromPos(cursor)).token
+    if (ci.get() != i) {
+      ci.set(i)
     }
   }
   cm_main.on('cursorActivity', () => update_cursor_index())
-  services.push(
-    navigation.ondiff(nav => navigation.transaction(() => {
-      const {diff} = Model.calculate_diffs(store.get())
-      const si = selected_index.get()
-      if (nav != 'stay') {
-        navigation.set('stay')
-      }
-      if (si != null) {
-        if (nav == 'next') {
-          const ni = D.next(diff, si)
-          ni != null && selected_index.set(ni)
-          if (ni == null) {
-            const g = graph.get()
-            const {end} = G.target_sentence(g, ci.get())
-            if (end + 1 < G.target_texts(g).length) {
-              ci.set(end + 1)
-              selected_index.set(0)
-            }
-          }
-        }
-        if (nav == 'prev') {
-          const pi = D.prev(diff, si)
-          pi != null && selected_index.set(pi)
-          if (pi == null) {
-            const g = graph.get()
-            const {begin} = G.target_sentence(g, ci.get())
-            if (begin - 1 >= 0) {
-              ci.set(begin - 1)
-              selected_index.set(Model.calculate_diffs(store.get()).diff.length - 2)
-            }
+  navigation.ondiff(nav => navigation.transaction(() => {
+    const {diff} = Model.calculate_diffs(store.get())
+    const si = selected_index.get()
+    if (nav != 'stay') {
+      navigation.set('stay')
+    }
+    if (si != null) {
+      if (nav == 'next') {
+        const ni = D.next(diff, si)
+        ni != null && selected_index.set(ni)
+        if (ni == null) {
+          const g = graph.get()
+          const {end} = G.target_sentence(g, ci.get())
+          if (end + 1 < G.target_texts(g).length) {
+            ci.set(end + 1)
+            selected_index.set(0)
           }
         }
       }
-    })),
-    ci.ondiff(() => {
-      const {diff} = Model.calculate_diffs(store.get())
-      const si = selected_index.get()
-      if (si != null && si >= diff.length) {
-        selected_index.set(null)
+      if (nav == 'prev') {
+        const pi = D.prev(diff, si)
+        pi != null && selected_index.set(pi)
+        if (pi == null) {
+          const g = graph.get()
+          const {begin} = G.target_sentence(g, ci.get())
+          if (begin - 1 >= 0) {
+            ci.set(begin - 1)
+            selected_index.set(Model.calculate_diffs(store.get()).diff.length - 2)
+          }
+        }
       }
-    })
-  )
+    }
+  }))
+  ci.ondiff(() => {
+    const {diff} = Model.calculate_diffs(store.get())
+    const si = selected_index.get()
+    if (si != null && si >= diff.length) {
+      selected_index.set(null)
+    }
+  })
 
   /** Updates all CM views, run this when the state is completely new */
   function full_view_update() {
@@ -158,15 +146,13 @@ export function Controller(store: Store<AppState>): {services: (() => void)[], v
     needs_full_update.set(false)
   }
 
-  services.push(
-    store.at('login_state').ondiff(state => {
-      if (state == 'anonymous') {
-        if (cm_orig.getDoc().getValue() != Model.example_sentence) {
-          with_full_update(() => Model.load_example(undo_graph))
-        }
+  store.at('login_state').ondiff(state => {
+    if (state == 'anonymous') {
+      if (cm_orig.getDoc().getValue() != Model.example_sentence) {
+        with_full_update(() => Model.load_example(undo_graph))
       }
-    })
-  )
+    }
+  })
 
   const with_full_update = (cb: () => void) => store.transaction(() => {
     cb()
@@ -306,15 +292,12 @@ export function Controller(store: Store<AppState>): {services: (() => void)[], v
     })
   })
 
-  services.push(needs_full_update.ondiff(v => v && full_view_update()))
+  needs_full_update.ondiff(v => v && full_view_update())
 
   const cms = {vn_orig, vn_main}
 
   return {
-    services,
-    view: function partial_update_view() {
-      return View(store, Model.calculate_diffs(store.get()), cms)
-    }
+    view: () => View(store, Model.calculate_diffs(store.get()), cms)
   }
 }
 

@@ -72,6 +72,8 @@ function LabelEditor(store: Store<string[]>, rest: Store<{navigation: Model.Navi
         if (e.code == 'Tab') {
           navigation.set(e.shiftKey ? 'prev' : 'next')
           e.preventDefault()
+        } else if (e.code == 'Escape') {
+          // unselect index
         }
         // console.log(e.code, e.charCode, e.keyCode, e.shiftKey)),
       }),
@@ -247,7 +249,7 @@ export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[], tax
     S.styles({userSelect: 'none'})
   )
 
-  if (selected_index != null) {
+  if (selected_index != null && selected_index < rich_diff.length) {
     // If this is the selected edge, instead add the component for editing the label set
     // NB: TODO: Add Undo functionality to labels
     out = div(

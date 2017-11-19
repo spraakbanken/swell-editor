@@ -17,11 +17,11 @@ csstips.setupPage('#top')
 
 // || "En dag jag vaknade när larmet på min telefon ringde. De väder var inte fint."
 
-const store = Store.init(Model.init(''))
+let store = Store.init(Model.init(''))
 const root = document.getElementById('root') as HTMLElement
 
 const patcher = setup(patch, root)
-let off = attach(patcher, store, App.App)
+attach(patcher, store, App.App)
 
 declare const module: any;
 declare const require: any;
@@ -32,8 +32,9 @@ if (Debug) {
     module.hot.accept('./App.ts', (_: any) => {
       try {
         const NewApp = require('./App.ts').App
-        off()
-        off = attach(patcher, store, NewApp)
+        // create a new store with the same state
+        store = Store.init(store.get())
+        attach(patcher, store, NewApp)
       } catch (e) {
         console.error(e)
       }
