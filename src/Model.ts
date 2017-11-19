@@ -120,7 +120,7 @@ export function Essentials(store: Store<AppState>) {
       store.at('graphs'),
       Lens.lens(
         (gs: GraphState) =>  ({...gs, graph: gs.graph.now}),
-        (gs: GraphState, gg) => ({...gs, graph: {...(gs ? (gs.graph || {}) : {}), now: gg.graph}}))
+        (gs: GraphState, gg) => ({...gs, graph: ((gs && gs.graph) ? {...gs.graph, now: gg.graph} : Undo.init(gg.graph))}))
     )
   })
 }
