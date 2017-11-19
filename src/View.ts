@@ -1,131 +1,72 @@
-import * as CodeMirror from "codemirror"
-import * as Spans from "./Spans"
-import * as AppTypes from "./AppTypes"
-import * as Classes from './Classes'
-import * as ViewDiff from "./ViewDiff"
-import * as Positions from "./Positions"
-import * as Snabbdom from "./Snabbdom"
 import * as typestyle from "typestyle"
-
-import { tag, div, span, checkbox, wrapCM } from "./Snabbdom"
+import { ViewDiff } from "./ViewDiff"
+import * as Classes from './Classes'
 import { VNode } from "snabbdom/vnode"
-import { AppState } from './AppTypes'
+import { AppState, Diffs } from './Model'
+import * as M from './Model'
+import * as Utils from './Utils'
+import { tag, Content as S } from "snabbis"
+import { CatchSubmit, InputField, button, div, span, table, tbody, tr, td, select } from "./Snabbdom"
 
-export interface ViewParts {
-  cm_orig: CodeMirror.Editor,
-  cm_main: CodeMirror.Editor,
-  cm_diff: CodeMirror.Editor,
-  cm_xml: CodeMirror.Editor,
-  semi_rich_diff: Spans.SemiRichDiff[],
-  state: AppState,
-  selected_labels: string[],
-  set_show_xml: (b: boolean) => void,
-  select_index: (span_index: number | null) => void,
-  ladder_keydown: (evt: KeyboardEvent) => void,
+import { Store, Lens } from "reactive-lens"
+
+export interface CodeMirrors {
+  vn_orig: VNode,
+  vn_main: VNode,
+  // vn_diff: VNode,
+  // vn_xml:  VNode,
 }
 
-const noborderfocus = typestyle.style({outline: '0px solid transparent'})
-
-const table = tag('table')
-const tbody = tag('tbody')
-const tr = tag('tr')
-const td = tag('td')
-
-const view = (parts: ViewParts, ladder: VNode) =>
-  div(Classes.MainStyle, {}, typestyle.style({padding: '10px'}))(
-    div(Classes.SideBySide)(
-      div('cm_orig')(
-        div(Classes.Caption)('Source text'),
-        wrapCM(parts.cm_orig, Classes.TextEditor, Classes.Editor),
-      ),
-      div('cm_main')(
-        div(Classes.Caption)('Normalised text'),
-        wrapCM(parts.cm_main, Classes.TextEditor, Classes.Editor),
-      ),
-      div('cm_diff')(
-        div(Classes.Caption)('Changes'),
-        wrapCM(parts.cm_diff, Classes.TextEditor, Classes.Editor),
-      ),
-    ),
-    div(Classes.Vertical, {
-      on: {
-        keydown: parts.ladder_keydown,
-        blur: (_: Event) => {
-          console.log('blur')
-          parts.select_index(-1)
-        }
-      },
-      attrs: {
-        tabIndex: -1
-      }
-    }, noborderfocus)(
-      div(Classes.Caption)('Alignment of source text and normalised text'),
-      ladder
-    ),
-    parts.state.selected_index == null ? null :
-    table(Classes.Vertical, {}, typestyle.style({'background': '#333'}))(
-      tbody()(
-        tr('', {attrs: {colspan: 2}})(
-          td(typestyle.style({'color': '#eee'}))(
-            span()(parts.state.current_prefix + '|'))),
-        ...parts.state.taxonomy.map(e => {
-          const cls = [] as string[]
-          const active = parts.selected_labels.some(l => l == e.code)
-          if (active) {
-            cls.push(typestyle.style({'color': 'orange'}))
-          } else {
-            cls.push(typestyle.style({'color': '#ccc'}))
-          }
-
-          if (parts.state.current_prefix.length > 0) {
-            if (AppTypes.prefixOf(parts.state.current_prefix, e.code)) {
-              cls.push(typestyle.style({'color': 'yellow !important'}))
-            } else {
-              if (active) {
-                cls.push(typestyle.style({'color': '#ddd !important'}))
-              } else {
-                cls.push(typestyle.style({'color': '#999 !important'}))
-              }
-            }
-          } else {
-          }
-          return tr('', {}, ...cls)(td()(e.code), td()(e.description))
-        })
-      )
-    ),
-    div()(
-      span(Classes.FlushRight)(
-        checkbox(parts.state.show_xml, parts.set_show_xml),
-        span()('Show XML')
-      ),
-      (parts.state.show_xml || null) &&
-      div('cm_xml')(
-        div(Classes.Caption)('XML representation'),
-        // someone else has put the right XML into the editor:
-        wrapCM(parts.cm_xml, Classes.CodeEditor, Classes.Editor)
-      )
-    )
+export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VNode => {
+  const login = store.at('login')
+  const login_state = store.at('login_state')
+  const header = tag('h3',
+    'Normaliseringseditorsprototyp',
+    S.on('click')(_ => store.set(M.init())),
+    S.classed(Classes.Pointer)
   )
-
-
-export function setup(root_element: HTMLElement): (parts: ViewParts) => void {
-  while (root_element.lastChild) {
-    root_element.removeChild(root_element.lastChild)
-  }
-
-  const container = document.createElement('div')
-  root_element.appendChild(container)
-  let vnode = Snabbdom.patch(container, div()())
-  let pos_dict = Positions.init_pos_dict()
-
-  return (parts: ViewParts) => {
-    ViewDiff.draw_diff(parts.semi_rich_diff, parts.cm_diff)
-    typestyle.forceRenderStyles()
-    do {
-      pos_dict.modified = false
-      const ladder = ViewDiff.ladder_diff(parts.semi_rich_diff, pos_dict, parts.state.selected_index, parts.select_index)
-      vnode = Snabbdom.patch(vnode, view(parts, ladder))
-    } while (pos_dict.modified)
+  if (login_state.get() == 'out') {
+    return div(
+      S.classed(Classes.MainStyle, typestyle.style({padding: '10px'})),
+      header,
+      'you need to login',
+      CatchSubmit(
+        () => login_state.set('in'),
+        InputField(login.at('user')),
+        InputField(login.at('password'), S.attrs({'type': 'password'})),
+        button('login', () => login_state.set('in'))
+      ),
+      tag('hr'),
+      button('try an example anyway', () => {
+        login_state.set('anonymous')
+      })
+    )
+  } else {
+    return div(
+      S.classed(Classes.MainStyle, typestyle.style({padding: '10px'})),
+      header,
+      tag('div', cms.vn_orig, S.classed(Classes.TextEditor, Classes.Editor)),
+      ViewDiff(
+        M.current(store).pick('graph', 'selected_index').merge(store.pick('positions', 'navigation')),
+        diffs.rich_diff,
+        store.get().taxonomy
+      ),
+      tag('div', cms.vn_main, S.classed(Classes.TextEditor, Classes.Editor)),
+      tag('hr'),
+      login_state.get() == 'anonymous'
+      ?
+      [
+        button('back to login menu', () => login_state.set('out')),
+      ]
+      :
+      [
+        button('logout', () => login_state.set('out')),
+        button('sync', () => store.at('sync_request').set(true)),
+        select(
+          store.at('current'),
+          store.at('graphs').via(Lens.lens(o => Object.keys(o).sort(), (s, t) => Utils.raise('getter'))),
+          (k: string) => tag('option', k))
+      ]
+    )
   }
 }
-

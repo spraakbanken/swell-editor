@@ -4,12 +4,14 @@
         "sourceMap": false,
         "noImplicitAny": true,
         "strict": true,
-        "module": "es6",
+        "module": "commonjs",
         "moduleResolution": "node",
         "allowUnreachableCode": true,
-        "target": "es5"
+        "target": "es6",
+        "noEmitOnError": true
     },
-    "files": [
-        "./src/**/*"
+    "include": [
+        "./src/*",
+        "./test/*"
     ]
 }

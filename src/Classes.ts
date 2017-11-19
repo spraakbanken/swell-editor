@@ -62,7 +62,8 @@ export const FlushRight = style(debug_name('FlushRight'),
 )
 
 export const Vertical = style(debug_name('Vertical'),
-  csstips.vertical
+  csstips.vertical,
+  csstips.centerJustified,
 )
 
 export const MainStyle = style(debug_name('MainStyle'), {
@@ -72,17 +73,18 @@ export const MainStyle = style(debug_name('MainStyle'), {
 
 export const Editor = style(debug_name('Editor'), {
   $nest: {
-    '& > .CodeMirror': {
+    '& .CodeMirror': {
       border: '1px solid #ddd',
       height: '300px',
       minWidth: '250px',
+      lineHeight: '1.5em',
     }
   }
 })
 
 export const TextEditor = style(debug_name('TextEditor'), {
   $nest: {
-    '& > .CodeMirror': {
+    '& .CodeMirror': {
       fontFamily: "'Lato', sans-serif",
       fontSize: '15px'
     }
@@ -91,7 +93,7 @@ export const TextEditor = style(debug_name('TextEditor'), {
 
 export const CodeEditor = style(debug_name('CodeEditor'), {
   $nest: {
-    '& > .CodeMirror': {
+    '& .CodeMirror': {
       fontFamily: "'Consolas', monospace",
       fontSize: '15px'
     }
@@ -105,8 +107,16 @@ export const Caption = style(debug_name('Caption'), {
 
 export const LadderTable = style(
   debug_name('LadderTable'), {
-  height: '120px',
+  minHeight: '120px',
   padding: '10px',
+  width: [
+    '-webkit-fit-content',
+    'fit-content',
+  ]
+})
+
+export const FitContent = style(
+  debug_name('FitContent'), {
   width: [
     '-webkit-fit-content',
     'fit-content',
@@ -150,7 +160,9 @@ export const Row = style(debug_name('Row'), csstips.horizontal, csstips.horizont
 export const Column = style(debug_name('Column'), csstips.content, csstips.vertical, csstips.betweenJustified)
 
 export const Pointer = style(debug_name('Pointer'),
-  { cursor: 'pointer' }
+  { cursor: 'pointer' ,
+    userSelect: 'none'
+  }
 )
 
 /*

@@ -1,23 +1,275 @@
-import * as Spans from "./Spans"
+import { Taxonomy } from "./Model"
+import * as Model from "./Model"
+import { Token } from "./Token"
+import { RichDiff } from './RichDiff'
+import * as R from './RichDiff'
+import { Graph, Edge } from "./Graph"
+import * as G from "./Graph"
+
+import { Store, Lens, Undo } from "reactive-lens"
+
+import * as C from './Classes'
+import * as csstips from "csstips"
+import * as Positions from "./Positions"
+
+import * as Snabbdom from "./Snabbdom"
+import { CatchSubmit, InputField, button, div, span, on } from "./Snabbdom"
+
+import { log } from './dev'
+import { PosDict } from "./Positions"
+import { style } from "typestyle"
+import { tag, VNode, Content as S } from "snabbis"
+
 import * as Utils from "./Utils"
 import { TokenDiff }  from "./Utils"
-import * as Positions from "./Positions"
-import * as Classes from './Classes'
-import { div, VNode, h, on, withClass } from "./Snabbdom"
-import * as Snabbdom from "./Snabbdom"
-import * as csstips from "csstips"
-import { style } from "typestyle"
-import { log } from './dev'
 
-function table(cols: VNode[][], classes: string[] = []): VNode {
-  return div(Classes.Row, {}, ...classes)(
-    ...cols.map(col => div(Classes.Column)(...col)))
+export interface ViewDiffState {
+  readonly graph: Undo<Graph>,
+  readonly positions: PosDict,
+  readonly selected_index: number | null,
+  readonly navigation: Model.Navigation,
 }
 
-// todo: keys on VNodes
+interface Column {
+  readonly up: VNode[],
+  readonly mid: VNode[],
+  readonly down: VNode[],
+  readonly ix: number
+}
 
-const span = (t ?: string, cls: string[] = []) =>
-  Snabbdom.span(Classes.InnerCell, {}, ...cls)(...(t ? [t] : []))
+type Link = {
+  readonly from: string,
+  readonly to: string
+}
+
+function Link(from: string, to: string): Link {
+  return {from, to}
+}
+
+const orange = style({color: 'orange'})
+const redBorder = style({
+  borderColor: 'blue',
+  fontWeight: 'bold'
+})
+const red = style({
+  color: 'red',
+})
+
+function LabelEditor(store: Store<string[]>, rest: Store<{navigation: Model.Navigation, selected_index: number | null}>, taxonomy: Taxonomy): VNode {
+  // TODO: fiddle with focus change too:
+  // see Diff.next and Diff.prev (but they should be adapted to go over sentence boundaries)
+  let off = undefined as undefined | (() => void)
+  const navigation = rest.at('navigation')
+  return div(
+    S.styles({marginTop: '2px', marginBottom: '4px'}),
+    S.classed(C.BorderCell),
+    S.on('click')((e: MouseEvent) => {
+      // if we click anywhere but here we should deselect. so there's another listener somewhere
+      e.stopPropagation()
+    }),
+    div(
+      S.on('keydown')((e: KeyboardEvent) => {
+        if (e.code == 'Tab') {
+          navigation.set(e.shiftKey ? 'prev' : 'next')
+          e.preventDefault()
+        } else if (e.code == 'Escape') {
+          // unselect index
+        }
+        // console.log(e.code, e.charCode, e.keyCode, e.shiftKey)),
+      }),
+      CatchSubmit(
+        () => navigation.set('next'),
+        InputField(
+          Utils.store_join(store).via(Lens.iso(s => s.toUpperCase(), s => s.toUpperCase())),
+          S.attrs({autofocus: true}),
+          S.hook({
+            insert: (vn) => {
+              const elt = vn.elm as HTMLInputElement
+              elt.focus()
+              if (off) { off() }
+              off = rest.at('selected_index').ondiff(() => elt.focus())
+            },
+            remove: () => off && off()
+          })
+         )
+      ),
+    ),
+    div(
+      S.styles({width: '160px'}),
+      S.classed(style(csstips.horizontallySpaced('5px'))),
+      taxonomy.map(t => {
+        const tstore = Utils.array_store_key(store, t.code)
+        const active = tstore.get()
+        return tag('span',
+          S.styles({display: 'inline-block'}),
+          t.code + ' ',
+          S.classed(C.Pointer),
+          S.on('click')(() => tstore.modify(x => !x)),
+          S.classes({[orange]: tstore.get()}),
+        )
+      }),
+      tag('a', 'info', S.styles({float: 'right'}),
+        S.attrs({
+          href: 'https://spraakbanken.gu.se/eng/swell/swell_codebook',
+          target: '_blank'
+        }))
+    )
+  )
+}
+
+export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[], taxonomy: Taxonomy): VNode {
+
+  const select_index = (ix: number | null) => S.on('click')(e => {
+    // store.at('selected_index').modify(ix_now => ix_now === ix ? null : ix)
+    store.at('selected_index').set(ix)
+    e.stopPropagation()
+  })
+
+  const positions = store.at('positions')
+  const track = (id: string, vnode: VNode) => {
+    return Positions.posid(id, positions, vnode)
+  }
+  const links = [] as Link[]
+  const columns = [] as Column[]
+  let column: Column
+  let up: VNode[]
+  let mid: VNode[]
+  let down: VNode[]
+  const new_column = (ix: number) => {
+    up = []
+    mid = []
+    down = []
+    column = {up, mid, down, ix}
+    columns.push(column)
+  }
+
+  const new_source = (s: Token, diff: TokenDiff, edge_id: string) => {
+    up.push(track(s.id, span(deletes(diff), S.classed(C.InnerCell))))
+    links.push(Link(s.id, edge_id))
+  }
+  const new_target = (t: Token, diff: TokenDiff, edge_id: string) => {
+    down.push(track(t.id, span(inserts(diff), S.classed(C.InnerCell))))
+    links.push(Link(edge_id, t.id))
+  }
+  const {selected_index} = store.get()
+  const edges_done = new Set<string>()
+  const edges = store.get().graph.now.edges
+  const new_label = (edge_id: string, diff_index: number) => {
+    if (!edges_done.has(edge_id)) {
+      edges_done.add(edge_id)
+      let vn: VNode
+      if (false && diff_index === selected_index) {
+        // If this is the selected edge, instead add the component for editing the label set
+        // NB: TODO: Add Undo functionality to labels
+        vn = LabelEditor(
+          G.label_store(store.at('graph').at('now'), edge_id),
+          store.pick('navigation', 'selected_index'),
+          taxonomy)
+      } else {
+        vn = div(
+          S.classed(C.Vertical),
+          span(
+            edges[edge_id].labels.map(
+              code => span(
+                code + ' ',
+                S.classes({
+                  [red]: diff_index !== selected_index && taxonomy.every(t => t.code != code)
+                })
+              )
+            ),
+            S.classed(C.BorderCell),
+            S.styles({height: 'min-content'}),
+            S.classes({[redBorder]: diff_index === selected_index})
+          )
+        )
+      }
+      mid.push(track(edge_id, vn))
+    }
+  }
+
+  rich_diff.forEach((d, ix) => {
+    new_column(ix)
+    switch(d.edit) {
+      case 'Edited':
+        d.source.map((s, i) => new_source(s, d.source_diffs[i], d.id))
+        new_label(d.id, ix)
+        d.target.map((t, i) => new_target(t, d.target_diffs[i], d.id))
+        return
+
+      case 'Dragged':
+        new_source(d.source, d.source_diff, d.id)
+        new_label(d.id, ix)
+        return
+
+      case 'Dropped':
+        new_label(d.id, ix)
+        new_target(d.target, d.target_diff, d.id)
+        return
+    }
+  })
+
+  const ladder = track('table', table(columns.map(({up: u, mid: m, down: d, ix}, i) => ({
+    snabbis: [
+      select_index(ix),
+      S.classed(C.Pointer)
+    ],
+    col: [
+      tag('div', S.classed(C.Cell), u.length != 0 ? u : tag('div', S.classed(C.InnerCell), '\u200b')),
+      tag('div', S.classed(C.Cell), m.length != 0 ? m : tag('div')),
+      tag('div', S.classed(C.Cell), d.length != 0 ? d : tag('div', S.classed(C.InnerCell), '\u200b')),
+    ]
+  })), [C.LadderTable, C.MainStyle]))
+
+  const pos_dict = store.get().positions
+  const svg = tag(
+    'svg',
+    S.classed(C.Width100Pct),
+    S.styles({height: '500px'}),
+    links.map(link => {
+      const top = pos_dict[link.from]
+      const bot = pos_dict[link.to]
+      if (!top || !bot) return;
+      const x1 = Positions.hmid(top)
+      const y1 = Positions.bot(top)
+      const x2 = Positions.hmid(bot)
+      const y2 = bot.top // Positions.top(bot)
+      const d = 25 * (-1 / (Math.abs(x1 - x2) + 1) + 1)
+      return tag('path',
+        S.attrs({
+          d: ['M', x1, y1, 'C', x1, y1 + d, x2, y2 - d, x2, y2].join(' '),
+        }),
+        S.classed(C.Path)
+      )
+    }).filter(x => x != null)
+  )
+
+  let out = div(
+    Positions.relative(ladder, svg, ['LadderRoot']),
+    // select_index(null),
+    S.styles({userSelect: 'none'})
+  )
+
+  if (selected_index != null && selected_index < rich_diff.length) {
+    // If this is the selected edge, instead add the component for editing the label set
+    // NB: TODO: Add Undo functionality to labels
+    out = div(
+      S.classed(style(csstips.horizontal)),
+      LabelEditor(
+        G.label_store(store.at('graph').at('now'), rich_diff[selected_index].id),
+        store.pick('navigation', 'selected_index'),
+        taxonomy),
+      out
+    )
+  }
+
+  return out
+}
+
+function table(cols: {col: VNode[], snabbis: S[]}[], classes: string[] = []): VNode {
+  return tag('div',
+    S.classed(C.Row, ...classes),
+    ...cols.map(col => tag('div', S.classed(C.Column), col.col, ...col.snabbis)))
+}
 
 const avg = (xs: number[]) => {
   if (xs.length == 0) {
@@ -27,140 +279,12 @@ const avg = (xs: number[]) => {
   }
 }
 
-type Link
-  = { type: 'segment', from: string, to: string }
-//  | { type: 'upper', from: string, converge: string }
-//  | { type: 'lower', to: string, converge: string }
-
-export function ladder_diff(
-    diff: Spans.SemiRichDiff[], pos_dict: Positions.PosDict,
-    selected_index: number | null,
-    select_index: (span_index: number) => void
-  ): VNode
-{
-  const links = [] as Link[]
-  const cols = [] as [VNode[], VNode[], VNode[]][]
-  const name = (vnode: VNode, prefix: string, i: number, j: number|undefined = undefined) => {
-    const key = prefix+i+(j == undefined ? '' : '.'+j)
-    return Positions.posid(key, pos_dict, on(vnode, {
-      mouseover(e: MouseEvent) {
-        log('over', key, e)
-      },
-      click(e: MouseEvent) {
-        log('click', key, e)
-      }
-    }))
-  }
-  const labels = {} as Record<string, boolean>
-  diff.map((d, i) => {
-    function elements(): [VNode | null, VNode | null, VNode | null] {
-      let mid = null
-      switch (d.edit) {
-        case 'Unchanged':
-          links.push({ type: 'segment', from: 'top'+i, to: 'bot'+i })
-          return [
-            name(span(d.source), 'top', i),
-            null,
-            name(span(d.source), 'bot', i)
-          ]
-        case 'Dragged':
-          links.push({type: 'segment', from: 'top'+i, to: d.join_id + '0'})
-          if (d.nullary) {
-            //Delete
-            mid = name(h('span', {classes: [Classes.BorderCell]}, d.labels.join(', ')), d.join_id, 0)
-          }
-          return [name(h('span', {classes: [Classes.InnerCell]}, deletes(d.source_diff)), 'top', i), mid, null]
-        case 'Dropped':
-          links.push({type: 'segment', to: 'bot'+i, from: d.join_id + '0'})
-          if (!labels[d.join_id]) {
-            labels[d.join_id] = true
-            mid = name(h('span', {classes: [Classes.BorderCell]}, d.labels.join(', ')), d.join_id, 0)
-          }
-          return [null, mid, name(h('span', {classes: [Classes.InnerCell]}, inserts(d.target_diff)), 'bot', i)]
-        default:
-          return d
-      }
-    }
-    function midsel(i: number, cd: Spans.SemiRichDiff) {
-      if (i == 1) {
-        if (selected_index != null) {
-          const sd = diff[selected_index]
-          const sj = (sd as any).join_id
-          const cj = (cd as any).join_id
-          console.log({i, selected_index, sj, cj})
-          if (sd && cj && sj == cj) {
-            return true
-          }
-        }
-      }
-      return false
-    }
-    const col = elements().map((x, i) => x == null ? [] : [
-      on(withClass((selected_index == d.span_index || midsel(i, d)) ? Classes.Selected : '', x), {
-        click(e: MouseEvent) {
-          if (d.span_index != null) {
-            select_index(d.span_index)
-          }
-        }
-      })
-    ]) as [VNode[], VNode[], VNode[]]
-    // If we are only doing drag or drop and previous did as well,
-    // we don't need to start a new column, we can just push onto its parts
-    let new_col = true
-    if (i > 0) {
-      const prev = diff[i-1]
-      // floats: drag, drop, insert, delete: can float into previous
-      if (d.edit != 'Unchanged' && prev.edit != 'Unchanged' && d.float && prev.float) {
-        new_col = false
-      }
-      // non-floats: edits. merge them unless they are Dropped followed by Dragged
-      if (d.edit != 'Unchanged' && prev.edit == d.edit && !d.float && !prev.float) {
-        new_col = false
-      }
-      if (prev.edit == 'Dragged' && d.edit == 'Dropped' && !d.float && !prev.float) {
-        new_col = false
-      }
-    }
-    if (new_col) {
-      cols.push(col)
-    } else {
-      col.map((e, i) => cols[cols.length-1][i].push(...e))
-    }
-  })
-  const ladder = Positions.posid('table', pos_dict, table(cols.map(([u, m, d], i) => [
-    h('div', {classes: [Classes.Cell]}, u.length == 0 ? [h('div', {classes: [Classes.InnerCell]}, '\u200b')] : u),
-    h('div', {classes: [Classes.Cell]}, m.length == 0 ? []                                                   : m),
-    h('div', {classes: [Classes.Cell]}, d.length == 0 ? [h('div', {classes: [Classes.InnerCell]}, '\u200b')] : d)
-  ]), [Classes.LadderTable, Classes.MainStyle]))
-
-  const svg = h('svg', {classes: [Classes.Width100Pct]}, links.map(link => {
-      if (link.type == 'segment') {
-        const top = pos_dict.dict[link.from]
-        const bot = pos_dict.dict[link.to]
-        if (!top || !bot) return;
-        const x1 = Positions.hmid(top)
-        const y1 = Positions.bot(top)
-        const x2 = Positions.hmid(bot)
-        const y2 = bot.top // Positions.top(bot)
-        const d = 25 * (-1 / (Math.abs(x1 - x2) + 1) + 1)
-        return h('path', {
-          attrs: {
-            d: ['M', x1, y1, 'C', x1, y1 + d, x2, y2 - d, x2, y2].join(' '),
-          },
-          classes: [Classes.Path]
-        })
-      }
-    }).filter(x => x != null)
-  )
-  return Positions.relative(ladder, svg, ['LadderRoot'])
-}
-
 const diff_to_spans = (rules: (string | null)[]) => (d: [number, string][]) =>
-  diff_helper(d, rules, (text, cls) => h('span', { classes: [cls] }, text))
+  diff_helper(d, rules, (text, cls) => tag('span', S.classed(cls), text))
 
-const inserts = diff_to_spans([null, '', Classes.Insert])
+const inserts = diff_to_spans([null, '', C.Insert])
 
-const deletes = diff_to_spans([Classes.Delete, '', null])
+const deletes = diff_to_spans([C.Delete, '', null])
 
 function diff_helper<A>(token_diff: [number, string][], rules: (string | null)[], cb: (text: string, className: string) => A): A[] {
   const out = [] as A[]
@@ -173,68 +297,3 @@ function diff_helper<A>(token_diff: [number, string][], rules: (string | null)[]
   return out
 }
 
-const diff_and_whitespace = (diff: TokenDiff) => {
-  if (diff.length == 0) {
-    return {diff, whitespace: ''}
-  } else {
-    const [type, string] = diff[diff.length - 1]
-    const [word, whitespace] = Utils.whitespace_split(string)
-    const init = diff.slice(0, diff.length-1)
-    if (word.length > 0) {
-      return {diff: [...init, [type, word]] as TokenDiff, whitespace}
-    } else {
-      return {diff: init, whitespace}
-    }
-  }
-}
-
-/** Draws a diff onto a code mirror */
-export const draw_diff = (diff: Spans.SemiRichDiff[], editor: CodeMirror.Editor) => editor.operation(() => {
-  const diff_doc = editor.getDoc()
-  diff_doc.setValue('')
-  diff_doc.getAllMarks().map((m) => m.clear())
-  function push(text: string, className: string = '') {
-  diff_doc.replaceSelection(text)
-    if (className) {
-      const end = diff_doc.getCursor()
-      const begin = diff_doc.posFromIndex(diff_doc.indexFromPos(end) - text.length)
-      diff_doc.markText(begin, end, {className})
-    }
-  }
-  function push_diff(token_diff: TokenDiff, className: string = '') {
-    diff_helper(token_diff, [' ' + Classes.Delete, '', ' ' + Classes.Insert], (text, cls) => push(text, className + cls))
-  }
-  const rename_map = {} as {[x: string]: string}
-  let i = 0
-  diff.map(d => {
-    if (d.edit == 'Dropped' && d.move) {
-      d.ids.map(id => id in rename_map || (rename_map[id] = ++i + ''))
-    }
-  })
-  const rename = (id: string) => rename_map[id] || '?'
-  diff.map(d => {
-    if (d.edit == 'Unchanged') {
-      push(d.source)
-    } else if (d.edit == 'Dropped') {
-      const m = diff_and_whitespace(d.target_diff.filter(([t, _]) => t != -1))
-      const cl = d.move ? Classes.Dropped : ''
-      push_diff(m.diff, cl)
-      if (cl != '') {
-        push(d.ids.map(rename).join(','), Classes.Subscript)
-      }
-      push(m.whitespace)
-    } else if (d.edit == 'Dragged') {
-      if (d.move) {
-        const m = diff_and_whitespace(d.source_diff.filter(([t, _]) => t != 1))
-        const cl = d.move ? Classes.Dragged : ''
-        push_diff(m.diff, cl)
-        if (cl != '') {
-          push(rename(d.id), Classes.Subscript)
-        }
-        push(m.whitespace)
-      }
-    } else {
-      push(d)
-    }
-  })
-})
