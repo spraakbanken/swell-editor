@@ -48,13 +48,13 @@ export interface AppState {
 }
 
 const backend = 'https://ws.spraakbanken.gu.se/ws/sparv/swell/'
+// const backend = 'http://127.0.0.1:8000/'
 
 let reloads = 0
 
 export function setup_sync(store: Store<AppState>): (() => void)[] {
   const i = reloads++
-  console.log('sync setup')
-  const post = Utils.debounce(1000, (state: any) => {
+  const post = Utils.debounce(1000, () => {
     const {login_state, login, synced} = store.get()
     if (login_state == 'in' && synced) {
       Utils.POST(
@@ -62,9 +62,9 @@ export function setup_sync(store: Store<AppState>): (() => void)[] {
         {
           user: login.user,
           pw: login.password,
-          state
+          state: StrippedEssentials(store)
         },
-        (r: any) => console.log({i}, r))
+        (r: any) => console.log({i}))
      }
   })
   return [
@@ -72,13 +72,16 @@ export function setup_sync(store: Store<AppState>): (() => void)[] {
     store.at('login_state').ondiff(login_state => {
       console.log({login_state})
       if (login_state == 'in') {
-        store.at('sync_request').set(true)
+        store.update({synced: false, sync_request: true})
+      }
+      if (login_state == 'out') {
+        store.set(init(''))
       }
     }),
     store.at('sync_request').ondiff(sync_request => {
       store.at('sync_request').set(false)
       const {login_state, login} = store.get()
-      console.log('sync_request', {sync_request})
+      console.log('sync_request', {sync_request, login_state})
       if (sync_request && login_state == 'in') {
         Utils.POST(
           backend + 'get',
@@ -88,7 +91,6 @@ export function setup_sync(store: Store<AppState>): (() => void)[] {
           },
           essentials => {
             const e = JSON.parse(essentials)
-            console.log({e})
             store.transaction(() => {
               Essentials(store).set(e)
               store.at('needs_full_update').set(true)
@@ -113,16 +115,22 @@ export function ForLocalStorage(store: Store<AppState>) {
 }
 
 export function Essentials(store: Store<AppState>) {
-  const graphs = store.at('graphs')
-  return store.relabel({
-    current: store.at('current'),
-    graphs: Utils.value_lens(
-      store.at('graphs'),
-      Lens.lens(
-        (gs: GraphState) =>  ({...gs, graph: gs.graph.now}),
-        (gs: GraphState, gg) => ({...gs, graph: ((gs && gs.graph) ? {...gs.graph, now: gg.graph} : Undo.init(gg.graph))}))
-    )
-  })
+  return store.pick('graphs', 'current')
+}
+
+export function StripGraphState(gs: GraphState) {
+  return {
+    ...gs,
+    graph: Undo.init(gs.graph.now)
+  }
+}
+
+export function StrippedEssentials(store: Store<AppState>) {
+  const e = Essentials(store).get()
+  return {
+    ...e,
+    graphs: Utils.record_map(e.graphs, StripGraphState)
+  }
 }
 
 export function init_graph_state(text?: string): GraphState {

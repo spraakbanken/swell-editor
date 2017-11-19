@@ -37,6 +37,25 @@ export const InputField = (store: Store<string>, ...bs: S[]) =>
 export const button = (caption: string, k: () => void, ...bs: S[]) =>
   tag('button', caption, S.on('click')(k), ...bs)
 
+export const select = (stored: Store<string>, keys: Store<string[]>, f: (key: string, index: number) => VNode) =>
+  tag('select',
+    S.hook({
+      insert(vn: VNode) {
+        stored.ondiff(current => {
+          if (vn.elm) {
+            const i = keys.get().indexOf(current);
+            (vn.elm as HTMLSelectElement).selectedIndex = i
+          }
+        })
+      }
+    }),
+    keys.get().map(f),
+    S.on('change')((e: Event) =>
+      stored.transaction(() => {
+        const i = (e.target as HTMLSelectElement).selectedIndex
+        stored.set(keys.get()[i])
+      })))
+
 export function checkbox(value: boolean, update: (new_value: boolean) => void): VNode {
   return tag('input',
     S.attrs({type: 'checkbox'}),

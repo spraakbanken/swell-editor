@@ -57,6 +57,15 @@ export function App(store: Store<AppState>) {
     }
   }
 
+  const needs_full_update = store.at('needs_full_update')
+  const with_full_update = (cb: () => void) => store.transaction(() => {
+    cb()
+    full_view_update()
+    // needs_full_update.set(true)
+  })
+
+  store.at('current').ondiff(() => needs_full_update.set(true))
+
   const current = Model.current(store)
   const undo_graph = current.at('graph')
   const graph = undo_graph.at('now')
@@ -72,14 +81,7 @@ export function App(store: Store<AppState>) {
   }
   console.log('debug', debug)
 
-  const needs_full_update = store.at('needs_full_update')
-  const with_full_update = (cb: () => void) => store.transaction(() => {
-    cb()
-    full_view_update()
-    // needs_full_update.set(true)
-  })
-
-  const {cm: cm_main, vn: vn_main} = CM({extraKeys: history_keys})
+    const {cm: cm_main, vn: vn_main} = CM({extraKeys: history_keys})
   const {cm: cm_orig, vn: vn_orig} = CM({readOnly: store.get().ro_source})
   store.at('ro_source').ondiff(ro => cm_orig.setOption('readOnly', ro))
 
@@ -102,9 +104,14 @@ export function App(store: Store<AppState>) {
     const g = graph.get()
     const text = G.target_text(g)
     const cursor = cm_main.getDoc().getCursor()
-    const i = T.token_at(G.target_texts(g), cm_main.getDoc().indexFromPos(cursor)).token
-    if (ci.get() != i) {
-      ci.set(i)
+    const character_offset = cm_main.getDoc().indexFromPos(cursor)
+    try {
+      const i = T.token_at(G.target_texts(g), character_offset).token
+      if (ci.get() != i) {
+        ci.set(i)
+      }
+    } catch (e) {
+      // ok
     }
   }
   cm_main.on('cursorActivity', () => update_cursor_index())
