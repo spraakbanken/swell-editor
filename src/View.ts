@@ -4,6 +4,7 @@ import * as Classes from './Classes'
 import { VNode } from "snabbdom/vnode"
 import { AppState, Diffs } from './Model'
 import * as M from './Model'
+import * as Utils from './Utils'
 import { tag, Content as S } from "snabbis"
 import { CatchSubmit, InputField, button, div, span, table, tbody, tr, td } from "./Snabbdom"
 
@@ -60,7 +61,16 @@ export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
       :
       [
         button('logout', () => login_state.set('out')),
-        button('sync', () => store.at('sync_request').set(true))
+        button('sync', () => store.at('sync_request').set(true)),
+        tag('select',
+          Utils.record_traverse(store.at('graphs').get(), (_g, k) =>
+            tag('option', k, S.attrs({value: k}))),
+          S.on('change')((e: Event) =>
+            store.transaction(() => {
+              const k = (e.target as HTMLSelectElement).value
+              store.at('current').set(k)
+              store.at('needs_full_update').set(true)
+            })))
       ]
     )
   }
