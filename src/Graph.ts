@@ -2,7 +2,6 @@
 
 Missing functions:
 
-    revert           // revert (i.e. undo) at a certain position
     auto_insert      // split prefix or suffixes token if they are the only change
     auto_revert      // split up edges into smaller pieces if there is no diff anymore
     invert           // swap source and target
