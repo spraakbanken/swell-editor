@@ -27,7 +27,6 @@ export interface ViewDiffState {
   readonly graph: Undo<Graph>,
   readonly positions: PosDict,
   readonly selected_index: number | null,
-  readonly navigation: Model.Navigation,
 }
 
 interface Column {
@@ -55,11 +54,10 @@ const red = style({
   color: 'red',
 })
 
-function LabelEditor(store: Store<string[]>, rest: Store<{navigation: Model.Navigation, selected_index: number | null}>, taxonomy: Taxonomy): VNode {
+function LabelEditor(store: Store<string[]>, Request: Model.Action, selected_index: Store<number | null>, taxonomy: Taxonomy): VNode {
   // TODO: fiddle with focus change too:
   // see Diff.next and Diff.prev (but they should be adapted to go over sentence boundaries)
   let off = undefined as undefined | (() => void)
-  const navigation = rest.at('navigation')
   return div(
     S.styles({marginTop: '2px', marginBottom: '4px'}),
     C.BorderCell,
@@ -70,15 +68,15 @@ function LabelEditor(store: Store<string[]>, rest: Store<{navigation: Model.Navi
     div(
       S.on('keydown')((e: KeyboardEvent) => {
         if (e.code == 'Tab') {
-          navigation.set(e.shiftKey ? 'prev' : 'next')
+          Request(e.shiftKey ? 'prev' : 'next')
           e.preventDefault()
         } else if (e.code == 'Escape') {
-          // unselect index
+          Request('unselect')
         }
         // console.log(e.code, e.charCode, e.keyCode, e.shiftKey)),
       }),
       CatchSubmit(
-        () => navigation.set('next'),
+        () => Request('next'),
         InputField(
           Utils.store_join(store).via(Lens.iso(s => s.toUpperCase(), s => s.toUpperCase())),
           S.attrs({autofocus: true}),
@@ -87,7 +85,7 @@ function LabelEditor(store: Store<string[]>, rest: Store<{navigation: Model.Navi
               const elt = vn.elm as HTMLInputElement
               elt.focus()
               if (off) { off() }
-              off = rest.at('selected_index').ondiff(() => elt.focus())
+              off = selected_index.ondiff(() => elt.focus())
             },
             remove: () => off && off()
           })
@@ -117,7 +115,7 @@ function LabelEditor(store: Store<string[]>, rest: Store<{navigation: Model.Navi
   )
 }
 
-export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[], taxonomy: Taxonomy): VNode {
+export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, rich_diff: RichDiff[], taxonomy: Taxonomy): VNode {
 
   const select_index = (ix: number | null) => S.on('click')(e => {
     // store.at('selected_index').modify(ix_now => ix_now === ix ? null : ix)
@@ -163,7 +161,8 @@ export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[], tax
         // NB: TODO: Add Undo functionality to labels
         vn = LabelEditor(
           G.label_store(store.at('graph').at('now'), edge_id),
-          store.pick('navigation', 'selected_index'),
+          Request,
+          store.at('selected_index'),
           taxonomy)
       } else {
         vn = div(
@@ -256,7 +255,8 @@ export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[], tax
       S.classed(style(csstips.horizontal)),
       LabelEditor(
         G.label_store(store.at('graph').at('now'), rich_diff[selected_index].id),
-        store.pick('navigation', 'selected_index'),
+        Request,
+        store.at('selected_index'),
         taxonomy),
       out
     )

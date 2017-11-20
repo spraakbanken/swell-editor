@@ -75,21 +75,22 @@ export function App(store: Store<AppState>) {
   const undo = () => { undo_graph.modify(Undo.undo); full_view_update() }
   const redo = () => { undo_graph.modify(Undo.redo); full_view_update() }
 
-  const history_keys = {
-    "Ctrl-Z": undo,
-    "Ctrl-Y": redo,
-    "Ctrl-R": revert,
-    "Ctrl-C": connect,
-    "Ctrl-D": disconnect,
+  const Request = Model.ActionMaker(store)
+
+  const extraKeys = {
+    "Ctrl-Z": () => Request('undo'),
+    "Ctrl-Y": () => Request('redo'),
+    "Ctrl-R": () => Request('revert'),
+    "Ctrl-C": () => Request('connect'),
+    "Ctrl-D": () => Request('disconnect'),
     // "Alt-L": label
   }
   console.log('debug', debug)
 
-  const {cm: cm_main, vn: vn_main} = CM({extraKeys: history_keys})
+  const {cm: cm_main, vn: vn_main} = CM({extraKeys})
   const {cm: cm_orig, vn: vn_orig} = CM({readOnly: store.get().ro_source})
   store.at('ro_source').ondiff(ro => cm_orig.setOption('readOnly', ro))
 
-  // Utils.debounce(1000, () => {
   cm_orig.on('change', (_, change) => {
     if (change.origin != 'setValue' && !store.get().ro_source) {
       with_full_update(() => {
@@ -101,7 +102,6 @@ export function App(store: Store<AppState>) {
   // const {cm: cm_diff, vn: vn_diff} = CM({readOnly: true})
   // const {cm: cm_xml, vn: vn_xml} = CM({lineWrapping: false, mode: 'xml', extraKeys: history_keys})
 
-  const navigation = store.at('navigation')
   const selected_index = current.at('selected_index')
   const ci = current.at('cursor_index')
   function update_cursor_index() {
@@ -119,39 +119,63 @@ export function App(store: Store<AppState>) {
     }
   }
   cm_main.on('cursorActivity', () => update_cursor_index())
-  navigation.ondiff(nav => navigation.transaction(() => {
+
+  store.at('requests').ondiff(requests => {
+    if (requests.length > 0) {
+      store.transaction(() => {
+        store.at('requests').set([])
+        requests.forEach(r => {
+          switch (r) {
+            case 'undo': return undo()
+            case 'redo': return redo()
+            case 'revert': return revert()
+            case 'connect': return connect()
+            case 'disconnect': return disconnect()
+            case 'next': return next()
+            case 'prev': return prev()
+            case 'unselect': return () => selected_index.set(null)
+            default: return Utils.absurd(r)
+          }
+        })
+      })
+    }
+  })
+
+
+  function next() {
     const {diff} = Model.calculate_diffs(store.get())
     const si = selected_index.get()
-    if (nav != 'stay') {
-      navigation.set('stay')
-    }
     if (si != null) {
-      if (nav == 'next') {
-        const ni = D.next(diff, si)
-        ni != null && selected_index.set(ni)
-        if (ni == null) {
-          const g = graph.get()
-          const {end} = G.target_sentence(g, ci.get())
-          if (end + 1 < G.target_texts(g).length) {
-            ci.set(end + 1)
-            selected_index.set(0)
-          }
-        }
-      }
-      if (nav == 'prev') {
-        const pi = D.prev(diff, si)
-        pi != null && selected_index.set(pi)
-        if (pi == null) {
-          const g = graph.get()
-          const {begin} = G.target_sentence(g, ci.get())
-          if (begin - 1 >= 0) {
-            ci.set(begin - 1)
-            selected_index.set(Model.calculate_diffs(store.get()).diff.length - 2)
-          }
+      const ni = D.next(diff, si)
+      ni != null && selected_index.set(ni)
+      if (ni == null) {
+        const g = graph.get()
+        const {end} = G.target_sentence(g, ci.get())
+        if (end + 1 < G.target_texts(g).length) {
+          ci.set(end + 1)
+          selected_index.set(0)
         }
       }
     }
-  }))
+  }
+
+  function prev() {
+    const {diff} = Model.calculate_diffs(store.get())
+    const si = selected_index.get()
+    if (si != null) {
+      const pi = D.prev(diff, si)
+      pi != null && selected_index.set(pi)
+      if (pi == null) {
+        const g = graph.get()
+        const {begin} = G.target_sentence(g, ci.get())
+        if (begin - 1 >= 0) {
+          ci.set(begin - 1)
+          selected_index.set(Model.calculate_diffs(store.get()).diff.length - 2)
+        }
+      }
+    }
+  }
+
   ci.ondiff(() => {
     const {diff} = Model.calculate_diffs(store.get())
     const si = selected_index.get()
@@ -274,7 +298,6 @@ export function App(store: Store<AppState>) {
       throw 'No selection'
     }
   }
-
 
   function cut() {
     const sels = cm_main.getDoc().listSelections()

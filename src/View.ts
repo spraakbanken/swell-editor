@@ -3,7 +3,7 @@ import { ViewDiff } from "./ViewDiff"
 import { C, c } from './Classes'
 import { VNode } from "snabbdom/vnode"
 import { AppState, Diffs } from './Model'
-import * as M from './Model'
+import * as Model from './Model'
 import * as Utils from './Utils'
 import { tag, Content as S } from "snabbis"
 import { CatchSubmit, InputField, button, div, span, table, tbody, tr, td, select } from "./Snabbdom"
@@ -18,11 +18,12 @@ export interface CodeMirrors {
 }
 
 export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VNode => {
+  const Request = Model.ActionMaker(store)
   const login = store.at('login')
   const login_state = store.at('login_state')
   const header = tag('h3',
     'Normaliseringseditorsprototyp',
-    S.on('click')(_ => store.set(M.init())),
+    S.on('click')(_ => store.set(Model.init())),
     C.Pointer
   )
   if (login_state.get() == 'out') {
@@ -49,7 +50,8 @@ export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
       header,
       tag('div', cms.vn_orig, C.TextEditor, C.Editor),
       ViewDiff(
-        M.current(store).pick('graph', 'selected_index').merge(store.pick('positions', 'navigation')),
+        Model.current(store).pick('graph', 'selected_index').merge(store.pick('positions')),
+        Request,
         diffs.rich_diff,
         store.get().taxonomy
       ),
@@ -68,7 +70,12 @@ export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
           store.at('current'),
           store.at('graphs').via(Lens.lens(o => Object.keys(o).sort(), (s, t) => Utils.raise('getter'))),
           (k: string) => tag('option', k))
-      ]
+      ],
+      button('undo (ctrl-z)', () => Request('undo')),
+      button('redo (ctrl-y)', () => Request('redo')),
+      button('connect (ctrl-c)', () => Request('connect')),
+      button('disconnect (ctrl-d)', () => Request('disconnect')),
+      button('revert (ctrl-r)', () => Request('revert')),
     )
   }
 }

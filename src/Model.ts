@@ -31,8 +31,6 @@ export interface AppState {
   readonly needs_full_update: boolean,
   /** Positions of divs in the ladder graph diagram */
   readonly positions: PosDict,
-  /** Navigation request */
-  readonly navigation: Navigation,
   /** The whole taxonomy */
   readonly taxonomy: Taxonomy,
   /** Login information */
@@ -45,7 +43,22 @@ export interface AppState {
   readonly synced: boolean,
   /** Edit source text */
   readonly ro_source: boolean,
+  /** Requests */
+  readonly requests: Request[],
 }
+
+export type Request = 'prev' | 'next' | 'unselect' | 'revert' | 'connect' | 'disconnect' | 'undo' | 'redo'
+
+export type Action = (r: Request) => void
+
+export function ActionMaker(store: Store<AppState>): Action {
+  return Store.arr(store.at('requests'), 'push')
+}
+
+export function Request(store: Store<AppState>, r: Request): void {
+  ActionMaker(store)(r)
+}
+
 
 const backend = 'https://ws.spraakbanken.gu.se/ws/sparv/swell/'
 // const backend = 'http://127.0.0.1:8000/'
@@ -150,13 +163,13 @@ export function init(text?: string): AppState {
     current: 'example',
     needs_full_update: true,
     positions: {},
-    navigation: 'stay',
     taxonomy,
     login: {user: '', password: ''},
     login_state: 'out',
     sync_request: false,
     synced: false,
-    ro_source: true
+    ro_source: true,
+    requests: []
   }
 }
 
