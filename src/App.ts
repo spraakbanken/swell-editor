@@ -83,7 +83,11 @@ export function App(store: Store<AppState>) {
     "Ctrl-R": () => Request('revert'),
     "Ctrl-C": () => Request('connect'),
     "Ctrl-D": () => Request('disconnect'),
-    // "Alt-L": label
+    "Cmd-Z": () => Request('undo'),
+    "Cmd-Y": () => Request('redo'),
+    "Cmd-R": () => Request('revert'),
+    "Cmd-C": () => Request('connect'),
+    "Cmd-D": () => Request('disconnect'),
   }
   console.log('debug', debug)
 
