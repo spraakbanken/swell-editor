@@ -551,7 +551,7 @@ export function absurd<A>(c: never): A {
 }
 
 export function record_forEach<K extends string, A>(x: Record<K, A>, k: (a: A, id: K) => void): void {
-  Object.keys(x).forEach(id => k(x[id], id as K))
+  Object.keys(x).forEach((id: K) => k(x[id], id))
 }
 
 export function record_traverse<K extends string, A, B>(x: Record<K, A>, k: (a: A, id: K) => B, sort_keys: boolean=false): B[] {
@@ -559,7 +559,7 @@ export function record_traverse<K extends string, A, B>(x: Record<K, A>, k: (a: 
   if (sort_keys) {
     ks.sort()
   }
-  return ks.map(id => k(x[id], id as K))
+  return ks.map((id: K) => k(x[id], id))
 }
 
 export function record_map<K extends string, A, B>(x: Record<K, A>, k: (a: A, id: K) => B): Record<K, B> {

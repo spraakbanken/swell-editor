@@ -329,7 +329,7 @@ export function rearrange(g: Graph, begin: number, end: number, dest: number): G
 }
 
 /** Calculate the ladder diff without merging contiguous edits */
-function calculate_raw_diff(g: Graph): (Dragged | Dropped)[] {
+export function calculate_raw_diff(g: Graph): (Dragged | Dropped)[] {
   const m = edge_map(g)
   const lookup = (id: string) => m.get(id) as Edge
   const edge_id = (tok: Token) => lookup(tok.id).id
@@ -348,6 +348,19 @@ function calculate_raw_diff(g: Graph): (Dragged | Dropped)[] {
       return Utils.absurd(c)
     }
   })
+}
+
+export function from_raw_diff(diff: (Dragged | Dropped)[], edges: Record<string, Edge>): Graph {
+  const source = [] as Token[]
+  const target = [] as Token[]
+  diff.forEach(d => {
+    switch (d.edit) {
+      case 'Dragged': return source.push(d.source)
+      case 'Dropped': return target.push(d.target)
+      default: return Utils.absurd(d)
+    }
+  })
+  return {source, target, edges}
 }
 
 /** Merging contiguous edits */
@@ -532,4 +545,51 @@ export function modify_labels(g: Graph, edge_id: string, k: (labels: string[]) =
 
 export function label_store(g: Store<Graph>, edge_id: string): Store<string[]> {
   return g.at('edges').via(Lens.key(edge_id)).via(Lens.def(Edge([], []))).at('labels')
+}
+
+/** Revert at an edge id */
+export function revert(g: Graph, edge_id: string): Graph {
+  if (g.edges[edge_id] === undefined) {
+    console.debug('Revert outside range')
+    return g
+  } else {
+    const {source, target} = partition_ids(g)(g.edges[edge_id])
+    const diff = calculate_raw_diff(g)
+    let supply = Utils.next_id(g.target.map(t => t.id))
+    const edges = Utils.record_filter(g.edges, (_, id) => id != edge_id)
+    const reverted = Utils.flatMap(diff, d => {
+      switch (d.edit) {
+        case 'Dragged':
+          if (d.id == edge_id) {
+            const s = d.source
+            const t = {...d.source, id: 't' + supply++}
+            const e = Edge([s.id, t.id], [])
+            edges[e.id] = e
+            return [Dragged(s, e.id), Dropped(t, e.id)]
+          } else {
+            return [d]
+          }
+        case 'Dropped':
+          if (d.id == edge_id) {
+            return []
+          } else {
+            return [d]
+          }
+        default:
+          return Utils.absurd(d)
+      }
+    })
+    // console.log(Utils.show({diff, reverted}))
+    return from_raw_diff(reverted, edges)
+  }
+}
+
+/** Connect two edge ids */
+export function connect(g: Graph, edge_id: string, with_edge_id: string): Graph {
+  return Utils.raise('TODO')
+}
+
+/** Disconnect a source or target id */
+export function disconnect(g: Graph, id: string): Graph {
+  return Utils.raise('TODO')
 }

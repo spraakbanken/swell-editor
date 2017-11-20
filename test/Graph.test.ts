@@ -83,7 +83,7 @@ function replicate<A>(n: number, g: jsc.Arbitrary<A>): jsc.Arbitrary<A[]> {
 /** Generate a random graph */
 const gen_graph = jsc.generator.bless(
   (sizein: number) => {
-    const size = Math.max(2, Math.round(sizein))
+    const size = Math.max(2, Math.round(sizein / 5))
     const ssize = jsc.random(1, size - 1)
     const tsize = size - ssize
     const source = replicate(ssize, token_text).generator(sizein).map((text, i) => ({text, id: 's' + i}))
@@ -159,7 +159,7 @@ quickCheck('invariant', arb_graph, g =>
     const lhs = lhs0.match(/^\s*$/) ? '' : lhs0
     const mod = G.modify(g, from, to, text)
     const rhs = G.target_text(mod)
-    console.log(Utils.show({g, from, to, text, mod, a, mid, z, lhs, rhs}))
+    // console.log(Utils.show({g, from, to, text, mod, a, mid, z, lhs, rhs}))
     assert.equal(lhs, rhs)
     return lhs === rhs
   })
@@ -321,4 +321,60 @@ quickCheck('invariant', arb_graph, g =>
   quickCheck('sentence subgraph invariant', arb_sentence, ({g, i}) =>
     G.check_invariant(G.subgraph(g, G.sentence(g, i))) === 'ok'
   )
+}
+
+{
+  quickCheck('revert everything', arb_graph, (g, assert) => {
+    const reverted = Object.keys(g.edges).reduce(G.revert, g)
+    const rtarget = G.target_texts(reverted)
+    const rsource = G.source_texts(reverted)
+    const source = G.source_texts(g)
+    // console.log(Utils.show({g, reverted, rtarget, rsource, source}))
+    // this doesn't hold right now:
+    // assert.deepEquals(rtarget, source)
+    assert.deepEquals(rsource, source)
+    return true
+  })
+
+  quickCheck('revert invariant', jsc.record({g: arb_graph, i: jsc.nat}), ({g, i}, assert) => {
+    const edges = Object.keys(g.edges)
+    if (edges.length > 0) {
+      const id = edges[i % edges.length]
+      const reverted = G.revert(g, id)
+      const inv = G.check_invariant(reverted)
+      if (inv !== 'ok') {
+        console.log(Utils.show({id, g, reverted}))
+        return false
+      }
+      return true
+    } else {
+      return true
+    }
+  })
+}
+
+// A known bug:
+{
+  const e0 = G.Edge('s0 t1 t2'.split(' '), [])
+  const e1 = G.Edge('s1 t0'.split(' '), [])
+  const g = {
+    source: [
+      { text: "a ", id: "s0" },
+      { text: "b ", id: "s1" }
+    ],
+    target: [
+      { text: "x ", id: "t0" },
+      { text: "y ", id: "t1" },
+      { text: "z ", id: "t2" }
+    ],
+    edges: {
+      [e0.id]: e0,
+      [e1.id]: e1
+    }
+  }
+  const reverted = Object.keys(g.edges).reduce(G.revert, g)
+  const rtarget = G.target_texts(reverted)
+  const rsource = G.source_texts(reverted)
+  const source = G.source_texts(g)
+  // console.log(Utils.show({g, reverted, rtarget, rsource, source}))
 }

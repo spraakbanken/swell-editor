@@ -11,6 +11,7 @@ import * as T from './Token'
 export interface Dropped {
   edit: 'Dropped',
   target: Token,
+  /** The edge id */
   id: string,
 }
 
@@ -21,6 +22,7 @@ export function Dropped(target: Token, id: string): Dropped {
 export interface Dragged {
   edit: 'Dragged',
   source: Token,
+  /** The edge id */
   id: string,
 }
 
@@ -32,6 +34,7 @@ export interface Edited {
   edit: 'Edited',
   source: Token[],
   target: Token[],
+  /** The edge id */
   id: string,
 }
 
