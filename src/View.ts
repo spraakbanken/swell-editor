@@ -65,12 +65,12 @@ export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
       ]
       :
       [
-        button('logout', () => login_state.set('out')),
-        button('sync', () => store.at('sync_request').set(true)),
         select(
           store.at('current'),
           store.at('graphs').via(Lens.lens(o => Object.keys(o).sort(), (s, t) => Utils.raise('getter'))),
-          (k: string) => tag('option', k))
+          (k: string) => tag('option', k)),
+        button('logout', () => login_state.set('out')),
+        button('sync', () => store.at('sync_request').set(true)),
       ],
       button('undo (ctrl-z)', () => Request('undo')),
       button('redo (ctrl-y)', () => Request('redo')),

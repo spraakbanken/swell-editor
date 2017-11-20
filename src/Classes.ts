@@ -12,8 +12,8 @@ export function css(...xs: types.NestedCSSProperties[]): types.NestedCSSProperti
 export const styles = {
   PadButtons: css({
     $nest: {
-      "& > button": { marginRight: '4px' },
-      "& > select": { marginRight: '4px' }
+      "& > button": { marginRight: '4px', marginBottom: '4px' },
+      "& > select": { marginRight: '4px', marginBottom: '4px' }
     }
   }),
   Insert: css({
@@ -97,7 +97,7 @@ export const styles = {
     $nest:{
       '& .CodeMirror':{
         border: '1px solid #ddd',
-        height: '300px',
+        height: '50px',
         minWidth: '250px',
         lineHeight: '1.5em',
       }

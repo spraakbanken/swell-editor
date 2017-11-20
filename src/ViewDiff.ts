@@ -242,7 +242,7 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
       const x2 = Positions.hmid(bot)
       const y2 = bot.top // Positions.top(bot)
       const d = 25 * (-1 / (Math.abs(x1 - x2) + 1) + 1)
-      const s = selected_index != null ? rich_diff[selected_index].id : 'null'
+      const s = selected_index != null ? (rich_diff[selected_index] || {id: 'null'}).id : 'null'
       return tag('path',
         S.attrs({
           d: ['M', x1, y1, 'C', x1, y1 + d, x2, y2 - d, x2, y2].join(' '),
