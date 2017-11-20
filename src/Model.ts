@@ -47,7 +47,12 @@ export interface AppState {
   readonly requests: Request[],
 }
 
-export type Request = 'prev' | 'next' | 'unselect' | 'revert' | 'connect' | 'disconnect' | 'undo' | 'redo'
+export type Request =
+    'prev' | 'next' | 'unselect'
+  | 'revert' | 'connect' | 'disconnect'
+  | 'undo' | 'redo'
+  | { kind: 'revert_at', at: string }
+  | { kind: 'disconnect_at', at: string }
 
 export type Action = (r: Request) => void
 

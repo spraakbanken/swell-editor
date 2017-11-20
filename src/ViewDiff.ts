@@ -142,11 +142,21 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
   }
 
   const new_source = (s: Token, diff: TokenDiff, edge_id: string) => {
-    up.push(track(s.id, span(deletes(diff), C.InnerCell)))
+    up.push(track(s.id, span(deletes(diff), C.InnerCell,
+      S.on('dblclick')((e: MouseEvent) => {
+        e.preventDefault()
+        Request({kind: 'disconnect_at', at: s.id})
+      })
+    )))
     links.push(Link(s.id, edge_id))
   }
   const new_target = (t: Token, diff: TokenDiff, edge_id: string) => {
-    down.push(track(t.id, span(inserts(diff), C.InnerCell)))
+    down.push(track(t.id, span(inserts(diff), C.InnerCell,
+      S.on('dblclick')((e: MouseEvent) => {
+        e.preventDefault()
+        Request({kind: 'disconnect_at', at: t.id})
+      })
+    )))
     links.push(Link(edge_id, t.id))
   }
   const {selected_index} = store.get()
@@ -155,33 +165,22 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
   const new_label = (edge_id: string, diff_index: number) => {
     if (!edges_done.has(edge_id)) {
       edges_done.add(edge_id)
-      let vn: VNode
-      if (false && diff_index === selected_index) {
-        // If this is the selected edge, instead add the component for editing the label set
-        // NB: TODO: Add Undo functionality to labels
-        vn = LabelEditor(
-          G.label_store(store.at('graph').at('now'), edge_id),
-          Request,
-          store.at('selected_index'),
-          taxonomy)
-      } else {
-        vn = div(
-          C.Vertical,
-          span(
-            edges[edge_id].labels.map(
-              code => span(
-                code + ' ',
-                S.classes({
-                  [red]: diff_index !== selected_index && taxonomy.every(t => t.code != code)
-                })
-              )
-            ),
-            C.BorderCell,
-            S.styles({height: 'min-content'}),
-            S.classes({[redBorder]: diff_index === selected_index})
-          )
+      const vn = div(
+        C.Vertical,
+        span(
+          edges[edge_id].labels.map(
+            code => span(
+              code + ' ',
+              S.classes({
+                [red]: diff_index !== selected_index && taxonomy.every(t => t.code != code)
+              })
+            )
+          ),
+          C.BorderCell,
+          S.styles({height: 'min-content'}),
+          S.classes({[redBorder]: diff_index === selected_index}),
         )
-      }
+      )
       mid.push(track(edge_id, vn))
     }
   }
@@ -210,6 +209,10 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
   const ladder = track('table', table(columns.map(({up: u, mid: m, down: d, ix}, i) => ({
     snabbis: [
       select_index(ix),
+      S.on('contextmenu')((e: PointerEvent) => {
+        e.preventDefault()
+        Request({kind: 'revert_at', at: rich_diff[ix].id})
+      }),
       C.Pointer
     ],
     col: [

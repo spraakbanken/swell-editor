@@ -125,16 +125,36 @@ export function App(store: Store<AppState>) {
       store.transaction(() => {
         store.at('requests').set([])
         requests.forEach(r => {
-          switch (r) {
-            case 'undo': return undo()
-            case 'redo': return redo()
-            case 'revert': return revert()
-            case 'connect': return connect()
-            case 'disconnect': return disconnect()
-            case 'next': return next()
-            case 'prev': return prev()
-            case 'unselect': return selected_index.set(null)
-            default: return Utils.absurd(r)
+          if (typeof r == 'object') {
+            switch (r.kind) {
+              case 'revert_at':
+                const g = graph.get()
+                const e = g.edges[r.at]
+                if (e) {
+                  with_full_update(() => {
+                    Model.advance_graph(undo_graph, G.revert(graph.get(), e.id))
+                  })
+                }
+                return
+              case 'disconnect_at':
+                with_full_update(() => {
+                  Model.advance_graph(undo_graph, G.disconnect(graph.get(), r.at))
+                })
+                return
+              default: return Utils.absurd(r)
+            }
+          } else {
+            switch (r) {
+              case 'undo': return undo()
+              case 'redo': return redo()
+              case 'revert': return revert()
+              case 'connect': return connect()
+              case 'disconnect': return disconnect()
+              case 'next': return next()
+              case 'prev': return prev()
+              case 'unselect': return selected_index.set(null)
+              default: return Utils.absurd(r)
+            }
           }
         })
       })
