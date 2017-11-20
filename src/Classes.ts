@@ -1,169 +1,197 @@
-import { style } from "typestyle"
+import { style, types } from "typestyle"
+import * as typestyle from "typestyle"
 import * as csstips from "csstips"
 import { debug_name } from './dev'
+import * as Utils from './Utils'
+import { tag, Content as S } from "snabbis"
 
-export const Insert = style(debug_name('Insert'), {
-  color: '#090',
-})
+export function css(...xs: types.NestedCSSProperties[]): types.NestedCSSProperties[] {
+  return xs
+}
 
-export const Delete = style(debug_name('Delete'), {
-  color: '#d00',
-  textDecoration: 'line-through',
-})
+export const styles = {
+  Insert: css({
+    color: '#090',
+  }),
 
-export const Dragged = style(debug_name('Dragged'), {
-  backgroundColor: '#87ceeb',
-  textDecoration: 'line-through',
-})
+  Delete: css({
+    color: '#d00',
+    textDecoration: 'line-through',
+  }),
 
-export const Dropped = style(debug_name('Dropped'), {
-  backgroundColor: '#87ceeb',
-})
+  Dragged: css({
+    backgroundColor: '#87ceeb',
+    textDecoration: 'line-through',
+  }),
 
-export const Subscript = style(debug_name('Subscript'), {
-  position: 'relative',
-  bottom: '-0.5em',
-  fontSize: '65%',
-  paddingLeft: '1px',
-})
+  Dropped: css({
+    backgroundColor: '#87ceeb',
+  }),
 
-export const Width100Pct = style(debug_name('Width100Pct'), {
-  width: '100%',
-})
+  Subscript: css({
+    position: 'relative',
+    bottom: '-0.5em',
+    fontSize: '65%',
+    paddingLeft: '1px',
+  }),
 
-export const RelativeOuter = style(debug_name('RelativeOuter'), {
-  position: 'relative',
-  overflowX: 'hidden',
-  overflowY: 'hidden',
-})
+  Width100Pct: css({
+    width: '100%',
+  }),
 
-export const RelativeInner = style(debug_name('RelativeInner'), {
-  position: 'absolute',
-  top: '0',
-  left: '0',
-  width: '100%',
-  height: '100%',
-})
+  RelativeOuter: css({
+    position: 'relative',
+    overflowX: 'hidden',
+    overflowY: 'hidden',
+  }),
 
-export const Below = style(debug_name('Below'), {
-  zIndex: -1
-})
+  RelativeInner: css({
+    position: 'absolute',
+    top: '0',
+    left: '0',
+    width: '100%',
+    height: '100%',
+  }),
 
-export const SideBySide = style(debug_name('SideBySide'),
-  csstips.horizontal,
-  csstips.horizontallySpaced('5px'), {
-    $nest: {
-      "& > *": csstips.flex
+  Below: css({
+    zIndex: -1
+  }),
+
+  SideBySide: css(
+    csstips.horizontal,
+    csstips.horizontallySpaced('5px'),{
+      $nest:{
+        "& > *": csstips.flex
+      }
+    }),
+
+  HSpaced: css(
+    csstips.horizontallySpaced('5px')
+  ),
+
+  InlineBlock: css({
+    display: 'inline-block'
+  }),
+
+  FlushRight: css(
+    csstips.selfEnd
+  ),
+
+  Vertical: css(
+    csstips.vertical,
+    csstips.centerJustified,
+  ),
+
+  MainStyle: css({
+    fontFamily: "'Lato', sans-serif",
+    fontSize: '15px'
+  }),
+
+  Editor: css({
+    $nest:{
+      '& .CodeMirror':{
+        border: '1px solid #ddd',
+        height: '300px',
+        minWidth: '250px',
+        lineHeight: '1.5em',
+      }
     }
-  })
+  }),
 
-export const FlushRight = style(debug_name('FlushRight'),
-  csstips.selfEnd
-)
-
-export const Vertical = style(debug_name('Vertical'),
-  csstips.vertical,
-  csstips.centerJustified,
-)
-
-export const MainStyle = style(debug_name('MainStyle'), {
-  fontFamily: "'Lato', sans-serif",
-  fontSize: '15px'
-})
-
-export const Editor = style(debug_name('Editor'), {
-  $nest: {
-    '& .CodeMirror': {
-      border: '1px solid #ddd',
-      height: '300px',
-      minWidth: '250px',
-      lineHeight: '1.5em',
+  TextEditor: css({
+    $nest:{
+      '& .CodeMirror':{
+        fontFamily: "'Lato', sans-serif",
+        fontSize: '15px'
+      }
     }
-  }
-})
+  }),
 
-export const TextEditor = style(debug_name('TextEditor'), {
-  $nest: {
-    '& .CodeMirror': {
-      fontFamily: "'Lato', sans-serif",
-      fontSize: '15px'
+  CodeEditor: css({
+    $nest:{
+      '& .CodeMirror':{
+        fontFamily: "'Consolas', monospace",
+        fontSize: '15px'
+      }
     }
-  }
-})
+  }),
 
-export const CodeEditor = style(debug_name('CodeEditor'), {
-  $nest: {
-    '& .CodeMirror': {
-      fontFamily: "'Consolas', monospace",
-      fontSize: '15px'
-    }
-  }
-})
+  Caption: css({
+    marginTop: '10px',
+    fontStyle: 'italic',
+  }),
 
-export const Caption = style(debug_name('Caption'), {
-  marginTop: '10px',
-  fontStyle: 'italic',
-})
+  LadderTable: css({
+    minHeight: '120px',
+    padding: '10px',
+    width: [
+      '-webkit-fit-content',
+      'fit-content',
+    ]
+  }),
 
-export const LadderTable = style(
-  debug_name('LadderTable'), {
-  minHeight: '120px',
-  padding: '10px',
-  width: [
-    '-webkit-fit-content',
-    'fit-content',
-  ]
-})
+  FitContent: css({
+    width: [
+      '-webkit-fit-content',
+      'fit-content',
+    ]
+  }),
 
-export const FitContent = style(
-  debug_name('FitContent'), {
-  width: [
-    '-webkit-fit-content',
-    'fit-content',
-  ]
-})
+  Cell: css(
+    { cursor: 'pointer' },
+    csstips.horizontal,
+    csstips.aroundJustified,
+    csstips.horizontallySpaced(5),
+  ),
 
-export const Cell = style(
-  debug_name('Cell'),
-  { cursor: 'pointer' },
-  csstips.horizontal,
-  csstips.aroundJustified,
-  csstips.horizontallySpaced(5),
-)
+  InnerCell: css(
+    { background: 'white' },
+    csstips.padding('2px', '0'),
+    csstips.horizontal
+  ),
 
-export const InnerCell = style(
-  debug_name('Inner_Cell'),
-  { background: 'white' },
-  csstips.padding('2px', '0'),
-  csstips.horizontal
-)
+  BorderCell: css(
+    csstips.border('1.5px #777 solid'),
+    { borderRadius: '3px' },
+    { fontSize: '13px' },
+    { background: 'white' },
+    csstips.padding('2px')
+  ),
 
-export const BorderCell = style(
-  csstips.border('1.5px #777 solid'),
-  { borderRadius: '3px' },
-  { fontSize: '13px' },
-  { background: 'white' },
-  csstips.padding('2px')
-)
+  Path: css({
+    stroke: "#777",
+    strokeWidth: '1.5',
+    fill: "none"
+  }),
 
-export const Path = style({
-  stroke: "#777",
-  strokeWidth: '1.5',
-  fill: "none"
-})
+  Selected: css({
+    fontWeight: 800
+  }),
 
-export const Selected = style({
-  fontWeight: 800
-})
+  Row: css(
+    csstips.horizontal,
+    csstips.horizontallySpaced(5)
+  ),
 
-export const Row = style(debug_name('Row'), csstips.horizontal, csstips.horizontallySpaced(5))
-export const Column = style(debug_name('Column'), csstips.content, csstips.vertical, csstips.betweenJustified)
+  Column: css(
+    csstips.content,
+    csstips.vertical,
+    csstips.betweenJustified
+  ),
 
-export const Pointer = style(debug_name('Pointer'),
-  { cursor: 'pointer' ,
+  Pointer: css({
+    cursor: 'pointer' ,
     userSelect: 'none'
-  }
-)
+  }),
+
+  Unselectable: css({
+    userSelect: 'none'
+  }),
+}
+
+export const c = Utils.record_map(styles, (css, k) => style(debug_name(k), ...css))
+
+export const C = Utils.record_map(c, cname => S.classed(cname))
 
 /*
 export const Top = style(

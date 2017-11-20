@@ -2,7 +2,7 @@
 import { tag, Content as S } from "snabbis"
 import { VNode } from "snabbdom/vnode"
 import * as Utils from "./Utils"
-import * as Classes from "./Classes"
+import { C } from "./Classes"
 import { Store, Lens } from "reactive-lens"
 
 export type PosDict = Record<string, Pos>
@@ -57,9 +57,10 @@ export const posid = (id: string, d: Store<Record<string, Pos>>, v: VNode) => ({
 export function relative(n1: VNode, n2: VNode, classes: string[] = []): VNode {
   return (
     tag('div',
-      S.classed(Classes.RelativeOuter, ...classes),
+      C.RelativeOuter,
+      S.classed(...classes),
       n1,
-      tag('div', S.classed(Classes.RelativeInner, Classes.Below), n2)
+      tag('div', C.RelativeInner, C.Below, n2)
     )
   )
 }

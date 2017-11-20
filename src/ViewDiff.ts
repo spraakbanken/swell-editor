@@ -8,7 +8,7 @@ import * as G from "./Graph"
 
 import { Store, Lens, Undo } from "reactive-lens"
 
-import * as C from './Classes'
+import { C, c } from './Classes'
 import * as csstips from "csstips"
 import * as Positions from "./Positions"
 
@@ -62,7 +62,7 @@ function LabelEditor(store: Store<string[]>, rest: Store<{navigation: Model.Navi
   const navigation = rest.at('navigation')
   return div(
     S.styles({marginTop: '2px', marginBottom: '4px'}),
-    S.classed(C.BorderCell),
+    C.BorderCell,
     S.on('click')((e: MouseEvent) => {
       // if we click anywhere but here we should deselect. so there's another listener somewhere
       e.stopPropagation()
@@ -96,14 +96,14 @@ function LabelEditor(store: Store<string[]>, rest: Store<{navigation: Model.Navi
     ),
     div(
       S.styles({width: '160px'}),
-      S.classed(style(csstips.horizontallySpaced('5px'))),
+      C.HSpaced,
       taxonomy.map(t => {
         const tstore = Utils.array_store_key(store, t.code)
         const active = tstore.get()
         return tag('span',
-          S.styles({display: 'inline-block'}),
+          C.InlineBlock,
+          C.Pointer,
           t.code + ' ',
-          S.classed(C.Pointer),
           S.on('click')(() => tstore.modify(x => !x)),
           S.classes({[orange]: tstore.get()}),
         )
@@ -144,11 +144,11 @@ export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[], tax
   }
 
   const new_source = (s: Token, diff: TokenDiff, edge_id: string) => {
-    up.push(track(s.id, span(deletes(diff), S.classed(C.InnerCell))))
+    up.push(track(s.id, span(deletes(diff), C.InnerCell)))
     links.push(Link(s.id, edge_id))
   }
   const new_target = (t: Token, diff: TokenDiff, edge_id: string) => {
-    down.push(track(t.id, span(inserts(diff), S.classed(C.InnerCell))))
+    down.push(track(t.id, span(inserts(diff), C.InnerCell)))
     links.push(Link(edge_id, t.id))
   }
   const {selected_index} = store.get()
@@ -167,7 +167,7 @@ export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[], tax
           taxonomy)
       } else {
         vn = div(
-          S.classed(C.Vertical),
+          C.Vertical,
           span(
             edges[edge_id].labels.map(
               code => span(
@@ -177,7 +177,7 @@ export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[], tax
                 })
               )
             ),
-            S.classed(C.BorderCell),
+            C.BorderCell,
             S.styles({height: 'min-content'}),
             S.classes({[redBorder]: diff_index === selected_index})
           )
@@ -211,19 +211,19 @@ export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[], tax
   const ladder = track('table', table(columns.map(({up: u, mid: m, down: d, ix}, i) => ({
     snabbis: [
       select_index(ix),
-      S.classed(C.Pointer)
+      C.Pointer
     ],
     col: [
-      tag('div', S.classed(C.Cell), u.length != 0 ? u : tag('div', S.classed(C.InnerCell), '\u200b')),
-      tag('div', S.classed(C.Cell), m.length != 0 ? m : tag('div')),
-      tag('div', S.classed(C.Cell), d.length != 0 ? d : tag('div', S.classed(C.InnerCell), '\u200b')),
+      tag('div', C.Cell, u.length != 0 ? u : tag('div', C.InnerCell, '\u200b')),
+      tag('div', C.Cell, m.length != 0 ? m : tag('div')),
+      tag('div', C.Cell, d.length != 0 ? d : tag('div', C.InnerCell, '\u200b')),
     ]
-  })), [C.LadderTable, C.MainStyle]))
+  })), [c.LadderTable, c.MainStyle]))
 
   const pos_dict = store.get().positions
   const svg = tag(
     'svg',
-    S.classed(C.Width100Pct),
+    C.Width100Pct,
     S.styles({height: '500px'}),
     links.map(link => {
       const top = pos_dict[link.from]
@@ -238,7 +238,7 @@ export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[], tax
         S.attrs({
           d: ['M', x1, y1, 'C', x1, y1 + d, x2, y2 - d, x2, y2].join(' '),
         }),
-        S.classed(C.Path)
+        C.Path
       )
     }).filter(x => x != null)
   )
@@ -246,7 +246,7 @@ export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[], tax
   let out = div(
     Positions.relative(ladder, svg, ['LadderRoot']),
     // select_index(null),
-    S.styles({userSelect: 'none'})
+    C.Unselectable
   )
 
   if (selected_index != null && selected_index < rich_diff.length) {
@@ -267,8 +267,9 @@ export function ViewDiff(store: Store<ViewDiffState>, rich_diff: RichDiff[], tax
 
 function table(cols: {col: VNode[], snabbis: S[]}[], classes: string[] = []): VNode {
   return tag('div',
-    S.classed(C.Row, ...classes),
-    ...cols.map(col => tag('div', S.classed(C.Column), col.col, ...col.snabbis)))
+    C.Row,
+    S.classed(...classes),
+    ...cols.map(col => tag('div', C.Column, col.col, ...col.snabbis)))
 }
 
 const avg = (xs: number[]) => {
@@ -282,9 +283,9 @@ const avg = (xs: number[]) => {
 const diff_to_spans = (rules: (string | null)[]) => (d: [number, string][]) =>
   diff_helper(d, rules, (text, cls) => tag('span', S.classed(cls), text))
 
-const inserts = diff_to_spans([null, '', C.Insert])
+const inserts = diff_to_spans([null, '', c.Insert])
 
-const deletes = diff_to_spans([C.Delete, '', null])
+const deletes = diff_to_spans([c.Delete, '', null])
 
 function diff_helper<A>(token_diff: [number, string][], rules: (string | null)[], cb: (text: string, className: string) => A): A[] {
   const out = [] as A[]

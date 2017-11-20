@@ -550,20 +550,20 @@ export function absurd<A>(c: never): A {
   return c
 }
 
-export function record_forEach<A>(x: Record<string, A>, k: (a: A, id: string) => void): void {
-  Object.keys(x).forEach(id => k(x[id], id))
+export function record_forEach<K extends string, A>(x: Record<K, A>, k: (a: A, id: K) => void): void {
+  Object.keys(x).forEach(id => k(x[id], id as K))
 }
 
-export function record_traverse<A, B>(x: Record<string, A>, k: (a: A, id: string) => B, sort_keys: boolean=false): B[] {
+export function record_traverse<K extends string, A, B>(x: Record<K, A>, k: (a: A, id: K) => B, sort_keys: boolean=false): B[] {
   const ks = Object.keys(x)
   if (sort_keys) {
     ks.sort()
   }
-  return ks.map(id => k(x[id], id))
+  return ks.map(id => k(x[id], id as K))
 }
 
-export function record_map<A, B>(x: Record<string, A>, k: (a: A, id: string) => B): Record<string, B> {
-  const out = {} as Record<string, B>
+export function record_map<K extends string, A, B>(x: Record<K, A>, k: (a: A, id: K) => B): Record<K, B> {
+  const out = {} as Record<K, B>
   record_forEach(x, (a, id) => out[id] = k(a, id))
   return out
 }

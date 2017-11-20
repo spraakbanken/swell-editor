@@ -1,6 +1,6 @@
 import * as typestyle from "typestyle"
 import { ViewDiff } from "./ViewDiff"
-import * as Classes from './Classes'
+import { C, c } from './Classes'
 import { VNode } from "snabbdom/vnode"
 import { AppState, Diffs } from './Model'
 import * as M from './Model'
@@ -23,11 +23,12 @@ export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
   const header = tag('h3',
     'Normaliseringseditorsprototyp',
     S.on('click')(_ => store.set(M.init())),
-    S.classed(Classes.Pointer)
+    C.Pointer
   )
   if (login_state.get() == 'out') {
     return div(
-      S.classed(Classes.MainStyle, typestyle.style({padding: '10px'})),
+      C.MainStyle,
+      S.classed(typestyle.style({padding: '10px'})),
       header,
       'you need to login',
       CatchSubmit(
@@ -43,15 +44,16 @@ export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
     )
   } else {
     return div(
-      S.classed(Classes.MainStyle, typestyle.style({padding: '10px'})),
+      C.MainStyle,
+      S.classed(typestyle.style({padding: '10px'})),
       header,
-      tag('div', cms.vn_orig, S.classed(Classes.TextEditor, Classes.Editor)),
+      tag('div', cms.vn_orig, C.TextEditor, C.Editor),
       ViewDiff(
         M.current(store).pick('graph', 'selected_index').merge(store.pick('positions', 'navigation')),
         diffs.rich_diff,
         store.get().taxonomy
       ),
-      tag('div', cms.vn_main, S.classed(Classes.TextEditor, Classes.Editor)),
+      tag('div', cms.vn_main, C.TextEditor, C.Editor),
       tag('hr'),
       login_state.get() == 'anonymous'
       ?
