@@ -45,6 +45,7 @@ export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
     )
   } else {
     return div(
+      C.PadButtons,
       C.MainStyle,
       S.classed(typestyle.style({padding: '10px'})),
       header,

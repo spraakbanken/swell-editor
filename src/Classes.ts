@@ -10,6 +10,13 @@ export function css(...xs: types.NestedCSSProperties[]): types.NestedCSSProperti
 }
 
 export const styles = {
+  PadButtons: css({
+    $nest: {
+      "& > button": {
+        marginRight: '4px'
+      }
+    }
+  }),
   Insert: css({
     color: '#090',
   }),
@@ -152,10 +159,20 @@ export const styles = {
     csstips.padding('2px')
   ),
 
+  LadderSelected: css({
+    borderColor: 'blue',
+    fontWeight: 'bold'
+  }),
+
   Path: css({
     stroke: "#777",
     strokeWidth: '1.5',
     fill: "none"
+  }),
+
+  SelectedPath: css({
+    stroke: 'blue',
+    strokeWidth: '2.5'
   }),
 
   Selected: css({

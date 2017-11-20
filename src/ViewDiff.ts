@@ -46,25 +46,15 @@ function Link(from: string, to: string): Link {
 }
 
 const orange = style({color: 'orange'})
-const redBorder = style({
-  borderColor: 'blue',
-  fontWeight: 'bold'
-})
 const red = style({
   color: 'red',
 })
 
 function LabelEditor(store: Store<string[]>, Request: Model.Action, selected_index: Store<number | null>, taxonomy: Taxonomy): VNode {
-  // TODO: fiddle with focus change too:
-  // see Diff.next and Diff.prev (but they should be adapted to go over sentence boundaries)
   let off = undefined as undefined | (() => void)
   return div(
     S.styles({marginTop: '2px', marginBottom: '4px'}),
     C.BorderCell,
-    S.on('click')((e: MouseEvent) => {
-      // if we click anywhere but here we should deselect. so there's another listener somewhere
-      e.stopPropagation()
-    }),
     div(
       S.on('keydown')((e: KeyboardEvent) => {
         if (e.code == 'Tab') {
@@ -110,7 +100,7 @@ function LabelEditor(store: Store<string[]>, Request: Model.Action, selected_ind
         S.attrs({
           href: 'https://spraakbanken.gu.se/eng/swell/swell_codebook',
           target: '_blank'
-        }))
+        })),
     )
   )
 }
@@ -178,7 +168,7 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
           ),
           C.BorderCell,
           S.styles({height: 'min-content'}),
-          S.classes({[redBorder]: diff_index === selected_index}),
+          S.classes({[c.LadderSelected]: diff_index === selected_index}),
         )
       )
       mid.push(track(edge_id, vn))
@@ -228,6 +218,7 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
       S.on('dragend')((e: DragEvent) => {
         Request({kind: 'connect_two', one: dragstart, two: dragend})
       }),
+      S.classes({[c.LadderSelected]: ix === selected_index}),
       C.Pointer
     ],
     col: [
@@ -251,18 +242,19 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
       const x2 = Positions.hmid(bot)
       const y2 = bot.top // Positions.top(bot)
       const d = 25 * (-1 / (Math.abs(x1 - x2) + 1) + 1)
+      const s = selected_index != null ? rich_diff[selected_index].id : 'null'
       return tag('path',
         S.attrs({
           d: ['M', x1, y1, 'C', x1, y1 + d, x2, y2 - d, x2, y2].join(' '),
         }),
-        C.Path
+        C.Path,
+        S.classes({[c.SelectedPath]: link.from == s || link.to == s})
       )
     }).filter(x => x != null)
   )
 
   let out = div(
     Positions.relative(ladder, svg, ['LadderRoot']),
-    // select_index(null),
     C.Unselectable
   )
 
