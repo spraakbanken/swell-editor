@@ -156,7 +156,7 @@ export function init(text?: string): AppState {
     login_state: 'out',
     sync_request: false,
     synced: false,
-    ro_source: false
+    ro_source: true
   }
 }
 
