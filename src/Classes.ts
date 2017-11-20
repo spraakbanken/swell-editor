@@ -183,9 +183,12 @@ export const styles = {
   }),
 
   Cut: css({
-     borderBottom: '1px dotted #aaa',
-     borderTop: '1px dotted #aaa',
-     background: '#ddddd88',
+    paddingTop: '1px',
+    paddingBottom: '1px',
+    marginLeft: '-1px',
+    marginRight: '-1px',
+    border: '1px dotted #666',
+    background: '#d7d4f0',
   })
 }
 
