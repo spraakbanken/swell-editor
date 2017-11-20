@@ -5,7 +5,6 @@ import * as csstips from "csstips"
 import "codemirror/lib/codemirror.css"
 import "codemirror/mode/xml/xml"
 import {debug} from './dev'
-import './index.css'
 import { patch } from "snabbis"
 import { setup, attach } from "reactive-lens-snabbdom"
 import { Store } from "reactive-lens"

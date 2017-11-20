@@ -125,13 +125,7 @@ export const styles = {
     minHeight: '120px',
     padding: '10px',
     width: [
-      '-webkit-fit-content',
-      'fit-content',
-    ]
-  }),
-
-  FitContent: css({
-    width: [
+      // I have forgotten why I'm using fit-content here, it doesn't seem to matter:
       '-webkit-fit-content',
       'fit-content',
     ]
@@ -187,6 +181,12 @@ export const styles = {
   Unselectable: css({
     userSelect: 'none'
   }),
+
+  Cut: css({
+     borderBottom: '1px dotted #aaa',
+     borderTop: '1px dotted #aaa',
+     background: '#ddddd88',
+  })
 }
 
 export const c = Utils.record_map(styles, (css, k) => style(debug_name(k), ...css))

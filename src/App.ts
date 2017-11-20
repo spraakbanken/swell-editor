@@ -9,6 +9,8 @@ import * as typestyle from "typestyle"
 import * as Snabbdom from "./Snabbdom"
 import { CM } from "./Snabbdom"
 
+import { C, c } from './Classes'
+
 import { View } from "./View"
 import { tag, Content as S } from "snabbis"
 
@@ -226,12 +228,12 @@ export function App(store: Store<AppState>) {
       const Head = T.token_at(target_texts, cm_main.getDoc().indexFromPos(head))
       const [from, to] = Utils.numsort([Anchor.token, Head.token])
       const conv = (off: number) => cm_main.getDoc().posFromIndex(off)
-      remove_marks_by_class(cm_main, 'cut')
+      remove_marks_by_class(cm_main, c.Cut)
       log({what: 'cut', from, to})
       cm_main.getDoc().markText(
         conv(T.text_offset(target_texts, from)),
         conv(T.text_offset(target_texts, to) + whitespace_start(target_texts[to])), {
-          className: 'cut'
+          className: c.Cut
         })
     }
   }
