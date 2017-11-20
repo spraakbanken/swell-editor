@@ -235,18 +235,19 @@ export function App(store: Store<AppState>) {
   function revert() {
     const sels = cm_main.getDoc().listSelections()
     if (sels) {
-      const {head} = sels[0]
-      const pos = cm_main.getDoc().indexFromPos(head)
-      const index = T.token_at(G.target_texts(graph.get()), pos)
-      const t = graph.get().target[index.token]
-      if (t) {
-        const e = G.edge_map(graph.get()).get(t.id)
-        if (e) {
-          with_full_update(() => {
+      const s = sels[0]
+      const {Anchor, Head} = selected_target()
+      const [from, to] = Utils.numsort([Anchor.token, Head.token])
+      const g0 = graph.get()
+      const em = G.edge_map(g0)
+      with_full_update(() => {
+        for (let t = from; t <= to; ++t) {
+          const e = em.get(g0.target[t].id)
+          if (e) {
             Model.advance_graph(undo_graph, G.revert(graph.get(), e.id))
-          })
+          }
         }
-      }
+      })
     }
   }
 
