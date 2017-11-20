@@ -107,7 +107,7 @@ export function init_from(tokens: string[]): Graph {
   }
 }
 
-/** Map from token and edge identifiers to edges
+/** Map from token to edges
 
   const g = init('w')
   const e = Edge(['s0', 't0'], [])
@@ -550,10 +550,9 @@ export function label_store(g: Store<Graph>, edge_id: string): Store<string[]> {
 /** Revert at an edge id */
 export function revert(g: Graph, edge_id: string): Graph {
   if (g.edges[edge_id] === undefined) {
-    console.debug('Revert outside range')
+    console.error('Revert outside range')
     return g
   } else {
-    const {source, target} = partition_ids(g)(g.edges[edge_id])
     const diff = calculate_raw_diff(g)
     let supply = Utils.next_id(g.target.map(t => t.id))
     const edges = Utils.record_filter(g.edges, (_, id) => id != edge_id)
@@ -586,10 +585,38 @@ export function revert(g: Graph, edge_id: string): Graph {
 
 /** Connect two edge ids */
 export function connect(g: Graph, edge_id: string, with_edge_id: string): Graph {
-  return Utils.raise('TODO')
+  if (edge_id === with_edge_id) {
+    // these are already connected!
+    return g
+  }
+  const edges = Utils.record_filter(g.edges, (_, id) => id != edge_id && id != with_edge_id)
+  const e1 = g.edges[edge_id]
+  const e2 = g.edges[with_edge_id]
+  if (e1 && e2) {
+    const edge = Edge(e1.ids.concat(e2.ids), e1.labels.concat(e2.labels))
+    edges[edge.id] = edge
+    return {...g, edges}
+  } else {
+    console.error('Trying to connect edges that do not exist')
+    return g
+  }
 }
 
 /** Disconnect a source or target id */
 export function disconnect(g: Graph, id: string): Graph {
-  return Utils.raise('TODO')
+  const em = edge_map(g)
+  const edge = em.get(id)
+  if (edge) {
+    const edge_without = Edge(edge.ids.filter(i => i != id), edge.labels)
+    const edge_with = Edge([id], [])
+    const edges = Utils.record_filter(g.edges, (_, id) => id != edge.id)
+    edges[edge_with.id] = edge_with
+    if (edge_without.ids.length > 0) {
+      edges[edge_without.id] = edge_without
+    }
+    return {...g, edges}
+  } else {
+    console.error('Trying to disconnect unidentifiable object')
+    return g
+  }
 }

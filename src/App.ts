@@ -78,12 +78,14 @@ export function App(store: Store<AppState>) {
   const history_keys = {
     "Ctrl-Z": undo,
     "Ctrl-Y": redo,
-    // "Ctrl-R": revert,
+    "Ctrl-R": revert,
+    "Ctrl-C": connect,
+    "Ctrl-D": disconnect,
     // "Alt-L": label
   }
   console.log('debug', debug)
 
-    const {cm: cm_main, vn: vn_main} = CM({extraKeys: history_keys})
+  const {cm: cm_main, vn: vn_main} = CM({extraKeys: history_keys})
   const {cm: cm_orig, vn: vn_orig} = CM({readOnly: store.get().ro_source})
   store.at('ro_source').ondiff(ro => cm_orig.setOption('readOnly', ro))
 
@@ -212,22 +214,75 @@ export function App(store: Store<AppState>) {
       const {head} = sels[0]
       const pos = cm_main.getDoc().indexFromPos(head)
       const index = T.token_at(G.target_texts(graph.get()), pos)
-      with_full_update(() => {
-        console.debug('todo: revert at index', {index, head, pos})
-        // revert at index
-      })
+      const t = graph.get().target[index.token]
+      if (t) {
+        const e = G.edge_map(graph.get()).get(t.id)
+        if (e) {
+          with_full_update(() => {
+            Model.advance_graph(undo_graph, G.revert(graph.get(), e.id))
+          })
+        }
+      }
     }
   }
 
-  function cut() {
+  function disconnect() {
+    const sels = cm_main.getDoc().listSelections()
+    if (sels) {
+      const {Anchor, Head} = selected_target()
+      const t = graph.get().target[Head.token]
+      if (t) {
+        with_full_update(() => {
+          Model.advance_graph(undo_graph, G.disconnect(graph.get(), t.id))
+        })
+      }
+    }
+  }
+
+  function connect() {
+    const sels = cm_main.getDoc().listSelections()
+    if (sels) {
+      const s = sels[0]
+      const {Anchor, Head} = selected_target()
+      const [from, to] = Utils.numsort([Anchor.token, Head.token])
+      const t1 = graph.get().target[from]
+      const t2 = graph.get().target[to]
+      if (t1 && t2) {
+        with_full_update(() => {
+          for (let t = from + 1; t <= to; ++t) {
+            const em =  G.edge_map(graph.get())
+            const e1 = em.get(t1.id)
+            const e2 = em.get(graph.get().target[t].id)
+            if (e1 && e2) {
+              Model.advance_graph(undo_graph, G.connect(graph.get(), e1.id, e2.id))
+            }
+          }
+        })
+      }
+    }
+  }
+
+  function selected_target() {
     const sels = cm_main.getDoc().listSelections()
     if (sels) {
       const {anchor, head} = sels[0]
       const target_texts = G.target_texts(graph.get())
       const Anchor = T.token_at(target_texts, cm_main.getDoc().indexFromPos(anchor))
       const Head = T.token_at(target_texts, cm_main.getDoc().indexFromPos(head))
+      return {Anchor, Head}
+    } else {
+      throw 'No selection'
+    }
+  }
+
+
+  function cut() {
+    const sels = cm_main.getDoc().listSelections()
+    if (sels) {
+      const {Anchor, Head} = selected_target()
       const [from, to] = Utils.numsort([Anchor.token, Head.token])
       const conv = (off: number) => cm_main.getDoc().posFromIndex(off)
+      const target_texts = G.target_texts(graph.get())
       remove_marks_by_class(cm_main, c.Cut)
       log({what: 'cut', from, to})
       cm_main.getDoc().markText(
