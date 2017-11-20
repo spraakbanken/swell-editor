@@ -133,7 +133,7 @@ export function App(store: Store<AppState>) {
             case 'disconnect': return disconnect()
             case 'next': return next()
             case 'prev': return prev()
-            case 'unselect': return () => selected_index.set(null)
+            case 'unselect': return selected_index.set(null)
             default: return Utils.absurd(r)
           }
         })
