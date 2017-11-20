@@ -53,6 +53,7 @@ export type Request =
   | 'undo' | 'redo'
   | { kind: 'revert_at', at: string }
   | { kind: 'disconnect_at', at: string }
+  | { kind: 'connect_two', one: string, two: string }
 
 export type Action = (r: Request) => void
 

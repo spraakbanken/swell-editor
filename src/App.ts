@@ -141,6 +141,11 @@ export function App(store: Store<AppState>) {
                   Model.advance_graph(undo_graph, G.disconnect(graph.get(), r.at))
                 })
                 return
+              case 'connect_two':
+                with_full_update(() => {
+                  Model.advance_graph(undo_graph, G.connect(graph.get(), r.one, r.two))
+                })
+                return
               default: return Utils.absurd(r)
             }
           } else {

@@ -206,12 +206,27 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
     }
   })
 
+  let dragstart: string
+  let dragend: string
+
   const ladder = track('table', table(columns.map(({up: u, mid: m, down: d, ix}, i) => ({
     snabbis: [
       select_index(ix),
       S.on('contextmenu')((e: PointerEvent) => {
         e.preventDefault()
         Request({kind: 'revert_at', at: rich_diff[ix].id})
+      }),
+      S.attrs({
+        draggable: 'true',
+      }),
+      S.on('dragstart')((e: DragEvent) => {
+        dragstart = rich_diff[ix].id
+      }),
+      S.on('dragover')((e: DragEvent) => {
+        dragend = rich_diff[ix].id
+      }),
+      S.on('dragend')((e: DragEvent) => {
+        Request({kind: 'connect_two', one: dragstart, two: dragend})
       }),
       C.Pointer
     ],
