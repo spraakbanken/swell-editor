@@ -97,7 +97,7 @@ export const styles = {
     $nest:{
       '& .CodeMirror':{
         border: '1px solid #ddd',
-        height: '50px',
+        height: '300px',
         minWidth: '250px',
         lineHeight: '1.5em',
       }

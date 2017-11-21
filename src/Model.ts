@@ -45,6 +45,8 @@ export interface AppState {
   readonly ro_source: boolean,
   /** Requests */
   readonly requests: Request[],
+  /** Error messages */
+  readonly messages: string[]
 }
 
 export type Request =
@@ -115,6 +117,16 @@ export function setup_sync(store: Store<AppState>): (() => void)[] {
               store.at('needs_full_update').set(true)
               store.at('synced').set(true)
             })
+          },
+          (error_str, code) => {
+            const mp = Store.arr(store.at('messages'), 'push')
+            try {
+              const error = JSON.parse(error_str)
+              console.log(error)
+              mp(error.error.message)
+            } catch (e) {
+              mp('Error in error handling code: ' + e.toString())
+            }
           }
         )
        }
@@ -175,7 +187,8 @@ export function init(text?: string): AppState {
     sync_request: false,
     synced: false,
     ro_source: true,
-    requests: []
+    requests: [],
+    messages: []
   }
 }
 

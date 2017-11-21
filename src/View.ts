@@ -21,10 +21,21 @@ export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
   const Request = Model.ActionMaker(store)
   const login = store.at('login')
   const login_state = store.at('login_state')
-  const header = tag('h3',
-    'Normaliseringseditorsprototyp',
-    S.on('click')(_ => store.set(Model.init())),
-    C.Pointer
+  const msg_store = store.at('messages')
+  const msg = msg_store.get()
+  const header = div(
+    tag('h3',
+      'Normaliseringseditorsprototyp',
+      S.on('click')(_ => store.set(Model.init())),
+      C.Pointer
+    ),
+    msg.length > 0 &&
+    tag('div',
+      C.PadButtons,
+      tag('div', msg),
+       button('logout', () => { msg_store.set([]); login_state.set('out') }),
+       button('dismiss', () => { msg_store.set([]) })
+    )
   )
   if (login_state.get() == 'out') {
     return div(

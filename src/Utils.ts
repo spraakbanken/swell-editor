@@ -641,11 +641,14 @@ export function store_join(store: Store<string[]>): Store<string> {
 }
 
 /** POST request */
-export function POST(url: string, data: any, k: (response: any) => void): void {
+export function POST(url: string, data: any, k: (response: any) => void, k_err: (response: any, code: number) => void = () => { return }): void {
   const r = new XMLHttpRequest()
   r.onreadystatechange = () => {
     if (r.readyState == 4 && r.status == 200) {
       k(r.response)
+    }
+    if (r.readyState == 4 && r.status > 200) {
+      k_err(r.response, r.status)
     }
   }
   r.open("POST", url, true)
