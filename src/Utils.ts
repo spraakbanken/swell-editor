@@ -1,25 +1,8 @@
 
+import * as R from "ramda"
 import { Lens, Store } from 'reactive-lens'
 import * as Dmp from "diff-match-patch"
 export const dmp = new Dmp.diff_match_patch()
-
-export interface Pair<A, B> {
-  readonly first: A,
-  readonly second: B
-}
-
-export function Pair<A, B>(first: A, second: B): Pair<A, B> {
-  return {first, second}
-}
-
-export function pair<A, B>({first, second}: Pair<A, B>): [A, B] {
-  return [first, second]
-}
-
-export function triple<A, B, C>({first, second}: Pair<A, Pair<B, C>>): [A, B, C] {
-  return [first, second.first, second.second]
-}
-
 
 export type TokenDiff = [number, string][]
 
@@ -43,16 +26,16 @@ export type ChangeInt = -1 | 0 | 1
 
 /**
 
-  raw_diff('abca'.split(''), 'bac'.split('')).map(pair) // => [[-1, 'a'], [0, 'b'], [1, 'a'], [0, 'c'], [-1, 'a']]
-  raw_diff('abc'.split(''), 'cab'.split('')).map(pair) // => [[1, 'c'], [0, 'a'], [0, 'b'], [-1, 'c']]
-  raw_diff('bca'.split(''), 'a1234bc'.split('')).map(pair) // => [[1, 'a'], [1, '1'], [1, '2'], [1, '3'], [1, '4'], [0, 'b'], [0, 'c'], [-1, 'a']]
-  raw_diff(['anything', 'everything'], ['anything']).map(pair) // => [[0, 'anything'], [-1, 'everything']]
+  raw_diff('abca'.split(''), 'bac'.split('')) // => [[-1, 'a'], [0, 'b'], [1, 'a'], [0, 'c'], [-1, 'a']]
+  raw_diff('abc'.split(''), 'cab'.split('')) // => [[1, 'c'], [0, 'a'], [0, 'b'], [-1, 'c']]
+  raw_diff('bca'.split(''), 'a1234bc'.split('')) // => [[1, 'a'], [1, '1'], [1, '2'], [1, '3'], [1, '4'], [0, 'b'], [0, 'c'], [-1, 'a']]
+  raw_diff(['anything', 'everything'], ['anything']) // => [[0, 'anything'], [-1, 'everything']]
   const n = 10000
-  raw_diff(range(n), range(2*n)) // => range(2*n).map(i => Pair(i < n ? 0 : 1, i))
+  raw_diff(range(n), range(2*n)) // => range(2*n).map(i => R.pair(i < n ? 0 : 1, i))
 
 */
-export function raw_diff<A>(xs: A[], ys: A[], cmp: (a: A) => string = a => a.toString()): Pair<ChangeInt, A>[] {
-  return hdiff(xs, ys, cmp, cmp).map(c => Pair(c.change, c.change == 1 ? c.b : c.a))
+export function raw_diff<A>(xs: A[], ys: A[], cmp: (a: A) => string = a => a.toString()): R.KeyValuePair<ChangeInt, A>[] {
+  return hdiff(xs, ys, cmp, cmp).map(c => R.pair(c.change, c.change == 1 ? c.b : c.a))
 }
 
 interface Deleted<A> {
@@ -309,16 +292,6 @@ export function flatMap<A, B>(xs: A[], f: (a: A) => B[]): B[] {
 }
 
 
-/** Split an array into two pieces */
-export function splitAt<A>(xs: A[], i: number): [A[], A[]] {
-  return [xs.slice(0, i), xs.slice(i)]
-}
-
-/** Split a string into two pieces */
-export function stringSplitAt<A>(s: string, i: number): [string, string] {
-  return [s.slice(0, i), s.slice(i)]
-}
-
 /** Split an array into three pieces
 
   splitAt3('0123456'.split(''), 2, 4).map(xs => xs.join('')) // => ['01', '23', '456']
@@ -328,8 +301,8 @@ export function stringSplitAt<A>(s: string, i: number): [string, string] {
 
 */
 export function splitAt3<A>(xs: A[], start: number, end: number): [A[], A[], A[]] {
-  const [ab,c] = splitAt(xs, end)
-  const [a,b] = splitAt(ab, start)
+  const [ab,c] = R.splitAt(end, xs)
+  const [a,b] = R.splitAt(start, ab)
   return [a,b,c]
 }
 
@@ -342,8 +315,8 @@ export function splitAt3<A>(xs: A[], start: number, end: number): [A[], A[], A[]
 
 */
 export function stringSplitAt3(xs: string, start: number, end: number): [string, string, string] {
-  const [ab,c] = stringSplitAt(xs, end)
-  const [a,b] = stringSplitAt(ab, start)
+  const [ab,c] = R.splitAt(end, xs)
+  const [a,b] = R.splitAt(start, ab)
   return [a,b,c]
 }
 
@@ -512,7 +485,7 @@ export function rearrange<A>(xs: A[], begin: number, end: number, dest: number):
   if (dest > begin) {
     dest -= w
   }
-  const [pre, post] = splitAt(a.concat(z), dest)
+  const [pre, post] = R.splitAt(dest, a.concat(z))
   return pre.concat(mid, post)
 }
 
@@ -551,11 +524,11 @@ export function absurd<A>(c: never): A {
 }
 
 export function record_forEach<K extends string, A>(x: Record<K, A>, k: (a: A, id: K) => void): void {
-  Object.keys(x).forEach((id: K) => k(x[id], id))
+  (Object.keys(x) as K[]).forEach((id: K) => k(x[id], id))
 }
 
 export function record_traverse<K extends string, A, B>(x: Record<K, A>, k: (a: A, id: K) => B, sort_keys: boolean=false): B[] {
-  const ks = Object.keys(x)
+  const ks = Object.keys(x) as K[]
   if (sort_keys) {
     ks.sort()
   }
@@ -673,4 +646,20 @@ export function debounce(wait: number, k: (...args: any[]) => void): (...args: a
       k(...args)
     }, wait) as any as NodeJS.Timer
   }
+}
+
+/** Iterate a function f until a fixpoint x is reached (i.e. f(x) = x)
+
+  fix(1234, x => Math.round(x / 2)) // => 1
+  fix(1234, x => Math.floor(x / 2)) // => 0
+
+*/
+export function fix<A>(init: A, f: (a: A) => A): A {
+  let v = init
+  let last = v
+  do {
+    last = v
+    v = f(v)
+  } while (!R.equals(v, last))
+  return v
 }

@@ -453,29 +453,8 @@ export function calculate_diff(g: Graph): Diff[] {
 }
 
 /** Gets the sentence in the target text around some offset, without thinking about edits */
-export function proto_target_sentence(g: Graph, i: number): Span {
-  return T.sentence(target_texts(g), i)
-}
-
-/** Gets the sentence in the target text around some offset, following edges */
 export function target_sentence(g: Graph, i: number): Span {
-  let target = proto_target_sentence(g, i)
-  const em = edge_map(g)
-  const tm = target_map(g)
-  let stable = false
-  while (!stable) {
-    stable = true
-    for (let i = target.begin; i <= target.end; ++i) {
-      for (let id of (em.get(g.target[i].id) as Edge).ids) {
-        let j = tm.get(id)
-        if (j !== undefined && !T.span_within(j, target)) {
-          target = T.span_merge(target, proto_target_sentence(g, j))
-          stable = false
-        }
-      }
-    }
-  }
-  return target
+  return T.sentence(target_texts(g), i)
 }
 
 export type Subspans = {source: Span, target: Span}
@@ -493,22 +472,73 @@ export type Subspans = {source: Span, target: Span}
   sentence(g2, 1) // => {source: {begin: 0, end: 5}, target: {begin: 0, end: 6}}
   sentence(g2, 2) // => {source: {begin: 0, end: 5}, target: {begin: 0, end: 6}}
   sentence(g2, 3) // => {source: {begin: 0, end: 5}, target: {begin: 0, end: 6}}
+  const g3 = modify_tokens(g, 6, 7, '')
+  target_text(g3) // => 'apa bepa . Cepa depa . '
+  sentence(g3, 4) // => {source: {begin: 3, end: 6}, target: {begin: 3, end: 5}}
+  sentence(g3, 5) // => {source: {begin: 3, end: 6}, target: {begin: 3, end: 5}}
 
 */
 export function sentence(g: Graph, i: number): Subspans {
-  let target = target_sentence(g, i)
-  const em = edge_map(g)
-  const sm = source_map(g)
-  let source = {begin: g.source.length - 1, end: 0}
-  for (let i = target.begin; i <= target.end; ++i) {
-    for (let id of (em.get(g.target[i].id) as Edge).ids) {
-      let j = sm.get(id)
-      if (j !== undefined) {
-        source = T.span_merge(source, {begin: j, end: j})
-      }
-    }
+  let {source, target} = proto_sentence(g, i)
+  if (target.begin > 0) {
+    const prev = proto_sentence(g, target.begin - 1)
+    source = T.span_merge(source, {begin: prev.source.end + 1, end: source.end})
+  } else {
+    source = T.span_merge(source, {begin: 0, end: source.end})
+  }
+  const N = target_texts(g).length
+  if (target.end < N - 1) {
+    const next = proto_sentence(g, target.end + 1)
+    source = T.span_merge(source, {begin: source.begin, end: next.source.begin - 1})
+  } else {
+    source = T.span_merge(source, {begin: source.begin, end: source_texts(g).length - 1})
   }
   return {source, target}
+}
+
+export function proto_sentence(g: Graph, i: number): Subspans {
+  const init = {
+    source: {begin: g.source.length - 1, end: 0},
+    target: target_sentence(g, i)
+  }
+  const em = edge_map(g)
+  const sm = source_map(g)
+  const tm = target_map(g)
+  const unseen = Utils.unique_check()
+  return Utils.fix(init,
+    ({source, target}) => {
+      const visit = (id0: string) => {
+        const edge = em.get(id0)
+        if (edge && unseen(edge.id)) {
+          for (let id of edge.ids) {
+            let i = tm.get(id)
+            if (i !== undefined) {
+              target = T.span_merge(target, target_sentence(g, i))
+            }
+            let j = sm.get(id)
+            if (j !== undefined) {
+              source = T.span_merge(source, {begin: j, end: j})
+            }
+          }
+        }
+      }
+      for (let i = target.begin; i <= target.end; ++i) {
+        const tid = g.target[i].id
+        if (tid && unseen(tid)) {
+          visit(tid)
+        }
+      }
+      if (source.begin >= 0) {
+        for (let i = source.begin; i <= source.end; ++i) {
+          const sid = g.source[i].id
+          if (sid && unseen(sid)) {
+            visit(sid)
+          }
+        }
+      }
+      return {source, target}
+    }
+  )
 }
 
 /** The subgraph from a subspan

@@ -1,4 +1,5 @@
 
+import * as equals from "ramda/src/equals"
 import { tag, Content as S } from "snabbis"
 import { VNode } from "snabbdom/vnode"
 import * as Utils from "./Utils"
@@ -20,7 +21,7 @@ export const vmid = (p: Pos) => p.top + p.height / 2
 
 export const bot = (p: Pos) => p.top + p.height
 
-const eq_pos = (p: Pos, q: Pos) => Object.getOwnPropertyNames(p).every((i: keyof Pos) => p[i] == q[i])
+const eq_pos = (p: Pos, q: Pos) => equals(p, q)
 
 export const init_pos_dict = () => ({modified: false, dict: {}})
 

@@ -9,7 +9,7 @@
     "codemirror": "^5.27.2",
     "csstips": "^0.2.2",
     "diff-match-patch": "^1.0.0",
-    "prettify-xml": "^1.2.0",
+    "ramda": "^0.25.0",
     "reactive-lens": "^0.1.2",
     "reactive-lens-snabbdom": "^0.1.2",
     "snabbdom": "^0.7.0",
@@ -17,35 +17,32 @@
     "typestyle": "^1.4.1"
   },
   "devDependencies": {
-    "@types/assert": "0.0.31",
     "@types/codemirror": "0.0.41",
     "@types/diff-match-patch": "^1.0.31",
-    "@types/lodash": "^4.14.74",
     "@types/node": "^8.0.26",
+    "@types/ramda": "github:types/npm-ramda#dist",
     "@types/tape": "^4.2.31",
-    "assert": "^1.4.1",
     "awesome-typescript-loader": "^3.0.3",
     "closure-compiler": "^0.2.12",
     "css-loader": "^0.28.1",
     "file-loader": "^0.11.1",
     "jsverify": "^0.8.3",
-    "lodash": "^4.17.4",
+    "lato-font": "^3.0.0",
     "source-map-loader": "^0.1.5",
     "style-loader": "^0.17.0",
     "tape": "^4.8.0",
     "ts-node": "^3.3.0",
-    "typescript": "2.4.2",
+    "typescript": "^2.6.1",
     "uglifyjs-webpack-plugin": "^0.4.6",
     "url-loader": "^0.5.8",
     "webpack": "^3.7.1",
     "webpack-closure-compiler": "^2.1.5",
-    "webpack-dev-server": "2.3.0",
-    "xmlshim": "^0.2.1"
+    "webpack-dev-server": "2.3.0"
   },
   "scripts": {
     "start": "webpack-dev-server --hot",
     "build": "NODE_ENV=production webpack --display-optimization-bailout",
-    "pretest": "tsc src/*test.ts --module commonjs --target es6 --allowUnreachableCode",
-    "test": "mocha src/*test.js"
+    "doctest": "./doctests.sh",
+    "test": "ts-node test/Graph.test.ts | faucet"
   }
 }
