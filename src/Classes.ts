@@ -195,6 +195,9 @@ export const styles = {
   }),
 
   Unselectable: css({
+    '-ms-user-select': 'none',
+    '-webkit-user-select': 'none',
+    '-moz-user-select': 'none',
     userSelect: 'none'
   }),
 

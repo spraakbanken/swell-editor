@@ -133,6 +133,7 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
 
   const new_source = (s: Token, diff: TokenDiff, edge_id: string) => {
     up.push(track(s.id, span(deletes(diff), C.InnerCell,
+      S.attrs({ draggable: 'true' }),
       S.on('dblclick')((e: MouseEvent) => {
         e.preventDefault()
         Request({kind: 'disconnect_at', at: s.id})
@@ -142,6 +143,7 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
   }
   const new_target = (t: Token, diff: TokenDiff, edge_id: string) => {
     down.push(track(t.id, span(inserts(diff), C.InnerCell,
+      S.attrs({ draggable: 'true' }),
       S.on('dblclick')((e: MouseEvent) => {
         e.preventDefault()
         Request({kind: 'disconnect_at', at: t.id})
@@ -168,6 +170,7 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
           ),
           C.BorderCell,
           S.styles({height: 'min-content'}),
+          S.attrs({ draggable: 'true' }),
           S.classes({[c.LadderSelected]: diff_index === selected_index}),
         )
       )
@@ -206,16 +209,26 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
         e.preventDefault()
         Request({kind: 'revert_at', at: rich_diff[ix].id})
       }),
-      S.attrs({
-        draggable: 'true',
+      S.attrs({ draggable: 'true' }),
+      S.on('mousedown')((e: MouseEvent) => {
+        dragstart = rich_diff[ix].id
+        console.log('BEGIN', {dragstart, dragend})
+      }),
+      S.on('mouseup')((e: MouseEvent) => {
+        dragend = rich_diff[ix].id
+        console.log('END', {dragstart, dragend})
+        Request({kind: 'connect_two', one: dragstart, two: dragend})
       }),
       S.on('dragstart')((e: DragEvent) => {
         dragstart = rich_diff[ix].id
+        console.log('dragstart', {dragstart, dragend})
       }),
       S.on('dragover')((e: DragEvent) => {
         dragend = rich_diff[ix].id
+        console.log('dragover', {dragstart, dragend})
       }),
       S.on('dragend')((e: DragEvent) => {
+        console.log('dragend', {dragstart, dragend})
         Request({kind: 'connect_two', one: dragstart, two: dragend})
       }),
       S.classes({[c.LadderSelected]: ix === selected_index}),
@@ -291,7 +304,8 @@ const avg = (xs: number[]) => {
 }
 
 const diff_to_spans = (rules: (string | null)[]) => (d: [number, string][]) =>
-  diff_helper(d, rules, (text, cls) => tag('span', S.classed(cls), text))
+  diff_helper(d, rules,
+    (text, cls) => span(S.classed(cls), text))
 
 const inserts = diff_to_spans([null, '', c.Insert])
 
