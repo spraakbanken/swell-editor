@@ -209,14 +209,8 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
         Request({kind: 'revert_at', at: rich_diff[ix].id})
       }),
       S.attrs({ draggable: 'true' }),
-      S.on('mousedown')((e: MouseEvent) => {
-        dragstart = rich_diff[ix].id
-      }),
-      S.on('mouseup')((e: MouseEvent) => {
-        dragend = rich_diff[ix].id
-        Request({kind: 'connect_two', one: dragstart, two: dragend})
-      }),
       S.on('dragstart')((e: DragEvent) => {
+        e.dataTransfer.setData('text/plain', 'https://stackoverflow.com/questions/19055264/why-doesnt-html5-drag-and-drop-work-in-firefox')
         dragstart = rich_diff[ix].id
       }),
       S.on('dragover')((e: DragEvent) => {
