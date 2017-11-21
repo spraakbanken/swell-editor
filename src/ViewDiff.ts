@@ -63,7 +63,6 @@ function LabelEditor(store: Store<string[]>, Request: Model.Action, selected_ind
         } else if (e.code == 'Escape') {
           Request('unselect')
         }
-        // console.log(e.code, e.charCode, e.keyCode, e.shiftKey)),
       }),
       CatchSubmit(
         () => Request('next'),
@@ -212,23 +211,18 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
       S.attrs({ draggable: 'true' }),
       S.on('mousedown')((e: MouseEvent) => {
         dragstart = rich_diff[ix].id
-        console.log('BEGIN', {dragstart, dragend})
       }),
       S.on('mouseup')((e: MouseEvent) => {
         dragend = rich_diff[ix].id
-        console.log('END', {dragstart, dragend})
         Request({kind: 'connect_two', one: dragstart, two: dragend})
       }),
       S.on('dragstart')((e: DragEvent) => {
         dragstart = rich_diff[ix].id
-        console.log('dragstart', {dragstart, dragend})
       }),
       S.on('dragover')((e: DragEvent) => {
         dragend = rich_diff[ix].id
-        console.log('dragover', {dragstart, dragend})
       }),
       S.on('dragend')((e: DragEvent) => {
-        console.log('dragend', {dragstart, dragend})
         Request({kind: 'connect_two', one: dragstart, two: dragend})
       }),
       S.classes({[c.LadderSelected]: ix === selected_index}),
