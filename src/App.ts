@@ -361,9 +361,6 @@ export function App(store: Store<AppState>) {
       const to = token_index(mark.to as any)
       const cursor = cm_main.getDoc().getCursor()
       let here = token_index(cursor)
-      if (here > to) {
-        here++
-      }
       log({what: 'paste', from, to, here})
       with_full_update(() => {
         Model.advance_graph(undo_graph, G.rearrange(graph.get(), from, to, here))
