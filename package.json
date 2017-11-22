@@ -35,7 +35,6 @@
     "ts-node": "^3.3.0",
     "typescript": "^2.6.1",
     "uglifyjs-webpack-plugin": "^0.4.6",
-    "url-loader": "^0.5.8",
     "webpack": "^3.7.1",
     "webpack-closure-compiler": "^2.1.5",
     "webpack-dev-server": "2.3.0"

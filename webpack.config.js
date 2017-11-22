@@ -72,18 +72,15 @@ module.exports = {
                 include: [path.resolve(__dirname, "node_modules"),
                           path.resolve(__dirname, "src")]
             },
-            // http://andrejgajdos.com/setting-up-webpack-for-es6-react-sass-and-bootstrap/
-            // the url-loader uses DataUrls.
-            // the file-loader emits files.
             {
-                test: /\.(woff|woff2)(\?v=\d+\.\d+\.\d+)?$/,
-                loader: 'url-loader?limit=10000&mimetype=application/font-woff'
-            },
-            {
-                test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/,
-                loader: 'url-loader?limit=10000&mimetype=application/octet-stream',
-                include: [__dirname]
-            },
+                test: /\.(woff|woff2|tff)(\?v=\d+\.\d+\.\d+)?$/,
+                use: [{
+                  loader: 'file-loader',
+                  options: {
+                    outputPath: 'fonts/'
+                  }
+                }]
+            }
           ]
     }
 };
