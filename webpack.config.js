@@ -26,7 +26,14 @@ if (production) {
   }))
 }
 
-
+const HTML = require("html-webpack-plugin")
+plugins.push(
+  new HTML({
+    hash: true,
+    template: './src/index.html',
+    filename: './index.html',
+  }),
+)
 
 module.exports = {
     entry: [
