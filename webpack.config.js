@@ -24,16 +24,15 @@ if (production) {
     },
     concurrency: 3
   }))
+  const HTML = require("html-webpack-plugin")
+  plugins.push(
+    new HTML({
+      hash: true,
+      template: './src/index.html',
+      filename: './index.html',
+    }),
+  )
 }
-
-const HTML = require("html-webpack-plugin")
-plugins.push(
-  new HTML({
-    hash: true,
-    template: './src/index.html',
-    filename: './index.html',
-  }),
-)
 
 module.exports = {
     entry: [

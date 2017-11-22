@@ -14,6 +14,7 @@ import * as Positions from "./Positions"
 
 import * as Snabbdom from "./Snabbdom"
 import { CatchSubmit, InputField, button, div, span, on } from "./Snabbdom"
+import * as Dropdown from "./Dropdown"
 
 import { log } from './dev'
 import { PosDict } from "./Positions"
@@ -27,6 +28,7 @@ export interface ViewDiffState {
   readonly graph: Undo<Graph>,
   readonly positions: PosDict,
   readonly selected_index: number | null,
+  readonly dropdown: Dropdown.State
 }
 
 interface Column {
@@ -50,65 +52,15 @@ const red = style({
   color: 'red',
 })
 
-function LabelEditor(store: Store<string[]>, Request: Model.Action, selected_index: Store<number | null>, taxonomy: Taxonomy): VNode {
-  let off = undefined as undefined | (() => void)
-  return div(
-    S.styles({marginTop: '2px', marginBottom: '4px'}),
-    C.BorderCell,
-    div(
-      S.on('keydown')((e: KeyboardEvent) => {
-        if (e.code == 'Tab') {
-          Request(e.shiftKey ? 'prev' : 'next')
-          e.preventDefault()
-        } else if (e.code == 'Escape') {
-          Request('unselect')
-        }
-      }),
-      CatchSubmit(
-        () => Request('next'),
-        InputField(
-          Utils.store_join(store).via(Lens.iso(s => s.toUpperCase(), s => s.toUpperCase())),
-          S.attrs({autofocus: true}),
-          S.hook({
-            insert: (vn) => {
-              const elt = vn.elm as HTMLInputElement
-              elt.focus()
-              if (off) { off() }
-              off = selected_index.ondiff(() => elt.focus())
-            },
-            remove: () => off && off()
-          })
-         )
-      ),
-    ),
-    div(
-      S.styles({width: '160px'}),
-      C.HSpaced,
-      taxonomy.map(t => {
-        const tstore = Utils.array_store_key(store, t.code)
-        const active = tstore.get()
-        return tag('span',
-          C.InlineBlock,
-          C.Pointer,
-          t.code + ' ',
-          S.on('click')(() => tstore.modify(x => !x)),
-          S.classes({[orange]: tstore.get()}),
-        )
-      }),
-      tag('a', 'info', S.styles({float: 'right'}),
-        S.attrs({
-          href: 'https://spraakbanken.gu.se/eng/swell/swell_codebook',
-          target: '_blank'
-        })),
-    )
-  )
-}
 
 export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, rich_diff: RichDiff[], taxonomy: Taxonomy): VNode {
 
-  const select_index = (ix: number | null) => S.on('click')(e => {
+  let inp: HTMLInputElement | undefined
+
+  const select_index = (index: number | null) => S.on('click')(e => {
     // store.at('selected_index').modify(ix_now => ix_now === ix ? null : ix)
-    store.at('selected_index').set(ix)
+    Request({kind: 'select_index', index})
+    inp && inp.focus()
     e.stopPropagation()
   })
 
@@ -163,14 +115,14 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
             code => span(
               code + ' ',
               S.classes({
-                [red]: diff_index !== selected_index && taxonomy.every(t => t.code != code)
+                [red]: diff_index !== selected_index && taxonomy.every(g => g.choices.every(alt => alt.value != code))
               })
             )
           ),
           C.BorderCell,
           S.styles({height: 'min-content'}),
           S.attrs({ draggable: 'true' }),
-          S.classes({[c.LadderSelected]: diff_index === selected_index}),
+          S.classes({[c.SelectedBorderCell]: diff_index === selected_index}),
         )
       )
       mid.push(track(edge_id, vn))
@@ -263,13 +215,18 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
     // If this is the selected edge, instead add the component for editing the label set
     // NB: TODO: Add Undo functionality to labels
     out = div(
-      S.classed(style(csstips.horizontal)),
-      LabelEditor(
-        G.label_store(store.at('graph').at('now'), rich_diff[selected_index].id),
-        Request,
-        store.at('selected_index'),
-        taxonomy),
-      out
+      // S.classed(style(csstips.horizontal)),
+      out,
+      div(Dropdown.Dropdown(store.at('dropdown'), taxonomy, inp_ => { inp = inp_; inp && inp.focus() }),
+        S.on('keydown')((e: KeyboardEvent) => {
+          if (e.code == 'Tab') {
+            Request(e.shiftKey ? 'prev' : 'next')
+            e.preventDefault()
+          } else if (e.code == 'Escape') {
+            Request({kind: 'select_index', index: null})
+          }
+        }),
+        S.on('click')(e => { console.log('defprev'), e.stopPropagation() })),
     )
   }
 

@@ -6,6 +6,7 @@
   "description": "Editor for normalising second-language learner texts",
   "main": "./dist/bundle.js",
   "dependencies": {
+    "choices.js": "git+https://github.com/jshjohnson/Choices.git#develop",
     "codemirror": "^5.27.2",
     "csstips": "^0.2.2",
     "diff-match-patch": "^1.0.0",

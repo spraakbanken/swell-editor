@@ -4,6 +4,7 @@ import * as CodeMirror from "codemirror"
 import * as csstips from "csstips"
 import "codemirror/lib/codemirror.css"
 import "lato-font/css/lato-font.min.css"
+import "choices.js/src/styles/css/choices.min.css"
 import {debug} from './dev'
 import { patch } from "snabbis"
 import { setup, attach } from "reactive-lens-snabbdom"

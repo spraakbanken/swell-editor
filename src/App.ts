@@ -17,6 +17,7 @@ import { tag, Content as S } from "snabbis"
 import * as Model from "./Model"
 import { AppState } from "./Model"
 export { Model }
+export { Dropdown }
 
 import { log, debug, debug_table } from "./dev"
 import { VNode } from "snabbis"
@@ -34,6 +35,7 @@ import * as Utils from "./Utils"
 
 import { Store, Lens, Undo } from "reactive-lens"
 
+import * as Dropdown from "./Dropdown"
 
 export function App(store: Store<AppState>) {
   {
@@ -50,6 +52,7 @@ export function App(store: Store<AppState>) {
     global.store = store
 
     Model.setup_sync(store)
+    Dropdown.Handler(store.at('dropdown'))
 
     const storage_key = 'state'
     Model.ForLocalStorage(store).storage_connect(storage_key, item => item.login_state != 'anonymous')
@@ -154,6 +157,9 @@ export function App(store: Store<AppState>) {
                   Model.advance_graph(undo_graph, G.connect(graph.get(), r.one, r.two))
                 })
                 return
+              case 'select_index':
+                select_index(r.index, Model.calculate_diffs(store.get()).diff)
+                return
               default: return Utils.absurd(r)
             }
           } else {
@@ -165,7 +171,6 @@ export function App(store: Store<AppState>) {
               case 'disconnect': return disconnect()
               case 'next': return next()
               case 'prev': return prev()
-              case 'unselect': return selected_index.set(null)
               default: return Utils.absurd(r)
             }
           }
@@ -174,19 +179,39 @@ export function App(store: Store<AppState>) {
     }
   })
 
+  function select_index(i: number | null, diff?: Diff[]) {
+    store.transaction(() => {
+      selected_index.set(i)
+      console.log('select_index', i)
+      if (i != null && diff != undefined) {
+        store.at('dropdown').update({
+          active: G.label_store(current.at('graph').at('now'), diff[i].id),
+          cursor: undefined,
+          input: ''
+        })
+      } else {
+        store.at('dropdown').update({
+          active: undefined,
+          cursor: undefined,
+          input: ''
+        })
+      }
+    })
+  }
+
 
   function next() {
     const {diff} = Model.calculate_diffs(store.get())
     const si = selected_index.get()
     if (si != null) {
       const ni = D.next(diff, si)
-      ni != null && selected_index.set(ni)
+      ni != null && select_index(ni, diff)
       if (ni == null) {
         const g = graph.get()
         const {end} = G.target_sentence(g, ci.get())
         if (end + 1 < G.target_texts(g).length) {
           ci.set(end + 1)
-          selected_index.set(0)
+          select_index(0, diff)
         }
       }
     }
@@ -197,13 +222,14 @@ export function App(store: Store<AppState>) {
     const si = selected_index.get()
     if (si != null) {
       const pi = D.prev(diff, si)
-      pi != null && selected_index.set(pi)
+      pi != null && select_index(pi, diff)
       if (pi == null) {
         const g = graph.get()
         const {begin} = G.target_sentence(g, ci.get())
         if (begin - 1 >= 0) {
           ci.set(begin - 1)
-          selected_index.set(Model.calculate_diffs(store.get()).diff.length - 2)
+          const {diff: new_diff} = Model.calculate_diffs(store.get())
+          select_index(new_diff.length - 2, new_diff)
         }
       }
     }
@@ -213,7 +239,7 @@ export function App(store: Store<AppState>) {
     const {diff} = Model.calculate_diffs(store.get())
     const si = selected_index.get()
     if (si != null && si >= diff.length) {
-      selected_index.set(null)
+      select_index(null, diff)
     }
   })
 

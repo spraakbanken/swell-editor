@@ -9,6 +9,9 @@ import * as T from './Token'
 import { TokenDiff } from "./Utils"
 import * as Utils from "./Utils"
 
+import { Group, Alt } from "./Dropdown"
+import * as Dropdown from "./Dropdown"
+
 import { Store, Lens, Undo } from "reactive-lens"
 import { PosDict } from "./Positions"
 import { log, debug, debug_table } from "./dev"
@@ -47,15 +50,18 @@ export interface AppState {
   readonly requests: Request[],
   /** Error messages */
   readonly messages: string[]
+  /** Current dropdown */
+  readonly dropdown: Dropdown.State,
 }
 
 export type Request =
-    'prev' | 'next' | 'unselect'
+    'prev' | 'next'
   | 'revert' | 'connect' | 'disconnect'
   | 'undo' | 'redo'
   | { kind: 'revert_at', at: string }
   | { kind: 'disconnect_at', at: string }
   | { kind: 'connect_two', one: string, two: string }
+  | { kind: 'select_index', index: number | null }
 
 export type Action = (r: Request) => void
 
@@ -188,7 +194,8 @@ export function init(text?: string): AppState {
     synced: false,
     ro_source: true,
     requests: [],
-    messages: []
+    messages: [],
+    dropdown: Dropdown.init
   }
 }
 
@@ -256,61 +263,54 @@ export function modify_graph(gs: Store<Undo<Graph>>, f: (g: Graph) => Graph) {
 ////////////////////////////////////////////////////////////////////////////////
 // Labelling
 
-export interface TaxonomyEntry {
-  code: string,
-  description: string
+function entry(value: string, label: string): Alt {
+  return {value, label}
 }
 
-function entry(code: string, description: string): TaxonomyEntry {
-  return {code, description}
+function group(label: string, ...choices: Alt[]): Group {
+  return {label, choices}
 }
 
-export type Taxonomy = TaxonomyEntry[]
+export type Taxonomy = Group[]
 
 // https://spraakbanken.gu.se/eng/swell/swell_codebook
 export const taxonomy: Taxonomy = [
-  entry('W', 'Wrong word or punctuation'),
-  entry('W-REF', 'Reference error'),
-  entry('ORT', 'Orthographic/spelling error'),
-  entry('PART', 'Overcompounding'),
-  entry('SPL', 'Oversplitting'),
-  entry('DER', 'Deviant derivational affix used'),
-  entry('CAP', 'Deviant letter case (upper/lower)'),
-  entry('ID', 'Idiomaticity'),
-  entry('FL', 'Non-Swedish word'),
-  entry('F', 'Deviant selection of morphosyntactic category'),
-  entry('F-DEF', 'Deviation in definite/indefinite forms, may apply to groups of words'),
-  entry('F-TENSE', 'Covers all deviations with verbs and verb groups, incl aspect'),
-  entry('F-NUM', 'Deviation in number agreement'),
-  entry('F-AGR', 'Agreement error (kongruensfel), e.g. between adjective and noun; pronoun and noun, etc.'),
-  entry('INFL', 'Deviant paradigm selection, but interpreted to be in accordance with the morphosyntactical form in Swedish; overgeneralization'),
-  entry('M', 'Word, phrase or punctuation missing'),
-  entry('M-SUBJ', 'Subject missing'),
-  entry('R', 'Word or phrase redundant'),
-  entry('R-PREP', 'Preposition redundant'),
-  entry('R-PUNC', 'Punctuation mark redundant'),
-  entry('O', 'Word or phrase order'),
-  entry('INV', 'Non-application of subject/verb inversion '),
-  entry('OINV', 'Application of subject/verb inversion in inappropriate contexts'),
-  entry('MCA', 'Incorrect position for main clause adverbial'),
-  entry('SCA', 'Incorrect position for subsidiary clause adverbial'),
-  entry('X', 'impossible to interpret the writer’s intention with a word, phrase or sentence.'),
-  entry('AGR', 'Agreement errors'),
+  group('Lexical',
+    entry('W', 'Wrong word or punctuation'),
+    entry('W-REF', 'Reference error'),
+    entry('ORT', 'Orthographic/spelling error'),
+    entry('PART', 'Overcompounding'),
+    entry('SPL', 'Oversplitting'),
+    entry('DER', 'Deviant derivational affix used'),
+    entry('CAP', 'Deviant letter case (upper/lower)'),
+    entry('ID', 'Idiomaticity'),
+    entry('FL', 'Non-Swedish word')
+  ),
+  group('Morphological',
+    entry('F', 'Deviant selection of morphosyntactic category'),
+    entry('F-DEF', 'Deviation in definite/indefinite forms, may apply to groups of words'),
+    entry('F-TENSE', 'Covers all deviations with verbs and verb groups, incl aspect'),
+    entry('F-NUM', 'Deviation in number agreement'),
+    entry('F-AGR', 'Agreement error (kongruensfel)'),
+    entry('INFL', 'Deviant paradigm selection, but in accordance with L1 morphosyntactical form; overgeneralization'),
+  ),
+  group('Syntactical',
+    entry('M', 'Word, phrase or punctuation missing'),
+    entry('M-SUBJ', 'Subject missing'),
+    entry('R', 'Word or phrase redundant'),
+    entry('R-PREP', 'Preposition redundant'),
+    entry('R-PUNC', 'Punctuation mark redundant'),
+    entry('O', 'Word or phrase order'),
+    entry('INV', 'Non-application of subject/verb inversion '),
+    entry('OINV', 'Application of subject/verb inversion in inappropriate contexts'),
+    entry('MCA', 'Incorrect position for main clause adverbial'),
+    entry('SCA', 'Incorrect position for subsidiary clause adverbial'),
+  ),
+  group('Intelligibility',
+    entry('X', "impossible to interpret writer's intention"),
+  ),
+  group('Agreement',
+    entry('AGR', 'Agreement errors'),
+  )
 ]
-
-export const prefixOf =
-  (prefix: string, s: string) =>
-  0 == s.toLowerCase().indexOf(prefix.toLowerCase())
-
-export const exactMatch =
-  (prefix: string, s: string) =>
-  s.toLowerCase() == prefix.toLowerCase()
-
-export const prefixMatches =
-  (prefix: string, t: Taxonomy) =>
-  t.filter(e => prefixOf(prefix, e.code))
-
-export const exactMatches =
-  (prefix: string, t: Taxonomy) =>
-  t.filter(e => exactMatch(prefix, e.code))
 

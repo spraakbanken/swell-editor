@@ -9,6 +9,9 @@ export function css(...xs: types.NestedCSSProperties[]): types.NestedCSSProperti
   return xs
 }
 
+const Cyan = "#00bcd4"
+const CyanBorder = "#00a5bb"
+
 export const styles = {
   PadButtons: css({
     $nest: {
@@ -63,6 +66,12 @@ export const styles = {
     zIndex: -1
   }),
 
+  DropdownZIndexFix: css({
+    $nest: {
+      "& .choices__list--dropdown": { zIndex: 1000 },
+    }
+  }),
+
   SideBySide: css(
     csstips.horizontal,
     csstips.horizontallySpaced('5px'),{
@@ -70,6 +79,21 @@ export const styles = {
         "& > *": csstips.flex
       }
     }),
+
+  SideBySideToTheLeft: css(
+    csstips.horizontal,
+    csstips.horizontallySpaced('5px'),
+    {
+      $nest:{
+        "& > *": csstips.selfStart
+      }
+    },
+    {
+      $nest:{
+        "& > *": csstips.flex
+      }
+    }
+    ),
 
   HSpaced: css(
     csstips.horizontallySpaced('5px')
@@ -128,7 +152,7 @@ export const styles = {
   }),
 
   LadderTable: css({
-    minHeight: '120px',
+    minHeight: '140px',
     padding: '10px',
     width: [
       // I have forgotten why I'm using fit-content here, it doesn't seem to matter:
@@ -151,17 +175,39 @@ export const styles = {
   ),
 
   BorderCell: css(
-    csstips.border('1.5px #777 solid'),
-    { borderRadius: '3px' },
+    csstips.border('1px #777 solid'),
+    { borderRadius: '20px' },
     { fontSize: '13px' },
     { background: 'white' },
-    csstips.padding('2px')
+    csstips.padding('4px', '4px'),
+    csstips.horizontallySpaced('5px'),
+    {
+      $nest: {
+        '& > span:not(:last-child)': {
+          borderRight: '1px solid #777',
+          paddingRight: '1px'
+        }
+      }
+    }
   ),
 
-  LadderSelected: css({
-    borderColor: 'blue',
-    fontWeight: 'bold'
-  }),
+  SelectedBorderCell: css(
+    { borderColor: CyanBorder },
+    { background: Cyan },
+    { color: 'white' },
+    // { fontWeight: 'bold' }
+    {
+      $nest: {
+        '& > span:not(:last-child)': {
+          borderRight: '1px solid #eee !important'
+        }
+      }
+    }
+  ),
+
+  LadderSelected: css(
+    // { fontWeight: 'bold' }
+  ),
 
   Path: css({
     stroke: "#777",
@@ -170,7 +216,7 @@ export const styles = {
   }),
 
   SelectedPath: css({
-    stroke: 'blue',
+    stroke: Cyan,
     strokeWidth: '2.5'
   }),
 
@@ -208,7 +254,13 @@ export const styles = {
     marginRight: '-1px',
     border: '1px dotted #666',
     background: '#d7d4f0',
-  })
+  }),
+
+  TaxonomyCodeInDropdown: css({
+    width: "100px",
+    display: 'inline-block'
+  }),
+
 }
 
 export const c = Utils.record_map(styles, (css, k) => style(debug_name(k), ...css))
