@@ -78,11 +78,15 @@ export function App(store: Store<AppState>) {
   const Request = Model.ActionMaker(store)
 
   const extraKeys = {
+    "Ctrl-X": () => cut(),
+    "Ctrl-V": () => paste(),
     "Ctrl-Z": () => Request('undo'),
     "Ctrl-Y": () => Request('redo'),
     "Ctrl-R": () => Request('revert'),
     "Ctrl-C": () => Request('connect'),
     "Ctrl-D": () => Request('disconnect'),
+    "Cmd-X": () => cut(),
+    "Cmd-V": () => paste(),
     "Cmd-Z": () => Request('undo'),
     "Cmd-Y": () => Request('redo'),
     "Cmd-R": () => Request('revert'),
