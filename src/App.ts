@@ -158,7 +158,7 @@ export function App(store: Store<AppState>) {
                 })
                 return
               case 'select_index':
-                select_index(r.index, Model.calculate_diffs(store.get()).diff)
+                select_index(r.index)
                 return
               default: return Utils.absurd(r)
             }
@@ -179,16 +179,19 @@ export function App(store: Store<AppState>) {
     }
   })
 
-  function select_index(i: number | null, diff?: Diff[]) {
+  function select_index(i: number | null) {
     store.transaction(() => {
       selected_index.set(i)
       console.log('select_index', i)
-      if (i != null && diff != undefined) {
-        store.at('dropdown').update({
-          active: G.label_store(current.at('graph').at('now'), diff[i].id),
-          cursor: undefined,
-          input: ''
-        })
+      if (i != null) {
+        const {diff} = Model.calculate_diffs(store.get())
+        if (i >= 0 && i < diff.length) {
+          store.at('dropdown').update({
+            active: G.label_store(current.at('graph').at('now'), diff[i].id),
+            cursor: undefined,
+            input: ''
+          })
+        }
       } else {
         store.at('dropdown').update({
           active: undefined,
@@ -205,13 +208,13 @@ export function App(store: Store<AppState>) {
     const si = selected_index.get()
     if (si != null) {
       const ni = D.next(diff, si)
-      ni != null && select_index(ni, diff)
+      ni != null && select_index(ni)
       if (ni == null) {
         const g = graph.get()
         const {end} = G.target_sentence(g, ci.get())
         if (end + 1 < G.target_texts(g).length) {
           ci.set(end + 1)
-          select_index(0, diff)
+          select_index(0)
         }
       }
     }
@@ -222,14 +225,13 @@ export function App(store: Store<AppState>) {
     const si = selected_index.get()
     if (si != null) {
       const pi = D.prev(diff, si)
-      pi != null && select_index(pi, diff)
+      pi != null && select_index(pi)
       if (pi == null) {
         const g = graph.get()
         const {begin} = G.target_sentence(g, ci.get())
         if (begin - 1 >= 0) {
           ci.set(begin - 1)
-          const {diff: new_diff} = Model.calculate_diffs(store.get())
-          select_index(new_diff.length - 2, new_diff)
+          select_index(Model.calculate_diffs(store.get()).diff.length - 2)
         }
       }
     }
@@ -239,7 +241,7 @@ export function App(store: Store<AppState>) {
     const {diff} = Model.calculate_diffs(store.get())
     const si = selected_index.get()
     if (si != null && si >= diff.length) {
-      select_index(null, diff)
+      select_index(null)
     }
   })
 

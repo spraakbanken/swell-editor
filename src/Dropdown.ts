@@ -171,11 +171,11 @@ export function Dropdown(store: Store<State>, groups: Group[], obtain: (inp: HTM
             }),
             S.on('keydown')((e: KeyboardEvent) => {
               let x = cursor.get()
-              console.log('keydown', {x}, e.code, e.keyCode, e.charCode)
+              // console.log('keydown', {x}, e.code, e.keyCode, e.charCode)
               if (x === undefined) {
                 x = Next(-1, active_groups())
               }
-              console.log({x}, active_groups())
+              // console.log({x}, active_groups())
               if (x !== undefined && e.code == 'ArrowDown') {
                 cursor.set(Next(x, active_groups()))
               }
@@ -186,10 +186,10 @@ export function Dropdown(store: Store<State>, groups: Group[], obtain: (inp: HTM
                 store.transaction(() => {
                   input.set('')
                   cursor.set(undefined)
-                  console.log('enter', x)
+                  // console.log('enter', x)
                   if (x !== undefined) {
                     const alt = Index(x, active_groups())
-                    console.log('alt', alt, active_groups())
+                    // console.log('alt', alt, active_groups())
                     alt && at_key(alt.value).set(true)
                   }
                 })

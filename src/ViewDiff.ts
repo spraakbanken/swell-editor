@@ -222,7 +222,7 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
           if (e.code == 'Tab') {
             Request(e.shiftKey ? 'prev' : 'next')
             e.preventDefault()
-          } else if (e.code == 'Escape') {
+          } else if (e.code == 'Escape' || e.keyCode == 27) {
             Request({kind: 'select_index', index: null})
           }
         }),
