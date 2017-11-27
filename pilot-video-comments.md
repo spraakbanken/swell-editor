@@ -33,8 +33,8 @@ Bea använde v1:
 Elena:
     - tyckte att det gick bra att byta mellan grafen och editorn
     - #21 scroll or split long sentences
-    - ## mer feedback vilken mening man är i med exv HL
-        - Mats: markera de nuvarande meningarna i gult
+    - #1 mer feedback vilken mening man är i med exv HL
+        - #1 Mats: markera de nuvarande meningarna i gult
     - ## så att det är lättare att hitta var man är
 
 

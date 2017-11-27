@@ -38,7 +38,9 @@ Elena: An excellent manual, I love those flms!
 /future/ one we will be using with annotators)
 
 # 8.Tool(comments)
+Mats:
 För mig vore det mer intuitivt att ha editeringsfönstret till vänster i stället för till höger
+
 Vore bra om aktuell mening i käll- och editeringsfönstret kunde markeras (highlightas
 med färg t ex), och att man kunde fytta sig frammbak mening för mening med en
 knapptryckning
