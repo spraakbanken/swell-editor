@@ -47,7 +47,7 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
   const slides = [
 
     slide(
-      div(C.Title,
+      div(C.LH, C.Title,
         span(
           span('The SweLL '),
           span('normalization',
@@ -109,24 +109,24 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
           span(' editor for learner texts')
         )
       ),
-      div(C.Subtitle, 'Dan Rosén'),
-      div(C.Subtitle, 'Språkbanken'),
-      div(C.Subtitle, 'CLT Retreat 2017'),
-      div(
+      div(C.LH, C.Subtitle, 'Dan Rosén'),
+      div(C.LH, C.Subtitle, 'Språkbanken'),
+      div(C.LH, C.Subtitle, 'CLT Retreat 2017'),
+      div(C.LH,
         tag('img', s.attrs({src: 'talk/hws/logo_gu.png'}), s.css({padding: '3rem', height: '29rem'})),
         tag('img', s.attrs({src: 'talk/hws/logo_sb.jpg'}), s.css({padding: '5rem', height: '25rem'}), s.css({float: 'right'})),
       )
     ),
 
     slide(
-      div(C.Header, 'Example learner sentences'),
-      div(C.Bullet, 'Den väder var inte fint.'),
-      div(C.Bullet, 'Jag åt två broad.'),
-      div(C.Bullet, 'Vi gick dit för jag skulle få person nummer.'),
+      div(C.LH, C.Header, 'Example learner sentences'),
+      div(C.LH, C.Bullet, 'Den väder var inte fint.'),
+      div(C.LH, C.Bullet, 'Jag åt två broad.'),
+      div(C.LH, C.Bullet, 'Vi gick dit för jag skulle få person nummer.'),
     ),
     slide(
-      div(C.Header, 'Example running sentence'),
-      div(C.Bullet, 'Examples here high light lotsof futures')
+      div(C.LH, C.Header, 'Example running sentence'),
+      div(C.LH, C.Bullet, 'Examples here high light lotsof futures')
     ),
 
     (function() {
@@ -144,9 +144,9 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
 
       return tables.map((data, j) =>
         slide(
-          div(C.Header, 'Idea: Annotate learner tokens'),
-          div(C.Bullet, 'Examples here high light lotsof futures'),
-          table(s.css({borderSpacing: '2rem', fontSize: '6.5rem'}),
+          div(C.LH, C.Header, 'Idea: Annotate learner tokens'),
+          div(C.LH, C.Bullet, 'Examples here high light lotsof futures'),
+          table(s.css({borderSpacing: '3rem', fontSize: '5rem'}),
             tbody(
               tr(
                 th('source'),
@@ -159,10 +159,10 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
             )
           ),
           (j == tables.length - 1) && pause(div(
-            div(C.Bullet, "doesn't work, cannot satisfiably express:"),
-            div(C.Underbullet, "token merging ", tags.i("(light)")),
-            div(C.Underbullet, "token splitting ", tags.i("(of)")),
-            div(C.Underbullet, "token movement ", tags.i("(here)")),
+            div(C.LH, C.Bullet, "doesn't work, cannot satisfiably express:"),
+            div(C.LH, C.Underbullet, "token merging ", tags.i("(light)")),
+            div(C.LH, C.Underbullet, "token splitting ", tags.i("(of)")),
+            div(C.LH, C.Underbullet, "token movement ", tags.i("(here)")),
           ))
         )
       )
@@ -173,7 +173,7 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
           store.update({current: 'solved'})
         }
       },
-      div(C.Header, 'Idea 2: this is a parallel corpus'),
+      div(C.LH, C.Header, 'Idea 2: this is a parallel corpus'),
       tag('center',
         ViewDiff(
           Model.current(store).pick('graph', 'selected_index').merge(store.pick('positions', 'dropdown')),
@@ -183,16 +183,16 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
         ),
       ),
       oneslide(div(
-        div(C.Bullet, "works, can satisfiably express:"),
-        div(C.Underbullet, "token merging ", tags.i("(highlight)")),
-        div(C.Underbullet, "token splitting ", tags.i("(lots of)")),
-        div(C.Underbullet, "token movement ", tags.i("(here)")),
+        div(C.LH, C.Bullet, "works, can satisfiably express:"),
+        div(C.LH, C.Underbullet, "token merging ", tags.i("(highlight)")),
+        div(C.LH, C.Underbullet, "token splitting ", tags.i("(lots of)")),
+        div(C.LH, C.Underbullet, "token movement ", tags.i("(here)")),
       )),
       pause(div(
-        div(C.Bullet, "how do we make an editor for this?"),
-        div(C.Underbullet, "text area with impaired operations?"),
-        div(C.Underbullet, "disable copy paste etc "),
-        div(C.Underbullet, "restrict word boundary fiddling"),
+        div(C.LH, C.Bullet, "how do we make an editor for this?"),
+        div(C.LH, C.Underbullet, "text area with impaired operations?"),
+        div(C.LH, C.Underbullet, "disable copy paste etc "),
+        div(C.LH, C.Underbullet, "restrict word boundary fiddling"),
       ))
     ),
 
@@ -207,7 +207,7 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
         Model.calculate_diffs(store.get()).rich_diff,
         store.get().taxonomy
       ),
-      div(
+      div(C.LH,
         tag('div', cms.vn_main, C.TextEditor, C.Editor),
         button('undo (ctrl-z)',       () => Request('undo'),       s.css({marginRight: '1rem', fontSize: '3rem'})),
         button('redo (ctrl-y)',       () => Request('redo'),       s.css({marginRight: '1rem', fontSize: '3rem'})),
@@ -218,43 +218,120 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
     ),
 
     slide(
-      div(C.Header, 'Interdisciplinary research'),
-      div(C.Bullet, 'Researchers in SLA (Second-Language Acquisition)'),
-      div(C.Bullet, 'Researchers in NLP'),
+      div(C.LH, C.Header, 'Interdisciplinary research'),
+      div(C.LH, C.Bullet, 'Researchers in SLA (Second-Language Acquisition)'),
+      div(C.LH, C.Bullet, 'Researchers in NLP'),
       pause(
-        div(C.Bullet, 'System developer with formal verification background'),
+        div(C.LH, C.Bullet, 'System developer with formal verification background'),
       )
     ),
 
     slide(
-      div(C.Header, 'Anonymization'),
+      div(C.LH, C.Header, 'Request: data in unique identifiers'),
+      div(C.LH, C.Bullet, "A database entry of a learner:"),
+      div(C.LH, C.Underbullet, "L1: French"),
+      div(C.LH, C.Underbullet, "Age: 38"),
+      div(C.LH, C.Underbullet, "Time in Sweden: 29 weeks"),
+      div(C.LH, C.Underbullet, "Unique identifier: ", tag('code', "2681")),
+      div(C.LH, C.Bullet, "Suggestion: Unique identifier: ", tag('code', 'Fr38y29w')),
+      pause(div(
+        div(C.LH, C.Bullet, "+ can see learner metadata at a glance"),
+        div(C.LH, C.Bullet, "- leads to disambiguties"),
+        div(C.LH, C.Bullet, "- ", tag('code', 'shorten: Learner -> string'), ' is already O(1)'),
+      ))
+    ),
+
+    slide(
+      div(C.LH, C.Header, 'Anonymization'),
       oneslide(div(
-        div(C.Bullet, 'My uncle visited Tehran in 1996'),
-        div(C.Bullet, tag('code', '_1'), ' visited ', tag('code', '_2'), ' in ', tag('code', '_3')),
+        div(C.LH, C.Bullet, 'My uncle visited Tehran in 1996'),
+        div(C.LH, C.Bullet, tag('code', '_1'), ' visited ', tag('code', '_2'), ' in ', tag('code', '_3')),
       )),
       oneslide(
-        div(
-          div(C.Bullet, tag('code', '_1'), ' visited ', tag('code', '_2'), ' in ', tag('code', '_3')),
-          div(C.Bullet, tags.i('But the data needs to be searchable')),
-          div(C.Bullet, tags.i('But the data needs to be taggable')),
-          div(C.Bullet, tags.i("Can't we just have placeholder names?!")),
-          div(C.Bullet, tags.i("But from which culture? This is very sensitive")),
+        div(C.LH,
+          div(C.LH, C.Bullet, 'My uncle visited Tehran in 1996'),
+          div(C.LH, C.Bullet, tag('code', '_1'), ' visited ', tag('code', '_2'), ' in ', tag('code', '_3')),
+          div(C.LH, C.Bullet, tags.i('But the data needs to be searchable')),
+          div(C.LH, C.Bullet, tags.i('But the data needs to be taggable')),
+          div(C.LH, C.Bullet, tags.i("Can't we just have placeholder names?!")),
+          div(C.LH, C.Bullet, tags.i("But from which culture? This is very sensitive")),
         )
       ),
       oneslide(div(
-        div(C.Bullet, 'Seems to view the corpus as something of this type'),
-        div(C.Bullet, tag('code', 'text: string')),
-        div(C.Bullet, tag('code', 'text: Array<string>')),
+        div(C.LH, C.Bullet, 'Seems to view the corpus as something of this type'),
+        div(C.LH, C.Bullet, tag('code', 'corpus: string')),
+        div(C.LH, C.Bullet, tag('code', 'corpus: Array<string>')),
       )),
       pause(div(
-        div(C.Bullet, 'Solution:'),
-        div(C.Bullet, tag('code', 'text: Array<string | AnonymizationRecord>')),
-        tags.pre(`interface AnonymizationRecord {
+        div(C.LH, C.Bullet, 'Solution:'),
+        div(C.LH, C.Bullet, tag('code', 'corpus: Array<string | AnonymizationRecord>')),
+        tags.pre(s.css({padding: '0 8rem'}), `interface AnonymizationRecord {
   unique_number: int,
   kind: unknown | person | place | event | ...
   gender: unknown | m | f | ...
 }`),
-        div(C.Bullet, 'Now just generate whatever view you need'),
+        div(C.LH, C.Bullet, 'Now just generate whatever view you desire'),
+      ))
+    ),
+
+    slide(
+      div(C.LH, C.Header, 'Anonymization'),
+      div(C.LH, C.Bullet, 'Suggestion: Use a NER tagger for anonymization'),
+      div(C.LH, C.Bullet, 'Propensity to reach for tools before a manual annotation approach is devised'),
+      div(C.LH, C.Underbullet, '- It might not work at all'),
+      div(C.LH, C.Underbullet, '- It might be too slow / clunky / anything'),
+      div(C.LH, C.Underbullet, '- Need some way to manually fix errors anyway'),
+      div(C.LH, C.Bullet, 'NLP researchers talking about automated tools confuse SLA researchers'),
+    ),
+
+    slide_do(() => {
+        if (store.get().current != 'examplesHere') {
+          store.update({current: 'examplesHere'})
+        }
+      },
+      div(C.LH, C.Header, 'What is data in the UI?'),
+      tag('center',
+        ViewDiff(
+          Model.current(store).pick('graph', 'selected_index').merge(store.pick('positions', 'dropdown')),
+          Request,
+          Model.calculate_diffs(store.get()).rich_diff,
+          store.get().taxonomy
+        ),
+      )
+    ),
+
+    slide_do(() => {
+        if (store.get().current != 'sentences') {
+          store.update({current: 'sentences'})
+        }
+      },
+      div(C.LH, C.Header, '"Just" show the current sentence'),
+      ViewDiff(
+        Model.current(store).pick('graph', 'selected_index').merge(store.pick('positions', 'dropdown')),
+        Request,
+        Model.calculate_diffs(store.get()).rich_diff,
+        store.get().taxonomy
+      ),
+      div(C.LH,
+        tag('div', cms.vn_main, C.TextEditor, C.Editor),
+        button('undo (ctrl-z)',       () => Request('undo'),       s.css({marginRight: '1rem', fontSize: '3rem'})),
+        button('redo (ctrl-y)',       () => Request('redo'),       s.css({marginRight: '1rem', fontSize: '3rem'})),
+        button('connect (ctrl-c)',    () => Request('connect'),    s.css({marginRight: '1rem', fontSize: '3rem'})),
+        button('disconnect (ctrl-d)', () => Request('disconnect'), s.css({marginRight: '1rem', fontSize: '3rem'})),
+        button('revert (ctrl-r)',     () => Request('revert'),     s.css({marginRight: '1rem', fontSize: '3rem'})),
+      ),
+    ),
+
+    slide(
+      div(C.LH, C.Header, 'Conclusions'),
+      div(C.LH, C.Bullet, 'Parallel corpus is a good representation for diffs such as a learner corpus'),
+      div(C.LH, C.Bullet, 'The edges in the graph are a natural place to put labels'),
+      div(C.LH, C.Bullet, 'Corpus can be constructed with an augmented an off-the-shelf text editor'),
+      pause(div(
+        div(C.LH, C.Bullet, 'Working across disciplines:'),
+        div(C.LH, C.Underbullet, 'Hidden challenges in solving seemingly trivial UI'),
+        div(C.LH, C.Underbullet, 'Truly easy matters are discussed as if they were challenges'),
+        div(C.LH, C.Underbullet, "Developers have to dodge NLP researchers sledgehammer predispositions"),
       ))
     ),
   ]
@@ -277,79 +354,4 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
       }
     }),
   ))
-  /*
-  const login = store.at('login')
-  const login_state = store.at('login_state')
-  const msg_store = store.at('messages')
-  const msg = msg_store.get()
-
-  const header = div(
-    tag('h3', 'Normaliseringseditorsprototyp'),
-    msg.length > 0 &&
-    tag('div',
-      C.PadButtons,
-      tag('div', msg),
-       button('logout', () => { msg_store.set([]); login_state.set('out') }),
-       button('dismiss', () => { msg_store.set([]) })
-    )
-  )
-  if (login_state.get() == 'out') {
-    const set_in = () => login_state.set('in')
-    return div(
-      C.MainStyle,
-      s.classed(typestyle.style({padding: '10px'})),
-      header,
-      'you need to login',
-      input(login.at('user'), set_in),
-      input(login.at('password'), set_in, s.attrs({'type': 'password'})),
-      button('login', set_in),
-      tag('hr'),
-      button('try an example anyway', () => {
-        login_state.set('anonymous')
-      })
-    )
-  } else {
-    return div(
-      s.on('click')(() => {
-        Request({kind: 'select_index', index: null})
-      }),
-      C.PadButtons,
-      C.MainStyle,
-      s.classed(typestyle.style({padding: '10px'})),
-      header,
-      ViewDiff(
-        Model.current(store).pick('graph', 'selected_index').merge(store.pick('positions', 'dropdown')),
-        Request,
-        diffs.rich_diff,
-        store.get().taxonomy
-      ),
-      div(C.SideBySideToTheLeft,
-        tag('div', cms.vn_orig, C.TextEditor, C.Editor),
-        div(
-          tag('div', cms.vn_main, C.TextEditor, C.Editor),
-          button('undo (ctrl-z)', () => Request('undo')),
-          button('redo (ctrl-y)', () => Request('redo')),
-          button('connect (ctrl-c)', () => Request('connect')),
-          button('disconnect (ctrl-d)', () => Request('disconnect')),
-          button('revert (ctrl-r)', () => Request('revert')),
-        )
-      ),
-      tag('hr'),
-      login_state.get() == 'anonymous'
-      ?
-      [
-        button('back to login menu', () => login_state.set('out')),
-      ]
-      :
-      [
-        select(
-          store.at('current'),
-          store.at('graphs').via(Lens.lens(o => Object.keys(o).sort(), (s, t) => Utils.raise('getter'))),
-          (k: string) => option(k)),
-        button('logout', () => login_state.set('out')),
-        button('sync', () => store.at('sync_request').set(true)),
-      ],
-    )
-  }
-  */
 }

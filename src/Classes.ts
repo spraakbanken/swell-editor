@@ -21,8 +21,9 @@ export const styles = {
   SlideRoot: css(
     csstips.horizontal,
     csstips.aroundJustified,
-    // { lineHeight: '10rem' },
   ),
+
+  LH: css({ lineHeight: '9rem' }),
 
   Slide: css(
     csstips.vertical,
@@ -31,13 +32,13 @@ export const styles = {
       height: '100rem',
       // background: bg,
       color: fg,
-      fontSize: '7rem',
+      fontSize: '5rem',
       fontFamily: '"Lato", sans-serif'
     },
   ),
 
   Title: css(
-    {fontSize: '11rem'},
+    {fontSize: '10rem'},
     {fontFamily: '"Lato", sans-serif'},
     csstips.flex6,
     csstips.centerCenter,
@@ -53,20 +54,20 @@ export const styles = {
   ),
 
   Header: css(
-    {fontSize: '11rem'},
+    {fontSize: '10rem'},
     {fontFamily: '"Lato", sans-serif'},
     {textAlign: 'center'},
     {color: col1},
-    csstips.padding(0, '2rem')
+    csstips.padding('2rem', 0)
   ),
 
   Bullet: css(
-    {fontSize: '7rem'},
+    {fontSize: '5rem'},
     {
       $nest: {
         '&::before': {
           'content': `'\u25cf'`,
-          fontSize: '7rem',
+          fontSize: '5rem',
           paddingRight: '2rem',
           color: col2
         }
@@ -76,12 +77,12 @@ export const styles = {
   ),
 
   Underbullet: css(
-    {fontSize: '7rem'},
+    {fontSize: '5rem'},
     {
       $nest: {
         '&::before': {
           'content': `'\u25cf'`,
-          fontSize: '6rem',
+          fontSize: '4rem',
           paddingRight: '2rem',
           color: col2
         }
