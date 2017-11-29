@@ -25,11 +25,7 @@ export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
   const st = Store.init([] as string[])
   st.on(x => console.log(Utils.show(x)))
   const header = div(
-    tag('h3',
-      'Normaliseringseditorsprototyp',
-      s.on('click')(_ => store.set(Model.init())),
-      C.Pointer
-    ),
+    tag('h3', 'Normaliseringseditorsprototyp'),
     msg.length > 0 &&
     tag('div',
       C.PadButtons,
