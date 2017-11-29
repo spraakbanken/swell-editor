@@ -48,17 +48,29 @@ export function App(store: Store<AppState>) {
     global.Undo = Undo
     global.Store = Store
     global.store = store
+    global.next = () => store.at('slide').modify(x => x + 1)
+    global.prev = () => store.at('slide').modify(x => x - 1)
 
-    Model.setup_sync(store)
     Dropdown.Handler(store.at('dropdown'))
 
-    const storage_key = 'state'
-    Model.ForLocalStorage(store).storage_connect(storage_key, item => item.login_state != 'anonymous')
-    global.reset = (text: string) => {
-      store.set(Model.init(text))
-      localStorage.removeItem(storage_key)
-    }
+    store.at('slide').location_connect(x => x.toString(), s => {
+      console.log(s.slice(1))
+      return parseInt(s.slice(1), 10)
+    })
   }
+
+  window.addEventListener('resize', () => store.at('positions').via(Lens.key('root')).set(undefined), true)
+  store.at('positions').via(Lens.key('root')).ondiff(x => {
+    if (x !== undefined) {
+      console.log(Utils.show(x))
+      const html = document.getElementsByTagName('html')[0]
+      const w = x.width / 16 * 9
+      const h = Math.min(x.height, w)
+      const fontSize = (h / 100).toString() + 'px'
+      html.style.fontSize = fontSize
+      console.log({fontSize, w, h}, html)
+    }
+  })
 
   const needs_full_update = store.at('needs_full_update')
   const with_full_update = (cb: () => void) => store.transaction(() => {

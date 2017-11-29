@@ -12,7 +12,106 @@ export function css(...xs: types.NestedCSSProperties[]): types.NestedCSSProperti
 const Cyan = "#00bcd4"
 const CyanBorder = "#00a5bb"
 
+const col1 = Cyan
+const col2 = "#bc00d4"
+const bg = "#fff"
+const fg = "#000"
+
 export const styles = {
+  SlideRoot: css(
+    csstips.horizontal,
+    csstips.aroundJustified,
+    { background: "#eee" }
+  ),
+
+  Slide: css(
+    csstips.vertical,
+    {
+      width: '177.77rem',
+      height: '100rem',
+      background: bg,
+      color: fg,
+      fontSize: '12rem',
+      fontFamily: '"Lato", sans-serif'
+    },
+  ),
+
+  Title: css(
+    {fontSize: '11rem'},
+    {fontFamily: '"Lato", sans-serif'},
+    csstips.flex6,
+    csstips.centerCenter,
+    csstips.padding(0, '10rem'),
+    {textAlign: 'center'},
+    {color: col1}
+  ),
+
+  Subtitle: css(
+    {fontSize: '6rem'},
+    csstips.flex2,
+    csstips.centerCenter
+  ),
+
+  Header: css(
+    {fontSize: '11rem'},
+    {fontFamily: 'Montserrat'},
+    {textAlign: 'center'},
+    {color: col1},
+    csstips.padding(0, '2rem')
+  ),
+
+  Bullet: css(
+    {fontSize: '7rem'},
+    {
+      $nest: {
+        '&::before': {
+          'content': `'\u25cf'`,
+          fontSize: '8rem',
+          paddingRight: '2rem',
+          color: col2
+        }
+      }
+    },
+    csstips.padding(0, '2rem')
+  ),
+
+  Underbullet: css(
+    {fontSize: '7rem'},
+    {
+      $nest: {
+        '&::before': {
+          'content': `'\u25b6'`,
+          fontSize: '5rem',
+          paddingRight: '2rem',
+          color: col2
+        }
+      }
+    },
+    csstips.padding(0, '9rem')
+  ),
+
+  Smallbullet: css(
+    {fontSize: '6rem'},
+    {
+      $nest: {
+        '&::before': {
+          'content': `'\u25cf'`,
+          fontSize: '4rem',
+          paddingRight: '2rem',
+          color: col2
+        }
+      }
+    },
+    csstips.padding(0, '2rem')
+  ),
+
+  LineThrough: css({
+    textDecoration: 'line-through',
+  }),
+
+
+  // normal
+
   PadButtons: css({
     $nest: {
       "& > button": { marginRight: '4px', marginBottom: '4px' },

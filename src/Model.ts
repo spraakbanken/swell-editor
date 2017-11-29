@@ -52,6 +52,10 @@ export interface AppState {
   readonly messages: string[]
   /** Current dropdown */
   readonly dropdown: Dropdown.State,
+
+
+  // For slides
+  readonly slide: number,
 }
 
 export type Request =
@@ -186,7 +190,8 @@ export function init(text?: string): AppState {
     ro_source: true,
     requests: [],
     messages: [],
-    dropdown: Dropdown.init
+    dropdown: Dropdown.init,
+    slide: 0
   }
 }
 
