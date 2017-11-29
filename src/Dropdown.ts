@@ -208,7 +208,7 @@ export function Dropdown(store: Store<State>, groups: Group[], obtain: (inp: HTM
               ...group.choices.map(alt =>
                   alt.unavailable ||
                   div(cl.item, cl.itemSelectable,
-                    s.style({padding: '6px'}),
+                    // s.style({padding: '0rem'}),
                     alt.index == cursor.get() && cl.highlightedState,
                     div(C.TaxonomyCodeInDropdown, alt.value),
                     div(C.InlineBlock, alt.label),

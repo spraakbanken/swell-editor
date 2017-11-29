@@ -18,6 +18,7 @@ export interface CodeMirrors {
 }
 
 export function View(store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VNode {
+  const Request = Model.RequestMaker(store)
   const n = store.at('slide').get()
   let i = 0
   let p = -1
@@ -161,13 +162,29 @@ export function View(store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
       )
     })(),
 
+    slide(
+      ViewDiff(
+        Model.current(store).pick('graph', 'selected_index').merge(store.pick('positions', 'dropdown')),
+        Request,
+        diffs.rich_diff,
+        store.get().taxonomy
+      ),
+      div(
+        tag('div', cms.vn_main, C.TextEditor, C.Editor),
+        button('undo (ctrl-z)',       () => Request('undo'),       s.css({marginRight: '1rem', fontSize: '3rem'})),
+        button('redo (ctrl-y)',       () => Request('redo'),       s.css({marginRight: '1rem', fontSize: '3rem'})),
+        button('connect (ctrl-c)',    () => Request('connect'),    s.css({marginRight: '1rem', fontSize: '3rem'})),
+        button('disconnect (ctrl-d)', () => Request('disconnect'), s.css({marginRight: '1rem', fontSize: '3rem'})),
+        button('revert (ctrl-r)',     () => Request('revert'),     s.css({marginRight: '1rem', fontSize: '3rem'})),
+      )
+    )
   ]
 
   return Positions.posid('root', store.at('positions'), div(
-    s.css({height: '100%', width: '100%'}),
+    s.css({height: '100%', width: '100%', overflow: 'hidden'}),
     ...slides,
     s.on('click')((e: MouseEvent) => {
-      console.log(e.which)
+      Request({kind: 'select_index', index: null})
     }),
     C.SlideRoot,
     s.attrs({tabindex: '-1'}),
@@ -182,7 +199,6 @@ export function View(store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
     }),
   ))
   /*
-  const Request = Model.RequestMaker(store)
   const login = store.at('login')
   const login_state = store.at('login_state')
   const msg_store = store.at('messages')

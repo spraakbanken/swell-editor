@@ -177,9 +177,10 @@ export function init_graph_state(text?: string): GraphState {
 export function init(text?: string): AppState {
   return {
     graphs: {
-      example: init_graph_state(text || '')
+      example: init_graph_state(text || ''),
+      examplesHere: init_graph_state('Examples here high light lotsof futures .')
     },
-    current: 'example',
+    current: 'examplesHere',
     needs_full_update: true,
     positions: {},
     taxonomy,
@@ -284,11 +285,11 @@ export const taxonomy: Taxonomy = [
   ),
   group('Morphological',
     entry('F', 'Deviant selection of morphosyntactic category'),
-    entry('F-DEF', 'Deviation in definite/indefinite forms, may apply to groups of words'),
+    entry('F-DEF', 'Deviation in definite/indefinite forms'),
     entry('F-TENSE', 'Covers all deviations with verbs and verb groups, incl aspect'),
     entry('F-NUM', 'Deviation in number agreement'),
     entry('F-AGR', 'Agreement error (kongruensfel)'),
-    entry('INFL', 'Deviant paradigm selection, but in accordance with L1 morphosyntactical form; overgeneralization'),
+    entry('INFL', 'Deviant paradigm selection; overgeneralization'),
   ),
   group('Syntactical',
     entry('M', 'Word, phrase or punctuation missing'),

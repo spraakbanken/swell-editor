@@ -180,7 +180,7 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: (r: Model.Request
       tag('div', C.Cell, m.length != 0 ? m : tag('div')),
       tag('div', C.Cell, d.length != 0 ? d : tag('div', C.InnerCell, '\u200b')),
     ]
-  })), [c.LadderTable, c.MainStyle]))
+  })), [c.LadderTable]))
 
   const pos_dict = store.get().positions
   const svg = tag(

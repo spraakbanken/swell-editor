@@ -5,7 +5,7 @@ import * as CodeMirror from "codemirror"
 import * as csstips from "csstips"
 import "codemirror/lib/codemirror.css"
 import "lato-font/css/lato-font.min.css"
-import "choices.js/src/styles/css/choices.min.css"
+import "choices.js/src/styles/css/choices.css"
 import {debug} from './dev'
 csstips.normalize()
 csstips.setupPage('body')

@@ -54,8 +54,8 @@ export function App(store: Store<AppState>) {
     Dropdown.Handler(store.at('dropdown'))
 
     store.at('slide').location_connect(x => x.toString(), s => {
-      console.log(s.slice(1))
-      return parseInt(s.slice(1), 10)
+      const u = parseInt(s.slice(1), 10)
+      return (u.toString() === "NaN") ? undefined : u
     })
   }
 

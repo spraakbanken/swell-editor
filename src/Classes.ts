@@ -21,8 +21,7 @@ export const styles = {
   SlideRoot: css(
     csstips.horizontal,
     csstips.aroundJustified,
-    { background: "#eee" },
-    { lineHeight: '10rem' },
+    // { lineHeight: '10rem' },
   ),
 
   Slide: css(
@@ -30,7 +29,7 @@ export const styles = {
     {
       width: '177.77rem',
       height: '100rem',
-      background: bg,
+      // background: bg,
       color: fg,
       fontSize: '7rem',
       fontFamily: '"Lato", sans-serif'
@@ -220,10 +219,10 @@ export const styles = {
   Editor: css({
     $nest:{
       '& .CodeMirror':{
-        border: '1px solid #ddd',
-        height: '300px',
-        minWidth: '250px',
-        lineHeight: '1.5em',
+        border: '0.25rem solid #ddd',
+        height: '40rem',
+        width: '175rem',
+        // minWidth: '250px',
       }
     }
   }),
@@ -232,7 +231,8 @@ export const styles = {
     $nest:{
       '& .CodeMirror':{
         fontFamily: "'Lato', sans-serif",
-        fontSize: '15px'
+        fontSize: '4rem',
+        // lineHeight: '6rem',
       }
     }
   }),
@@ -252,8 +252,10 @@ export const styles = {
   }),
 
   LadderTable: css({
-    minHeight: '140px',
-    padding: '10px',
+    minHeight: '35rem',
+    padding: '2rem',
+    background: 'unset',
+    fontSize: '5rem',
     width: [
       // I have forgotten why I'm using fit-content here, it doesn't seem to matter:
       '-webkit-fit-content',
@@ -270,22 +272,22 @@ export const styles = {
 
   InnerCell: css(
     { background: 'white' },
-    csstips.padding('2px', '0'),
+    csstips.padding('2rem', '0'),
     csstips.horizontal
   ),
 
   BorderCell: css(
-    csstips.border('1px #777 solid'),
-    { borderRadius: '20px' },
-    { fontSize: '13px' },
+    csstips.border('0.33rem #777 solid'),
+    { borderRadius: '9rem' },
+    { fontSize: '4rem' },
     { background: 'white' },
-    csstips.padding('4px', '4px'),
-    csstips.horizontallySpaced('5px'),
+    csstips.padding('1rem', '1rem'),
+    csstips.horizontallySpaced('2rem'),
     {
       $nest: {
         '& > span:not(:last-child)': {
-          borderRight: '1px solid #777',
-          paddingRight: '1px'
+          borderRight: '0.5rem solid #777',
+          paddingRight: '1rem'
         }
       }
     }
@@ -299,7 +301,7 @@ export const styles = {
     {
       $nest: {
         '& > span:not(:last-child)': {
-          borderRight: '1px solid #eee !important'
+          borderRight: '0.33rem solid #eee !important'
         }
       }
     }
@@ -311,13 +313,13 @@ export const styles = {
 
   Path: css({
     stroke: "#777",
-    strokeWidth: '1.5',
+    strokeWidth: '0.33rem',
     fill: "none"
   }),
 
   SelectedPath: css({
     stroke: Cyan,
-    strokeWidth: '2.5'
+    strokeWidth: '.5rem'
   }),
 
   Selected: css({
@@ -326,7 +328,7 @@ export const styles = {
 
   Row: css(
     csstips.horizontal,
-    csstips.horizontallySpaced(5)
+    csstips.horizontallySpaced('2rem')
   ),
 
   Column: css(
@@ -357,7 +359,7 @@ export const styles = {
   }),
 
   TaxonomyCodeInDropdown: css({
-    width: "100px",
+    width: "20rem",
     display: 'inline-block'
   }),
 
@@ -367,31 +369,3 @@ export const c = Utils.record_map(styles, (css, k) => style(debug_name(k), ...cs
 
 export const C = Utils.record_map(c, cname => s.classed(cname))
 
-/*
-export const Top = style(
-  debug_name('Top'),
-  {
-    flexGrow: 1
-  }
-)
-
-export const Mid = style(
-  debug_name('Mid'),
-  {
-    flexGrow: 0
-  }
-)
-
-export const Bot = style(
-  debug_name('Bot'),
-  {
-    flexGrow: 1
-  },
-  csstips.horizontal,
-  {
-    $nest: {
-      '&>*': csstips.selfEnd
-    }
-  }
-)
-*/
