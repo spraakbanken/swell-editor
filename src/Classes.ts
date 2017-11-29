@@ -253,7 +253,7 @@ export const styles = {
 
   LadderTable: css({
     minHeight: '35rem',
-    padding: '2rem',
+    padding: '0rem',
     background: 'unset',
     fontSize: '5rem',
     width: [

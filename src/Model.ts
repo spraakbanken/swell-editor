@@ -174,13 +174,23 @@ export function init_graph_state(text?: string): GraphState {
 }
 
 
+export const solved_graph_state: GraphState = {
+  graph: Undo.init(
+    {"source":[{"text":"Examples ","id":"s0"},{"text":"here ","id":"s1"},{"text":"high ","id":"s2"},{"text":"light ","id":"s3"},{"text":"lotsof ","id":"s4"},{"text":"futures ","id":"s5"},{"text":". ","id":"s6"}],"target":[{"text":"Examples ","id":"t0"},{"text":"highlight ","id":"t7"},{"text":"lots ","id":"t8"},{"text":"of ","id":"t9"},{"text":"features ","id":"t11"},{"text":"here ","id":"t1"},{"text":". ","id":"t6"}],"edges":{"e-s0-t0":{"id":"e-s0-t0","ids":["s0","t0"],"labels":[]},"e-s1-t1":{"id":"e-s1-t1","ids":["s1","t1"],"labels":[]},"e-s6-t6":{"id":"e-s6-t6","ids":["s6","t6"],"labels":[]},"e-t7-s2-s3":{"id":"e-t7-s2-s3","ids":["t7","s2","s3"],"labels":[]},"e-t8-t9-s4":{"id":"e-t8-t9-s4","ids":["t8","t9","s4"],"labels":[]},"e-t11-s5":{"id":"e-t11-s5","ids":["t11","s5"],"labels":[]}}}
+  ),
+  cursor_index: 0,
+  selected_index: null,
+}
+
+
 export function init(text?: string): AppState {
   return {
     graphs: {
       example: init_graph_state(text || ''),
-      examplesHere: init_graph_state('Examples here high light lotsof futures .')
+      examplesHere: init_graph_state('Examples here high light lotsof futures . '),
+      solved: solved_graph_state
     },
-    current: 'examplesHere',
+    current: 'solved',
     needs_full_update: true,
     positions: {},
     taxonomy,

@@ -17,16 +17,19 @@ export interface CodeMirrors {
   vn_main: VNode,
 }
 
-export function View(store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VNode {
+export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
   const Request = Model.RequestMaker(store)
   const n = store.at('slide').get()
   let i = 0
   let p = -1
-  function slide(...data: TagData[]): VNode | undefined {
+  function slide_do(act: () => void, ...data: TagData[]): VNode | undefined {
     const p_now = p
     p = i
     const yes = n <= i++ && n > p_now
-    return yes ? tag('div', C.Slide, ...data) : undefined
+    return yes ? (act(), tag('div', C.Slide, ...data)) : undefined
+  }
+  function slide(...data: TagData[]): VNode | undefined {
+    return slide_do(() => { return }, ...data)
   }
   function pause(vn: VNode): VNode | undefined {
     return (n > i++) ? vn : undefined
@@ -162,11 +165,37 @@ export function View(store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
       )
     })(),
 
-    slide(
+    slide_do(() => {
+        if (store.get().current != 'solved') {
+          store.update({current: 'solved'})
+        }
+      },
+      div(C.Header, 'Idea 2: this is a parallel corpus'),
+      tag('center',
+        ViewDiff(
+          Model.current(store).pick('graph', 'selected_index').merge(store.pick('positions', 'dropdown')),
+          Request,
+          Model.calculate_diffs(store.get()).rich_diff,
+          store.get().taxonomy
+        ),
+      ),
+      pause(div(
+        div(C.Bullet, "works, can satisfiably express:"),
+        div(C.Underbullet, "token merging ", tags.i("(highlight)")),
+        div(C.Underbullet, "token splitting ", tags.i("(lots of)")),
+        div(C.Underbullet, "token movement ", tags.i("(here)")),
+      ))
+    ),
+
+    slide_do(() => {
+        if (store.get().current != 'examplesHere') {
+          store.update({current: 'examplesHere'})
+        }
+      },
       ViewDiff(
         Model.current(store).pick('graph', 'selected_index').merge(store.pick('positions', 'dropdown')),
         Request,
-        diffs.rich_diff,
+        Model.calculate_diffs(store.get()).rich_diff,
         store.get().taxonomy
       ),
       div(
