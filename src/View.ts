@@ -34,6 +34,9 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
   function pause(vn: VNode): VNode | undefined {
     return (n > i++) ? vn : undefined
   }
+  function oneslide(vn: VNode): VNode | undefined {
+    return (n == ++i) ? vn : undefined
+  }
   function hide(vn: VNode): VNode {
     return (n > i++) ? vn : div(vn, s.css({visibility: 'hidden'}))
   }
@@ -179,11 +182,17 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
           store.get().taxonomy
         ),
       ),
-      pause(div(
+      oneslide(div(
         div(C.Bullet, "works, can satisfiably express:"),
         div(C.Underbullet, "token merging ", tags.i("(highlight)")),
         div(C.Underbullet, "token splitting ", tags.i("(lots of)")),
         div(C.Underbullet, "token movement ", tags.i("(here)")),
+      )),
+      pause(div(
+        div(C.Bullet, "how do we make an editor for this?"),
+        div(C.Underbullet, "text area with impaired operations?"),
+        div(C.Underbullet, "disable copy paste etc "),
+        div(C.Underbullet, "restrict word boundary fiddling"),
       ))
     ),
 
@@ -206,7 +215,48 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
         button('disconnect (ctrl-d)', () => Request('disconnect'), s.css({marginRight: '1rem', fontSize: '3rem'})),
         button('revert (ctrl-r)',     () => Request('revert'),     s.css({marginRight: '1rem', fontSize: '3rem'})),
       )
-    )
+    ),
+
+    slide(
+      div(C.Header, 'Interdisciplinary research'),
+      div(C.Bullet, 'Researchers in SLA (Second-Language Acquisition)'),
+      div(C.Bullet, 'Researchers in NLP'),
+      pause(
+        div(C.Bullet, 'System developer with formal verification background'),
+      )
+    ),
+
+    slide(
+      div(C.Header, 'Anonymization'),
+      oneslide(div(
+        div(C.Bullet, 'My uncle visited Tehran in 1996'),
+        div(C.Bullet, tag('code', '_1'), ' visited ', tag('code', '_2'), ' in ', tag('code', '_3')),
+      )),
+      oneslide(
+        div(
+          div(C.Bullet, tag('code', '_1'), ' visited ', tag('code', '_2'), ' in ', tag('code', '_3')),
+          div(C.Bullet, tags.i('But the data needs to be searchable')),
+          div(C.Bullet, tags.i('But the data needs to be taggable')),
+          div(C.Bullet, tags.i("Can't we just have placeholder names?!")),
+          div(C.Bullet, tags.i("But from which culture? This is very sensitive")),
+        )
+      ),
+      oneslide(div(
+        div(C.Bullet, 'Seems to view the corpus as something of this type'),
+        div(C.Bullet, tag('code', 'text: string')),
+        div(C.Bullet, tag('code', 'text: Array<string>')),
+      )),
+      pause(div(
+        div(C.Bullet, 'Solution:'),
+        div(C.Bullet, tag('code', 'text: Array<string | AnonymizationRecord>')),
+        tags.pre(`interface AnonymizationRecord {
+  unique_number: int,
+  kind: unknown | person | place | event | ...
+  gender: unknown | m | f | ...
+}`),
+        div(C.Bullet, 'Now just generate whatever view you need'),
+      ))
+    ),
   ]
 
   return Positions.posid('root', store.at('positions'), div(
