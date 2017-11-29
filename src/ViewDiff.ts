@@ -12,23 +12,24 @@ import { C, c } from './Classes'
 import * as csstips from "csstips"
 import * as Positions from "./Positions"
 
-import * as Snabbdom from "./Snabbdom"
-import { CatchSubmit, InputField, button, div, span, on } from "./Snabbdom"
 import * as Dropdown from "./Dropdown"
 
 import { log } from './dev'
 import { PosDict } from "./Positions"
 import { style } from "typestyle"
-import { tag, VNode, Content as S } from "snabbis"
+import { tag, TagData, VNode, s, tags } from "snabbis"
+const { div, span, tbody, tr, td } = tags
+const { button, input, select } = s
 
 import * as Utils from "./Utils"
 import { TokenDiff }  from "./Utils"
 
 export interface ViewDiffState {
-  readonly graph: Undo<Graph>,
-  readonly positions: PosDict,
-  readonly selected_index: number | null,
-  readonly dropdown: Dropdown.State
+  readonly graph: Undo<Graph>,            // ro
+  readonly selected_index: number | null, // ro
+
+  readonly positions: PosDict,            // rw
+  readonly dropdown: Dropdown.State       // rw
 }
 
 interface Column {
@@ -57,7 +58,7 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
 
   let inp: HTMLInputElement | undefined
 
-  const select_index = (index: number | null) => S.on('click')(e => {
+  const select_index = (index: number | null) => s.on('click')(e => {
     // store.at('selected_index').modify(ix_now => ix_now === ix ? null : ix)
     Request({kind: 'select_index', index})
     inp && inp.focus()
@@ -82,20 +83,20 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
     columns.push(column)
   }
 
-  const new_source = (s: Token, diff: TokenDiff, edge_id: string) => {
-    up.push(track(s.id, span(deletes(diff), C.InnerCell,
-      S.attrs({ draggable: 'true' }),
-      S.on('dblclick')((e: MouseEvent) => {
+  const new_source = (t: Token, diff: TokenDiff, edge_id: string) => {
+    up.push(track(t.id, span(deletes(diff), C.InnerCell,
+      s.attrs({ draggable: 'true' }),
+      s.on('dblclick')((e: MouseEvent) => {
         e.preventDefault()
-        Request({kind: 'disconnect_at', at: s.id})
+        Request({kind: 'disconnect_at', at: t.id})
       })
     )))
-    links.push(Link(s.id, edge_id))
+    links.push(Link(t.id, edge_id))
   }
   const new_target = (t: Token, diff: TokenDiff, edge_id: string) => {
     down.push(track(t.id, span(inserts(diff), C.InnerCell,
-      S.attrs({ draggable: 'true' }),
-      S.on('dblclick')((e: MouseEvent) => {
+      s.attrs({ draggable: 'true' }),
+      s.on('dblclick')((e: MouseEvent) => {
         e.preventDefault()
         Request({kind: 'disconnect_at', at: t.id})
       })
@@ -114,15 +115,15 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
           edges[edge_id].labels.map(
             code => span(
               code + ' ',
-              S.classes({
+              s.classes({
                 [red]: diff_index !== selected_index && taxonomy.every(g => g.choices.every(alt => alt.value != code))
               })
             )
           ),
           C.BorderCell,
-          S.styles({height: 'min-content'}),
-          S.attrs({ draggable: 'true' }),
-          S.classes({[c.SelectedBorderCell]: diff_index === selected_index}),
+          s.css({height: 'min-content'}),
+          s.attrs({ draggable: 'true' }),
+          s.classes({[c.SelectedBorderCell]: diff_index === selected_index}),
         )
       )
       mid.push(track(edge_id, vn))
@@ -156,22 +157,22 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
   const ladder = track('table', table(columns.map(({up: u, mid: m, down: d, ix}, i) => ({
     snabbis: [
       select_index(ix),
-      S.on('contextmenu')((e: PointerEvent) => {
+      s.on('contextmenu')((e: PointerEvent) => {
         e.preventDefault()
         Request({kind: 'revert_at', at: rich_diff[ix].id})
       }),
-      S.attrs({ draggable: 'true' }),
-      S.on('dragstart')((e: DragEvent) => {
+      s.attrs({ draggable: 'true' }),
+      s.on('dragstart')((e: DragEvent) => {
         e.dataTransfer.setData('text/plain', 'https://stackoverflow.com/questions/19055264/why-doesnt-html5-drag-and-drop-work-in-firefox')
         dragstart = rich_diff[ix].id
       }),
-      S.on('dragover')((e: DragEvent) => {
+      s.on('dragover')((e: DragEvent) => {
         dragend = rich_diff[ix].id
       }),
-      S.on('dragend')((e: DragEvent) => {
+      s.on('dragend')((e: DragEvent) => {
         Request({kind: 'connect_two', one: dragstart, two: dragend})
       }),
-      S.classes({[c.LadderSelected]: ix === selected_index}),
+      s.classes({[c.LadderSelected]: ix === selected_index}),
       C.Pointer
     ],
     col: [
@@ -185,7 +186,7 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
   const svg = tag(
     'svg',
     C.Width100Pct,
-    S.styles({height: '500px'}),
+    s.css({height: '500px'}),
     links.map(link => {
       const top = pos_dict[link.from]
       const bot = pos_dict[link.to]
@@ -195,13 +196,13 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
       const x2 = Positions.hmid(bot)
       const y2 = bot.top // Positions.top(bot)
       const d = 25 * (-1 / (Math.abs(x1 - x2) + 1) + 1)
-      const s = selected_index != null ? (rich_diff[selected_index] || {id: 'null'}).id : 'null'
+      const ix = selected_index != null ? (rich_diff[selected_index] || {id: 'null'}).id : 'null'
       return tag('path',
-        S.attrs({
+        s.attrs({
           d: ['M', x1, y1, 'C', x1, y1 + d, x2, y2 - d, x2, y2].join(' '),
         }),
         C.Path,
-        S.classes({[c.SelectedPath]: link.from == s || link.to == s})
+        s.classes({[c.SelectedPath]: link.from == ix || link.to == ix})
       )
     }).filter(x => x != null)
   )
@@ -215,10 +216,10 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
     // If this is the selected edge, instead add the component for editing the label set
     // NB: TODO: Add Undo functionality to labels
     out = div(
-      // S.classed(style(csstips.horizontal)),
+      // s.classed(style(csstips.horizontal)),
       out,
       div(Dropdown.Dropdown(store.at('dropdown'), taxonomy, inp_ => { inp = inp_; inp && inp.focus() }),
-        S.on('keydown')((e: KeyboardEvent) => {
+        s.on('keydown')((e: KeyboardEvent) => {
           if (e.code == 'Tab') {
             Request(e.shiftKey ? 'prev' : 'next')
             e.preventDefault()
@@ -226,17 +227,17 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, ric
             Request({kind: 'select_index', index: null})
           }
         }),
-        S.on('click')(e => { console.log('defprev'), e.stopPropagation() })),
+        s.on('click')(e => { console.log('defprev'), e.stopPropagation() })),
     )
   }
 
   return out
 }
 
-function table(cols: {col: VNode[], snabbis: S[]}[], classes: string[] = []): VNode {
+function table(cols: {col: VNode[], snabbis: TagData[]}[], classes: string[] = []): VNode {
   return tag('div',
     C.Row,
-    S.classed(...classes),
+    s.classed(...classes),
     ...cols.map(col => tag('div', C.Column, col.col, ...col.snabbis)))
 }
 
@@ -250,7 +251,7 @@ const avg = (xs: number[]) => {
 
 const diff_to_spans = (rules: (string | null)[]) => (d: [number, string][]) =>
   diff_helper(d, rules,
-    (text, cls) => span(S.classed(cls), text))
+    (text, cls) => span(s.classed(cls), text))
 
 const inserts = diff_to_spans([null, '', c.Insert])
 

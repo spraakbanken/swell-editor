@@ -3,7 +3,7 @@ import * as typestyle from "typestyle"
 import * as csstips from "csstips"
 import { debug_name } from './dev'
 import * as Utils from './Utils'
-import { tag, Content as S } from "snabbis"
+import { tag, s } from "snabbis"
 
 export function css(...xs: types.NestedCSSProperties[]): types.NestedCSSProperties[] {
   return xs
@@ -265,7 +265,7 @@ export const styles = {
 
 export const c = Utils.record_map(styles, (css, k) => style(debug_name(k), ...css))
 
-export const C = Utils.record_map(c, cname => S.classed(cname))
+export const C = Utils.record_map(c, cname => s.classed(cname))
 
 /*
 export const Top = style(

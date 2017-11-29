@@ -5,9 +5,9 @@ import { VNode } from "snabbdom/vnode"
 import { AppState, Diffs } from './Model'
 import * as Model from './Model'
 import * as Utils from './Utils'
-import { tag, Content as S } from "snabbis"
-import { CatchSubmit, InputField, button, div, span, table, tbody, tr, td, select } from "./Snabbdom"
-
+import { tag, s, tags } from "snabbis"
+const { div, span, table, tbody, tr, td, option } = tags
+const { button, input, select } = s
 
 import { Store, Lens } from "reactive-lens"
 
@@ -29,7 +29,7 @@ export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
   const header = div(
     tag('h3',
       'Normaliseringseditorsprototyp',
-      S.on('click')(_ => store.set(Model.init())),
+      s.on('click')(_ => store.set(Model.init())),
       C.Pointer
     ),
     /*
@@ -57,17 +57,15 @@ export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
     )
   )
   if (login_state.get() == 'out') {
+    const set_in = () => login_state.set('in')
     return div(
       C.MainStyle,
-      S.classed(typestyle.style({padding: '10px'})),
+      s.classed(typestyle.style({padding: '10px'})),
       header,
       'you need to login',
-      CatchSubmit(
-        () => login_state.set('in'),
-        InputField(login.at('user')),
-        InputField(login.at('password'), S.attrs({'type': 'password'})),
-        button('login', () => login_state.set('in'))
-      ),
+      input(login.at('user'), set_in),
+      input(login.at('password'), set_in, s.attrs({'type': 'password'})),
+      button('login', set_in),
       tag('hr'),
       button('try an example anyway', () => {
         login_state.set('anonymous')
@@ -75,12 +73,12 @@ export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
     )
   } else {
     return div(
-      S.on('click')(() => {
+      s.on('click')(() => {
         Request({kind: 'select_index', index: null})
       }),
       C.PadButtons,
       C.MainStyle,
-      S.classed(typestyle.style({padding: '10px'})),
+      s.classed(typestyle.style({padding: '10px'})),
       header,
       ViewDiff(
         Model.current(store).pick('graph', 'selected_index').merge(store.pick('positions', 'dropdown')),
@@ -110,7 +108,7 @@ export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
         select(
           store.at('current'),
           store.at('graphs').via(Lens.lens(o => Object.keys(o).sort(), (s, t) => Utils.raise('getter'))),
-          (k: string) => tag('option', k)),
+          (k: string) => option(k)),
         button('logout', () => login_state.set('out')),
         button('sync', () => store.at('sync_request').set(true)),
       ],

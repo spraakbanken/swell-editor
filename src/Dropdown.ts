@@ -1,8 +1,8 @@
-import { VNode, tag, Content as S } from "snabbis"
+import { VNode, tag, s, tags } from "snabbis"
+const {div} = tags
 import { Hooks } from 'snabbdom/hooks';
 import { C, c } from "./Classes"
 import { Store } from "reactive-lens"
-import { div, InputField } from "./Snabbdom"
 import * as typestyle from "typestyle"
 import * as Utils from "./Utils"
 
@@ -92,30 +92,30 @@ export function Prev(cursor: number, groups: Group[]): number | undefined {
 }
 
 const cl  = {
-  containerOuter: S.classed('choices'),
-  containerInner: S.classed('choices__inner'),
-  input: S.classed('choices__input'),
-  inputCloned: S.classed('choices__input--cloned'),
-  list: S.classed('choices__list'),
-  listItems: S.classed('choices__list--multiple'),
-  listSingle: S.classed('choices__list--single'),
-  listDropdown: S.classed('choices__list--dropdown'),
-  item: S.classed('choices__item'),
-  itemSelectable: S.classed('choices__item--selectable'),
-  itemDisabled: S.classed('choices__item--disabled'),
-  itemChoice: S.classed('choices__item--choice'),
-  placeholder: S.classed('choices__placeholder'),
-  group: S.classed('choices__group'),
-  groupHeading: S.classed('choices__heading'),
-  button: S.classed('choices__button'),
-  activeState: S.classed('is-active'),
-  focusState: S.classed('is-focused'),
-  openState: S.classed('is-open'),
-  disabledState: S.classed('is-disabled'),
-  highlightedState: S.classed('is-highlighted'),
-  hiddenState: S.classed('is-hidden'),
-  flippedState: S.classed('is-flipped'),
-  loadingState: S.classed('is-loading'),
+  containerOuter: s.classed('choices'),
+  containerInner: s.classed('choices__inner'),
+  input: s.classed('choices__input'),
+  inputCloned: s.classed('choices__input--cloned'),
+  list: s.classed('choices__list'),
+  listItems: s.classed('choices__list--multiple'),
+  listSingle: s.classed('choices__list--single'),
+  listDropdown: s.classed('choices__list--dropdown'),
+  item: s.classed('choices__item'),
+  itemSelectable: s.classed('choices__item--selectable'),
+  itemDisabled: s.classed('choices__item--disabled'),
+  itemChoice: s.classed('choices__item--choice'),
+  placeholder: s.classed('choices__placeholder'),
+  group: s.classed('choices__group'),
+  groupHeading: s.classed('choices__heading'),
+  button: s.classed('choices__button'),
+  activeState: s.classed('is-active'),
+  focusState: s.classed('is-focused'),
+  openState: s.classed('is-open'),
+  disabledState: s.classed('is-disabled'),
+  highlightedState: s.classed('is-highlighted'),
+  hiddenState: s.classed('is-hidden'),
+  flippedState: s.classed('is-flipped'),
+  loadingState: s.classed('is-loading'),
 }
 
 export function Handler(store: Store<State>): () => void {
@@ -153,23 +153,22 @@ export function Dropdown(store: Store<State>, groups: Group[], obtain: (inp: HTM
       cl.containerOuter,
       div(cl.containerInner,
         div(cl.list, cl.listItems,
-          active.get().map((s: string) =>
-            div(cl.item, s,
+          active.get().map((t: string) =>
+            div(cl.item, t,
               C.Pointer,
               C.Unselectable,
-              S.on('click')(() => at_key(s).set(false))
+              s.on('click')(() => at_key(t).set(false))
             )
           ),
-          InputField(input,
+          s.input(input,
+            undefined,
             cl.input,
-            S.attrs({autofocus: true}),
-            S.hook({
-              postpatch: (_, vn: VNode) => {
-                inp = vn.elm as any
-                obtain(inp)
-              }
+            s.attrs({autofocus: true}),
+            s.hook('postpatch')((_, vn: VNode) => {
+              inp = vn.elm as any
+              obtain(inp)
             }),
-            S.on('keydown')((e: KeyboardEvent) => {
+            s.on('keydown')((e: KeyboardEvent) => {
               let x = cursor.get()
               // console.log('keydown', {x}, e.code, e.keyCode, e.charCode)
               if (x === undefined) {
@@ -209,16 +208,16 @@ export function Dropdown(store: Store<State>, groups: Group[], obtain: (inp: HTM
               ...group.choices.map(alt =>
                   alt.unavailable ||
                   div(cl.item, cl.itemSelectable,
-                    S.style('padding', '6px'),
+                    s.style({padding: '6px'}),
                     alt.index == cursor.get() && cl.highlightedState,
                     div(C.TaxonomyCodeInDropdown, alt.value),
                     div(C.InlineBlock, alt.label),
-                    S.on('click')((e: MouseEvent) => {
+                    s.on('click')((e: MouseEvent) => {
                       at_key(alt.value).set(true)
                       e.preventDefault()
                       inp && inp.focus()
                     }),
-                    S.on('mouseover')(() => {
+                    s.on('mouseover')(() => {
                       if (alt.index !== undefined && cursor.get() != alt.index) {
                         cursor.set(alt.index)
                       }

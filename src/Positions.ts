@@ -1,6 +1,6 @@
 
 import * as equals from "ramda/src/equals"
-import { tag, Content as S } from "snabbis"
+import { tag, s } from "snabbis"
 import { VNode } from "snabbdom/vnode"
 import * as Utils from "./Utils"
 import { C } from "./Classes"
@@ -59,7 +59,7 @@ export function relative(n1: VNode, n2: VNode, classes: string[] = []): VNode {
   return (
     tag('div',
       C.RelativeOuter,
-      S.classed(...classes),
+      s.classed(...classes),
       n1,
       tag('div', C.RelativeInner, C.Below, n2)
     )

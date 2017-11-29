@@ -6,13 +6,11 @@ Right now we use the cut word part of the CM state using a CM mark
 import * as CodeMirror from "codemirror"
 import * as typestyle from "typestyle"
 
-import * as Snabbdom from "./Snabbdom"
-import { CM } from "./Snabbdom"
+import { CM } from "./CodeMirrorSnabbdom"
 
 import { C, c } from './Classes'
 
 import { View } from "./View"
-import { tag, Content as S } from "snabbis"
 
 import * as Model from "./Model"
 import { AppState } from "./Model"
@@ -456,9 +454,7 @@ export function App(store: Store<AppState>) {
 
   const cms = {vn_orig, vn_main}
 
-  return {
-    view: () => View(store, Model.calculate_diffs(store.get()), cms)
-  }
+  return () => View(store, Model.calculate_diffs(store.get()), cms)
 }
 
 function remove_marks_by_class(editor: CodeMirror.Editor, name: string) {
