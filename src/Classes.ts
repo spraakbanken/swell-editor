@@ -13,7 +13,7 @@ const Cyan = "#00bcd4"
 const CyanBorder = "#00a5bb"
 
 const col1 = Cyan
-const col2 = "#bc00d4"
+const col2 = "#ff8e32"
 const bg = "#fff"
 const fg = "#000"
 
@@ -21,7 +21,8 @@ export const styles = {
   SlideRoot: css(
     csstips.horizontal,
     csstips.aroundJustified,
-    { background: "#eee" }
+    { background: "#eee" },
+    { lineHeight: '10rem' },
   ),
 
   Slide: css(
@@ -31,7 +32,7 @@ export const styles = {
       height: '100rem',
       background: bg,
       color: fg,
-      fontSize: '12rem',
+      fontSize: '7rem',
       fontFamily: '"Lato", sans-serif'
     },
   ),
@@ -54,7 +55,7 @@ export const styles = {
 
   Header: css(
     {fontSize: '11rem'},
-    {fontFamily: 'Montserrat'},
+    {fontFamily: '"Lato", sans-serif'},
     {textAlign: 'center'},
     {color: col1},
     csstips.padding(0, '2rem')
@@ -66,7 +67,7 @@ export const styles = {
       $nest: {
         '&::before': {
           'content': `'\u25cf'`,
-          fontSize: '8rem',
+          fontSize: '7rem',
           paddingRight: '2rem',
           color: col2
         }
@@ -80,8 +81,8 @@ export const styles = {
     {
       $nest: {
         '&::before': {
-          'content': `'\u25b6'`,
-          fontSize: '5rem',
+          'content': `'\u25cf'`,
+          fontSize: '6rem',
           paddingRight: '2rem',
           color: col2
         }

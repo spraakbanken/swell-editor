@@ -7,7 +7,7 @@ import * as Positions from './Positions'
 import * as Model from './Model'
 import * as Utils from './Utils'
 import { tag, s, tags, TagData } from "snabbis"
-const { div, span, table, tbody, tr, td, option } = tags
+const { div, span, table, tbody, tr, td, th, option } = tags
 const { button, input, select } = s
 
 import { Store, Lens } from "reactive-lens"
@@ -22,8 +22,9 @@ export function View(store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
   let i = 0
   let p = -1
   function slide(...data: TagData[]): VNode | undefined {
-    const yes = n > p && n <= i++
+    const p_now = p
     p = i
+    const yes = n <= i++ && n > p_now
     return yes ? tag('div', C.Slide, ...data) : undefined
   }
   function pause(vn: VNode): VNode | undefined {
@@ -65,7 +66,7 @@ export function View(store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
                 position: 'absolute',
                 top: '21rem',
                 left: '6rem',
-                width: '90rem',
+                width: '85rem',
                 background: '#fff',
                 border: '1rem solid red',
                 padding: '1rem 2rem',
@@ -108,7 +109,57 @@ export function View(store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
         tag('img', s.attrs({src: 'talk/hws/logo_gu.png'}), s.css({padding: '3rem', height: '29rem'})),
         tag('img', s.attrs({src: 'talk/hws/logo_sb.jpg'}), s.css({padding: '5rem', height: '25rem'}), s.css({float: 'right'})),
       )
-    )
+    ),
+
+    slide(
+      div(C.Header, 'Example learner sentences'),
+      div(C.Bullet, 'Den väder var inte fint.'),
+      div(C.Bullet, 'Jag åt två broad.'),
+      div(C.Bullet, 'Vi gick dit för jag skulle få person nummer.'),
+    ),
+    slide(
+      div(C.Header, 'Example running sentence'),
+      div(C.Bullet, 'Examples here high light lotsof futures')
+    ),
+
+    (function() {
+      const source = 'Examples here high light lotsof futures \u200b'.split(' ')
+      const targets = [
+        "Examples here high light lotsof futures \u200b".split(' '),
+        "Examples here high light lotsof 'features \u200b".split(' '),
+        "Examples here 'highlight \u200b lotsof features \u200b".split(' '),
+        "Examples here highlight '?! lotsof features \u200b".split(' '),
+        "Examples here highlight ?! 'lots\u00a0of features \u200b".split(' '),
+        "Examples \u200b highlight ?! lots\u00a0of features 'here".split(' '),
+        "Examples 'here(6) highlight ?! lots\u00a0of features \u200b".split(' '),
+      ]
+      const tables = targets.map(row => [source].concat([row]))
+
+      return tables.map((data, j) =>
+        slide(
+          div(C.Header, 'Idea: Annotate learner tokens'),
+          div(C.Bullet, 'Examples here high light lotsof futures'),
+          table(s.css({borderSpacing: '2rem', fontSize: '6.5rem'}),
+            tbody(
+              tr(
+                th('source'),
+                data[0].map(x => td(x)),
+              ),
+              tr(
+                th('target'),
+                data[1].map(x => x[0] == "'" ? td(x.slice(1), s.css({color: 'red'})) : td(x)),
+              )
+            )
+          ),
+          (j == tables.length - 1) && pause(div(
+            div(C.Bullet, "doesn't work, cannot satisfiably express:"),
+            div(C.Underbullet, "token merging ", tags.i("(light)")),
+            div(C.Underbullet, "token splitting ", tags.i("(of)")),
+            div(C.Underbullet, "token movement ", tags.i("(here)")),
+          ))
+        )
+      )
+    })(),
 
   ]
 
