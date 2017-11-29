@@ -14,12 +14,10 @@ import { Store, Lens } from "reactive-lens"
 export interface CodeMirrors {
   vn_orig: VNode,
   vn_main: VNode,
-  // vn_diff: VNode,
-  // vn_xml:  VNode,
 }
 
 export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VNode => {
-  const Request = Model.ActionMaker(store)
+  const Request = Model.RequestMaker(store)
   const login = store.at('login')
   const login_state = store.at('login_state')
   const msg_store = store.at('messages')
@@ -32,22 +30,6 @@ export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
       s.on('click')(_ => store.set(Model.init())),
       C.Pointer
     ),
-    /*
-    Dropdown(st, [
-      { label: 'x1',
-        choices: [
-          { value: 'apa', label: 'apa heheh' },
-          { value: 'bepa', label: 'xlr' },
-        ]
-      },
-      { label: 'x2',
-        choices: [
-          { value: 'cepa', label: 'urk' },
-          { value: 'depa', label: 'hasnoetuhasnoethu ' },
-        ]
-      }
-    ]),
-      */
     msg.length > 0 &&
     tag('div',
       C.PadButtons,

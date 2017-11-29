@@ -11,9 +11,9 @@
     "csstips": "^0.2.2",
     "diff-match-patch": "^1.0.0",
     "ramda": "^0.25.0",
-    "reactive-lens": "^0.2.0",
+    "reactive-lens": "^0.3.0",
     "snabbdom": "^0.7.0",
-    "snabbis": "^0.9.0",
+    "snabbis": "^0.10.0",
     "typestyle": "^1.4.1"
   },
   "devDependencies": {

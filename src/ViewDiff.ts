@@ -54,7 +54,7 @@ const red = style({
 })
 
 
-export function ViewDiff(store: Store<ViewDiffState>, Request: Model.Action, rich_diff: RichDiff[], taxonomy: Taxonomy): VNode {
+export function ViewDiff(store: Store<ViewDiffState>, Request: (r: Model.Request) => void, rich_diff: RichDiff[], taxonomy: Taxonomy): VNode {
 
   let inp: HTMLInputElement | undefined
 

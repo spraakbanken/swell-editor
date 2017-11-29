@@ -31,7 +31,7 @@ import * as T from './Token'
 import { TokenDiff } from "./Utils"
 import * as Utils from "./Utils"
 
-import { Store, Lens, Undo } from "reactive-lens"
+import { Store, Lens, Undo, Requests } from "reactive-lens"
 
 import * as Dropdown from "./Dropdown"
 
@@ -76,7 +76,7 @@ export function App(store: Store<AppState>) {
   const undo = () => { undo_graph.modify(Undo.undo); full_view_update() }
   const redo = () => { undo_graph.modify(Undo.redo); full_view_update() }
 
-  const Request = Model.ActionMaker(store)
+  const Request = Model.RequestMaker(store)
 
   const extraKeys = {
     "Ctrl-X": () => cut(),

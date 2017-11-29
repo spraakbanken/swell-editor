@@ -12,7 +12,7 @@ import * as Utils from "./Utils"
 import { Group, Alt } from "./Dropdown"
 import * as Dropdown from "./Dropdown"
 
-import { Store, Lens, Undo } from "reactive-lens"
+import { Store, Lens, Undo, Requests } from "reactive-lens"
 import { PosDict } from "./Positions"
 import { log, debug, debug_table } from "./dev"
 
@@ -63,16 +63,7 @@ export type Request =
   | { kind: 'connect_two', one: string, two: string }
   | { kind: 'select_index', index: number | null }
 
-export type Action = (r: Request) => void
-
-export function ActionMaker(store: Store<AppState>): Action {
-  return Store.arr(store.at('requests'), 'push')
-}
-
-export function Request(store: Store<AppState>, r: Request): void {
-  ActionMaker(store)(r)
-}
-
+export const RequestMaker = (store: Store<AppState>) => Requests.request_maker(store.at('requests'))
 
 const backend = 'https://ws.spraakbanken.gu.se/ws/sparv/swell/'
 // const backend = 'http://127.0.0.1:8000/'
