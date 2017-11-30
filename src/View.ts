@@ -188,6 +188,12 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
         div(C.LH, C.Underbullet, "token splitting ", tags.i("(lots of)")),
         div(C.LH, C.Underbullet, "token movement ", tags.i("(here)")),
       )),
+      oneslide(div(
+        div(C.LH, C.Bullet, "how do we make an editor for this?"),
+        div(C.LH, C.Underbullet, '"just" calculate a diff'),
+        div(C.LH, C.Underbullet, "- too many disambiguities around word movement"),
+        div(C.LH, C.Underbullet, '- need some way to manually fix errors anyway'),
+      )),
       pause(div(
         div(C.LH, C.Bullet, "how do we make an editor for this?"),
         div(C.LH, C.Underbullet, "text area with impaired operations?"),
