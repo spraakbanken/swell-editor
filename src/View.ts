@@ -366,7 +366,10 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
         div(C.LH, C.Underbullet, 'Truly easy matters are discussed as if they were challenges'),
         div(C.LH, C.Underbullet, "Developers have to dodge NLP researchers sledgehammer predispositions",
           span(", and non-CS researchers have to too", css_hide()),
-        )
+        ),
+        div(C.LH, C.Underbullet, css_hide(),
+          'Abstract representation of data gives us a common language'
+        ),
       )
     ),
   ]
