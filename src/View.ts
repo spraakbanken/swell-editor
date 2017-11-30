@@ -233,21 +233,6 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
     ),
 
     slide(
-      div(C.LH, C.Header, 'Request: data in unique identifiers'),
-      div(C.LH, C.Bullet, "A database entry of a learner:"),
-      div(C.LH, C.Underbullet, "L1: French"),
-      div(C.LH, C.Underbullet, "Age: 38"),
-      div(C.LH, C.Underbullet, "Time in Sweden: 29 weeks"),
-      div(C.LH, C.Underbullet, "Unique identifier: ", tag('code', "2681")),
-      div(C.LH, C.Bullet, "Suggestion: Unique identifier: ", tag('code', 'Fr38y29w')),
-      pause(div(
-        div(C.LH, C.Bullet, "+ can see learner metadata at a glance"),
-        div(C.LH, C.Bullet, "- leads to disambiguties"),
-        div(C.LH, C.Bullet, "- ", tag('code', 'shorten: Learner -> string'), ' is already O(1)'),
-      ))
-    ),
-
-    slide(
       div(C.LH, C.Header, 'Anonymization'),
       oneslide(div(
         div(C.LH, C.Bullet, 'My uncle visited Tehran in 1996'),
@@ -277,19 +262,22 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
   gender:  unknown | m | f | ...
   culture: unknown | L1 | L2 | ...
 }`),
-        div(C.LH, C.Bullet, '+ Generate any desired view'),
-        div(C.LH, C.Bullet, '+ Future-proof '),
       )),
-      div(C.LH, C.Bullet, '+ Establishes a common abstract ground',
-        css_hide(),
-        tag('code', 'ACC PRE REC PRF AUC...', css_hide(),
-          s.css({
-            border: '1rem solid red',
-            padding: '1rem 2rem',
-            marginLeft: '6rem',
-            borderRadius: '4rem'
-          })
-        ),
+      pause(
+        div(C.LH, C.Bullet, 'Establishes a common abstract ground')
+      ),
+      div(css_hide(),
+        div(C.LH, C.Bullet, 'What is needed for the different linearizations?'),
+        div(C.LH, C.Bullet, 'How difficult are they to annotate manually? Automatically?',
+          tag('code', 'PRE REC', css_hide(),
+            s.css({
+              border: '1rem solid red',
+              padding: '1rem 2rem',
+              marginLeft: '4rem',
+              borderRadius: '4rem'
+            })
+          )
+        )
       )
     ),
 
@@ -315,6 +303,21 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
           })
         )
       )
+    ),
+
+    slide(
+      div(C.LH, C.Header, 'Request: data in unique identifiers'),
+      div(C.LH, C.Bullet, "A database entry of a learner:"),
+      div(C.LH, C.Underbullet, "L1: French"),
+      div(C.LH, C.Underbullet, "Age: 38"),
+      div(C.LH, C.Underbullet, "Time in Sweden: 29 weeks"),
+      div(C.LH, C.Underbullet, "Unique identifier: ", tag('code', "2681")),
+      div(C.LH, C.Bullet, "Suggestion: Unique identifier: ", tag('code', 'Fr38y29w')),
+      pause(div(
+        div(C.LH, C.Bullet, "+ can see learner metadata at a glance"),
+        div(C.LH, C.Bullet, "- leads to disambiguties"),
+        div(C.LH, C.Bullet, "- ", tag('code', 'shorten: Learner -> string'), ' is already O(1)'),
+      ))
     ),
 
     slide_do(() => {
