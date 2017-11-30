@@ -189,7 +189,7 @@ export function init(text?: string): AppState {
       example: init_graph_state(text || ''),
       examplesHere: init_graph_state('Examples here high light lotsof futures . '),
       solved: solved_graph_state,
-      sentences: init_graph_state('Listen ! For each donkey loves some farmer . '),
+      sentences: init_graph_state('I went to the store went my mum was there . '),
     },
     current: 'solved',
     needs_full_update: true,

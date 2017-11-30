@@ -54,7 +54,7 @@ export const styles = {
   ),
 
   Header: css(
-    {fontSize: '10rem'},
+    {fontSize: '8rem'},
     {fontFamily: '"Lato", sans-serif'},
     {textAlign: 'center'},
     {color: col1},
@@ -232,8 +232,8 @@ export const styles = {
     $nest:{
       '& .CodeMirror':{
         fontFamily: "'Lato', sans-serif",
-        fontSize: '4rem',
-        // lineHeight: '6rem',
+        fontSize: '4.5rem',
+        lineHeight: '6rem',
       }
     }
   }),

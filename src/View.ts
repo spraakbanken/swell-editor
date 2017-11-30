@@ -253,35 +253,62 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
           div(C.LH, C.Bullet, tag('code', '_1'), ' visited ', tag('code', '_2'), ' in ', tag('code', '_3')),
           div(C.LH, C.Bullet, tags.i('But the data needs to be searchable')),
           div(C.LH, C.Bullet, tags.i('But the data needs to be taggable')),
-          div(C.LH, C.Bullet, tags.i("Can't we just have placeholder names?!")),
+          div(C.LH, C.Bullet, tags.i("Use placeholder names from a name supply (Alice, Bob, Paris)")),
           div(C.LH, C.Bullet, tags.i("But from which culture? This is very sensitive")),
         )
       ),
       oneslide(div(
-        div(C.LH, C.Bullet, 'Seems to view the corpus as something of this type'),
+        div(C.LH, C.Bullet, 'Problem: viewing the corpus as something of these types:'),
         div(C.LH, C.Bullet, tag('code', 'corpus: string')),
         div(C.LH, C.Bullet, tag('code', 'corpus: Array<string>')),
       )),
       pause(div(
-        div(C.LH, C.Bullet, 'Solution:'),
+        // div(C.LH, C.Bullet, 'Solution:'),
         div(C.LH, C.Bullet, tag('code', 'corpus: Array<string | AnonymizationRecord>')),
-        tags.pre(s.css({padding: '0 8rem'}), `interface AnonymizationRecord {
+        tags.pre(s.css({padding: '0 6rem'}), `interface AnonymizationRecord {
   unique_number: int,
-  kind: unknown | person | place | event | ...
-  gender: unknown | m | f | ...
+  kind:    unknown | person | place | event | ...
+  gender:  unknown | m | f | ...
+  culture: unknown | L1 | L2 | ...
 }`),
-        div(C.LH, C.Bullet, 'Now just generate whatever view you desire'),
-      ))
+        div(C.LH, C.Bullet, '+ Generate any desired view'),
+        div(C.LH, C.Bullet, '+ Future-proof '),
+      )),
+      div(C.LH, C.Bullet, '+ Establishes a common abstract ground',
+        css_hide(),
+        tag('code', 'ACC PRE REC PRF AUC...', css_hide(),
+          s.css({
+            border: '1rem solid red',
+            padding: '1rem 2rem',
+            marginLeft: '6rem',
+            borderRadius: '4rem'
+          })
+        ),
+      )
     ),
 
     slide(
       div(C.LH, C.Header, 'Anonymization'),
-      div(C.LH, C.Bullet, 'Suggestion: Use a NER tagger for anonymization'),
+      div(C.LH, C.Bullet, tag('code', 'corpus: Array<string | AnonymizationRecord>')),
+      div(C.LH, C.Bullet, 'Researchers might suggest: "Just" use a NER tagger, DNN, ML, SAT-solver...'),
       div(C.LH, C.Bullet, 'Propensity to reach for tools before a manual annotation approach is devised'),
-      div(C.LH, C.Underbullet, '- It might not work at all'),
-      div(C.LH, C.Underbullet, '- It might be too slow / clunky / anything'),
-      div(C.LH, C.Underbullet, '- Need some way to manually fix errors anyway'),
-      div(C.LH, C.Bullet, 'NLP researchers talking about automated tools confuse SLA researchers'),
+      pause(div(
+        div(C.LH, C.Underbullet, '- It might not work at all'),
+        div(C.LH, C.Underbullet, '- It might be too slow / clunky / anything'),
+        div(C.LH, C.Underbullet, '- Need some way to manually fix errors anyway'),
+      )),
+      div(C.LH, C.Bullet, 'NLP researchers talking about automated tools confuse SLA researchers',
+        css_hide(),
+        span('big problem!', css_hide(),
+          s.css({
+            border: '1rem solid red',
+            padding: '1rem 2rem',
+            marginLeft: '6rem',
+            borderRadius: '4rem',
+            float: 'right'
+          })
+        )
+      )
     ),
 
     slide_do(() => {
@@ -327,12 +354,14 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
       div(C.LH, C.Bullet, 'Parallel corpus is a good representation for diffs such as a learner corpus'),
       div(C.LH, C.Bullet, 'The edges in the graph are a natural place to put labels'),
       div(C.LH, C.Bullet, 'Corpus can be constructed with an augmented an off-the-shelf text editor'),
-      pause(div(
+      div(css_hide(),
         div(C.LH, C.Bullet, 'Working across disciplines:'),
         div(C.LH, C.Underbullet, 'Hidden challenges in solving seemingly trivial UI'),
         div(C.LH, C.Underbullet, 'Truly easy matters are discussed as if they were challenges'),
-        div(C.LH, C.Underbullet, "Developers have to dodge NLP researchers sledgehammer predispositions"),
-      ))
+        div(C.LH, C.Underbullet, "Developers have to dodge NLP researchers sledgehammer predispositions",
+          span(", and non-CS researchers have to too", css_hide()),
+        )
+      )
     ),
   ]
 
