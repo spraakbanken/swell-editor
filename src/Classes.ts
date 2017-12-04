@@ -267,31 +267,3 @@ export const c = Utils.record_map(styles, (css, k) => style(debug_name(k), ...cs
 
 export const C = Utils.record_map(c, cname => s.classed(cname))
 
-/*
-export const Top = style(
-  debug_name('Top'),
-  {
-    flexGrow: 1
-  }
-)
-
-export const Mid = style(
-  debug_name('Mid'),
-  {
-    flexGrow: 0
-  }
-)
-
-export const Bot = style(
-  debug_name('Bot'),
-  {
-    flexGrow: 1
-  },
-  csstips.horizontal,
-  {
-    $nest: {
-      '&>*': csstips.selfEnd
-    }
-  }
-)
-*/

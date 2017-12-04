@@ -16,7 +16,7 @@ export interface CodeMirrors {
   vn_main: VNode,
 }
 
-export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VNode => {
+export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
   const Request = Model.RequestMaker(store)
   const login = store.at('login')
   const login_state = store.at('login_state')
@@ -61,7 +61,7 @@ export const View = (store: Store<AppState>, diffs: Diffs, cms: CodeMirrors): VN
       ViewDiff(
         Model.current(store).pick('graph', 'selected_index').merge(store.pick('positions', 'dropdown')),
         Request,
-        diffs.rich_diff,
+        Model.calculate_diffs(store.get()).rich_diff,
         store.get().taxonomy
       ),
       div(C.SideBySideToTheLeft,

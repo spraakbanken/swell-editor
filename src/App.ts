@@ -454,7 +454,7 @@ export function App(store: Store<AppState>) {
 
   const cms = {vn_orig, vn_main}
 
-  return () => View(store, Model.calculate_diffs(store.get()), cms)
+  return () => View(store, cms)
 }
 
 function remove_marks_by_class(editor: CodeMirror.Editor, name: string) {
