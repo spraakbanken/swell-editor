@@ -23,6 +23,16 @@ export interface GraphState {
   readonly cursor_index: number,
   /** Index we are currently labelling: selected index in the diff (todo: change to selected edge id?) */
   readonly selected_index: number | null,
+  /** The drag state */
+  readonly drag_state: Partial<DragState>
+}
+
+export interface DragState {
+  readonly drag_start: string,
+  readonly drag_start_end: string,
+  readonly drag_over: string,
+  readonly drag_type: 'merge' | 'rearrange',
+  readonly drag_over_last: string[]
 }
 
 export interface AppState {
@@ -55,15 +65,20 @@ export interface AppState {
 }
 
 export type Request =
-    'prev' | 'next'
+    'prev' | 'next' // Moving between sentences
   | 'revert' | 'connect' | 'disconnect'
   | 'undo' | 'redo'
   | { kind: 'revert_at', at: string }
   | { kind: 'disconnect_at', at: string }
   | { kind: 'connect_two', one: string, two: string }
   | { kind: 'select_index', index: number | null }
+  | { kind: 'rearrange', begin: string, end: string, dest: string }
 
-export const RequestMaker = (store: Store<AppState>) => Requests.request_maker(store.at('requests'))
+export const RequestMaker = (store: Store<AppState>) =>
+  (x: Request) => {
+    console.log('Request: ' + JSON.stringify(x))
+    Requests.request_maker(store.at('requests'))(x)
+  }
 
 const backend = 'https://ws.spraakbanken.gu.se/ws/sparv/swell/'
 // const backend = 'http://127.0.0.1:8000/'
@@ -166,6 +181,7 @@ export function init_graph_state(text?: string): GraphState {
     graph: Undo.init(G.init(text || '')),
     cursor_index: 0,
     selected_index: null,
+    drag_state: {}
   }
 }
 
@@ -210,10 +226,13 @@ export function current_state(state: AppState): GraphState {
   return current_lens.get(state)
 }
 
-export function calculate_diffs(state: AppState): Diffs {
+export function state_diffs(state: AppState): Diffs {
   const st = current_state(state)
-  const g = st.graph.now
-  const graph = G.subgraph(g, G.sentence(g, st.cursor_index))
+  return calculate_diffs(st.graph.now, st.cursor_index)
+}
+
+export function calculate_diffs(g: Graph, cursor_index: number): Diffs {
+  const graph = G.subgraph(g, G.sentence(g, cursor_index))
   const diff = G.calculate_diff(graph)
   return {diff, rich_diff: R.enrichen(graph, diff)}
 }

@@ -7,6 +7,19 @@ Missing functions:
     invert           // swap source and target
     trail_whitespace // makes all whitespace be trailing whitesapec
 
+
+Idea: make a variant type describing different kinds of positions:
+
+  - for source and target:
+    - from start of text and from start of current sentence:
+      - character offset
+      - token index
+      - token identifier
+  - edge identifier
+
+Make the exposed functions coordinates take any of these and convert them to the internal
+function's preferred view before executing
+
 */
 import * as Utils from './Utils'
 import { Diff, Dragged, Dropped } from './Diff'
