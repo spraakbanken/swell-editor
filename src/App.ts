@@ -50,6 +50,7 @@ export function App(store: Store<AppState>) {
     global.store = store
     global.next = () => store.at('slide').modify(x => x + 1)
     global.prev = () => store.at('slide').modify(x => x - 1)
+    global.current = Model.current(store)
 
     Dropdown.Handler(store.at('dropdown'))
 
@@ -171,6 +172,18 @@ export function App(store: Store<AppState>) {
               case 'select_index':
                 select_index(r.index)
                 return
+              case 'rearrange': {
+                const tm = G.target_map(graph.get())
+                const begin = tm.get(r.begin)
+                const end = tm.get(r.end)
+                const dest = tm.get(r.dest)
+                if (begin !== undefined && end !== undefined && dest !== undefined) {
+                  with_full_update(() => {
+                    Model.advance_graph(undo_graph, G.rearrange(graph.get(), begin, end, dest))
+                  })
+                }
+                return
+              }
               default: return Utils.absurd(r)
             }
           } else {
@@ -193,9 +206,9 @@ export function App(store: Store<AppState>) {
   function select_index(i: number | null) {
     store.transaction(() => {
       selected_index.set(i)
-      console.log('select_index', i)
+      log('select_index', i)
       if (i != null) {
-        const {diff} = Model.calculate_diffs(store.get())
+        const {diff} = Model.state_diffs(store.get())
         if (i >= 0 && i < diff.length) {
           store.at('dropdown').update({
             active: G.label_store(current.at('graph').at('now'), diff[i].id),
@@ -215,7 +228,7 @@ export function App(store: Store<AppState>) {
 
 
   function next() {
-    const {diff} = Model.calculate_diffs(store.get())
+    const {diff} = Model.state_diffs(store.get())
     const si = selected_index.get()
     if (si != null) {
       const ni = D.next(diff, si)
@@ -232,7 +245,7 @@ export function App(store: Store<AppState>) {
   }
 
   function prev() {
-    const {diff} = Model.calculate_diffs(store.get())
+    const {diff} = Model.state_diffs(store.get())
     const si = selected_index.get()
     if (si != null) {
       const pi = D.prev(diff, si)
@@ -242,14 +255,14 @@ export function App(store: Store<AppState>) {
         const {begin} = G.target_sentence(g, ci.get())
         if (begin - 1 >= 0) {
           ci.set(begin - 1)
-          select_index(Model.calculate_diffs(store.get()).diff.length - 2)
+          select_index(Model.state_diffs(store.get()).diff.length - 2)
         }
       }
     }
   }
 
   ci.ondiff(() => {
-    const {diff} = Model.calculate_diffs(store.get())
+    const {diff} = Model.state_diffs(store.get())
     const si = selected_index.get()
     if (si != null && si >= diff.length) {
       select_index(null)
@@ -285,11 +298,19 @@ export function App(store: Store<AppState>) {
   full_view_update()
 
   // disable a bunch of "complicated" events for now
-  for (const t of ["copy", "dragenter"]) {
-    (cm_main.on as any)(t, (_cm_main: CodeMirror.Editor, evt: Event) => {
-      log('Preventing', evt)
-      evt.preventDefault()
-    })
+  for (const t of ["copy", "dragenter", "dragover"]) {
+    (cm_main.on as any)(t, Utils.debounce(10, (_cm_main: CodeMirror.Editor, e: Event & {pageX: number, pageY: number}) => {
+      log('Preventing', e, t)
+      const coord: {line: number, ch: number} = cm_main.coordsChar({left: e.pageX, top: e.pageY})
+      const {Anchor, Head} = selected_target({head: coord, anchor: coord})
+      const drag_over = graph.get().target[Anchor.token]
+      // console.log(Utils.show({coord, Anchor, Head, drag_over}))
+      log('dragover', Utils.show(current.get().drag_state))
+      if (drag_over) {
+        current.at('drag_state').update({drag_over: drag_over.id})
+      }
+      e.preventDefault()
+    }))
   }
 
   (cm_main.on as any)('cut', (_cm_main: CodeMirror.Editor, evt: Event) => {
@@ -359,10 +380,10 @@ export function App(store: Store<AppState>) {
     }
   }
 
-  function selected_target() {
-    const sels = cm_main.getDoc().listSelections()
-    if (sels) {
-      const {anchor, head} = sels[0]
+  function selected_target(cm_main_coord?: {anchor: any, head: any}) {
+    const sel: {anchor: any, head: any} | undefined = cm_main_coord || cm_main.getDoc().listSelections()[0]
+    if (sel) {
+      const {anchor, head} = sel
       const target_texts = G.target_texts(graph.get())
       const Anchor = T.token_at(target_texts, cm_main.getDoc().indexFromPos(anchor))
       const Head = T.token_at(target_texts, cm_main.getDoc().indexFromPos(head))
@@ -375,12 +396,20 @@ export function App(store: Store<AppState>) {
   function cut() {
     const sels = cm_main.getDoc().listSelections()
     if (sels) {
+      const target_tokens = graph.get().target
       const {Anchor, Head} = selected_target()
       const [from, to] = Utils.numsort([Anchor.token, Head.token])
       const conv = (off: number) => cm_main.getDoc().posFromIndex(off)
       const target_texts = G.target_texts(graph.get())
       remove_marks_by_class(cm_main, c.Cut)
+      const begin = target_tokens[from].id
+      const end = target_tokens[to].id
       log({what: 'cut', from, to})
+      current.at('drag_state').update({
+        drag_start: begin,
+        drag_start_end: end,
+        drag_type: 'rearrange'
+      })
       cm_main.getDoc().markText(
         conv(T.text_offset(target_texts, from)),
         conv(T.text_offset(target_texts, to) + whitespace_start(target_texts[to])), {
@@ -396,19 +425,33 @@ export function App(store: Store<AppState>) {
   })
 
   function paste() {
-    cm_main.getDoc().getAllMarks().map((m) => {
-      const target_texts = G.target_texts(graph.get())
-      const mark = m.find()
-      const token_index = (pos: CodeMirror.Position) => T.token_at(target_texts, cm_main.getDoc().indexFromPos(pos)).token
-      const from = token_index(mark.from as any)
-      const to = token_index(mark.to as any)
-      const cursor = cm_main.getDoc().getCursor()
-      let here = token_index(cursor)
-      log({what: 'paste', from, to, here})
-      with_full_update(() => {
-        Model.advance_graph(undo_graph, G.rearrange(graph.get(), from, to, here))
+    const d = current.get().drag_state
+    if (d.drag_start !== undefined && d.drag_start_end !== undefined && d.drag_over !== undefined && d.drag_type == 'rearrange') {
+      const request = {
+        kind: 'rearrange' as 'rearrange',
+        begin: d.drag_start,
+        end: d.drag_start_end,
+        dest: d.drag_over
+      }
+      store.transaction(() => {
+        current.at('drag_state').set({})
+        Request(request)
       })
-    })
+    }
+    // cm_main.getDoc().getAllMarks().map((m) => {
+      // m.find().
+      /*
+      const target_texts = G.target_texts(graph.get())
+      const target_tokens = graph.get().target
+      const mark = m.find()
+      const token_index = (pos: CodeMirror.Position) => target_tokens[T.token_at(target_texts, cm_main.getDoc().indexFromPos(pos)).token].id
+      const begin = token_index(mark.from as any)
+      const end = token_index(mark.to as any)
+      const cursor = cm_main.getDoc().getCursor()
+      let dest = token_index(cursor)
+      log({what: 'paste', begin, end, dest})
+      */
+     //  })
   }
 
   // invariant check
@@ -442,14 +485,13 @@ export function App(store: Store<AppState>) {
         change.cancel();
         undo();
       } else if (change.origin == 'redo') {
-        log('redo')
         // we will do our undos ourselves
         change.cancel();
         redo();
       } else if (change.origin == 'drag') {
         change.cancel()
       } else if (change.origin == 'paste') {
-        // drag-and-drop makes this paste:
+        // drag-and-drop makes this paste (yes!):
         change.cancel()
         paste()
       } else if (change.origin != 'setValue') {

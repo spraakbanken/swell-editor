@@ -4,11 +4,13 @@ import { C, c } from './Classes'
 import { VNode } from "snabbdom/vnode"
 import { AppState, Diffs } from './Model'
 import * as Positions from './Positions'
+import * as G from "./Graph"
 import * as Model from './Model'
 import * as Utils from './Utils'
 import { tag, s, tags, TagData } from "snabbis"
 const { div, span, table, tbody, tr, td, th, option } = tags
 const { button, input, select } = s
+import { log } from "./dev"
 
 import { Store, Lens } from "reactive-lens"
 
@@ -22,6 +24,16 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
   const n = store.at('slide').get()
   let i = 0
   let p = -1
+  function slide_on(current: string, ...data: TagData[]) {
+    return slide_do(
+      () => {
+        if (store.get().current != current) {
+          store.update({current})
+        }
+      },
+      ...data
+    )
+  }
   function slide_do(act: () => void, ...data: TagData[]): VNode | undefined {
     const p_now = p
     p = i
@@ -44,8 +56,52 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
     return (n > i++) ? true : s.css({visibility: 'hidden'})
   }
 
-  const slides = [
+  function ViewGraph(): VNode {
+    const {graph, cursor_index, drag_state} = Model.current(store).get()
+    let calc_diff = () => Model.calculate_diffs(graph.now, cursor_index)
+    if (drag_state) {
+      const {drag_start, drag_start_end, drag_over, drag_type} = drag_state
+      if (drag_start && drag_start_end && drag_over && drag_type == 'rearrange') {
+        const tm = G.target_map(graph.now)
+        let begin: number | undefined = tm.get(drag_start)
+        let end: number | undefined = tm.get(drag_start_end)
+        let dest: number | undefined = tm.get(drag_over)
+        if (begin !== undefined && end !== undefined && dest !== undefined) {
+          const diff = Model.calculate_diffs(G.rearrange(graph.now, begin, end, dest), cursor_index)
+          log('Drawing with a current drag and drop: ', {begin, end, dest})
+          calc_diff = () => diff
+        }
+      }
+    }
 
+    return div(
+      C.MainStyle,
+      ViewDiff(
+        Model.current(store).pick('graph', 'selected_index', 'drag_state').merge(store.pick('positions', 'dropdown')),
+        Request,
+        calc_diff().rich_diff,
+        store.get().taxonomy
+      )
+    )
+  }
+
+  function ViewEditor(): VNode {
+    return div(
+      C.PadButtons,
+      C.MainStyle,
+      ViewGraph(),
+      div(C.LH,
+        tag('div', cms.vn_main, C.TextEditor, C.Editor),
+        button('undo (ctrl-z)',       () => Request('undo'),       s.css({marginRight: '1rem', fontSize: '3rem'})),
+        button('redo (ctrl-y)',       () => Request('redo'),       s.css({marginRight: '1rem', fontSize: '3rem'})),
+        button('connect (ctrl-c)',    () => Request('connect'),    s.css({marginRight: '1rem', fontSize: '3rem'})),
+        button('disconnect (ctrl-d)', () => Request('disconnect'), s.css({marginRight: '1rem', fontSize: '3rem'})),
+        button('revert (ctrl-r)',     () => Request('revert'),     s.css({marginRight: '1rem', fontSize: '3rem'})),
+      )
+    )
+  }
+
+  const slides = [
     slide(
       div(C.LH, C.Title,
         span(
@@ -168,19 +224,11 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
       )
     })(),
 
-    slide_do(() => {
-        if (store.get().current != 'solved') {
-          store.update({current: 'solved'})
-        }
-      },
+    slide_on(
+      'solved',
       div(C.LH, C.Header, 'Idea 2: this is a parallel corpus'),
       tag('center',
-        ViewDiff(
-          Model.current(store).pick('graph', 'selected_index').merge(store.pick('positions', 'dropdown')),
-          Request,
-          Model.calculate_diffs(store.get()).rich_diff,
-          store.get().taxonomy
-        ),
+        div(C.InlineBlock, ViewGraph()),
       ),
       oneslide(div(
         div(C.LH, C.Bullet, "works, can satisfiably express:"),
@@ -202,25 +250,9 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
       ))
     ),
 
-    slide_do(() => {
-        if (store.get().current != 'examplesHere') {
-          store.update({current: 'examplesHere'})
-        }
-      },
-      ViewDiff(
-        Model.current(store).pick('graph', 'selected_index').merge(store.pick('positions', 'dropdown')),
-        Request,
-        Model.calculate_diffs(store.get()).rich_diff,
-        store.get().taxonomy
-      ),
-      div(C.LH,
-        tag('div', cms.vn_main, C.TextEditor, C.Editor),
-        button('undo (ctrl-z)',       () => Request('undo'),       s.css({marginRight: '1rem', fontSize: '3rem'})),
-        button('redo (ctrl-y)',       () => Request('redo'),       s.css({marginRight: '1rem', fontSize: '3rem'})),
-        button('connect (ctrl-c)',    () => Request('connect'),    s.css({marginRight: '1rem', fontSize: '3rem'})),
-        button('disconnect (ctrl-d)', () => Request('disconnect'), s.css({marginRight: '1rem', fontSize: '3rem'})),
-        button('revert (ctrl-r)',     () => Request('revert'),     s.css({marginRight: '1rem', fontSize: '3rem'})),
-      )
+    slide_on(
+      'examplesHere',
+      ViewEditor()
     ),
 
     slide(
@@ -320,42 +352,18 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
       ))
     ),
 
-    slide_do(() => {
-        if (store.get().current != 'examplesHere') {
-          store.update({current: 'examplesHere'})
-        }
-      },
+    slide_on(
+      'examplesHere',
       div(C.LH, C.Header, 'What is data in the UI?'),
       tag('center',
-        ViewDiff(
-          Model.current(store).pick('graph', 'selected_index').merge(store.pick('positions', 'dropdown')),
-          Request,
-          Model.calculate_diffs(store.get()).rich_diff,
-          store.get().taxonomy
-        ),
+        ViewGraph()
       )
     ),
 
-    slide_do(() => {
-        if (store.get().current != 'sentences') {
-          store.update({current: 'sentences'})
-        }
-      },
+    slide_on(
+      'sentences',
       div(C.LH, C.Header, '"Just" show the current sentence'),
-      ViewDiff(
-        Model.current(store).pick('graph', 'selected_index').merge(store.pick('positions', 'dropdown')),
-        Request,
-        Model.calculate_diffs(store.get()).rich_diff,
-        store.get().taxonomy
-      ),
-      div(C.LH,
-        tag('div', cms.vn_main, C.TextEditor, C.Editor),
-        button('undo (ctrl-z)',       () => Request('undo'),       s.css({marginRight: '1rem', fontSize: '3rem'})),
-        button('redo (ctrl-y)',       () => Request('redo'),       s.css({marginRight: '1rem', fontSize: '3rem'})),
-        button('connect (ctrl-c)',    () => Request('connect'),    s.css({marginRight: '1rem', fontSize: '3rem'})),
-        button('disconnect (ctrl-d)', () => Request('disconnect'), s.css({marginRight: '1rem', fontSize: '3rem'})),
-        button('revert (ctrl-r)',     () => Request('revert'),     s.css({marginRight: '1rem', fontSize: '3rem'})),
-      ),
+      ViewEditor(),
     ),
 
     slide(
@@ -382,6 +390,21 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
     ...slides,
     s.on('click')((e: MouseEvent) => {
       Request({kind: 'select_index', index: null})
+    }),
+    s.on('dragend')(() => {
+      console.log('dragend from root div')
+      const {drag_start, drag_over, drag_type} = Model.current(store).get().drag_state
+      store.transaction(() => {
+        if (drag_type == 'rearrange' && drag_start && drag_over) {
+          Request({
+            kind: 'rearrange',
+            begin: drag_start,
+            end: drag_start,
+            dest: drag_over
+          })
+        }
+        Model.current(store).at('drag_state').set({})
+      })
     }),
     C.SlideRoot,
     s.attrs({tabindex: '-1'}),

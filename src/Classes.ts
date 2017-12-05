@@ -9,6 +9,7 @@ export function css(...xs: types.NestedCSSProperties[]): types.NestedCSSProperti
   return xs
 }
 
+const Purple = "#9637b5"
 const Cyan = "#00bcd4"
 const CyanBorder = "#00a5bb"
 
@@ -113,6 +114,19 @@ export const styles = {
 
   // normal
 
+  Hidden: css({
+    visibility: 'hidden',
+    zIndex: -10
+  }),
+  Floating: css({
+    position: 'absolute',
+    zIndex: 10
+  }),
+  JustUnderFloating: css({
+    visibility: 'visible',
+    zIndex: 9,
+  }),
+
   PadButtons: css({
     $nest: {
       "& > button": { marginRight: '4px', marginBottom: '4px' },
@@ -207,14 +221,29 @@ export const styles = {
     csstips.selfEnd
   ),
 
+  VSpaced: css(
+    csstips.verticallySpaced('15rem')
+  ),
+
   Vertical: css(
     csstips.vertical,
     csstips.centerJustified,
   ),
 
+  UpMid: css({
+    height: '25rem',
+    justifyContent: 'space-between'
+  }),
+
+  Horizontal: css(
+    csstips.horizontal,
+    csstips.centerJustified,
+  ),
+
+
   MainStyle: css({
     fontFamily: "'Lato', sans-serif",
-    fontSize: '15px'
+    fontSize: '5rem'
   }),
 
   Editor: css({
@@ -265,16 +294,34 @@ export const styles = {
   }),
 
   Cell: css(
+    { border: '1px red solid' },
     { cursor: 'pointer' },
     csstips.horizontal,
     csstips.aroundJustified,
     csstips.horizontallySpaced(5),
   ),
 
+  HoverMakesPurpleChildren: css({
+    $nest: {
+      '&:hover *': {
+        transition: 'all 100ms linear',
+        color: Purple,
+      }
+    }
+  }),
+
+  StretchSelf: css(
+    csstips.flex1,
+    csstips.selfStretch,
+  ),
+
   InnerCell: css(
     { background: 'white' },
     csstips.padding('2rem', '0'),
-    csstips.horizontal
+    csstips.horizontal,
+    // { border: '1px blue solid' },
+    // { background: 'unset' },
+    { display: 'inline-flex' },
   ),
 
   BorderCell: css(
@@ -315,7 +362,8 @@ export const styles = {
   Path: css({
     stroke: "#777",
     strokeWidth: '0.33rem',
-    fill: "none"
+    fill: "none",
+    zIndex: -20
   }),
 
   SelectedPath: css({
@@ -327,12 +375,21 @@ export const styles = {
     fontWeight: 800
   }),
 
+  CenterSelf: css(csstips.selfCenter),
+
   Row: css(
     csstips.horizontal,
-    csstips.horizontallySpaced('2rem')
+    csstips.betweenJustified,
+    // csstips.horizontallySpaced('2rem'), but with padding instead of margin:
+    {
+      $nest: {
+        "& > *:not(:last-child)": { paddingRight: '2rem' },
+      }
+    }
   ),
 
   Column: css(
+    { border: '1px blue solid' },
     csstips.content,
     csstips.vertical,
     csstips.betweenJustified

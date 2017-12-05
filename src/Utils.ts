@@ -385,6 +385,11 @@ export function uniq<A>(xs: A[]): A[] {
   })
 }
 
+/** Removes adjacent elements that are equal, using === */
+export function drop_adjacent_equal<A>(xs: A[]): A[] {
+  return xs.filter((x, i) => i == 0 || x !== xs[i-1])
+}
+
 /** Union-find data structure operations */
 interface UnionFind {
   find(x: number): number,

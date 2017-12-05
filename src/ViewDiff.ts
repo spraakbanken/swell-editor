@@ -1,8 +1,9 @@
-import { Taxonomy } from "./Model"
+import * as R from "ramda"
+import { Taxonomy, DragState } from "./Model"
 import * as Model from "./Model"
 import { Token } from "./Token"
 import { RichDiff } from './RichDiff'
-import * as R from './RichDiff'
+// import * as R from './RichDiff'
 import { Graph, Edge } from "./Graph"
 import * as G from "./Graph"
 
@@ -29,14 +30,8 @@ export interface ViewDiffState {
   readonly selected_index: number | null, // ro
 
   readonly positions: PosDict,            // rw
-  readonly dropdown: Dropdown.State       // rw
-}
-
-interface Column {
-  readonly up: VNode[],
-  readonly mid: VNode[],
-  readonly down: VNode[],
-  readonly ix: number
+  readonly dropdown: Dropdown.State,      // rw
+  readonly drag_state: Partial<DragState>
 }
 
 type Link = {
@@ -53,10 +48,47 @@ const red = style({
   color: 'red',
 })
 
+export function css(vn0: VNode, more_style: Record<string, string>): VNode {
+  const vn = R.clone(vn0)
+  const data = vn.data || {}
+  const style = data.style || {}
+  return {
+    ...vn,
+    data: {
+      ...data,
+      style: {
+        ...style,
+        ...more_style
+      }
+    }
+  }
+}
+
+export function cls(vn0: VNode, more_class: Record<string, boolean>): VNode {
+  const vn = R.clone(vn0)
+  const data = vn.data || {}
+  const _class = data.class || {}
+  return {
+    ...vn,
+    data: {
+      ...data,
+      class: {
+        ..._class,
+        ...more_class
+      }
+    }
+  }
+}
 
 export function ViewDiff(store: Store<ViewDiffState>, Request: (r: Model.Request) => void, rich_diff: RichDiff[], taxonomy: Taxonomy): VNode {
 
   let inp: HTMLInputElement | undefined
+
+  // let dragstart: string
+  // let dragend: string
+  // let dragtype: 'rearrange' | 'merge'
+
+  const drag_state = store.at('drag_state')
 
   const select_index = (index: number | null) => s.on('click')(e => {
     // store.at('selected_index').modify(ix_now => ix_now === ix ? null : ix)
@@ -66,51 +98,102 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: (r: Model.Request
   })
 
   const positions = store.at('positions')
+  const floats = [] as VNode[]
   const track = (id: string, vnode: VNode) => {
-    return Positions.posid(id, positions, vnode)
+    if (id != 'table') {
+        let x = 1
+      const table = positions.get()['table']
+      const me = positions.get()[id]
+      if (table && me) {
+        floats.push(
+          cls(css(vnode, {
+            left: (me.left - table.left) + 'px',
+            top: (me.top - table.top) + 'px',
+            width: me.width + 'px',
+            height: me.height + 'px',
+          }), {[c.Floating]: true}))
+      }
+    }
+    return Positions.posid(id, positions, cls(vnode, {[c.Hidden]: true}))
   }
   const links = [] as Link[]
-  const columns = [] as Column[]
-  let column: Column
-  let up: VNode[]
-  let mid: VNode[]
-  let down: VNode[]
-  const new_column = (ix: number) => {
-    up = []
-    mid = []
-    down = []
-    column = {up, mid, down, ix}
-    columns.push(column)
-  }
 
-  const new_source = (t: Token, diff: TokenDiff, edge_id: string) => {
-    up.push(track(t.id, span(deletes(diff), C.InnerCell,
-      s.attrs({ draggable: 'true' }),
-      s.on('dblclick')((e: MouseEvent) => {
-        e.preventDefault()
-        Request({kind: 'disconnect_at', at: t.id})
-      })
-    )))
+  const source_for = (t: Token, diff: TokenDiff, edge_id: string, diff_index: number) => {
     links.push(Link(t.id, edge_id))
-  }
-  const new_target = (t: Token, diff: TokenDiff, edge_id: string) => {
-    down.push(track(t.id, span(inserts(diff), C.InnerCell,
-      s.attrs({ draggable: 'true' }),
+    return div(C.StretchSelf, C.Horizontal, track(t.id, div(deletes(diff), C.InnerCell, select_index(diff_index))),
       s.on('dblclick')((e: MouseEvent) => {
         e.preventDefault()
         Request({kind: 'disconnect_at', at: t.id})
       })
-    )))
+    )
+  }
+  const target_for = (t: Token, diff: TokenDiff, edge_id: string, diff_index: number) => {
+    const events = () => [
+      s.on('dragstart')((e: DragEvent) => {
+        e.dataTransfer.setData('text/plain', 'https://stackoverflow.com/questions/19055264/why-doesnt-html5-drag-and-drop-work-in-firefox')
+        drag_state.update({
+          drag_type: 'rearrange',
+          drag_start: t.id,
+          drag_start_end: t.id,
+          drag_over_last: [t.id]
+        })
+        // drag_state.at('drag_start').set(rich_diff[diff_index].id)
+        log('dragstart', drag_state.get(), (e as any).target)
+      }),
+      /*
+      s.on('dragend')((e: DragEvent) => {
+        log('dragend', drag_state.get(), (e as any).target)
+        const {drag_start, drag_over} = drag_state.get()
+        if (drag_start && drag_over) {
+        //   Request({kind: 'connect_two', one: drag_start, two: drag_over})
+        }
+        drag_state.set({})
+      }),
+      */
+      s.on('dragenter')((e: DragEvent) => {
+        const {drag_over, drag_start, drag_over_last} = drag_state.get()
+        const last = (drag_over_last || []).slice(0, 2).filter(i => i == drag_over || i == drag_start)
+        if (-1 == last.indexOf(t.id)) {
+          drag_state.update({
+            drag_over: t.id,
+            drag_over_last: Utils.drop_adjacent_equal([t.id].concat(last))
+          })
+        }
+        log('dragenter after', t.id, Utils.show(drag_state.get()), (e as any).target)
+      }),
+      s.on('dblclick')((e: MouseEvent) => {
+        e.preventDefault()
+        Request({kind: 'disconnect_at', at: t.id})
+      }),
+      select_index(diff_index),
+    ]
     links.push(Link(edge_id, t.id))
+    return div(
+      C.StretchSelf,
+      C.Horizontal,
+      track(t.id,
+        span(
+          inserts(diff),
+          C.Pointer, C.HoverMakesPurpleChildren, C.InnerCell,
+          s.attrs({ draggable: 'true' }),
+          ...events()
+        )
+      ),
+      C.Pointer,
+      C.HoverMakesPurpleChildren,
+      s.attrs({ draggable: 'true' }),
+      ...events()
+    )
   }
   const {selected_index} = store.get()
-  const edges_done = new Set<string>()
-  const edges = store.get().graph.now.edges
-  const new_label = (edge_id: string, diff_index: number) => {
-    if (!edges_done.has(edge_id)) {
-      edges_done.add(edge_id)
-      const vn = div(
-        C.Vertical,
+  const selected_edge = selected_index != null ? (rich_diff[selected_index] || {id: 'null'}).id : 'null'
+  const label_for = (edge_id: string, diff_index: number) =>
+    track(edge_id, div(
+        C.Horizontal,
+        // C.StretchSelf,
+        C.Pointer,
+        C.CenterSelf,
+        select_index(diff_index),
         span(
           edges[edge_id].labels.map(
             code => span(
@@ -123,64 +206,70 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: (r: Model.Request
           C.BorderCell,
           s.css({height: 'min-content'}),
           s.attrs({ draggable: 'true' }),
-          s.classes({[c.SelectedBorderCell]: diff_index === selected_index}),
+          s.classes({[c.SelectedBorderCell]: edge_id == selected_edge}),
         )
       )
-      mid.push(track(edge_id, vn))
-    }
-  }
+    )
+
+
+  const edges_done = new Set<string>()
+  const edges = store.get().graph.now.edges
+  const edge_ids = new Map<string, number>(rich_diff.map((e, i) => [e.id, i] as [string, number]))
+  const group_by_id = R.groupWith((d: RichDiff, d2: RichDiff) => d.id == d2.id)
+  const up = group_by_id(
+    rich_diff.filter(d => d.edit != 'Dropped' || d.target_only)
+  ).map((ds, ix) => {
+    const edge_id = ds[0].id
+    const need_label = !edges_done.has(edge_id)
+    edges_done.add(edge_id)
+    const label = need_label ? label_for(edge_id, edge_ids.get(edge_id) as number) : div()
+    const up = [] as VNode[]
+    ds.forEach(d => {
+      switch(d.edit) {
+        case 'Edited':
+          d.source.map((s, i) =>
+            up.push(source_for(s, d.source_diffs[i], d.id, edge_ids.get(d.id) as number))
+          )
+          return
+
+        case 'Dragged':
+          up.push(source_for(d.source, d.source_diff, d.id, edge_ids.get(d.id) as number))
+          return
+      }
+    })
+    return div(
+      C.Vertical,
+      C.UpMid,
+      // s.css({height: '170px', justifyContent: 'space-between'}),
+      div(C.Horizontal, up), label
+    )
+  })
+
+  const down = [] as VNode[]
 
   rich_diff.forEach((d, ix) => {
-    new_column(ix)
     switch(d.edit) {
       case 'Edited':
-        d.source.map((s, i) => new_source(s, d.source_diffs[i], d.id))
-        new_label(d.id, ix)
-        d.target.map((t, i) => new_target(t, d.target_diffs[i], d.id))
-        return
-
-      case 'Dragged':
-        new_source(d.source, d.source_diff, d.id)
-        new_label(d.id, ix)
+        d.target.map((t, i) =>
+          down.push(target_for(t, d.target_diffs[i], d.id, ix))
+        )
         return
 
       case 'Dropped':
-        new_label(d.id, ix)
-        new_target(d.target, d.target_diff, d.id)
+        down.push(target_for(d.target, d.target_diff, d.id, ix))
         return
     }
   })
 
-  let dragstart: string
-  let dragend: string
-
-  const ladder = track('table', table(columns.map(({up: u, mid: m, down: d, ix}, i) => ({
-    snabbis: [
-      select_index(ix),
-      s.on('contextmenu')((e: PointerEvent) => {
-        e.preventDefault()
-        Request({kind: 'revert_at', at: rich_diff[ix].id})
-      }),
-      s.attrs({ draggable: 'true' }),
-      s.on('dragstart')((e: DragEvent) => {
-        e.dataTransfer.setData('text/plain', 'https://stackoverflow.com/questions/19055264/why-doesnt-html5-drag-and-drop-work-in-firefox')
-        dragstart = rich_diff[ix].id
-      }),
-      s.on('dragover')((e: DragEvent) => {
-        dragend = rich_diff[ix].id
-      }),
-      s.on('dragend')((e: DragEvent) => {
-        Request({kind: 'connect_two', one: dragstart, two: dragend})
-      }),
-      s.classes({[c.LadderSelected]: ix === selected_index}),
-      C.Pointer
-    ],
-    col: [
-      tag('div', C.Cell, u.length != 0 ? u : tag('div', C.InnerCell, '\u200b')),
-      tag('div', C.Cell, m.length != 0 ? m : tag('div')),
-      tag('div', C.Cell, d.length != 0 ? d : tag('div', C.InnerCell, '\u200b')),
-    ]
-  })), [c.LadderTable]))
+  const ladder = track('table',
+    div(C.InlineBlock, // we use this instead of width: fit-content
+      div(C.Vertical, C.VSpaced,
+        div(C.Row, C.JustUnderFloating, up),
+//        div(C.Row, C.JustUnderFloating, mid),
+        div(C.Row, C.JustUnderFloating, down)
+      )
+    )
+  )
 
   const pos_dict = store.get().positions
   const svg = tag(
@@ -194,21 +283,22 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: (r: Model.Request
       const x1 = Positions.hmid(top)
       const y1 = Positions.bot(top)
       const x2 = Positions.hmid(bot)
-      const y2 = bot.top // Positions.top(bot)
-      const d = 25 * (-1 / (Math.abs(x1 - x2) + 1) + 1)
-      const ix = selected_index != null ? (rich_diff[selected_index] || {id: 'null'}).id : 'null'
+      const y2 = Positions.top(bot)
+      const d = 55 * (-1 / (Math.abs(x1 - x2) + 1) + 1)
       return tag('path',
         s.attrs({
           d: ['M', x1, y1, 'C', x1, y1 + d, x2, y2 - d, x2, y2].join(' '),
         }),
         C.Path,
-        s.classes({[c.SelectedPath]: link.from == ix || link.to == ix})
+        s.classes({[c.SelectedPath]: link.from == selected_edge || link.to == selected_edge})
       )
     }).filter(x => x != null)
   )
 
   let out = div(
-    Positions.relative(ladder, svg, ['LadderRoot']),
+    Positions.relative(
+      Positions.relative(ladder, div(...floats), [], []),
+      svg, ['LadderRoot'], [c.Below]),
     C.Unselectable
   )
 
@@ -227,7 +317,7 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: (r: Model.Request
             Request({kind: 'select_index', index: null})
           }
         }),
-        s.on('click')(e => { console.log('defprev'), e.stopPropagation() })),
+        s.on('click')(e => { log('defprev'), e.stopPropagation() })),
     )
   }
 
