@@ -60,6 +60,7 @@ export function App(store: Store<AppState>) {
   }
 
   window.addEventListener('resize', () => store.at('positions').via(Lens.key('root')).set(undefined), true)
+  window.setTimeout(() => store.at('positions').via(Lens.key('root')).set(undefined), 1)
   store.at('positions').via(Lens.key('root')).ondiff(x => {
     if (x !== undefined) {
       console.log(Utils.show(x))
