@@ -336,6 +336,7 @@ export const styles = {
     { background: 'white' },
     csstips.padding('1rem', '1rem'),
     csstips.horizontallySpaced('2rem'),
+    { display: 'inline-flex' },
     {
       $nest: {
         '& > span:not(:last-child)': {
