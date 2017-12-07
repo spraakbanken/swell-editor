@@ -175,8 +175,8 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
       div(C.LH, C.Subtitle, 'Gunlög Sundberg, Beata Megyesi, Lena Granstedt'),
       // div(C.LH, C.Subtitle, `Malin Ahlberg, Carl-Johan Schenström, Maria Öhrman, Johan Roxendal, Anne Schumacher`),
       div(C.LH,
-        tag('img', s.attrs({src: 'talk/hws/logo_gu.png'}), s.css({padding: '3rem', height: '29rem'})),
-        tag('img', s.attrs({src: 'talk/hws/logo_sb.jpg'}), s.css({padding: '5rem', height: '25rem'}), s.css({float: 'right'})),
+        tag('img', s.attrs({src: 'talk/logo_gu.png'}), s.css({padding: '3rem', height: '29rem'})),
+        tag('img', s.attrs({src: 'talk/logo_sb.jpg'}), s.css({padding: '5rem', height: '25rem'}), s.css({float: 'right'})),
       )
     ),
     slide(
@@ -272,6 +272,7 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
       div(C.LH, C.Header, 'Internal representation'),
       ViewEditor(),
       tag('pre',
+        C.Consolas,
         s.css({
           position: 'absolute',
           left: '50rem',
@@ -282,7 +283,8 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
           padding: '1rem',
           background: 'white',
           zIndex: '1000',
-          fontSize: '3.0rem'
+          fontSize: '3.0rem',
+          overflow: 'hidden'
         }),
         (function ({source, target, edges}: G.Graph): string {
           return stringify({
@@ -299,6 +301,7 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
       div(C.LH, C.Header, 'Derived annotations'),
       ViewEditor(),
       tag('pre',
+        C.Consolas,
         s.css({
           position: 'absolute',
           left: '50rem',
@@ -309,7 +312,8 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
           padding: '1rem',
           background: 'white',
           zIndex: '1000',
-          fontSize: '3.0rem'
+          fontSize: '3.0rem',
+          overflow: 'hidden'
         }),
         (function (): string {
           const d = Model.state_diffs(store.get())
@@ -368,7 +372,7 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
         div(C.LH, C.Bullet, 'Hypothesis: we have a good compromise between simplicity and expressivity'),
         div(css_hide(),
           div(C.LH, C.Bullet, 'Free libre open source software: MIT-license, bring-your-own-taxonomy ',
-          tag('center', pre(C.LH, 'https://github.com/spraakbanken/swell-editor'))),
+          tag('center', pre(C.LH, C.Consolas, 'https://github.com/spraakbanken/swell-editor'))),
         )
       )
     ),

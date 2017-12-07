@@ -24,6 +24,10 @@ export const styles = {
     csstips.aroundJustified,
   ),
 
+  Consolas: css({
+    fontFamily: 'Consolas, monospace'
+  }),
+
   LH: css({ lineHeight: '9rem' }),
 
   Slide: css(
@@ -34,7 +38,8 @@ export const styles = {
       // background: bg,
       color: fg,
       fontSize: '5rem',
-      fontFamily: '"Lato", sans-serif'
+      fontFamily: '"Lato", sans-serif',
+      position: 'relative'
     },
   ),
 
@@ -243,7 +248,7 @@ export const styles = {
 
   MainStyle: css({
     fontFamily: "'Lato', sans-serif",
-    fontSize: '5rem'
+    fontSize: '5rem',
   }),
 
   Editor: css({

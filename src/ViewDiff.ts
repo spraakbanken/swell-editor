@@ -120,7 +120,7 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: (r: Model.Request
 
   const source_for = (t: Token, diff: TokenDiff, edge_id: string, diff_index: number) => {
     links.push(Link(t.id, edge_id))
-    return div(C.StretchSelf, C.Horizontal, track(t.id, div(deletes(diff), C.InnerCell, select_index(diff_index))),
+    return div(C.StretchSelf, C.Horizontal, track(t.id, div(deletes(diff), select_index(diff_index))),
       s.on('dblclick')((e: MouseEvent) => {
         e.preventDefault()
         Request({kind: 'disconnect_at', at: t.id})
@@ -241,7 +241,7 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: (r: Model.Request
       C.Vertical,
       C.UpMid,
       // s.css({height: '170px', justifyContent: 'space-between'}),
-      div(C.Horizontal, up), label
+      div(C.Row, up), label
     )
   })
 
