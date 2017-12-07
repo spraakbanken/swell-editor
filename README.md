@@ -8,6 +8,7 @@ This tool is in active development, and described further here:
 * [The manual used at the November 2017 pilot](https://spraakbanken.gu.se/sparv/swell/manual.html)
 * [Slides from CLT retreat 2017](http://demo.spraakdata.gu.se/dan/swell-clt-2017) change slides with up and down arrows
 * [Slides from L2 Clarin workshop 2017](http://demo.spraakdata.gu.se/dan/swell-clarin-2017) change slides with up and down arrows
+* [En förhandstitt på verktyget för normalisering av andraspråkstexter](https://github.com/spraakbanken/swell-editor/blob/c13475d2e14a53a3e86e5b0f0861f9dbf5411af3/talk/hws/hws-talk.pdf) slides (in Swedish)
 * [Representation av avvikelseannotationer](http://demo.spraakdata.gu.se/dan/representation/) (in Swedish)
 
 ### Running the tool
