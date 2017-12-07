@@ -8,11 +8,14 @@ import * as G from "./Graph"
 import * as Model from './Model'
 import * as Utils from './Utils'
 import { tag, s, tags, TagData } from "snabbis"
-const { div, span, table, tbody, tr, td, th, option } = tags
+const { div, span, table, tbody, tr, td, th, option, pre } = tags
 const { button, input, select } = s
 import { log } from "./dev"
 
 import { Store, Lens } from "reactive-lens"
+
+var stringify = require("json-stringify-pretty-compact")
+
 
 export interface CodeMirrors {
   vn_orig: VNode,
@@ -258,132 +261,115 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
       ViewEditor()
     ),
 
-    slide(
-      div(C.LH, C.Header, 'Interdisciplinary research'),
-      div(C.LH, C.Bullet, 'Researchers in SLA (Second-Language Acquisition)'),
-      div(C.LH, C.Bullet, 'Researchers in NLP'),
-      pause(
-        div(C.LH, C.Bullet, 'System developer with formal verification background'),
-      )
-    ),
-
-    slide(
-      div(C.LH, C.Header, 'Anonymization'),
-      oneslide(div(
-        div(C.LH, C.Bullet, 'My uncle visited Tehran in 1996'),
-        div(C.LH, C.Bullet, tag('code', '_1'), ' visited ', tag('code', '_2'), ' in ', tag('code', '_3')),
-      )),
-      oneslide(
-        div(C.LH,
-          div(C.LH, C.Bullet, 'My uncle visited Tehran in 1996'),
-          div(C.LH, C.Bullet, tag('code', '_1'), ' visited ', tag('code', '_2'), ' in ', tag('code', '_3')),
-          div(C.LH, C.Bullet, tags.i('But the data needs to be searchable')),
-          div(C.LH, C.Bullet, tags.i('But the data needs to be taggable')),
-          div(C.LH, C.Bullet, tags.i("Use placeholder names from a name supply (Alice, Bob, Paris)")),
-          div(C.LH, C.Bullet, tags.i("But from which culture? This is very sensitive")),
-        )
-      ),
-      oneslide(div(
-        div(C.LH, C.Bullet, 'Problem: viewing the corpus as something of these types:'),
-        div(C.LH, C.Bullet, tag('code', 'corpus: string')),
-        div(C.LH, C.Bullet, tag('code', 'corpus: Array<string>')),
-      )),
-      pause(div(
-        // div(C.LH, C.Bullet, 'Solution:'),
-        div(C.LH, C.Bullet, tag('code', 'corpus: Array<string | AnonymizationRecord>')),
-        tags.pre(s.css({padding: '0 6rem'}), `interface AnonymizationRecord {
-  unique_number: int,
-  kind:    unknown | person | place | event | ...
-  gender:  unknown | m | f | ...
-  culture: unknown | L1 | L2 | ...
-}`),
-      )),
-      pause(
-        div(C.LH, C.Bullet, 'Establishes a common abstract ground')
-      ),
-      div(css_hide(),
-        div(C.LH, C.Bullet, 'What is needed for the different linearizations?'),
-        div(C.LH, C.Bullet, 'How difficult are they to annotate manually? Automatically?',
-          tag('code', 'PRE REC', css_hide(),
-            s.css({
-              border: '1rem solid red',
-              padding: '1rem 2rem',
-              marginLeft: '4rem',
-              borderRadius: '4rem'
-            })
-          )
-        )
-      )
-    ),
-
-    slide(
-      div(C.LH, C.Header, 'Anonymization'),
-      div(C.LH, C.Bullet, tag('code', 'corpus: Array<string | AnonymizationRecord>')),
-      div(C.LH, C.Bullet, 'Researchers might suggest: "Just" use a NER tagger, DNN, ML, SAT-solver...'),
-      div(C.LH, C.Bullet, 'Propensity to reach for tools before a manual annotation approach is devised'),
-      pause(div(
-        div(C.LH, C.Underbullet, '- It might not work at all'),
-        div(C.LH, C.Underbullet, '- It might be too slow / clunky / anything'),
-        div(C.LH, C.Underbullet, '- Need some way to manually fix errors anyway'),
-      )),
-      div(C.LH, C.Bullet, 'NLP researchers talking about automated tools confuse SLA researchers',
-        css_hide(),
-        span('big problem!', css_hide(),
-          s.css({
-            border: '1rem solid red',
-            padding: '1rem 2rem',
-            marginLeft: '6rem',
-            borderRadius: '4rem',
-            float: 'right'
-          })
-        )
-      )
-    ),
-
-    slide(
-      div(C.LH, C.Header, 'Request: data in unique identifiers'),
-      div(C.LH, C.Bullet, "A database entry of a learner:"),
-      div(C.LH, C.Underbullet, "L1: French"),
-      div(C.LH, C.Underbullet, "Age: 38"),
-      div(C.LH, C.Underbullet, "Time in Sweden: 29 weeks"),
-      div(C.LH, C.Underbullet, "Unique identifier: ", tag('code', "2681")),
-      div(C.LH, C.Bullet, "Suggestion: Unique identifier: ", tag('code', 'Fr38y29w')),
-      pause(div(
-        div(C.LH, C.Bullet, "+ can see learner metadata at a glance"),
-        div(C.LH, C.Bullet, "- leads to disambiguties"),
-        div(C.LH, C.Bullet, "- ", tag('code', 'shorten: Learner -> string'), ' is already O(1)'),
-      ))
+    slide_on(
+      'dont_dare',
+      div(C.LH, C.Header, 'Token movement'),
+      ViewEditor()
     ),
 
     slide_on(
-      'examplesHere',
-      div(C.LH, C.Header, 'What is data in the UI?'),
-      tag('center',
-        ViewGraph()
-      )
-    ),
-
-    slide_on(
-      'sentences',
-      div(C.LH, C.Header, '"Just" show the current sentence'),
+      'dont_dare',
+      div(C.LH, C.Header, 'Internal representation'),
       ViewEditor(),
+      tag('pre',
+        s.css({
+          position: 'absolute',
+          left: '50rem',
+          top: '10rem',
+          width: '120rem',
+          height: '80rem',
+          border: '1rem #ccc solid',
+          padding: '1rem',
+          background: 'white',
+          zIndex: '1000',
+          fontSize: '3.0rem'
+        }),
+        (function ({source, target, edges}: G.Graph): string {
+          return stringify({
+            source: source.map(x => ({id:x.id, text:x.text})),
+            target: target.map(x => ({id:x.id, text:x.text})),
+            edges: Utils.record_traverse(edges, x => ({ids:x.ids, labels:x.labels}))
+          })
+        })(Model.current(store).get().graph.now)
+      )
     ),
+
+    slide_on(
+      'dont_dare',
+      div(C.LH, C.Header, 'Derived annotations'),
+      ViewEditor(),
+      tag('pre',
+        s.css({
+          position: 'absolute',
+          left: '50rem',
+          top: '10rem',
+          width: '120rem',
+          height: '80rem',
+          border: '1rem #ccc solid',
+          padding: '1rem',
+          background: 'white',
+          zIndex: '1000',
+          fontSize: '3.0rem'
+        }),
+        (function (): string {
+          const d = Model.state_diffs(store.get())
+          return stringify(d.rich_diff.slice(0, 3))
+        })()
+      )
+    ),
+
+    slide(
+      div(C.LH, C.Header, 'Export'),
+      div(C.LH, C.Bullet, 'Extensions of ConLL for parallel corpora'),
+      div(C.LH, C.Bullet, 'XML format for parallel corpora'),
+    ),
+
+    slide(
+      div(C.LH, C.Header, 'Limitations: token centric'),
+      div(C.LH, C.Bullet, 'Cannot label morphemes: instead label the token'),
+      div(C.LH, C.Bullet, 'Phrases: no immediate way to label a range'),
+    ),
+
+    slide_on(
+      'together_apart',
+      div(C.LH, C.Header, 'Limitations: labelling overlapping errors'),
+      ViewEditor()
+    ),
+
+    slide_on(
+      'together_aparto',
+      div(C.LH, C.Header, 'Limitations: labelling overlapping errors'),
+      ViewEditor()
+    ),
+
+    slide(
+      div(C.LH, C.Header, 'Addressing the limitations'),
+      div(C.LH, C.Bullet, 'Several layers of changes'),
+      div(C.LH, C.Bullet, 'Add secondary edges'),
+      div(C.LH, C.Bullet, 'Multiple aligments per component'),
+      pause(
+        div(
+          div(C.LH, C.Bullet, 'Always a balance:'),
+          div(C.LH, C.Underbullet, "Data complexity vs expressivity"),
+          div(C.LH, C.Underbullet, 'Time to annotate (and how to search in the corpus)'),
+          div(C.LH, C.Underbullet, 'Possibility of visualising it in a user interface'),
+        )
+      )
+    ),
+
 
     slide(
       div(C.LH, C.Header, 'Conclusions'),
-      div(C.LH, C.Bullet, 'Parallel corpus is a good representation for diffs such as a learner corpus'),
+      div(C.LH, C.Bullet, 'Hypothesis: parallel corpus is a good representation for a learner corpus'),
       div(C.LH, C.Bullet, 'The edges in the graph are a natural place to put labels'),
-      div(C.LH, C.Bullet, 'Corpus can be constructed with an augmented an off-the-shelf text editor'),
+      // div(C.LH, C.Bullet, 'Corpus can be constructed with an augmented an off-the-shelf text editor'),
+      div(C.LH, C.Bullet, 'Many design decisions about labelling'),
       div(css_hide(),
-        div(C.LH, C.Bullet, 'Working across disciplines:'),
-        div(C.LH, C.Underbullet, 'Hidden challenges in solving seemingly trivial UI'),
-        div(C.LH, C.Underbullet, 'Truly easy matters are discussed as if they were challenges'),
-        div(C.LH, C.Underbullet, "Developers have to dodge NLP researchers sledgehammer predispositions",
-          span(", and non-CS researchers have to too", css_hide()),
-        ),
-        div(C.LH, C.Underbullet, css_hide(),
-          'Abstract representation of data gives us a common language'
-        ),
+        div(C.LH, C.Bullet, 'Hypothesis: we have a good compromise between simplicity and expressivity'),
+        div(css_hide(),
+          div(C.LH, C.Bullet, 'Free libre open source software: MIT-license, bring-your-own-taxonomy ',
+          tag('center', pre(C.LH, 'https://github.com/spraakbanken/swell-editor'))),
+        )
       )
     ),
   ]

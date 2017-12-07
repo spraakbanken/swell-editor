@@ -284,7 +284,7 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: (r: Model.Request
       const y1 = Positions.bot(top)
       const x2 = Positions.hmid(bot)
       const y2 = Positions.top(bot)
-      const d = 55 * (-1 / (Math.abs(x1 - x2) + 1) + 1)
+      const d = 30 * (-1 / (Math.abs(x1 - x2) + 1) + 1)
       return tag('path',
         s.attrs({
           d: ['M', x1, y1, 'C', x1, y1 + d, x2, y2 - d, x2, y2].join(' '),

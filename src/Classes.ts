@@ -222,7 +222,7 @@ export const styles = {
   ),
 
   VSpaced: css(
-    csstips.verticallySpaced('15rem')
+    csstips.verticallySpaced('10rem')
   ),
 
   Vertical: css(
@@ -231,7 +231,7 @@ export const styles = {
   ),
 
   UpMid: css({
-    height: '25rem',
+    height: '22rem',
     justifyContent: 'space-between'
   }),
 
@@ -250,7 +250,7 @@ export const styles = {
     $nest:{
       '& .CodeMirror':{
         border: '0.25rem solid #ddd',
-        height: '40rem',
+        height: '30rem',
         width: '175rem',
         // minWidth: '250px',
       }

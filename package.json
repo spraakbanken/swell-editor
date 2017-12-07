@@ -9,6 +9,7 @@
     "codemirror": "^5.27.2",
     "csstips": "^0.2.2",
     "diff-match-patch": "^1.0.0",
+    "json-stringify-pretty-compact": "^1.0.4",
     "ramda": "^0.25.0",
     "reactive-lens": "^0.3.0",
     "snabbdom": "^0.7.0",

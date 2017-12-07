@@ -51,6 +51,7 @@ export function App(store: Store<AppState>) {
     global.next = () => store.at('slide').modify(x => x + 1)
     global.prev = () => store.at('slide').modify(x => x - 1)
     global.current = Model.current(store)
+    global.reset = () => store.set(Model.init())
 
     Dropdown.Handler(store.at('dropdown'))
 
