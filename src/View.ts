@@ -90,6 +90,7 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
       C.PadButtons,
       C.MainStyle,
       ViewGraph(),
+      s.css({padding: '3rem'}),
       div(C.LH,
         tag('div', cms.vn_main, C.TextEditor, C.Editor),
         button('undo (ctrl-z)',       () => Request('undo'),       s.css({marginRight: '1rem', fontSize: '3rem'})),
@@ -166,19 +167,20 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
         )
       ),
       div(C.LH, C.Subtitle, 'Dan Rosén'),
-      div(C.LH, C.Subtitle, 'Språkbanken'),
-      div(C.LH, C.Subtitle, 'CLT Retreat 2017'),
+      div(C.LH, C.Subtitle, 'Språkbanken, University of Gothenburg'),
+      div(C.LH, C.Subtitle, 'Elena Volodina, Julia Prentice, Mats Wirén, '),
+      div(C.LH, C.Subtitle, 'Gunlög Sundberg, Beata Megyesi, Lena Granstedt'),
+      // div(C.LH, C.Subtitle, `Malin Ahlberg, Carl-Johan Schenström, Maria Öhrman, Johan Roxendal, Anne Schumacher`),
       div(C.LH,
         tag('img', s.attrs({src: 'talk/hws/logo_gu.png'}), s.css({padding: '3rem', height: '29rem'})),
         tag('img', s.attrs({src: 'talk/hws/logo_sb.jpg'}), s.css({padding: '5rem', height: '25rem'}), s.css({float: 'right'})),
       )
     ),
-
     slide(
-      div(C.LH, C.Header, 'Example learner sentences'),
-      div(C.LH, C.Bullet, 'Den väder var inte fint.'),
-      div(C.LH, C.Bullet, 'Jag åt två broad.'),
-      div(C.LH, C.Bullet, 'Vi gick dit för jag skulle få person nummer.'),
+      div(C.LH, C.Header, 'Observation from one early pre-pilot'),
+      div(C.LH, C.Bullet, 'When annotating the target hypothesis needs to be constructed'),
+      div(C.LH, C.Bullet, 'An annotation tool should then aid to write this normalized text'),
+      div(C.LH, C.Bullet, 'Then this text could and thus probably should be stored with the corpus'),
     ),
     slide(
       div(C.LH, C.Header, 'Example running sentence'),
@@ -200,7 +202,7 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
 
       return tables.map((data, j) =>
         slide(
-          div(C.LH, C.Header, 'Idea: Annotate learner tokens'),
+          div(C.LH, C.Header, 'Idea: Annotate the tokens directly'),
           div(C.LH, C.Bullet, 'Examples here high light lotsof futures'),
           table(s.css({borderSpacing: '3rem', fontSize: '5rem'}),
             tbody(
@@ -252,6 +254,7 @@ export function View(store: Store<AppState>, cms: CodeMirrors): VNode {
 
     slide_on(
       'examplesHere',
+      div(C.LH, C.Header, 'Demo of editor prototype'),
       ViewEditor()
     ),
 
