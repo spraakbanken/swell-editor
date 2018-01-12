@@ -15,11 +15,14 @@ export interface Pos {
   height: number
 }
 
-export const hmid = (p: Pos) => p.left + p.width / 2
+// make these member functions?
+export const hmid = (p: Pos) => p.left + p.width * 0.5
 
-export const vmid = (p: Pos) => p.top + p.height / 2
+export const vmid = (p: Pos) => p.top + p.height * 0.5
 
 export const bot = (p: Pos) => p.top + p.height
+
+export const top = (p: Pos) => p.top
 
 const eq_pos = (p: Pos, q: Pos) => equals(p, q)
 
@@ -55,13 +58,13 @@ export const posid = (id: string, d: Store<Record<string, Pos>>, v: VNode) => ({
   }
 })
 
-export function relative(n1: VNode, n2: VNode, classes: string[] = []): VNode {
+export function relative(n1: VNode, n2: VNode, classes_outer: string[] = [], classes_inner: string[] = []): VNode {
   return (
     tag('div',
       C.RelativeOuter,
-      s.classed(...classes),
+      s.classed(...classes_outer),
       n1,
-      tag('div', C.RelativeInner, C.Below, n2)
+      tag('div', C.RelativeInner, s.classed(...classes_inner), n2)
     )
   )
 }

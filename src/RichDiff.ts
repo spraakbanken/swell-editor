@@ -10,7 +10,7 @@ import * as Utils from "./Utils"
 export type RichDiff
   = Edited & { target_diffs: TokenDiff[], source_diffs: TokenDiff[] }
   | Dragged & { source_diff: TokenDiff }
-  | Dropped & { target_diff: TokenDiff }
+  | Dropped & { target_diff: TokenDiff, target_only: boolean }
 
 /** Enrichen a diff with detailed intra-token diffs
 
@@ -51,6 +51,7 @@ export function enrichen(g: Graph, diff: Diff[]): RichDiff[] {
         return {
           ...d,
           target_diff: target_diff[i],
+          target_only: source.length == 0
         }
       }
     }
