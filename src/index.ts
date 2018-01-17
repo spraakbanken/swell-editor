@@ -2,9 +2,9 @@
 // import "codemirror/lib/codemirror.css"
 // import "choices.js/src/styles/css/choices.min.css"
 
-import "lato-font/css/lato-font.min.css"
+import 'lato-font/css/lato-font.min.css'
 
-import * as csstips from "csstips"
+import * as csstips from 'csstips'
 csstips.normalize()
 csstips.setupPage('body')
 
@@ -28,4 +28,3 @@ if (module.hot) {
     }
   })
 }
-
