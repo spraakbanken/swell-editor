@@ -636,7 +636,7 @@ be triggered. The function will be called after it stops being called for
 N milliseconds.
 */
 export function debounce(wait: number, k: (...args: any[]) => void): (...args: any[]) => void {
-  let id: NodeJS.Timer | null;
+  let id: any | null;
   return (...args: any[]) => {
     if (id != null) {
       clearTimeout(id)
@@ -644,7 +644,7 @@ export function debounce(wait: number, k: (...args: any[]) => void): (...args: a
     id = setTimeout(() => {
       id = null;
       k(...args)
-    }, wait) as any as NodeJS.Timer
+    }, wait) as any
   }
 }
 

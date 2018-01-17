@@ -1,31 +1,31 @@
-import * as App from "./App"
-import * as snabbis from "snabbis"
-import { Model } from "./App"
-import * as CodeMirror from "codemirror"
-import * as csstips from "csstips"
-import "codemirror/lib/codemirror.css"
+// import * as CodeMirror from "codemirror"
+// import "codemirror/lib/codemirror.css"
+// import "choices.js/src/styles/css/choices.min.css"
+
 import "lato-font/css/lato-font.min.css"
-import "choices.js/src/styles/css/choices.min.css"
-import {debug} from './dev'
+
+import * as csstips from "csstips"
 csstips.normalize()
 csstips.setupPage('body')
 
-const root = document.getElementsByTagName('body')[0] as HTMLElement
-const reattach = snabbis.attach(root, Model.init(''), App.App)
+import * as ReactDOM from 'react-dom'
+import * as ReactiveLens from 'reactive-lens'
 
-declare const module: any;
-declare const require: any;
+import * as ViewApp from './ViewApp'
 
-if (debug) {
-  if (module.hot) {
-    module.hot.accept('./App.ts', () => {
-      try {
-        const NextApp = require('./App.ts')
-        reattach(NextApp.App)
-      } catch (e) {
-        console.error(e)
-      }
-    })
-  }
+const root = document.getElementById('root') as HTMLElement
+const reattach = ReactiveLens.attach(vn => ReactDOM.render(vn, root), ViewApp.init, ViewApp.App)
+
+declare const module: any
+declare const require: any
+
+if (module.hot) {
+  module.hot.accept(() => {
+    try {
+      reattach(require('./ViewApp.tsx').App)
+    } catch (e) {
+      console.error(e)
+    }
+  })
 }
 
