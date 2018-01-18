@@ -289,7 +289,7 @@ export function App(store: Store<AppState>) {
 
   // disable a bunch of "complicated" events for now
   for (const t of ["copy", "dragenter", "dragover"]) {
-    (cm_main.on as any)(t, (_cm_main: CodeMirror.Editor, e: Event & {pageX: number, pageY: number}) => {
+    (cm_main.on as any)(t, Utils.debounce(10, (_cm_main: CodeMirror.Editor, e: Event & {pageX: number, pageY: number}) => {
       log('Preventing', e, t)
       const coord: {line: number, ch: number} = cm_main.coordsChar({left: e.pageX, top: e.pageY})
       const {Anchor, Head} = selected_target({head: coord, anchor: coord})
@@ -300,7 +300,7 @@ export function App(store: Store<AppState>) {
         current.at('drag_state').update({drag_over: drag_over.id})
       }
       e.preventDefault()
-    })
+    }))
   }
 
   (cm_main.on as any)('cut', (_cm_main: CodeMirror.Editor, evt: Event) => {

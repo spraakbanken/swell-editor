@@ -129,6 +129,11 @@ export const styles = {
     csstips.centerJustified,
   ),
 
+  UpMid: css({
+    height: '80px',
+    justifyContent: 'space-between'
+  }),
+
   Horizontal: css(
     csstips.horizontal,
     csstips.centerJustified,

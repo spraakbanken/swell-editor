@@ -120,7 +120,7 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: (r: Model.Request
 
   const source_for = (t: Token, diff: TokenDiff, edge_id: string, diff_index: number) => {
     links.push(Link(t.id, edge_id))
-    return div(C.StretchSelf, C.Horizontal, track(t.id, div(deletes(diff), C.InnerCell, select_index(diff_index))),
+    return div(C.StretchSelf, C.Horizontal, track(t.id, div(deletes(diff), select_index(diff_index))),
       s.on('dblclick')((e: MouseEvent) => {
         e.preventDefault()
         Request({kind: 'disconnect_at', at: t.id})
@@ -239,8 +239,9 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: (r: Model.Request
     })
     return div(
       C.Vertical,
-      s.css({height: '70px', justifyContent: 'space-between'}),
-      div(C.Horizontal, up), label
+      C.UpMid,
+      // s.css({height: '170px', justifyContent: 'space-between'}),
+      div(C.Row, up), label
     )
   })
 
@@ -270,46 +271,6 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: (r: Model.Request
     )
   )
 
-  // const old_ladder_dead_code = track('table', table(columns.map(({up: u, mid: m, down: d, ix}, i) => ({
-  //   snabbis: [
-  //     select_index(ix),
-  //     s.on('contextmenu')((e: PointerEvent) => {
-  //       log('contextmenu', drag_state.get(), (e as any).target)
-  //       e.preventDefault()
-  //       Request({kind: 'revert_at', at: rich_diff[ix].id})
-  //     }),
-  //     /*
-  //     s.attrs({ draggable: 'true' }),
-  //     s.on('dragstart')((e: DragEvent) => {
-  //       e.dataTransfer.setData('text/plain', 'https://stackoverflow.com/questions/19055264/why-doesnt-html5-drag-and-drop-work-in-firefox')
-  //       drag_state.at('drag_type').set('merge')
-  //       drag_state.at('drag_start').set(rich_diff[ix])
-  //       log('dragstart', drag_state.get(), (e as any).target)
-  //     }),
-  //     s.on('dragenter')((e: DragEvent) => {
-  //       drag_state.at('drag_over').set(rich_diff[ix])
-  //       log('dragenter', drag_state.get(), (e as any).target)
-  //     }),
-  //     s.on('dragend')((e: DragEvent) => {
-  //       log('dragend', drag_state.get(), (e as any).target)
-  //       const {drag_start, drag_over} = drag_state.get()
-  //       if (drag_start && drag_over) {
-  //         // Request({kind: 'connect_two', one: drag_start, two: drag_over})
-  //       }
-  //       drag_state.set({})
-  //     }),
-  //     */
-  //     s.classes({[c.LadderSelected]: ix === selected_index}),
-  //     C.Pointer,
-  //     C.JustUnderFloating
-  //   ],
-  //   col: [
-  //     tag('div', C.Cell, u.length != 0 ? u : tag('div', C.InnerCell, '\u200b')),
-  //     tag('div', C.Cell, m.length != 0 ? m : tag('div')),
-  //     tag('div', C.Cell, d.length != 0 ? d : tag('div', C.InnerCell, '\u200b')),
-  //   ]
-  // })), [c.LadderTable, c.MainStyle]))
-
   const pos_dict = store.get().positions
   const svg = tag(
     'svg',
@@ -323,7 +284,7 @@ export function ViewDiff(store: Store<ViewDiffState>, Request: (r: Model.Request
       const y1 = Positions.bot(top)
       const x2 = Positions.hmid(bot)
       const y2 = Positions.top(bot)
-      const d = 15 * (-1 / (Math.abs(x1 - x2) + 1) + 1)
+      const d = 30 * (-1 / (Math.abs(x1 - x2) + 1) + 1)
       return tag('path',
         s.attrs({
           d: ['M', x1, y1, 'C', x1, y1 + d, x2, y2 - d, x2, y2].join(' '),

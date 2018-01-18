@@ -101,7 +101,7 @@ export function setup_sync(store: Store<AppState>): (() => void)[] {
      }
   })
   return [
-    Essentials(store).ondiff(post),
+    // Essentials(store).ondiff(post),
     store.at('login_state').ondiff(login_state => {
       console.log({login_state})
       if (login_state == 'in') {
