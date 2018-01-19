@@ -4,7 +4,6 @@ import {GraphState} from './Model'
 import * as G from './Graph'
 import * as R from './RichDiff'
 import * as T from './Token'
-import {ClassNames, css} from './Classes'
 import {style, types} from 'typestyle'
 import * as csstips from 'csstips'
 
@@ -19,6 +18,7 @@ const files: Record<string, {graphs: Record<string, GraphState>}> = {
   lena: require('./data/lena/state.json'),
   mats: require('./data/mats/state.json'),
 }
+; (window as any).files = files;
 export interface State {
   readonly annotator: string
   readonly text: string
@@ -34,7 +34,7 @@ export const json = (s: any) => JSON.stringify(s, undefined, 2)
 export const Subscript = style({
   position: 'relative',
   bottom: '-0.5em',
-  fontSize: '65%',
+  fontSize: '85%',
   paddingLeft: '1px',
 })
 
@@ -57,6 +57,7 @@ const BorderCell = style(
 
 const Top = style(
   {$debugName: 'Top'},
+  {fontSize: '19px'},
   csstips.wrap,
   csstips.startJustified,
   csstips.horizontal,
@@ -184,24 +185,7 @@ export function View(store: Store<State>): VNode {
   const msg = m.ok ? null : m.msg
   return (
     <div style={{maxWidth: '800px', margin: 'auto', padding: '0 10px'}}>
-      <div style={{display: 'none'}}>
-        <Input store={store.at('annotator')} />
-        <Input store={store.at('text')} />
-      </div>
-      {false && (
-        <table>
-          <tbody>
-            {edited.map((e, i) => (
-              <tr key={i} onClick={() => store.update(e)} style={{cursor: 'pointer'}}>
-                <td>{e.annotator}</td>
-                <td>{e.text}</td>
-                <td>{e.labelled}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-      {edited.map((s, i) => {
+      {true && edited.map((s, i) => {
         const m = TryGetGraph(s)
         return (
           m.ok && (
@@ -217,10 +201,29 @@ export function View(store: Store<State>): VNode {
           )
         )
       })}
+      <div style={{}}>
+        <Input store={store.at('annotator')} />
+        <Input store={store.at('text')} />
+      </div>
+      {(
+        <table>
+          <tbody>
+            {edited.map((e, i) => (
+              <tr key={i} onClick={() => store.update(e)} style={{cursor: 'pointer'}}>
+                <td>{e.annotator}</td>
+                <td>{e.text}</td>
+                <td>{e.labelled}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
       {
-        // g && r && Ladder(g, r)
+        g && r && Ladder(g, r)
       }
-      {msg && <pre>{msg}</pre>}
+      {
+        msg && <pre>{msg}</pre>
+      }
     </div>
   )
 }
