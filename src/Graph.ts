@@ -8,6 +8,7 @@ Missing functions:
     trail_whitespace // makes all whitespace be trailing whitesapec
 
 */
+import * as R from 'ramda'
 import * as Utils from './Utils'
 import { Diff, Dragged, Dropped } from './Diff'
 import * as D from './Diff'
@@ -457,7 +458,16 @@ export function target_sentence(g: Graph, i: number): Span {
   return T.sentence(target_texts(g), i)
 }
 
-export type Subspans = {source: Span, target: Span}
+export type Subspans = {source: Span; target: Span}
+
+export function subspan_merge(ss: Subspans[]) {
+  let {source, target} = ss[0]
+  ss.forEach(s => {
+    source = T.span_merge(source, s.source)
+    target = T.span_merge(target, s.target)
+  })
+  return {source, target}
+}
 
 /** Gets the sentence in the target text around some offset
 
@@ -494,6 +504,23 @@ export function sentence(g: Graph, i: number): Subspans {
     source = T.span_merge(source, {begin: source.begin, end: source_texts(g).length - 1})
   }
   return {source, target}
+}
+
+/** All sentences in a text starting from an offset in the target text. */
+export function sentences(g: Graph, begin: number = 0): Subspans[] {
+  if (begin >= g.target.length) {
+    return []
+  } else {
+    const s = sentence(g, begin)
+    return [s].concat(sentences(g, s.target.end + 1))
+  }
+}
+
+/** Given many graphs on the same source text, find the overlapping sentence groups
+
+Uses merge_series which is very inefficient */
+export function sentence_groups<K extends string>(gs: Record<K, Graph>): Record<K, Subspans[]>[] {
+  return Utils.merge_series(Utils.record_map(gs, g => sentences(g)), subspan_merge, R.eqProps('source'))
 }
 
 export function proto_sentence(g: Graph, i: number): Subspans {

@@ -1,7 +1,6 @@
-
-import * as R from "ramda"
-import { Lens, Store } from 'reactive-lens'
-import * as Dmp from "diff-match-patch"
+import * as R from 'ramda'
+import {Lens, Store} from 'reactive-lens'
+import * as Dmp from 'diff-match-patch'
 export const dmp = new Dmp.diff_match_patch()
 
 export type TokenDiff = [number, string][]
@@ -34,24 +33,28 @@ export type ChangeInt = -1 | 0 | 1
   raw_diff(range(n), range(2*n)) // => range(2*n).map(i => R.pair(i < n ? 0 : 1, i))
 
 */
-export function raw_diff<A>(xs: A[], ys: A[], cmp: (a: A) => string = a => a.toString()): R.KeyValuePair<ChangeInt, A>[] {
+export function raw_diff<A>(
+  xs: A[],
+  ys: A[],
+  cmp: (a: A) => string = a => a.toString()
+): R.KeyValuePair<ChangeInt, A>[] {
   return hdiff(xs, ys, cmp, cmp).map(c => R.pair(c.change, c.change == 1 ? c.b : c.a))
 }
 
 interface Deleted<A> {
-  change: -1,
+  change: -1
   a: A
 }
 
 interface Constant<A, B> {
-  change: 0,
-  a: A,
-  b: B,
+  change: 0
+  a: A
+  b: B
 }
 
 interface Inserted<B> {
-  change: 1,
-  b: B,
+  change: 1
+  b: B
 }
 
 export type Change<A, B> = Deleted<A> | Constant<A, B> | Inserted<B>
@@ -71,9 +74,12 @@ export type Change<A, B> = Deleted<A> | Constant<A, B> | Inserted<B>
   hdiff(abca, BAC, lower, lower) // => expect
 
 */
-export function hdiff<A, B>(xs: A[], ys: B[],
-    a_cmp: (a: A) => string = a => a.toString(),
-    b_cmp: (b: B) => string = b => b.toString()): Change<A, B>[] {
+export function hdiff<A, B>(
+  xs: A[],
+  ys: B[],
+  a_cmp: (a: A) => string = a => a.toString(),
+  b_cmp: (b: B) => string = b => b.toString()
+): Change<A, B>[] {
   const to = new Map<string, string>()
   const a_from = new Map<string, A[]>()
   const b_from = new Map<string, B[]>()
@@ -119,7 +125,7 @@ export function token_diff(s1: string, s2: string) {
   return d
 }
 
-export const invert_token_diff = (ds : TokenDiff) => ds.map(([i, s]) => [-i, s] as [number, string])
+export const invert_token_diff = (ds: TokenDiff) => ds.map(([i, s]) => [-i, s] as [number, string])
 
 // ss must be nonempty and all strings must be nonempty
 export function multi_token_diff(ss: string[], s2: string): TokenDiff[] {
@@ -164,24 +170,24 @@ export function array_multiset_eq<A>(xs: A[], ys: A[]): boolean {
   const xm = new Map<A, number>()
   const ym = new Map<A, number>()
   let tmp
-  xs.map(x => xm.set(x, (tmp = xm.get(x), tmp === undefined ? 1 : tmp + 1)))
-  ys.map(y => ym.set(y, (tmp = ym.get(y), tmp === undefined ? 1 : tmp + 1)))
+  xs.map(x => xm.set(x, ((tmp = xm.get(x)), tmp === undefined ? 1 : tmp + 1)))
+  ys.map(y => ym.set(y, ((tmp = ym.get(y)), tmp === undefined ? 1 : tmp + 1)))
   return map_equal(xm, ym)
 }
 
 /** Are these two maps equal? */
 export function map_equal<A, B>(a: Map<A, B>, b: Map<A, B>): boolean {
   let ok = true
-  a.forEach((k, v) => ok = ok && b.get(v) == k)
-  b.forEach((k, v) => ok = ok && a.get(v) == k)
+  a.forEach((k, v) => (ok = ok && b.get(v) == k))
+  b.forEach((k, v) => (ok = ok && a.get(v) == k))
   return ok
 }
 
 /** Are these two sets equal? */
 export function set_equal<A>(a: Set<A>, b: Set<A>): boolean {
   let ok = true
-  a.forEach(k => ok = ok && b.has(k))
-  b.forEach(k => ok = ok && a.has(k))
+  a.forEach(k => (ok = ok && b.has(k)))
+  b.forEach(k => (ok = ok && a.has(k)))
   return ok
 }
 
@@ -199,7 +205,7 @@ export function array_set_eq<A>(xs: A[], ys: A[]): boolean {
 
 /** map for strings */
 export function str_map<A>(s: string, f: (c: string, i: number) => A): A[] {
-  const out = [] as A[];
+  const out = [] as A[]
   for (let i = 0; i < s.length; ++i) {
     out.push(f(s[i], i))
   }
@@ -213,7 +219,7 @@ export function show(x: any): string {
 
 /** Numeric sort */
 export function numsort(xs: number[]): number[] {
-  return xs.slice().sort((u,v) => u - v)
+  return xs.slice().sort((u, v) => u - v)
 }
 
 /** Trims initial whitespace */
@@ -256,7 +262,6 @@ export function initial_whitespace_split(s: string): [string, string] {
   return [s, ''] // unreachable (the regexp matches any string)
 }
 
-
 /** Is every element larger than the previous?
 
   increases([1,2,3,4]) // => true
@@ -266,7 +271,7 @@ export function initial_whitespace_split(s: string): [string, string] {
 
 */
 export function increases(xs: number[]): boolean {
-  return xs.every((v, i) => i == 0 || v > xs[i-1])
+  return xs.every((v, i) => i == 0 || v > xs[i - 1])
 }
 
 /** Is every element exactly one larger than the previous?
@@ -278,7 +283,7 @@ export function increases(xs: number[]): boolean {
 
 */
 export function contiguous(xs: number[]): boolean {
-  return xs.every((x, i) => i == 0 || xs[i-1] + 1 == x)
+  return xs.every((x, i) => i == 0 || xs[i - 1] + 1 == x)
 }
 
 /** Flatten an array of arrays */
@@ -291,7 +296,6 @@ export function flatMap<A, B>(xs: A[], f: (a: A) => B[]): B[] {
   return flatten(xs.map(f))
 }
 
-
 /** Split an array into three pieces
 
   splitAt3('0123456'.split(''), 2, 4).map(xs => xs.join('')) // => ['01', '23', '456']
@@ -301,9 +305,9 @@ export function flatMap<A, B>(xs: A[], f: (a: A) => B[]): B[] {
 
 */
 export function splitAt3<A>(xs: A[], start: number, end: number): [A[], A[], A[]] {
-  const [ab,c] = R.splitAt(end, xs)
-  const [a,b] = R.splitAt(start, ab)
-  return [a,b,c]
+  const [ab, c] = R.splitAt(end, xs)
+  const [a, b] = R.splitAt(start, ab)
+  return [a, b, c]
 }
 
 /** Split an array into three pieces
@@ -315,9 +319,9 @@ export function splitAt3<A>(xs: A[], start: number, end: number): [A[], A[], A[]
 
 */
 export function stringSplitAt3(xs: string, start: number, end: number): [string, string, string] {
-  const [ab,c] = R.splitAt(end, xs)
-  const [a,b] = R.splitAt(start, ab)
-  return [a,b,c]
+  const [ab, c] = R.splitAt(end, xs)
+  const [a, b] = R.splitAt(start, ab)
+  return [a, b, c]
 }
 
 export function escape_pipe(x: string): string {
@@ -341,7 +345,7 @@ export function pipeunsep(x: string): string[] {
   if (!m || m[m.length - 1] != '|') {
     throw 'Not well-formed pipe-separated list: ' + x + ' ' + show(m)
   } else {
-    return m.slice(0, m.length - 1).map((x) => unescape_pipe(x.slice(1)))
+    return m.slice(0, m.length - 1).map(x => unescape_pipe(x.slice(1)))
   }
 }
 
@@ -366,12 +370,17 @@ export function cycle<A>(n: number, xs: A[]): A[] {
 
 /** Minimum of a non-empty array */
 export function minimum(xs: number[]) {
-  return xs.reduce((x,y) => Math.min(x,y), xs[0])
+  return xs.reduce((x, y) => Math.min(x, y), xs[0])
 }
 
 /** Maximum of a non-empty array */
 export function maximum(xs: number[]) {
-  return xs.reduce((x,y) => Math.max(x,y), xs[0])
+  return xs.reduce((x, y) => Math.max(x, y), xs[0])
+}
+
+/** Sum the numbers in an array */
+export function sum(xs: number[]) {
+  return xs.reduce((x, y) => x + y, 0)
 }
 
 /** Returns a copy of the array with duplicates removed, via toString */
@@ -387,9 +396,9 @@ export function uniq<A>(xs: A[]): A[] {
 
 /** Union-find data structure operations */
 interface UnionFind {
-  find(x: number): number,
-  union(x: number, y: number): number,
-  unions(xs: number[]): void,
+  find(x: number): number
+  union(x: number, y: number): number
+  unions(xs: number[]): void
 }
 
 /** Make a union-find data structure */
@@ -433,7 +442,7 @@ export function splice<A>(xs: A[], start: number, count: number, ...insert: A[])
 */
 export function throws(m: () => any): boolean {
   try {
-    return (m(), false)
+    return m(), false
   } catch (e) {
     return true
   }
@@ -504,6 +513,14 @@ export function range(to: number) {
   return out
 }
 
+export function fromTo(begin: number, end: number) {
+  const out = []
+  for (let i = begin; i < end; ++i) {
+    out.push(i)
+  }
+  return out
+}
+
 /** Calculate the next id to use from these identifiers
 
   next_id([]) // => 0
@@ -514,7 +531,7 @@ export function range(to: number) {
 */
 export function next_id(xs: string[]): number {
   let max = -1
-  xs.forEach(x => (x.match(/\d+/g) || []).forEach(i => max = Math.max(max, parseInt(i))))
+  xs.forEach(x => (x.match(/\d+/g) || []).forEach(i => (max = Math.max(max, parseInt(i)))))
   return max + 1
 }
 
@@ -523,11 +540,18 @@ export function absurd<A>(c: never): A {
   return c
 }
 
-export function record_forEach<K extends string, A>(x: Record<K, A>, k: (a: A, id: K) => void): void {
-  (Object.keys(x) as K[]).forEach((id: K) => k(x[id], id))
+export function record_forEach<K extends string, A>(
+  x: Record<K, A>,
+  k: (a: A, id: K) => void
+): void {
+  ;(Object.keys(x) as K[]).forEach((id: K) => k(x[id], id))
 }
 
-export function record_traverse<K extends string, A, B>(x: Record<K, A>, k: (a: A, id: K) => B, sort_keys: boolean=false): B[] {
+export function record_traverse<K extends string, A, B>(
+  x: Record<K, A>,
+  k: (a: A, id: K) => B,
+  sort_keys: boolean = false
+): B[] {
   const ks = Object.keys(x) as K[]
   if (sort_keys) {
     ks.sort()
@@ -535,13 +559,19 @@ export function record_traverse<K extends string, A, B>(x: Record<K, A>, k: (a: 
   return ks.map((id: K) => k(x[id], id))
 }
 
-export function record_map<K extends string, A, B>(x: Record<K, A>, k: (a: A, id: K) => B): Record<K, B> {
+export function record_map<K extends string, A, B>(
+  x: Record<K, A>,
+  k: (a: A, id: K) => B
+): Record<K, B> {
   const out = {} as Record<K, B>
-  record_forEach(x, (a, id) => out[id] = k(a, id))
+  record_forEach(x, (a, id) => (out[id] = k(a, id)))
   return out
 }
 
-export function record_filter<A>(x: Record<string, A>, k: (a: A, id: string) => boolean): Record<string, A> {
+export function record_filter<A>(
+  x: Record<string, A>,
+  k: (a: A, id: string) => boolean
+): Record<string, A> {
   const out = {} as Record<string, A>
   record_forEach(x, (a, id) => k(a, id) && (out[id] = a))
   return out
@@ -573,21 +603,20 @@ This only obeys store laws if the equality of the store is relaxed to array set 
 export function array_store_key(store: Store<string[]>, key: string): Store<boolean> {
   return array_store(store)
     .via(Lens.key(key))
-    .via(
-      Lens.iso(
-        (tu: true | undefined) => tu || false,
-        (b: boolean) => b || undefined))
+    .via(Lens.iso((tu: true | undefined) => tu || false, (b: boolean) => b || undefined))
 }
 
 export function fromPairs<A extends string, B>(xs: [A, B][]): Record<A, B> {
-    return Object.assign({}, ...xs.map(([a, b]) => ({[a as string]: b})))
+  return Object.assign({}, ...xs.map(([a, b]) => ({[a as string]: b})))
 }
 
 export function array_store(store: Store<string[]>): Store<Record<string, true>> {
   return store.via(
     Lens.iso(
       (xs: string[]) => fromPairs(xs.map(x => [x, true] as [string, true])),
-      (r: Record<string, true>) => record_traverse(r, (_, s) => s)))
+      (r: Record<string, true>) => record_traverse(r, (_, s) => s)
+    )
+  )
 }
 
 /**
@@ -614,7 +643,14 @@ export function store_join(store: Store<string[]>): Store<string> {
 }
 
 /** POST request */
-export function POST(url: string, data: any, k: (response: any) => void, k_err: (response: any, code: number) => void = () => { return }): void {
+export function POST(
+  url: string,
+  data: any,
+  k: (response: any) => void,
+  k_err: (response: any, code: number) => void = () => {
+    return
+  }
+): void {
   const r = new XMLHttpRequest()
   r.onreadystatechange = () => {
     if (r.readyState == 4 && r.status == 200) {
@@ -624,7 +660,7 @@ export function POST(url: string, data: any, k: (response: any) => void, k_err: 
       k_err(r.response, r.status)
     }
   }
-  r.open("POST", url, true)
+  r.open('POST', url, true)
   r.setRequestHeader('Content-Type', 'application/json')
   r.send(JSON.stringify(data))
 }
@@ -636,13 +672,13 @@ be triggered. The function will be called after it stops being called for
 N milliseconds.
 */
 export function debounce(wait: number, k: (...args: any[]) => void): (...args: any[]) => void {
-  let id: any | null;
+  let id: any | null
   return (...args: any[]) => {
     if (id != null) {
       clearTimeout(id)
     }
     id = setTimeout(() => {
-      id = null;
+      id = null
       k(...args)
     }, wait) as any
   }
@@ -663,3 +699,56 @@ export function fix<A>(init: A, f: (a: A) => A): A {
   } while (!R.equals(v, last))
   return v
 }
+
+export function cartesian<T, Ks extends keyof T>(r: {[K in Ks]: T[K][]}): {[K in Ks]: T[K]}[] {
+  const ks = Object.keys(r)
+  if (ks.length == 0) {
+    return [{} as any]
+  } else {
+    const k = ks[0]
+    const {[k]: vs, ...rest} = r as any
+    return flatten(cartesian(rest).map(cr => vs.map((v: any) => ({[k]: v, ...cr})))) as any
+  }
+}
+
+export function upper_triangular<A>(xs: A[]): [A, A][] {
+  const out: [A, A][] = []
+  xs.forEach((x, i) => xs.forEach((y, j) => j > i && out.push([x, y])))
+  return out
+}
+
+/** Very inefficient implementation of pairing up equal series
+
+  merge_series({x: [1,2,1,3],y: [2,1,3,1]}, sum, (a: number, b: number) => a == b) // => [{x: 3,y: 3},{x: 4,y: 4}]
+
+  merge_series({x: [1,1,5,3],y: [1,1,3,5]}, sum, (a: number, b: number) => a == b) // => [{x: 1,y: 1},{x: 1,y: 1},{x: 8,y: 8}]
+
+  merge_series({
+    x: [1,2,5,3],
+    y: [2,1,3,5],
+    z: [1,1,1,2,4,2]
+  }, sum, (a: number, b: number) => a == b) // => [{x: 3,y: 3,z: 3},{x: 8,y: 8,z: 8}]
+
+*/
+export function merge_series<K extends string, S, A>(
+  r: Record<K, S[]>,
+  concat: (xs: S[]) => A,
+  cmp: (a: A, b: A) => boolean
+): Record<K, A>[] {
+  const coords = cartesian<Record<K, number>, K>(record_map(r, (ss: S[]) => ss.map((_, i) => i))).sort(
+    (a, b) => sum(Object.values(a)) - sum(Object.values(b))
+  )
+  const prev = record_map(r, _ => 0)
+  const out: Record<K, A>[] = []
+  coords.forEach(coord => {
+    if (record_traverse(coord, (i: number, k: K) => i >= prev[k]).every((b: boolean) => b)) {
+      const a = record_map(r, (s, k) => concat(fromTo(prev[k], coord[k] + 1).map(i => s[i])))
+      if (upper_triangular(Object.values(a)).every(([x, y]: [A, A]) => cmp(x, y))) {
+        record_forEach(coord, (i: number, k: K) => (prev[k] = i + 1))
+        out.push(a)
+      }
+    }
+  })
+  return out
+}
+

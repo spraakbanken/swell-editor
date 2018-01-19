@@ -6,19 +6,10 @@ import * as R from './RichDiff'
 import * as T from './Token'
 import {style, types} from 'typestyle'
 import * as csstips from 'csstips'
+import * as Pilot from './PilotData'
 
 type VNode = React.ReactElement<{}>
 
-declare const require: (json_file: string) => any
-const files: Record<string, {graphs: Record<string, GraphState>}> = {
-  beata: require('./data/beata/state.json'),
-  elena: require('./data/elena/state.json'),
-  gunlög: require('./data/gunlög/state.json'),
-  julia: require('./data/julia/state.json'),
-  lena: require('./data/lena/state.json'),
-  mats: require('./data/mats/state.json'),
-}
-; (window as any).files = files;
 export interface State {
   readonly annotator: string
   readonly text: string
@@ -148,36 +139,14 @@ export function App(store: Store<State>): () => VNode {
   const global = window as any
   global.store = store
   global.reset = () => store.set(init)
+  global.G = G
+  global.g = g
   // store.on(x => console.log(json(x)))
-  store.storage_connect('swell-viz')
+  // store.storage_connect('swell-viz')
   return () => View(store)
 }
 
-export function TryGetGraph(state: {
-  annotator: string
-  text: string
-}): {ok: false; msg: string} | {ok: true; graph: G.Graph; rich_diff: R.RichDiff[]} {
-  try {
-    const graph = files[state.annotator].graphs[state.text].graph.now
-    const rich_diff = R.enrichen(graph, G.calculate_diff(graph))
-    return {ok: true, graph, rich_diff}
-  } catch (e) {
-    return {ok: false, msg: e.toString()}
-  }
-}
-
 export function View(store: Store<State>): VNode {
-  const edited: {annotator: string; text: string; labelled: number}[] = []
-  Object.entries(files).forEach(([annotator, {graphs}]) => {
-    Object.entries(graphs).forEach(([text, {graph: {now: {edges}}}]) => {
-      const labelled = Object.values(edges).filter((e: G.Edge) => e.labels.length > 0).length
-      if (labelled > 0 && text != 'examples') {
-        edited.push({annotator, text, labelled})
-      }
-    })
-  })
-  edited.sort((x, y) => x.text.localeCompare(y.text))
-
   const state = store.get()
   const m = TryGetGraph(state)
   const r = m.ok ? m.rich_diff : null
@@ -185,30 +154,31 @@ export function View(store: Store<State>): VNode {
   const msg = m.ok ? null : m.msg
   return (
     <div style={{maxWidth: '800px', margin: 'auto', padding: '0 10px'}}>
-      {true && edited.map((s, i) => {
-        const m = TryGetGraph(s)
-        return (
-          m.ok && (
-            <div key={i}>
-              <h3>
-                {s.annotator.slice(0, 1).toUpperCase() + s.annotator.slice(1)} {s.text} ({
-                  s.labelled
-                }{' '}
-                labels)
-              </h3>
-              <div>{Ladder(m.graph, m.rich_diff)}</div>
-            </div>
+      {true &&
+        Pilot.Edited.map((s, i) => {
+          const m = TryGetGraph(s)
+          return (
+            m.ok && (
+              <div key={i}>
+                <h3>
+                  {s.annotator.slice(0, 1).toUpperCase() + s.annotator.slice(1)} {s.text} ({
+                    s.labelled
+                  }{' '}
+                  labels)
+                </h3>
+                <div>{Ladder(m.graph, m.rich_diff)}</div>
+              </div>
+            )
           )
-        )
-      })}
+        })}
       <div style={{}}>
         <Input store={store.at('annotator')} />
         <Input store={store.at('text')} />
       </div>
-      {(
+      {
         <table>
           <tbody>
-            {edited.map((e, i) => (
+            {Pilot.Edited.map((e, i) => (
               <tr key={i} onClick={() => store.update(e)} style={{cursor: 'pointer'}}>
                 <td>{e.annotator}</td>
                 <td>{e.text}</td>
@@ -217,13 +187,9 @@ export function View(store: Store<State>): VNode {
             ))}
           </tbody>
         </table>
-      )}
-      {
-        g && r && Ladder(g, r)
       }
-      {
-        msg && <pre>{msg}</pre>
-      }
+      {g && r && Ladder(g, r)}
+      {msg && <pre>{msg}</pre>}
     </div>
   )
 }

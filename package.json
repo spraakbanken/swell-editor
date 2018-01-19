@@ -27,16 +27,16 @@
     "lato-font": "^3.0.0",
     "nyc": "^11.4.1",
     "parcel-bundler": "^1.3.1",
-    "parcel-plugin-typescript": "0.5.2",
+    "parcel-plugin-typescript": "^0.5.2",
     "prettier": "^1.9.2",
     "typescript": "^2.6.1"
   },
   "scripts": {
     "start": "parcel index.html",
     "build": "parcel build index.html",
-    "test:watch": "tsc --watch & ava --watch dist/test/",
+    "test:watch": "tsc --watch & ava --watch dist/src/*doctest*",
     "test": "tsc && ava dist/test/*js",
-    "doctest": "./doctests.sh",
+    "doctest": "./doctests.sh && tsc",
     "coverage": "tsc && nyc ava dist/test/*js",
     "prettier": "prettier --list-different --write \"{src,test}/**/*.{css,ts{,x}}\""
   },
