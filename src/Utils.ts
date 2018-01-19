@@ -5,6 +5,10 @@ export const dmp = new Dmp.diff_match_patch()
 
 export type TokenDiff = [number, string][]
 
+export function capitalize_head(s: string) {
+  return s.slice(0, 1).toUpperCase() + s.slice(1)
+}
+
 /** Make a stream of all unicode characters
 
   const next = char_stream()

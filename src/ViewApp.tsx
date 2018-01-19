@@ -7,17 +7,20 @@ import * as T from './Token'
 import {style, types} from 'typestyle'
 import * as csstips from 'csstips'
 import * as Pilot from './PilotData'
+import * as Utils from './Utils'
 
 type VNode = React.ReactElement<{}>
 
 export interface State {
   readonly annotator: string
   readonly text: string
+  readonly graph_segments: GraphSegments[]
 }
 
 export const init: State = {
   annotator: 'gunlög',
   text: 'text2',
+  graph_segments: [],
 }
 
 export const json = (s: any) => JSON.stringify(s, undefined, 2)
@@ -140,7 +143,7 @@ export function App(store: Store<State>): () => VNode {
   global.store = store
   global.reset = () => store.set(init)
   global.G = G
-  global.g = g
+  global.Pilot = Pilot
   // store.on(x => console.log(json(x)))
   // store.storage_connect('swell-viz')
   return () => View(store)
@@ -148,38 +151,39 @@ export function App(store: Store<State>): () => VNode {
 
 export function View(store: Store<State>): VNode {
   const state = store.get()
-  const m = TryGetGraph(state)
+  const m = Pilot.TryGetGraph(state)
   const r = m.ok ? m.rich_diff : null
   const g = m.ok ? m.graph : null
   const msg = m.ok ? null : m.msg
+  /*
+        Pilot.Edited.map((s, i) => {
+          const m = Pilot.TryGetGraph(s)
+          return (
+            m.ok &&
+            */
   return (
     <div style={{maxWidth: '800px', margin: 'auto', padding: '0 10px'}}>
-      {true &&
-        Pilot.Edited.map((s, i) => {
-          const m = TryGetGraph(s)
-          return (
-            m.ok && (
+      {
+        state.graph_segments.map(
+          (m, i) => (
               <div key={i}>
                 <h3>
-                  {s.annotator.slice(0, 1).toUpperCase() + s.annotator.slice(1)} {s.text} ({
-                    s.labelled
-                  }{' '}
-                  labels)
+                  {Utils.capitalize_head(m.annotator)} {m.text}
                 </h3>
                 <div>{Ladder(m.graph, m.rich_diff)}</div>
               </div>
             )
-          )
-        })}
+        )}
       <div style={{}}>
         <Input store={store.at('annotator')} />
         <Input store={store.at('text')} />
+        <button onClick{() => store.at('graph_segments').set(Pilot.Calculate(state.text))}>Calculate</button>
       </div>
       {
         <table>
           <tbody>
             {Pilot.Edited.map((e, i) => (
-              <tr key={i} onClick={() => store.update(e)} style={{cursor: 'pointer'}}>
+              <tr key={i} onClick={() => store.update({annotator:e.annotator, text:e.text})} style={{cursor: 'pointer'}}>
                 <td>{e.annotator}</td>
                 <td>{e.text}</td>
                 <td>{e.labelled}</td>

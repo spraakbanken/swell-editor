@@ -53,6 +53,54 @@ s.forEach(s => console.log(s))
 
 //    (a: G.Subspans, b: G.Subspans) => R.eq(R.equals(a.source
 
+export function record_create<K extends string, A>(ks: K[], f: (k: K) => A): Record<K, A> {
+  const obj = {} as Record<K, A>
+  ks.forEach(k => (obj[k] = f(k)))
+  return obj
+}
+
+
+export function imprint<A>(r: Record<string, Record<string, A>>, k1: string, k2: string, a: A) {
+  if (! (k1 in r)) {
+    r[k1] = {}
+  }
+  r[k1][k2] = a
+}
+
+export interface RichGraph {graph: G.Graph, rich_diff: RD.RichDiff[]}
+export type RichGraphCount = RichGraph & {labelled: number}
+export interface Metadata {annotator: string, text: string}
+export const ByAnnotator: Record<string, Record<string, RichGraph>> = {}
+export const ByText: Record<string, Record<string, RichGraph>> = {}
+
+Object.entries(files).forEach(([annotator, {graphs}]) => {
+  Object.entries(graphs).forEach(([text, {graph: {now: graph}}]) => {
+    const {edges} = graph
+    const labelled = Object.values(edges).filter((e: G.Edge) => e.labels.length > 0).length
+    if (labelled > 0 && text != 'examples') {
+      const rich_graph = {graph, rich_diff: RD.enrichen(graph, G.calculate_diff(graph)), labelled}
+      imprint(ByAnnotator, annotator, text, rich_graph)
+      imprint(ByText, text, annotator, rich_graph)
+    }
+  })
+})
+
+export type GraphSegments = ({subspan: Subspans} & Metadata & RichGraph)[]
+
+export function Calculate(text: string): GraphSegments  {
+  const graphs = ByText[text]
+  const groups = G.sentence_groups(Utils.record_map(graphs, rg => rg.graph))
+  return Utils.flatten(
+    groups.map(group =>
+      Utils.record_traverse(group, (subspan, annotator) => {
+      const graph = G.subgraph(graphs[annotator].graph, subspan)
+      return {subspan, annotator, text, graph, rich_diff: RD.enrichen(graph, G.calculate_diff(graph))}
+    })
+  ))
+}
+
+console.log(Utils.show(Calculate('text1')))
+
 export function TryGetGraph(state: {
   annotator: string
   text: string
@@ -78,28 +126,3 @@ export function GetGraph(state: {
   }
 }
 
-export function record_create<K extends string, A>(ks: K[], f: (k: K) => A): Record<K, A> {
-  const obj = {} as Record<K, A>
-  ks.forEach(k => (obj[k] = f(k)))
-  return obj
-}
-
-export const Edited: {annotator: string; text: string; labelled: number}[] = []
-Object.entries(files).forEach(([annotator, {graphs}]) => {
-  Object.entries(graphs).forEach(([text, {graph: {now: {edges}}}]) => {
-    const labelled = Object.values(edges).filter((e: G.Edge) => e.labels.length > 0).length
-    if (labelled > 0 && text != 'examples') {
-      Edited.push({annotator, text, labelled})
-    }
-  })
-})
-Edited.sort((x, y) => x.text.localeCompare(y.text))
-export const Edits = R.groupBy(x => x.text, Edited)
-export const SentenceGroups = (text: string) =>
-    G.sentence_groups(
-      R.fromPairs(
-        Edits[text].map(
-        st => [st.annotator, GetGraph(st).graph] as [string, G.Graph])))
-
-console.log(Edits)
-console.log(Utils.show(SentenceGroups('text1')))

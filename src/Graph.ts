@@ -519,7 +519,7 @@ export function sentences(g: Graph, begin: number = 0): Subspans[] {
 /** Given many graphs on the same source text, find the overlapping sentence groups
 
 Uses merge_series which is very inefficient */
-export function sentence_groups<K extends string>(gs: Record<K, Graph>): Record<K, Subspans[]>[] {
+export function sentence_groups<K extends string>(gs: Record<K, Graph>): Record<K, Subspans>[] {
   return Utils.merge_series(Utils.record_map(gs, g => sentences(g)), subspan_merge, R.eqProps('source'))
 }
 
