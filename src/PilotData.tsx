@@ -13,15 +13,7 @@ if (typeof window == 'undefined') {
 }
 
 declare const require: (json_file: string) => any
-const files: Record<string, {graphs: Record<string, GraphState>}> = {
-  beata: require('./data/beata/state.json'),
-  elena: require('./data/elena/state.json'),
-  gunlög: require('./data/gunlög/state.json'),
-  julia: require('./data/julia/state.json'),
-  lena: require('./data/lena/state.json'),
-  mats: require('./data/mats/state.json'),
-}
-;(window as any).files = files
+const pilot_data: Record<string, {graphs: Record<string, GraphState>}> = require('../pilot_data.json')
 
 export type Ok<A> = {ok: false; msg: string} | ({ok: true} & A)
 
@@ -63,7 +55,7 @@ export const ByAnnotator: Record<string, Record<string, RichGraph & Labelled>> =
 export const ByText: Record<string, Record<string, RichGraph & Labelled>> = {}
 export const Edited: (Metadata & Labelled & RichGraph)[] = []
 
-Object.entries(files).forEach(([annotator, {graphs}]) => {
+Object.entries(pilot_data).forEach(([annotator, {graphs}]) => {
   Object.entries(graphs).forEach(([text, {graph: {now: graph}}]) => {
     const {edges} = graph
     const labelled = Object.values(edges).filter((e: G.Edge) => e.labels.length > 0).length
