@@ -8,19 +8,21 @@ import {style, types} from 'typestyle'
 import * as csstips from 'csstips'
 import * as Pilot from './PilotData'
 import * as Utils from './Utils'
+import {GraphSegments} from './PilotData'
 
 type VNode = React.ReactElement<{}>
 
 export interface State {
-  readonly annotator: string
-  readonly text: string
-  readonly graph_segments: GraphSegments[]
+  readonly graph_segments: GraphSegments
+  readonly scroll: null | {
+    readonly text: string
+    readonly begin: number
+  }
 }
 
 export const init: State = {
-  annotator: 'gunlög',
-  text: 'text2',
   graph_segments: [],
+  scroll: null,
 }
 
 export const json = (s: any) => JSON.stringify(s, undefined, 2)
@@ -33,6 +35,7 @@ export const Subscript = style({
 })
 
 const BorderCell = style(
+  {$debugName: 'BorderCell'},
   csstips.border('1px #777 solid'),
   {borderRadius: '20px'},
   {fontSize: '13px'},
@@ -51,12 +54,12 @@ const BorderCell = style(
 
 const Top = style(
   {$debugName: 'Top'},
-  {fontSize: '19px'},
+  {fontSize: '16px'},
   csstips.wrap,
   csstips.startJustified,
   csstips.horizontal,
   // csstips.horizontallySpaced('5px'),
-  csstips.verticallySpaced('35px'),
+  csstips.verticallySpaced('15px'),
   {
     $nest: {
       '& > *': {
@@ -64,7 +67,7 @@ const Top = style(
         ...csstips.vertical,
         ...csstips.verticallySpaced('5px'),
         ...csstips.betweenJustified,
-        ...csstips.border('1px #ccc dotted', '', '1px #ccc dotted', '1px #ccc dotted'),
+        ...csstips.border('1px #ccc solid', '1px #e8e8e8 solid'),
       },
       '& > * > *': {
         ...csstips.content,
@@ -73,7 +76,6 @@ const Top = style(
         height: '22px',
         ...csstips.selfCenter,
         ...csstips.horizontal,
-        //...csstips.border('1px #c88 solid'),
         paddingRight: '5px',
       },
     },
@@ -93,7 +95,7 @@ export function Ladder(g: G.Graph, rd: R.RichDiff[]): VNode {
             const s = T.text(d.source)
             const t = T.text(d.target)
             const labels = g.edges[d.id].labels.join(' ')
-            if (false && s == t) {
+            if (s == t) {
               return (
                 <div key={i}>
                   <div />
@@ -103,7 +105,7 @@ export function Ladder(g: G.Graph, rd: R.RichDiff[]): VNode {
               )
             } else {
               return (
-                <div key={i} style={{background: s != t ? '#ddfacf' : null}}>
+                <div key={i} style={{background: s != t ? '#ffd8c0' : null}}>
                   <div>{T.texts(d.source)}</div>
                   <div className={labels.length > 0 ? BorderCell : ''}>{labels}</div>
                   <div>{T.texts(d.target)}</div>
@@ -145,55 +147,68 @@ export function App(store: Store<State>): () => VNode {
   global.G = G
   global.Pilot = Pilot
   // store.on(x => console.log(json(x)))
-  // store.storage_connect('swell-viz')
+  store.storage_connect('swell-vis')
+  store.at('scroll').ondiff(scroll => {
+    const {graph_segments} = store.get()
+    let text
+    if (scroll && graph_segments[0] && ({text} = graph_segments[0])) {
+      if (text != scroll.text) {
+        store.update({graph_segments: Pilot.GraphSegments(scroll.text)})
+      }
+    }
+  })
   return () => View(store)
 }
 
 export function View(store: Store<State>): VNode {
   const state = store.get()
-  const m = Pilot.TryGetGraph(state)
-  const r = m.ok ? m.rich_diff : null
-  const g = m.ok ? m.graph : null
-  const msg = m.ok ? null : m.msg
-  /*
-        Pilot.Edited.map((s, i) => {
-          const m = Pilot.TryGetGraph(s)
-          return (
-            m.ok &&
-            */
   return (
-    <div style={{maxWidth: '800px', margin: 'auto', padding: '0 10px'}}>
-      {
-        state.graph_segments.map(
-          (m, i) => (
-              <div key={i}>
-                <h3>
-                  {Utils.capitalize_head(m.annotator)} {m.text}
-                </h3>
-                <div>{Ladder(m.graph, m.rich_diff)}</div>
-              </div>
-            )
-        )}
-      <div style={{}}>
-        <Input store={store.at('annotator')} />
-        <Input store={store.at('text')} />
-        <button onClick{() => store.at('graph_segments').set(Pilot.Calculate(state.text))}>Calculate</button>
+    <div style={{maxWidth: '850px', margin: 'auto', padding: '0 10px'}}>
+      <div style={{margin: '20px 0'}}>
+        {Object.keys(Pilot.ByText)
+          .sort()
+          .map(text => (
+            <button
+              key={text}
+              style={{marginRight: '10px'}}
+              onClick={() => store.update({graph_segments: Pilot.GraphSegments(text)})}>
+              {text}
+            </button>
+          ))}
       </div>
-      {
-        <table>
-          <tbody>
-            {Pilot.Edited.map((e, i) => (
-              <tr key={i} onClick={() => store.update({annotator:e.annotator, text:e.text})} style={{cursor: 'pointer'}}>
-                <td>{e.annotator}</td>
-                <td>{e.text}</td>
-                <td>{e.labelled}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      }
-      {g && r && Ladder(g, r)}
-      {msg && <pre>{msg}</pre>}
+      {Utils.zipWithPrevious(state.graph_segments, (m, m_prev, i) => {
+        const sep = !m_prev || m_prev.subspan.source.begin != m.subspan.source.begin
+        return (
+          <React.Fragment key={m.annotator + m.subspan.source.begin}>
+            {sep && (
+              <div
+                style={{
+                  borderTop: '2px #ccc solid',
+                  marginBottom: '40px',
+                }}
+                ref={d =>
+                  d &&
+                  state.scroll &&
+                  state.scroll.text == m.text &&
+                  m.subspan.source.begin == state.scroll.begin &&
+                  (d.scrollIntoView(), store.update({scroll: null}))
+                }>
+                <span style={{float: 'none'}}>
+                  {m.text}:{m.subspan.source.begin}-{m.subspan.source.end}
+                </span>
+              </div>
+            )}
+            <div
+              style={{
+                display: 'flex',
+                marginBottom: '30px',
+              }}>
+              <div style={{flex: 1}}>{Utils.capitalize_head(m.annotator)}</div>
+              <div style={{flex: 6}}>{Ladder(m.graph, m.rich_diff)}</div>
+            </div>
+          </React.Fragment>
+        )
+      })}
     </div>
   )
 }

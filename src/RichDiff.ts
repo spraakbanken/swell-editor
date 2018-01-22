@@ -19,11 +19,11 @@ export type RichDiff
   G.target_text(gr) // => 'bepa cepa aporna depa'
   const gm = G.modify(gr, 10, 10, 'h')
   G.target_text(gm) // => 'bepa cepa haporna depa'
-  const rd = enrichen(gm, G.calculate_diff(gm))
+  const rd = enrichen(gm)
   rd[0] // => {edit: 'Dragged', source: {text: 'aporna ', id: 's0'}, id: 'e-t4-s0', source_diff: [[1, 'h'], [0, 'aporna ']]}
 
 */
-export function enrichen(g: Graph, diff: Diff[]): RichDiff[] {
+export function enrichen(g: Graph, diff: Diff[] = G.calculate_diff(g)): RichDiff[] {
   const partition = G.partition_ids(g)
   return diff.map((d: Diff) => {
     switch (d.edit) {

@@ -739,15 +739,15 @@ export function merge_series<K extends string, S, A>(
   concat: (xs: S[]) => A,
   cmp: (a: A, b: A) => boolean
 ): Record<K, A>[] {
-  const coords = cartesian<Record<K, number>, K>(record_map(r, (ss: S[]) => ss.map((_, i) => i))).sort(
-    (a, b) => sum(Object.values(a)) - sum(Object.values(b))
-  )
+  const coords = cartesian<Record<K, number>, K>(
+    record_map(r, (ss: S[]) => ss.map((_, i) => i))
+  ).sort((a, b) => sum(Object.values(a)) - sum(Object.values(b)))
   const prev = record_map(r, _ => 0)
   const out: Record<K, A>[] = []
   coords.forEach(coord => {
     if (record_traverse(coord, (i: number, k: K) => i >= prev[k]).every((b: boolean) => b)) {
       const a = record_map(r, (s, k) => concat(fromTo(prev[k], coord[k] + 1).map(i => s[i])))
-      if (upper_triangular(Object.values(a)).every(([x, y]: [A, A]) => cmp(x, y))) {
+      if (upper_triangular<A>(Object.values(a)).every(([x, y]) => cmp(x, y))) {
         record_forEach(coord, (i: number, k: K) => (prev[k] = i + 1))
         out.push(a)
       }
@@ -756,3 +756,9 @@ export function merge_series<K extends string, S, A>(
   return out
 }
 
+export function zipWithPrevious<A, B>(
+  xs: A[],
+  k: (x: A, prev: A | undefined, i: number) => B
+): B[] {
+  return xs.map((x, i) => k(x, xs[i - 1], i))
+}

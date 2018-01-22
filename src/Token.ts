@@ -30,12 +30,14 @@ export function texts(ts: Token[]): string[] {
   punc(' !')   // => true
   punc('!?')   // => true
   punc(', ')    // => false
-  punc('apa. ') // => false
+  punc('apa. ') // => true
   punc('?.., ') // => false
 
 */
 export function punc(s: string): boolean {
-  return !!s.match(/^\s*[.!?]+\s*$/)
+  return (
+    !!s.match(/^\s*[.!?]+\s*$/) || (!!s.match(/\.\s*$/) && !s.match(/^t\./)) || !!s.match(/^\.\s/)
+  )
 }
 
 /** Where is the previous punctuation token?
