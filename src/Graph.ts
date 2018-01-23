@@ -458,9 +458,9 @@ export function target_sentence(g: Graph, i: number): Span {
   return T.sentence(target_texts(g), i)
 }
 
-export type Subspans = {source: Span; target: Span}
+export type Subspan = {source: Span; target: Span}
 
-export function subspan_merge(ss: Subspans[]) {
+export function subspan_merge(ss: Subspan[]) {
   let {source, target} = ss[0]
   ss.forEach(s => {
     source = T.span_merge(source, s.source)
@@ -488,7 +488,7 @@ export function subspan_merge(ss: Subspans[]) {
   sentence(g3, 5) // => {source: {begin: 3, end: 6}, target: {begin: 3, end: 5}}
 
 */
-export function sentence(g: Graph, i: number): Subspans {
+export function sentence(g: Graph, i: number): Subspan {
   let {source, target} = proto_sentence(g, i)
   if (target.begin > 0) {
     const prev = proto_sentence(g, target.begin - 1)
@@ -507,7 +507,7 @@ export function sentence(g: Graph, i: number): Subspans {
 }
 
 /** All sentences in a text starting from an offset in the target text. */
-export function sentences(g: Graph, begin: number = 0): Subspans[] {
+export function sentences(g: Graph, begin: number = 0): Subspan[] {
   if (begin >= g.target.length) {
     return []
   } else {
@@ -519,11 +519,15 @@ export function sentences(g: Graph, begin: number = 0): Subspans[] {
 /** Given many graphs on the same source text, find the overlapping sentence groups
 
 Uses merge_series which is very inefficient */
-export function sentence_groups<K extends string>(gs: Record<K, Graph>): Record<K, Subspans>[] {
-  return Utils.merge_series(Utils.record_map(gs, g => sentences(g)), subspan_merge, R.eqProps('source'))
+export function sentence_groups<K extends string>(gs: Record<K, Graph>): Record<K, Subspan>[] {
+  return Utils.merge_series(
+    Utils.record_map(gs, g => sentences(g)),
+    subspan_merge,
+    R.eqProps('source')
+  )
 }
 
-export function proto_sentence(g: Graph, i: number): Subspans {
+export function proto_sentence(g: Graph, i: number): Subspan {
   const init = {
     source: {begin: g.source.length - 1, end: 0},
     target: target_sentence(g, i)
@@ -574,7 +578,7 @@ export function proto_sentence(g: Graph, i: number): Subspans {
   target_text(subgraph(g, sentence(g, 3))) // => 'cepa depa . '
 
 */
-export function subgraph(g: Graph, s: Subspans): Graph {
+export function subgraph(g: Graph, s: Subspan): Graph {
   const source = g.source.slice(s.source.begin, s.source.end + 1)
   const target = g.target.slice(s.target.begin, s.target.end + 1)
   const proto_g = {source, target, edges: edge_record([])}
