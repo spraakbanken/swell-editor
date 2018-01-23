@@ -216,9 +216,13 @@ export function str_map<A>(s: string, f: (c: string, i: number) => A): A[] {
   return out
 }
 
+declare const require: (file: string) => any
+const stringify = require('json-stringify-pretty-compact') as (s: any) => string
+
 /** Show a JSON object with indentation */
 export function show(x: any): string {
-  return JSON.stringify(x, undefined, 2)
+  return stringify(x)
+  // return JSON.stringify(x, undefined, 2)
 }
 
 /** Numeric sort */
@@ -385,6 +389,16 @@ export function maximum(xs: number[]) {
 /** Sum the numbers in an array */
 export function sum(xs: number[]) {
   return xs.reduce((x, y) => x + y, 0)
+}
+
+/** Minimum of a non-empty array */
+export function minimumBy<A>(inj: (a: A) => R.Ordered, [hd, ...tl]: A[]): A {
+  return R.reduce(R.minBy(inj), hd, tl)
+}
+
+/** Maximum of a non-empty array */
+export function maximumBy<A>(inj: (a: A) => R.Ordered, [hd, ...tl]: A[]): A {
+  return R.reduce(R.maxBy(inj), hd, tl)
 }
 
 /** Returns a copy of the array with duplicates removed, via toString */
@@ -761,4 +775,38 @@ export function zipWithPrevious<A, B>(
   k: (x: A, prev: A | undefined, i: number) => B
 ): B[] {
   return xs.map((x, i) => k(x, xs[i - 1], i))
+}
+
+export interface KV<K, V> {
+  has(k: K): boolean
+  get(k: K): V | undefined
+  set(k: K, v: V): void
+  forEach(f: (v: V, k: K) => void): void
+  batch(kvs: {key: K; value: V}[]): void
+  obj: Record<string, V>
+}
+
+export function KV<K, V>(s: (k: K) => string = JSON.stringify): KV<K, V> {
+  const obj = {} as Record<string, V>
+  const krev = {} as Record<string, K>
+  const api: KV<K, V> = {
+    has(k: K) {
+      return s(k) in obj
+    },
+    get(k: K): V | undefined {
+      return obj[s(k)]
+    },
+    set(k: K, v: V) {
+      obj[s(k)] = v
+      krev[s(k)] = k
+    },
+    forEach(f) {
+      Object.keys(obj).map(sk => f(obj[sk], krev[sk]))
+    },
+    batch(kvs) {
+      kvs.map(m => api.set(m.key, m.value))
+    },
+    obj,
+  }
+  return api
 }

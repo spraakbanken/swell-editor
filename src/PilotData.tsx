@@ -1,6 +1,7 @@
 import * as R from 'ramda'
 
 import {GraphState} from './Model'
+import * as D from './Diff'
 import * as G from './Graph'
 import * as RD from './RichDiff'
 import * as T from './Token'
@@ -13,7 +14,10 @@ if (typeof window == 'undefined') {
 }
 
 declare const require: (json_file: string) => any
-const pilot_data: Record<string, {graphs: Record<string, GraphState>}> = require('../pilot_data.json')
+const pilot_data: Record<
+  string,
+  {graphs: Record<string, GraphState>}
+> = require('../pilot_data.json')
 
 export type Ok<A> = {ok: false; msg: string} | ({ok: true} & A)
 
@@ -91,6 +95,17 @@ export function GraphSegments(text: string): GraphSegments {
   )
 }
 
-const stringify = require('json-stringify-pretty-compact') as (s: any) => string
+function pluck(...keys: string[]): (x: Record<string, any>) => Record<string, any> {
+  return x => Utils.record_filter(x, (_, k) => keys.some(o => k == o))
+}
+// const mats = GraphSegments('text6')[17].rich_diff
+// const plucked = mats.map(pluck('edit', 'id', 'source', 'target'))
+// console.log(stringify(plucked))
 
-// console.log(stringify(GraphSegments('text3')))
+// const pls = D.ProtoLines(mats, 'Dropped')
+// console.log(stringify(pls))
+// const lines = D.Grid(pls, mats.length)
+// console.log(stringify(lines))
+// const grid = D.Unbox(lines.boxes)
+// console.log(stringify(grid))
+// console.log(D.Asciibox(grid))
