@@ -300,7 +300,7 @@ export function flatten<A>(xss: A[][]): A[] {
 }
 
 /** Flatten an array of arrays */
-export function flatMap<A, B>(xs: A[], f: (a: A) => B[]): B[] {
+export function flatMap<A, B>(xs: A[], f: (a: A, index: number) => B[]): B[] {
   return flatten(xs.map(f))
 }
 
@@ -809,4 +809,8 @@ export function KV<K, V>(s: (k: K) => string = JSON.stringify): KV<K, V> {
     obj,
   }
   return api
+}
+
+export function expr<R>(k: () => R): R {
+  return k()
 }
