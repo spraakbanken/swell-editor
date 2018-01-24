@@ -10,10 +10,10 @@ import * as T from './Token'
 import {KV} from './Utils'
 
 export interface Dropped {
-  edit: 'Dropped',
-  target: Token,
+  edit: 'Dropped'
+  target: Token
   /** The edge id */
-  id: string,
+  id: string
 }
 
 export function Dropped(target: Token, id: string): Dropped {
@@ -21,10 +21,10 @@ export function Dropped(target: Token, id: string): Dropped {
 }
 
 export interface Dragged {
-  edit: 'Dragged',
-  source: Token,
+  edit: 'Dragged'
+  source: Token
   /** The edge id */
-  id: string,
+  id: string
 }
 
 export function Dragged(source: Token, id: string): Dragged {
@@ -32,11 +32,11 @@ export function Dragged(source: Token, id: string): Dragged {
 }
 
 export interface Edited {
-  edit: 'Edited',
-  source: Token[],
-  target: Token[],
+  edit: 'Edited'
+  source: Token[]
+  target: Token[]
   /** The edge id */
-  id: string,
+  id: string
 }
 
 export function Edited(source: Token[], target: Token[], id: string): Edited {
@@ -44,7 +44,6 @@ export function Edited(source: Token[], target: Token[], id: string): Edited {
 }
 
 export type Diff = Dropped | Dragged | Edited
-
 
 export function partition(diff: (Dropped | Dragged)[]) {
   const dropped = [] as Dropped[]
@@ -127,31 +126,38 @@ export interface Box {
 
 const ascii = KV<Dir[], string>(dirs => dirs.sort().join('-'))
 ascii.batch([
-  {key: [up], value: '╵'},
-  {key: [left], value: '╴'},
-  {key: [down], value: '╷'},
-  {key: [right], value: '╶'},
+  {value: '╵', key: [up]},
+  {value: '╴', key: [left]},
+  {value: '╷', key: [down]},
+  {value: '╶', key: [right]},
 
-  {key: [up, down], value: '│'},
-  {key: [left, right], value: '─'},
+  {value: '│', key: [up, down]},
+  {value: '─', key: [left, right]},
 
-  {key: [up, left], value: '┘'},
-  {key: [left, down], value: '┐'},
-  {key: [down, right], value: '┌'},
-  {key: [right, up], value: '└'},
+  {value: '┘', key: [up, left]},
+  {value: '┐', key: [left, down]},
+  {value: '┌', key: [down, right]},
+  {value: '└', key: [right, up]},
 
-  {key: [left, right, down], value: '┬'},
-  {key: [up, down, right], value: '├'},
-  {key: [left, right, up], value: '┴'},
-  {key: [up, down, left], value: '┤'},
+  {value: '┬', key: [left, right, down]},
+  {value: '├', key: [up, down, right]},
+  {value: '┴', key: [left, right, up]},
+  {value: '┤', key: [up, down, left]},
 
-  {key: [left, right, up, down], value: '┼'},
-  {key: [], value: ' '},
+  {value: '┼', key: [left, right, up, down]},
+  {value: ' ', key: []},
 ])
 
 export type IndexedDiff = Diff & {index: number}
 export function Index(ds: Diff[]): IndexedDiff[] {
   return ds.map((d, index) => ({...d, index}))
+}
+
+export function DiffToGrid(diff: Diff[]): {upper: Grid; lower: Grid} {
+  return {
+    upper: Grid(Line(ProtoLines(diff, 'Dragged'), diff.length).boxes),
+    lower: VFlip(Grid(Line(ProtoLines(diff, 'Dropped'), diff.length).boxes)),
+  }
 }
 
 export function ProtoLines(diff: Diff[], keep: 'Dragged' | 'Dropped'): ProtoLine[][] {

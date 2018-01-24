@@ -2,7 +2,8 @@ import * as React from 'react'
 import {Store} from 'reactive-lens'
 import {GraphState} from './Model'
 import * as G from './Graph'
-import * as R from './RichDiff'
+import * as R from 'ramda'
+import * as RD from './RichDiff'
 import * as T from './Token'
 import {style, types} from 'typestyle'
 import * as csstips from 'csstips'
@@ -38,145 +39,187 @@ export const Subscript = style({
 const BorderCell = style(
   {$debugName: 'BorderCell'},
   csstips.border('1px #777 solid'),
-  {borderRadius: '20px'},
+  {borderRadius: '2px'},
   {fontSize: '13px'},
   {background: 'white'},
   csstips.padding('4px', '4px'),
-  csstips.horizontallySpaced('5px'),
+  csstips.centerJustified,
   {
     $nest: {
       '& > span:not(:last-child)': {
         borderRight: '1px solid #777',
-        paddingRight: '1px',
+        paddingRight: '7px',
+        marginRight: '5px',
       },
     },
   }
 )
 
-const Top = style(
-  {$debugName: 'Top'},
+const Column = style(
+  {$debugName: 'Column'},
   {fontSize: '16px'},
   csstips.wrap,
   csstips.startJustified,
   csstips.horizontal,
-  // csstips.horizontallySpaced('5px'),
-  csstips.verticallySpaced('15px'),
   {
     $nest: {
       '& > *': {
         ...csstips.vertical,
-        ...csstips.verticallySpaced('5px'),
-        ...csstips.betweenJustified,
-        ...csstips.border('1px #ccc solid', '1px #e8e8e8 solid'),
-      },
-      '& > * > *:first-child': {
-        height: '22px',
-      },
-      '& > * > *:last-child': {
-        height: '22px',
+        borderTop: '1px #ccc solid',
+        borderBottom: '1px #ccc solid',
+        marginBottom: '20px',
       },
       '& > * > *': {
-        ...csstips.content,
-        margin: '0px !important',
-        padding: '0px',
-        flex: '0 1 auto',
-        flexWrap: 'nowrap',
-        height: '16px',
+        height: '20px',
+        width: '100%',
         ...csstips.selfCenter,
         ...csstips.horizontal,
-        paddingRight: '5px',
+        paddingRight: '3px',
+        paddingLeft: '3px',
+        justifyContent: 'center',
+      },
+      '& > * > *:nth-child(even)': {
+        height: '40px',
       },
     },
   }
 )
 
-export function Ladder(g: G.Graph, rd: R.RichDiff[]): VNode {
+export function MagicSVG(h: number, children: VNode[]) {
+  return (
+    <svg height="100%" width="100%" viewBox={'0 0 1 ' + h} preserveAspectRatio="none">
+      {children}
+    </svg>
+  )
+}
+
+const offsets: Record<D.Dir, {dx: number; dy: number}> = {
+  Up: {dx: 0.5, dy: 0},
+  Down: {dx: 0.5, dy: 1},
+  Left: {dx: 0, dy: 0.5},
+  Right: {dx: 1, dy: 0.5},
+}
+
+export function BoxToSVG(x: number, y: number, b: D.Box) {
+  const x1 = x + offsets[b.enter].dx
+  const y1 = y + offsets[b.enter].dy
+  const x2 = x + offsets[b.exit].dx
+  const y2 = y + offsets[b.exit].dy
+  const id = x + ',' + y + '-' + b.enter + '-' + b.exit + '-' + b.id
+  return (
+    <React.Fragment>
+      <defs>
+        <clipPath id={id}>
+          <rect x={x + 0.25} y={y + 0.25} width={0.5} height={0.5} />
+        </clipPath>
+      </defs>
+      <path
+        clipPath={`url(#${id})`}
+        vectorEffect="non-scaling-stroke"
+        d={`M ${x1} ${y1} Q ${x + 0.5} ${y + 0.5} ${x2} ${y2}`}
+        style={{
+          stroke: '#fff',
+          strokeWidth: '5',
+          fill: 'none',
+        }}
+      />
+      <path
+        vectorEffect="non-scaling-stroke"
+        d={`M ${x1} ${y1} Q ${x + 0.5} ${y + 0.5} ${x2} ${y2}`}
+        style={{
+          stroke: '#888',
+          strokeWidth: '1.5',
+          fill: 'none',
+        }}
+      />
+    </React.Fragment>
+  )
+}
+
+export function Position(base: VNode, absolute: VNode): VNode {
+  return (
+    <div style={{position: 'relative'}}>
+      {base}
+      <div
+        style={{
+          position: 'absolute',
+          top: '0',
+          left: '0',
+          width: '100%',
+          height: '100%',
+        }}>
+        {absolute}
+      </div>
+    </div>
+  )
+}
+
+export function Key(s: string | number, ...nodes: VNode[]) {
+  return (
+    <React.Fragment key={s}>
+      {nodes.map((n, i) => <React.Fragment key={i}>{n}</React.Fragment>)}
+    </React.Fragment>
+  )
+}
+
+export function LineColumn(column: D.Box[][], rel: VNode = <div />): VNode {
+  return Position(
+    rel,
+    MagicSVG(
+      column.length,
+      Utils.flatMap(column, (boxes, y) =>
+        R.sortBy(b => b.exit, boxes).map((b, i) => Key(y + ' ' + i, BoxToSVG(0, y, b)))
+      )
+    )
+  )
+}
+
+export function Ladder(g: G.Graph, rd: RD.RichDiff[]): VNode {
   const ids: Record<string, number> = {}
   let next = 0
   const id = (x: string) => (x in ids ? ids[x] : ((ids[x] = ++next), next))
   const Id = (x: string) => <span className={Subscript}>{id(x)}</span>
-  const pls = D.ProtoLines(rd, 'Dragged')
-  const grid = D.Grid(D.Line(pls, rd.length).boxes)
-  const u = D.Asciibox(grid).split('\n')
-  const pls2 = D.ProtoLines(rd, 'Dropped')
-  const grid2 = D.VFlip(D.Grid(D.Line(pls2, rd.length).boxes))
-  const l = D.Asciibox(grid2).split('\n')
+  const grids = D.DiffToGrid(rd)
+  const u = R.transpose(grids.upper)
+  const l = R.transpose(grids.lower)
   return (
-    <React.Fragment>
-      <div className={Top}>
-        {rd.map((d, i) => {
-          const upper = (
-            <React.Fragment>
-              {u.map((y, j) => (
-                <pre style={{lineHeight: '16px'}} key={j}>
-                  {'' + y[i]}
-                </pre>
-              ))}
-            </React.Fragment>
-          )
-          const lower = (
-            <React.Fragment>
-              {l.map((y, j) => (
-                <pre style={{lineHeight: '16px'}} key={j}>
-                  {'' + y[i]}
-                </pre>
-              ))}
-            </React.Fragment>
-          )
+    <div className={Column}>
+      {rd.map((d, i) => {
+        const upper_empty = d.edit == 'Edited' && d.source.length == 0
+        const lower_empty = d.edit == 'Edited' && d.target.length == 0
+        const upper = LineColumn(u[i].map(bs => bs.filter(b => b.enter != 'Up' || !upper_empty)))
+        const lower = LineColumn(l[i].map(bs => bs.filter(b => b.exit != 'Up' || !lower_empty)))
+        const [s, t] = Utils.expr((): [VNode, VNode] => {
           switch (d.edit) {
             case 'Edited':
-              const s = T.text(d.source)
-              const t = T.text(d.target)
-              const labels = g.edges[d.id].labels.join(' ')
-              if (false && s == t) {
-                return (
-                  <div key={i}>
-                    <div />
-                    <div>{s}</div>
-                    <div />
-                  </div>
-                )
-              } else {
-                return (
-                  <div key={i} style={{background: s != t ? '#ffd8c0' : null}}>
-                    <div>{T.texts(d.source)}</div>
-                    {upper}
-                    <div className={labels.length > 0 ? BorderCell : ''}>{labels}</div>
-                    {lower}
-                    <div>{T.texts(d.target)}</div>
-                  </div>
-                )
-              }
+              return [<div>{T.text(d.source)}</div>, <div>{T.text(d.target)}</div>]
             case 'Dragged':
-              return (
-                <div key={i} style={{background: '#ddfaff'}}>
-                  <div>{d.source.text}</div>
-                  {upper}
-                  <div className={BorderCell}>
-                    {g.edges[d.id].labels.join(' ')}
-                    {Id(d.id)}
-                  </div>
-                  {lower}
-                  <div />
-                </div>
-              )
+              return [<div>{d.source.text}</div>, <div />]
             case 'Dropped':
-              return (
-                <div key={i} style={{background: '#faffcf'}}>
-                  <div>{''}</div>
-                  {upper}
-                  <div className={BorderCell}>
-                    {g.edges[d.id].labels.join(' ')}
-                    {Id(d.id)}
-                  </div>
-                  {lower}
-                  <div>{d.target.text}</div>
-                </div>
-              )
+              return [<div />, <div>{d.target.text}</div>]
           }
-        })}
-      </div>
-    </React.Fragment>
+        })
+        const labels = g.edges[d.id].labels.filter(lbl => lbl.length > 0)
+        const mid = LineColumn(
+          [l[i][0]],
+          <div style={{zIndex: 1}}>
+            {labels.length > 0 &&
+              l[i][0].length > 0 && (
+                <div className={BorderCell}>{labels.map((l, i) => <span key={i}>{l}</span>)}</div>
+              )}
+          </div>
+        )
+        return (
+          <div key={i}>
+            {s}
+            {upper}
+            {mid}
+            {lower}
+            {t}
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
