@@ -47,9 +47,9 @@ const BorderCell = style(
   {
     $nest: {
       '& > span:not(:last-child)': {
-        borderRight: '1px solid #777',
-        paddingRight: '7px',
-        marginRight: '5px',
+        //borderRight: '1px solid #777',
+        paddingRight: '4px',
+        marginRight: '4px',
       },
     },
   }
@@ -116,7 +116,7 @@ export function BoxToSVG(x: number, y: number, b: D.Box) {
       <path
         clipPath={`url(#${id})`}
         vectorEffect="non-scaling-stroke"
-        d={`M ${x1} ${y1} Q ${x + 0.5} ${y + 0.5} ${x2} ${y2}`}
+        d={`M ${x1} ${y1} C ${x + 0.5} ${y + 0.5} ${x + 0.5} ${y + 0.5} ${x2} ${y2}`}
         style={{
           stroke: '#fff',
           strokeWidth: '5',
@@ -125,7 +125,7 @@ export function BoxToSVG(x: number, y: number, b: D.Box) {
       />
       <path
         vectorEffect="non-scaling-stroke"
-        d={`M ${x1} ${y1} Q ${x + 0.5} ${y + 0.5} ${x2} ${y2}`}
+        d={`M ${x1} ${y1} C ${x + 0.5} ${y + 0.5} ${x + 0.5} ${y + 0.5} ${x2} ${y2}`}
         style={{
           stroke: '#888',
           strokeWidth: '1.5',
@@ -174,6 +174,38 @@ export function LineColumn(column: D.Box[][], rel: VNode = <div />): VNode {
   )
 }
 
+const diff_to_spans = (rules: (string | null)[]) => (d: [number, string][]) =>
+  Key('diff', ...diff_helper(d, rules, (text, cls) => <span className={cls}>{text}</span>))
+
+const Insert = style({
+  color: '#070',
+  // textDecoration: 'underline',
+})
+
+const Delete = style({
+  color: '#d00',
+  // textDecoration: 'line-through',
+})
+
+const inserts = diff_to_spans([null, '', Insert])
+
+const deletes = diff_to_spans([Delete, '', null])
+
+function diff_helper<A>(
+  token_diff: [number, string][],
+  rules: (string | null)[],
+  cb: (text: string, className: string) => A
+): A[] {
+  const out = [] as A[]
+  token_diff.map(([type, text]) => {
+    const cls = rules[type + 1]
+    if (cls != null) {
+      out.push(cb(text, cls))
+    }
+  })
+  return out
+}
+
 export function Ladder(g: G.Graph, rd: RD.RichDiff[]): VNode {
   const ids: Record<string, number> = {}
   let next = 0
@@ -192,11 +224,18 @@ export function Ladder(g: G.Graph, rd: RD.RichDiff[]): VNode {
         const [s, t] = Utils.expr((): [VNode, VNode] => {
           switch (d.edit) {
             case 'Edited':
-              return [<div>{T.text(d.source)}</div>, <div>{T.text(d.target)}</div>]
+              return [
+                <div>
+                  <div>{Key(i, ...d.source_diffs.map(deletes))}</div>
+                </div>,
+                <div>
+                  <div>{Key(i, ...d.target_diffs.map(inserts))}</div>
+                </div>,
+              ]
             case 'Dragged':
-              return [<div>{d.source.text}</div>, <div />]
+              return [<div>{deletes(d.source_diff)}</div>, <div />]
             case 'Dropped':
-              return [<div />, <div>{d.target.text}</div>]
+              return [<div />, <div>{inserts(d.target_diff)}</div>]
           }
         })
         const labels = g.edges[d.id].labels.filter(lbl => lbl.length > 0)
