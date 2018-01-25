@@ -129,7 +129,16 @@ export function ProtoLines(diff: Diff[], keep: 'Dragged' | 'Dropped'): ProtoLine
           morally_dragged
         ).index
         const lines = ds
-          .filter(d => d.edit == 'Edited' || d.edit == keep)
+          .filter(d => {
+            if (d.edit == 'Edited') {
+              return (
+                (keep == 'Dragged' && d.source.length > 0) ||
+                (keep == 'Dropped' && d.target.length > 0)
+              )
+            } else {
+              return d.edit == keep
+            }
+          })
           .map(d => ({from: d.index, to: center_of_mass}))
         return {id, center_of_mass, lines}
       }
@@ -150,7 +159,9 @@ export function Grid(proto_lines: ProtoLines, width: number): Grid {
   const out_lines: Line[][] = heights.map(_ => [] as Line[])
   const postponed: ((final_height: number) => void)[] = []
   proto_lines.forEach(({id, lines}) => {
-    console.log(lines)
+    if (lines.length == 0) {
+      return
+    }
     const poses = Utils.flatMap(lines, pl => [pl.from, pl.to])
     const lo = Utils.minimum(poses)
     const hi = Utils.maximum(poses)

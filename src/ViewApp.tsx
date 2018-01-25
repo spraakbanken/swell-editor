@@ -81,9 +81,12 @@ const LadderStyle = style(
         paddingLeft: '3px',
         justifyContent: 'center',
       },
-
+      '& > ul > li:nth-child(3)': {
+        height: '24px'
+      },
       '& > ul > li:nth-child(even)': {
-        height: '40px',
+        fontSize: '0px',
+        height: '24px',
       },
       '& ins': {
         color: '#070',
@@ -97,7 +100,7 @@ const LadderStyle = style(
   }
 )
 
-export function Key(s: string | number, ...nodes: VNode[]) {
+export function Key(nodes: VNode[], s: string | number = '') {
   return (
     <React.Fragment key={s}>
       {nodes.map((n, i) => <React.Fragment key={i}>{n}</React.Fragment>)}
@@ -105,7 +108,24 @@ export function Key(s: string | number, ...nodes: VNode[]) {
   )
 }
 
-export function Column(column: D.Line[], rel: VNode | null = null): VNode {
+export function Line({x0, y0, x1, y1, id}: D.Line, css: React.CSSProperties) {
+  const ff = x1 != 0.5
+  const yi = ff ? y1 : y0
+  const xi = ff ? x0 : x1
+  const d = `M ${x0} ${y0} C ${xi} ${yi} ${xi} ${yi} ${x1} ${y1}`
+  return <path vectorEffect="non-scaling-stroke" d={d} style={{...css, fill: 'none'}} />
+}
+
+export function LineIsHorizontal({y0, y1}: D.Line) {
+  return y0 == y1
+}
+
+export function Column(column: D.Line[], rel: VNode | null | false = null): VNode {
+  const endpoint_id: string | undefined = column
+    .filter(line => !LineIsHorizontal(line))
+    .map(line => line.id)[0]
+  const grey: React.CSSProperties = {stroke: '#777', strokeWidth: 2}
+  const white: React.CSSProperties = {stroke: '#fff', strokeWidth: 6}
   return (
     <li style={{position: 'relative'}}>
       {rel}
@@ -114,40 +134,28 @@ export function Column(column: D.Line[], rel: VNode | null = null): VNode {
           position: 'absolute',
           top: '0',
           left: '0',
-          width: '100%',
-          height: '100%',
+          // table rounds the sizes in webkit
+          display: 'table',
+          // we try to make the sizes just about 50%
+          fontSize: '0px',
+          width: 'calc(50% + 1px)',
+          height: 'calc(50% + 1px)',
         }}>
+        <div style={{
+          // and scale this div 200% of this to make it an even number of pixels
+          width: '200%',
+          height: '200%',
+          position: 'absolute'
+          }}>
         <svg height="100%" width="100%" viewBox="0 0 1 1" preserveAspectRatio="none">
-          {R.sortBy(line => Math.abs(line.y0 - line.y1), column).map(({x0, y0, x1, y1, id}, i) => {
-            const ff = x1 != 0.5
-            const yi = ff ? y1 : y0
-            const xi = ff ? x0 : x1
-            const d = `M ${x0} ${y0} C ${xi} ${yi} ${xi} ${yi} ${x1} ${y1}`
-            return (
-              <React.Fragment key={id + '-' + i}>
-                <path
-                  vectorEffect="non-scaling-stroke"
-                  d={d}
-                  style={{
-                    stroke: '#fff',
-                    strokeWidth: '5',
-                    fill: 'none',
-                  }}
-                />
-                <path
-                  vectorEffect="non-scaling-stroke"
-                  d={d}
-                  style={{
-                    stroke: '#777',
-                    strokeWidth: '2',
-                    fill: 'none',
-                  }}
-                />
-              </React.Fragment>
-            )
-          })}
+          {Key([
+            ...column.filter(line => line.id != endpoint_id).map(line => Line(line, grey)),
+            ...column.filter(line => line.id == endpoint_id).map(line => Line(line, white)),
+            ...column.filter(line => line.id == endpoint_id).map(line => Line(line, grey)),
+          ])}
         </svg>
-      </div>
+        </div>
+        </div>
     </li>
   )
 }
@@ -155,7 +163,7 @@ export function Column(column: D.Line[], rel: VNode | null = null): VNode {
 type Triplet<A> = [A, A, A]
 
 const diff_to_spans = (rules: Triplet<(s: string) => VNode | null>) => (d: [number, string][]) =>
-  Key('diff', ...diff_helper(d, rules))
+  Key(diff_helper(d, rules))
 
 const inserts = diff_to_spans([() => null, text => <span>{text}</span>, text => <ins>{text}</ins>])
 
@@ -186,8 +194,8 @@ export function Ladder(g: G.Graph, rd: RD.RichDiff[]): VNode {
           switch (d.edit) {
             case 'Edited':
               return [
-                <div>{Key(i, ...d.source_diffs.map(deletes))}</div>,
-                <div>{Key(i, ...d.target_diffs.map(inserts))}</div>,
+                <div>{Key(d.source_diffs.map(deletes))}</div>,
+                <div>{Key(d.target_diffs.map(inserts))}</div>,
               ]
             case 'Dragged':
               return [deletes(d.source_diff), <React.Fragment />]
@@ -195,23 +203,25 @@ export function Ladder(g: G.Graph, rd: RD.RichDiff[]): VNode {
               return [<React.Fragment />, inserts(d.target_diff)]
           }
         })
-        const upper_empty = d.edit == 'Edited' && d.source.length == 0
-        const lower_empty = d.edit == 'Edited' && d.target.length == 0
-        const upper = Column(u[i].filter(b => (b.y0 != 0 && b.y0 != 1) || !upper_empty))
-        const lower = Column(l[i].filter(b => (b.y0 != 0 && b.y0 != 1) || !lower_empty))
+        const upper = Column(u[i])
+        const lower = Column(l[i])
         const labels = g.edges[d.id].labels.filter(lbl => lbl.length > 0)
+        const show_label_now = u[i].some(b => b.y1 == 1) || l[i].some(b => b.y1 == 0)
+        const has_line_below_label = show_label_now && l[i].length > 0
+        const line_below_label = has_line_below_label ? [{x0: 0.5, y0: 0, x1: 0.5, y1: 1, id: d.id}] : []
         const mid = Column(
-          u[i].some(b => b.y1 == 1) ? [{x0: 0.5, y0: 0, x1: 0.5, y1: 1, id: d.id}] : [],
-          <div style={{zIndex: 1}}>
-            {labels.length > 0 &&
-              u[i].some(b => b.y1 == 1) && (
-                <div className={BorderCell}>{labels.map((l, i) => <span key={i}>{l}</span>)}</div>
-              )}
-          </div>
+          line_below_label,
+          labels.length > 0 && show_label_now && (
+            <div style={{zIndex: 1}}>
+              <div className={BorderCell}>{labels.map((l, i) => <span key={i}>{l}</span>)}</div>
+            </div>
+          )
         )
         return (
           <ul key={i}>
-            <li>{s}</li>
+            <li>
+              {s}
+            </li>
             {upper}
             {mid}
             {lower}
@@ -290,7 +300,6 @@ export function View(store: Store<State>): VNode {
               }}>
               <li style={{flex: 1}}>
                 {Utils.capitalize_head(m.annotator)}
-                <sub>{i}</sub>
               </li>
               <li style={{flex: 6}}>{Ladder(m.graph, m.rich_diff)}</li>
             </ul>
