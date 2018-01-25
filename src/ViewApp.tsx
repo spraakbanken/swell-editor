@@ -27,13 +27,16 @@ export const init: State = {
   scroll: null,
 }
 
-export const json = (s: any) => JSON.stringify(s, undefined, 2)
-
-export const Subscript = style({
-  position: 'relative',
-  bottom: '-0.5em',
-  fontSize: '85%',
-  paddingLeft: '1px',
+const clean_ul = style({
+  $debugName: 'clean_ul',
+  $nest: {
+    '& ul, & ol': {
+      padding: '0px',
+    },
+    '& li': {
+      listStyle: 'none',
+    },
+  },
 })
 
 const BorderCell = style(
@@ -55,21 +58,21 @@ const BorderCell = style(
   }
 )
 
-const Column = style(
-  {$debugName: 'Column'},
+const LadderStyle = style(
+  {$debugName: 'LadderStyle'},
   {fontSize: '16px'},
   csstips.wrap,
   csstips.startJustified,
   csstips.horizontal,
   {
     $nest: {
-      '& > *': {
+      '& > ul': {
         ...csstips.vertical,
         borderTop: '1px #ccc solid',
         borderBottom: '1px #ccc solid',
         marginBottom: '20px',
       },
-      '& > * > *': {
+      '& > ul > li': {
         height: '20px',
         width: '100%',
         ...csstips.selfCenter,
@@ -78,20 +81,21 @@ const Column = style(
         paddingLeft: '3px',
         justifyContent: 'center',
       },
-      '& > * > *:nth-child(even)': {
+
+      '& > ul > li:nth-child(even)': {
         height: '40px',
+      },
+      '& ins': {
+        color: '#070',
+        textDecoration: 'none',
+      },
+      '& del ': {
+        color: '#d00',
+        textDecoration: 'none',
       },
     },
   }
 )
-
-export function MagicSVG(h: number, children: VNode[]) {
-  return (
-    <svg height="100%" width="100%" viewBox={'0 0 1 ' + h} preserveAspectRatio="none">
-      {children}
-    </svg>
-  )
-}
 
 const offsets: Record<D.Dir, {dx: number; dy: number}> = {
   Up: {dx: 0.5, dy: 0},
@@ -136,24 +140,6 @@ export function BoxToSVG(x: number, y: number, b: D.Box) {
   )
 }
 
-export function Position(base: VNode, absolute: VNode): VNode {
-  return (
-    <div style={{position: 'relative'}}>
-      {base}
-      <div
-        style={{
-          position: 'absolute',
-          top: '0',
-          left: '0',
-          width: '100%',
-          height: '100%',
-        }}>
-        {absolute}
-      </div>
-    </div>
-  )
-}
-
 export function Key(s: string | number, ...nodes: VNode[]) {
   return (
     <React.Fragment key={s}>
@@ -162,84 +148,81 @@ export function Key(s: string | number, ...nodes: VNode[]) {
   )
 }
 
-export function LineColumn(column: D.Box[][], rel: VNode = <div />): VNode {
-  return Position(
-    rel,
-    MagicSVG(
-      column.length,
-      Utils.flatMap(column, (boxes, y) =>
-        R.sortBy(b => b.exit, boxes).map((b, i) => Key(y + ' ' + i, BoxToSVG(0, y, b)))
-      )
-    )
+export function Column(column: D.Box[][], rel: VNode | null = null): VNode {
+  return (
+    <li style={{position: 'relative'}}>
+      {rel}
+      <div
+        style={{
+          position: 'absolute',
+          top: '0',
+          left: '0',
+          width: '100%',
+          height: '100%',
+        }}>
+        <svg
+          height="100%"
+          width="100%"
+          viewBox={'0 0 1 ' + column.length}
+          preserveAspectRatio="none">
+          {Utils.flatMap(column, (boxes, y) =>
+            R.sortBy(b => b.exit, boxes).map((b, i) => Key(y + ' ' + i, BoxToSVG(0, y, b)))
+          )}
+        </svg>
+      </div>
+    </li>
   )
 }
 
-const diff_to_spans = (rules: (string | null)[]) => (d: [number, string][]) =>
-  Key('diff', ...diff_helper(d, rules, (text, cls) => <span className={cls}>{text}</span>))
+type Triplet<A> = [A, A, A]
 
-const Insert = style({
-  color: '#070',
-  // textDecoration: 'underline',
-})
+const diff_to_spans = (rules: Triplet<(s: string) => VNode | null>) => (d: [number, string][]) =>
+  Key('diff', ...diff_helper(d, rules))
 
-const Delete = style({
-  color: '#d00',
-  // textDecoration: 'line-through',
-})
+const inserts = diff_to_spans([() => null, text => <span>{text}</span>, text => <ins>{text}</ins>])
 
-const inserts = diff_to_spans([null, '', Insert])
+const deletes = diff_to_spans([text => <del>{text}</del>, text => <span>{text}</span>, () => null])
 
-const deletes = diff_to_spans([Delete, '', null])
-
-function diff_helper<A>(
+function diff_helper(
   token_diff: [number, string][],
-  rules: (string | null)[],
-  cb: (text: string, className: string) => A
-): A[] {
-  const out = [] as A[]
+  rules: Triplet<(text: string) => VNode | null>
+): VNode[] {
+  const out = [] as VNode[]
   token_diff.map(([type, text]) => {
-    const cls = rules[type + 1]
-    if (cls != null) {
-      out.push(cb(text, cls))
+    const node = rules[type + 1](text)
+    if (node != null) {
+      out.push(node)
     }
   })
   return out
 }
 
 export function Ladder(g: G.Graph, rd: RD.RichDiff[]): VNode {
-  const ids: Record<string, number> = {}
-  let next = 0
-  const id = (x: string) => (x in ids ? ids[x] : ((ids[x] = ++next), next))
-  const Id = (x: string) => <span className={Subscript}>{id(x)}</span>
   const grids = D.DiffToGrid(rd)
   const u = R.transpose(grids.upper)
   const l = R.transpose(grids.lower)
   return (
-    <div className={Column}>
+    <div className={`${LadderStyle} ${clean_ul}`}>
       {rd.map((d, i) => {
-        const upper_empty = d.edit == 'Edited' && d.source.length == 0
-        const lower_empty = d.edit == 'Edited' && d.target.length == 0
-        const upper = LineColumn(u[i].map(bs => bs.filter(b => b.enter != 'Up' || !upper_empty)))
-        const lower = LineColumn(l[i].map(bs => bs.filter(b => b.exit != 'Up' || !lower_empty)))
         const [s, t] = Utils.expr((): [VNode, VNode] => {
           switch (d.edit) {
             case 'Edited':
               return [
-                <div>
-                  <div>{Key(i, ...d.source_diffs.map(deletes))}</div>
-                </div>,
-                <div>
-                  <div>{Key(i, ...d.target_diffs.map(inserts))}</div>
-                </div>,
+                <div>{Key(i, ...d.source_diffs.map(deletes))}</div>,
+                <div>{Key(i, ...d.target_diffs.map(inserts))}</div>,
               ]
             case 'Dragged':
-              return [<div>{deletes(d.source_diff)}</div>, <div />]
+              return [deletes(d.source_diff), <React.Fragment />]
             case 'Dropped':
-              return [<div />, <div>{inserts(d.target_diff)}</div>]
+              return [<React.Fragment />, inserts(d.target_diff)]
           }
         })
+        const upper_empty = d.edit == 'Edited' && d.source.length == 0
+        const lower_empty = d.edit == 'Edited' && d.target.length == 0
+        const upper = Column(u[i].map(bs => bs.filter(b => b.enter != 'Up' || !upper_empty)))
+        const lower = Column(l[i].map(bs => bs.filter(b => b.exit != 'Up' || !lower_empty)))
         const labels = g.edges[d.id].labels.filter(lbl => lbl.length > 0)
-        const mid = LineColumn(
+        const mid = Column(
           [l[i][0]],
           <div style={{zIndex: 1}}>
             {labels.length > 0 &&
@@ -249,13 +232,13 @@ export function Ladder(g: G.Graph, rd: RD.RichDiff[]): VNode {
           </div>
         )
         return (
-          <div key={i}>
-            {s}
+          <ul key={i}>
+            <li>{s}</li>
             {upper}
             {mid}
             {lower}
-            {t}
-          </div>
+            <li>{t}</li>
+          </ul>
         )
       })}
     </div>
@@ -285,7 +268,7 @@ export function App(store: Store<State>): () => VNode {
 export function View(store: Store<State>): VNode {
   const state = store.get()
   return (
-    <div style={{maxWidth: '850px', margin: 'auto', padding: '0 10px'}}>
+    <div className={clean_ul} style={{maxWidth: '850px', margin: 'auto', padding: '0 10px'}}>
       <div style={{margin: '20px 0'}}>
         {Object.keys(Pilot.ByText)
           .sort()
@@ -315,22 +298,24 @@ export function View(store: Store<State>): VNode {
                   m.subspan.source.begin == state.scroll.begin &&
                   (d.scrollIntoView(), store.update({scroll: null}))
                 }>
-                <span>
-                  {m.text}:{m.subspan.source.begin}-{m.subspan.source.end}
+                <span style={{fontSize: '0.85em'}}>
+                  {m.text}
+                  {', '}
+                  {m.subspan.source.begin}-{m.subspan.source.end}
                 </span>
               </div>
             )}
-            <div
+            <ul
               style={{
                 display: 'flex',
                 marginBottom: '30px',
               }}>
-              <div style={{flex: 1}}>
+              <li style={{flex: 1}}>
                 {Utils.capitalize_head(m.annotator)}
-                <span className={Subscript}>{i}</span>
-              </div>
-              <div style={{flex: 6}}>{Ladder(m.graph, m.rich_diff)}</div>
-            </div>
+                <sub>{i}</sub>
+              </li>
+              <li style={{flex: 6}}>{Ladder(m.graph, m.rich_diff)}</li>
+            </ul>
           </React.Fragment>
         )
       })}
