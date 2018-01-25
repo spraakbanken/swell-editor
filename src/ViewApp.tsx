@@ -97,49 +97,6 @@ const LadderStyle = style(
   }
 )
 
-const offsets: Record<D.Dir, {dx: number; dy: number}> = {
-  Up: {dx: 0.5, dy: 0},
-  Down: {dx: 0.5, dy: 1},
-  Left: {dx: 0, dy: 0.5},
-  Right: {dx: 1, dy: 0.5},
-}
-
-export function BoxToSVG(x: number, y: number, b: D.Box) {
-  const x1 = x + offsets[b.enter].dx
-  const y1 = y + offsets[b.enter].dy
-  const x2 = x + offsets[b.exit].dx
-  const y2 = y + offsets[b.exit].dy
-  const id = x + ',' + y + '-' + b.enter + '-' + b.exit + '-' + b.id
-  return (
-    <React.Fragment>
-      <defs>
-        <clipPath id={id}>
-          <rect x={x + 0.25} y={y + 0.25} width={0.5} height={0.5} />
-        </clipPath>
-      </defs>
-      <path
-        clipPath={`url(#${id})`}
-        vectorEffect="non-scaling-stroke"
-        d={`M ${x1} ${y1} C ${x + 0.5} ${y + 0.5} ${x + 0.5} ${y + 0.5} ${x2} ${y2}`}
-        style={{
-          stroke: '#fff',
-          strokeWidth: '5',
-          fill: 'none',
-        }}
-      />
-      <path
-        vectorEffect="non-scaling-stroke"
-        d={`M ${x1} ${y1} C ${x + 0.5} ${y + 0.5} ${x + 0.5} ${y + 0.5} ${x2} ${y2}`}
-        style={{
-          stroke: '#888',
-          strokeWidth: '1.5',
-          fill: 'none',
-        }}
-      />
-    </React.Fragment>
-  )
-}
-
 export function Key(s: string | number, ...nodes: VNode[]) {
   return (
     <React.Fragment key={s}>
@@ -148,7 +105,7 @@ export function Key(s: string | number, ...nodes: VNode[]) {
   )
 }
 
-export function Column(column: D.Box[][], rel: VNode | null = null): VNode {
+export function Column(column: D.Line[], rel: VNode | null = null): VNode {
   return (
     <li style={{position: 'relative'}}>
       {rel}
@@ -160,14 +117,35 @@ export function Column(column: D.Box[][], rel: VNode | null = null): VNode {
           width: '100%',
           height: '100%',
         }}>
-        <svg
-          height="100%"
-          width="100%"
-          viewBox={'0 0 1 ' + column.length}
-          preserveAspectRatio="none">
-          {Utils.flatMap(column, (boxes, y) =>
-            R.sortBy(b => b.exit, boxes).map((b, i) => Key(y + ' ' + i, BoxToSVG(0, y, b)))
-          )}
+        <svg height="100%" width="100%" viewBox="0 0 1 1" preserveAspectRatio="none">
+          {R.sortBy(line => Math.abs(line.y0 - line.y1), column).map(({x0, y0, x1, y1, id}, i) => {
+            const ff = x1 != 0.5
+            const yi = ff ? y1 : y0
+            const xi = ff ? x0 : x1
+            const d = `M ${x0} ${y0} C ${xi} ${yi} ${xi} ${yi} ${x1} ${y1}`
+            return (
+              <React.Fragment key={id + '-' + i}>
+                <path
+                  vectorEffect="non-scaling-stroke"
+                  d={d}
+                  style={{
+                    stroke: '#fff',
+                    strokeWidth: '5',
+                    fill: 'none',
+                  }}
+                />
+                <path
+                  vectorEffect="non-scaling-stroke"
+                  d={d}
+                  style={{
+                    stroke: '#777',
+                    strokeWidth: '2',
+                    fill: 'none',
+                  }}
+                />
+              </React.Fragment>
+            )
+          })}
         </svg>
       </div>
     </li>
@@ -199,8 +177,8 @@ function diff_helper(
 
 export function Ladder(g: G.Graph, rd: RD.RichDiff[]): VNode {
   const grids = D.DiffToGrid(rd)
-  const u = R.transpose(grids.upper)
-  const l = R.transpose(grids.lower)
+  const u = grids.upper
+  const l = grids.lower
   return (
     <div className={`${LadderStyle} ${clean_ul}`}>
       {rd.map((d, i) => {
@@ -219,14 +197,14 @@ export function Ladder(g: G.Graph, rd: RD.RichDiff[]): VNode {
         })
         const upper_empty = d.edit == 'Edited' && d.source.length == 0
         const lower_empty = d.edit == 'Edited' && d.target.length == 0
-        const upper = Column(u[i].map(bs => bs.filter(b => b.enter != 'Up' || !upper_empty)))
-        const lower = Column(l[i].map(bs => bs.filter(b => b.exit != 'Up' || !lower_empty)))
+        const upper = Column(u[i].filter(b => (b.y0 != 0 && b.y0 != 1) || !upper_empty))
+        const lower = Column(l[i].filter(b => (b.y0 != 0 && b.y0 != 1) || !lower_empty))
         const labels = g.edges[d.id].labels.filter(lbl => lbl.length > 0)
         const mid = Column(
-          [l[i][0]],
+          u[i].some(b => b.y1 == 1) ? [{x0: 0.5, y0: 0, x1: 0.5, y1: 1, id: d.id}] : [],
           <div style={{zIndex: 1}}>
             {labels.length > 0 &&
-              l[i][0].length > 0 && (
+              u[i].some(b => b.y1 == 1) && (
                 <div className={BorderCell}>{labels.map((l, i) => <span key={i}>{l}</span>)}</div>
               )}
           </div>

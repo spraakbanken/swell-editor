@@ -100,12 +100,8 @@ function pluck(...keys: string[]): (x: Record<string, any>) => Record<string, an
 }
 // const mats = GraphSegments('text6')[17].rich_diff
 // const plucked = mats.map(pluck('edit', 'id', 'source', 'target'))
-// console.log(stringify(plucked))
-
+// console.log(Utils.show(plucked))
 // const pls = D.ProtoLines(mats, 'Dropped')
-// console.log(stringify(pls))
+// console.log(Utils.show(pls))
 // const lines = D.Grid(pls, mats.length)
-// console.log(stringify(lines))
-// const grid = D.Unbox(lines.boxes)
-// console.log(stringify(grid))
-// console.log(D.Asciibox(grid))
+// console.log(Utils.show(lines))

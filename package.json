@@ -39,7 +39,7 @@
     "test": "tsc && ava dist/test/*js",
     "doctest": "./doctests.sh && tsc",
     "coverage": "tsc && nyc ava dist/test/*js",
-    "prettier": "prettier --list-different --write \"{src,test}/**/*.{css,ts{,x}}\""
+    "prettier": "prettier --list-different --write $(git ls-files -m)"
   },
   "prettier": {
     "printWidth": 100,
