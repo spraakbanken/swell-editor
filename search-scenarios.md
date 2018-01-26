@@ -23,8 +23,8 @@ Relevant forskning eller bakgrund i exempelvis artiklar eller avhandlingar
 får du naturligtvis referera till.
 
 Jag har inte kunnat skriva någon förklaring eller anledning för varför just dessa
-är särskilt intressanta att undersöka (eftersom jag har hittat på dem), men
-kommentar som dessa till era ungefär på den här formen skulle vara hjälpsamt:
+är särskilt intressanta att undersöka (eftersom jag har hittat på dem), men en
+kommentar ungefär på den här formen skulle vara hjälpsamt:
 
 > Anledningen till detta exempel är forskningen X som hävdar fenomenet Y (se publikation Z).
 
@@ -62,7 +62,7 @@ Jag vill kunna få resultat som dessa om de förekommer i korpusen, med fokus p�
 #### Exempel 4: Undersöka ett visst fenomen longitudinellt
 
 Givet att det finns longitudinell data i korpusen så vill jag kunna följa
-ett fenomen över tid, tex hur procentuellt hur många determinerare
+ett fenomen över tid, tex procentuellt hur många determinerare
 som har formfel.
 
 Resultatet vill jag se i tabellform:
