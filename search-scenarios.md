@@ -11,7 +11,7 @@ Sökfrågeexempel eftersöks från alla slags slutanvändare
 (såsom forskare, lärare, inlärare och studenter).
 
 För att illustrera vad som sökes ges här några exempel på exempel på
-sökfrågor.  Det är skriva från ett förstapersonsperspektiv för att vara
+sökfrågor.  Det är skrivna i ett förstapersonsperspektiv för att vara
 lätttillgängliga och begripliga. Notera att de inte nödvändigtvis
 återspeglar några egentliga behov! Det är bara något jag skrivit ihop för att
 förklara vad jag är ute efter. Men om det inte passar hur ni vill använda
@@ -47,7 +47,7 @@ Jag vill se hur många förekomster det finns av ett visst fenomen, tex när _o_
 Jag vill kunna se resultatet i en tabellform, tex såhär:
 
 | L1 | Meningar totalt i korpusen med detta L1 | Antal meningar med detta L1 och fenomenet förekommer | Procent |
-| --- | --- | --- | --- | 
+| --- | --- | --- | --- |
 | Franska | 1000 | 10 | 1% |
 | Spanska | 2000 | 50 | 2.5% |
 
