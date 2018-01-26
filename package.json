@@ -35,10 +35,10 @@
   "scripts": {
     "start": "parcel index.html",
     "build": "parcel build index.html",
-    "test:watch": "tsc --watch & ava --watch dist/src/*doctest* dist/test/*",
-    "test": "tsc && ava dist/test/*js",
+    "test:watch": "tsc --watch & ava --watch dist/test",
+    "test": "tsc && ava dist/test",
     "doctest": "./doctests.sh && tsc",
-    "coverage": "tsc && nyc ava dist/test/*js",
+    "coverage": "tsc && nyc ava dist/test",
     "prettier": "prettier --list-different --write src/*ts* test/*ts*"
   },
   "prettier": {
