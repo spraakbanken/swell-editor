@@ -1,16 +1,16 @@
-import { Diff, Edited, Dragged, Dropped } from './Diff'
+import {Diff, Edited, Dragged, Dropped} from './Diff'
 import * as D from './Diff'
-import { Graph } from "./Graph"
-import * as G from "./Graph"
-import { Token, Span } from './Token'
+import {Graph} from './Graph'
+import * as G from './Graph'
+import {Token, Span} from './Token'
 import * as T from './Token'
-import { TokenDiff } from "./Utils"
-import * as Utils from "./Utils"
+import {TokenDiff} from './Utils'
+import * as Utils from './Utils'
 
-export type RichDiff
-  = Edited & { target_diffs: TokenDiff[], source_diffs: TokenDiff[] }
-  | Dragged & { source_diff: TokenDiff }
-  | Dropped & { target_diff: TokenDiff }
+export type RichDiff =
+  | Edited & {target_diffs: TokenDiff[]; source_diffs: TokenDiff[]}
+  | Dragged & {source_diff: TokenDiff}
+  | Dropped & {target_diff: TokenDiff}
 
 /** Enrichen a diff with detailed intra-token diffs
 
@@ -31,7 +31,9 @@ export function enrichen(g: Graph, diff: Diff[] = G.calculate_diff(g)): RichDiff
         return {
           ...d,
           source_diffs: Utils.multi_token_diff(T.texts(d.source), T.text(d.target)),
-          target_diffs: Utils.multi_token_diff(T.texts(d.target), T.text(d.source)).map(Utils.invert_token_diff)
+          target_diffs: Utils.multi_token_diff(T.texts(d.target), T.text(d.source)).map(
+            Utils.invert_token_diff
+          ),
         }
 
       case 'Dragged': {
@@ -46,7 +48,9 @@ export function enrichen(g: Graph, diff: Diff[] = G.calculate_diff(g)): RichDiff
 
       case 'Dropped': {
         const {source, target} = partition(g.edges[d.id])
-        const target_diff = Utils.multi_token_diff(T.texts(target), T.text(source)).map(Utils.invert_token_diff)
+        const target_diff = Utils.multi_token_diff(T.texts(target), T.text(source)).map(
+          Utils.invert_token_diff
+        )
         const i = target.findIndex(t => t.id == d.target.id)
         return {
           ...d,

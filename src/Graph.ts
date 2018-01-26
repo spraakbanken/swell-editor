@@ -10,31 +10,31 @@ Missing functions:
 */
 import * as R from 'ramda'
 import * as Utils from './Utils'
-import { Diff, Dragged, Dropped } from './Diff'
+import {Diff, Dragged, Dropped} from './Diff'
 import * as D from './Diff'
-import { Token, Span } from './Token'
+import {Token, Span} from './Token'
 import * as T from './Token'
-import { Lens, Store } from 'reactive-lens'
+import {Lens, Store} from 'reactive-lens'
 
 export interface Graph {
-  readonly source: Token[],
-  readonly target: Token[],
+  readonly source: Token[]
+  readonly target: Token[]
   readonly edges: Record<string, Edge>
 }
 
 export interface Edge {
-  readonly id: string,
-  readonly ids: string[],
+  readonly id: string
+  readonly ids: string[]
   readonly labels: string[]
 }
 
 export function Edge(ids: string[], labels: string[]): Edge {
-  return { id: 'e-' + ids.join('-'), ids, labels }
+  return {id: 'e-' + ids.join('-'), ids, labels}
 }
 
 export function edge_record(es: Edge[]): Record<string, Edge> {
   const out = {} as Record<string, Edge>
-  es.forEach(e => out[e.id] = e)
+  es.forEach(e => (out[e.id] = e))
   return out
 }
 
@@ -45,20 +45,21 @@ export function edge_record(es: Edge[]): Record<string, Edge> {
 It's ok for edges to be connected with only tokens from one side.
 
 */
-export function check_invariant(g: Graph): 'ok' | {violation: string, g: Graph} {
+export function check_invariant(g: Graph): 'ok' | {violation: string; g: Graph} {
   try {
     const tokens = g.source.concat(g.target)
     {
       const unique_id = Utils.unique_check<string>()
       tokens.forEach(t => unique_id(t.id) || Utils.raise('Duplicate id: ' + t))
     }
-    const check_tokens = (toks: string[]) => toks.forEach((t, i) => {
-      if (i != toks.length - 1) {
-        t.match(/^\s*\S+\s+$/) || Utils.raise('Bad text token: ' + JSON.stringify(t))
-      } else {
-        t.match(/^\s*\S+\s*$/) || Utils.raise('Bad last token: ' + JSON.stringify(t))
-      }
-    })
+    const check_tokens = (toks: string[]) =>
+      toks.forEach((t, i) => {
+        if (i != toks.length - 1) {
+          t.match(/^\s*\S+\s+$/) || Utils.raise('Bad text token: ' + JSON.stringify(t))
+        } else {
+          t.match(/^\s*\S+\s*$/) || Utils.raise('Bad last token: ' + JSON.stringify(t))
+        }
+      })
     check_tokens(target_texts(g))
     check_tokens(source_texts(g))
     const ids = new Set(tokens.map(t => t.id))
@@ -68,14 +69,16 @@ export function check_invariant(g: Graph): 'ok' | {violation: string, g: Graph} 
         e.ids.forEach(id => {
           unique_id(id) || Utils.raise('Duplicate id in edge id list: ' + id)
           ids.has(id) || Utils.raise('Edge talks about unknown id: ' + id)
-        }))
-      Utils.record_forEach(g.edges, e =>
-        unique_id(e.id) || Utils.raise('Duplicate edge id: ' + e.id)
+        })
+      )
+      Utils.record_forEach(
+        g.edges,
+        e => unique_id(e.id) || Utils.raise('Duplicate edge id: ' + e.id)
       )
     }
-    Utils.record_forEach(g.edges, e =>
-      e.ids.length > 0 ||
-      Utils.raise('Edge without any associated identifiers')
+    Utils.record_forEach(
+      g.edges,
+      e => e.ids.length > 0 || Utils.raise('Edge without any associated identifiers')
     )
   } catch (e) {
     console.error(e)
@@ -117,8 +120,9 @@ export function init_from(tokens: string[]): Graph {
 
 */
 export function edge_map(g: Graph): Map<string, Edge> {
-  return new Map(Utils.flatten(Utils.record_traverse(g.edges,
-    e => e.ids.map(id => [id, e] as [string, Edge]))))
+  return new Map(
+    Utils.flatten(Utils.record_traverse(g.edges, e => e.ids.map(id => [id, e] as [string, Edge])))
+  )
 }
 
 /**
@@ -130,7 +134,7 @@ export function edge_map(g: Graph): Map<string, Edge> {
   partition_ids(g)(e) // => {source, target}
 
 */
-export function partition_ids(g: Graph): (edge: Edge) => {source: Token[], target: Token[]} {
+export function partition_ids(g: Graph): (edge: Edge) => {source: Token[]; target: Token[]} {
   const sm = source_map(g)
   const tm = target_map(g)
   return (edge: Edge) => {
@@ -176,7 +180,6 @@ export function target_map(g: Graph): Map<string, number> {
   return new Map(g.target.map((t, i) => [t.id, i] as [string, number]))
 }
 
-
 /** The edge at a position (in the target text)
 
   const g = init('apa bepa cepa')
@@ -184,7 +187,7 @@ export function target_map(g: Graph): Map<string, number> {
 
 */
 export function edge_at(g: Graph, index: number): Edge {
-  const target_id  = g.target[index].id
+  const target_id = g.target[index].id
   return edge_map(g).get(target_id) || Utils.raise('Out of bounds: ' + JSON.stringify({g, index}))
 }
 
@@ -253,8 +256,8 @@ export function modify(g: Graph, from: number, to: number, text: string): Graph 
   const {token: from_token, offset: from_ix} = T.token_at(tokens, from)
   const {token: to_token, offset: to_ix} = T.token_at(tokens, to)
   const slice = g.target.slice(from_token, to_token + 1)
-  const pre = slice.length > 0 ? slice[0].text.slice(0, from_ix) : ""
-  const post = slice.length > 0 ? slice[slice.length - 1].text.slice(to_ix) : ""
+  const pre = slice.length > 0 ? slice[0].text.slice(0, from_ix) : ''
+  const post = slice.length > 0 ? slice[slice.length - 1].text.slice(to_ix) : ''
   return modify_tokens(g, from_token, to_token + 1, pre + text + post)
 }
 
@@ -336,10 +339,7 @@ export function calculate_raw_diff(g: Graph): (Dragged | Dropped)[] {
   const d = Utils.hdiff<Token, Token>(g.source, g.target, edge_id, edge_id)
   return Utils.flatMap(d, c => {
     if (c.change == 0) {
-      return [
-        D.Dragged(c.a, edge_id(c.a)),
-        D.Dropped(c.b, edge_id(c.b)),
-      ]
+      return [D.Dragged(c.a, edge_id(c.a)), D.Dropped(c.b, edge_id(c.b))]
     } else if (c.change == -1) {
       return [D.Dragged(c.a, edge_id(c.a))]
     } else if (c.change == 1) {
@@ -355,9 +355,12 @@ export function from_raw_diff(diff: (Dragged | Dropped)[], edges: Record<string,
   const target = [] as Token[]
   diff.forEach(d => {
     switch (d.edit) {
-      case 'Dragged': return source.push(d.source)
-      case 'Dropped': return target.push(d.target)
-      default: return Utils.absurd(d)
+      case 'Dragged':
+        return source.push(d.source)
+      case 'Dropped':
+        return target.push(d.target)
+      default:
+        return Utils.absurd(d)
     }
   })
   return {source, target, edges}
@@ -380,11 +383,7 @@ function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
     const m = rev.get(d.id)
     if (m && Utils.contiguous(m)) {
       const {dragged, dropped} = D.partition(diff.slice(i, i + m.length))
-      out.push(
-        D.Edited(
-          dragged.map(c => c.source),
-          dropped.map(c => c.target),
-          d.id))
+      out.push(D.Edited(dragged.map(c => c.source), dropped.map(c => c.target), d.id))
       i += m.length - 1
     } else {
       out.push(d)
@@ -530,46 +529,44 @@ export function sentence_groups<K extends string>(gs: Record<K, Graph>): Record<
 export function proto_sentence(g: Graph, i: number): Subspan {
   const init = {
     source: {begin: g.source.length - 1, end: 0},
-    target: target_sentence(g, i)
+    target: target_sentence(g, i),
   }
   const em = edge_map(g)
   const sm = source_map(g)
   const tm = target_map(g)
   const unseen = Utils.unique_check()
-  return Utils.fix(init,
-    ({source, target}) => {
-      const visit = (id0: string) => {
-        const edge = em.get(id0)
-        if (edge && unseen(edge.id)) {
-          for (let id of edge.ids) {
-            let i = tm.get(id)
-            if (i !== undefined) {
-              target = T.span_merge(target, target_sentence(g, i))
-            }
-            let j = sm.get(id)
-            if (j !== undefined) {
-              source = T.span_merge(source, {begin: j, end: j})
-            }
+  return Utils.fix(init, ({source, target}) => {
+    const visit = (id0: string) => {
+      const edge = em.get(id0)
+      if (edge && unseen(edge.id)) {
+        for (let id of edge.ids) {
+          let i = tm.get(id)
+          if (i !== undefined) {
+            target = T.span_merge(target, target_sentence(g, i))
+          }
+          let j = sm.get(id)
+          if (j !== undefined) {
+            source = T.span_merge(source, {begin: j, end: j})
           }
         }
       }
-      for (let i = target.begin; i <= target.end; ++i) {
-        const tid = g.target[i].id
-        if (tid && unseen(tid)) {
-          visit(tid)
-        }
-      }
-      if (source.begin >= 0) {
-        for (let i = source.begin; i <= source.end; ++i) {
-          const sid = g.source[i].id
-          if (sid && unseen(sid)) {
-            visit(sid)
-          }
-        }
-      }
-      return {source, target}
     }
-  )
+    for (let i = target.begin; i <= target.end; ++i) {
+      const tid = g.target[i].id
+      if (tid && unseen(tid)) {
+        visit(tid)
+      }
+    }
+    if (source.begin >= 0) {
+      for (let i = source.begin; i <= source.end; ++i) {
+        const sid = g.source[i].id
+        if (sid && unseen(sid)) {
+          visit(sid)
+        }
+      }
+    }
+    return {source, target}
+  })
 }
 
 /** The subgraph from a subspan
@@ -604,7 +601,11 @@ export function modify_labels(g: Graph, edge_id: string, k: (labels: string[]) =
 }
 
 export function label_store(g: Store<Graph>, edge_id: string): Store<string[]> {
-  return g.at('edges').via(Lens.key(edge_id)).via(Lens.def(Edge([], []))).at('labels')
+  return g
+    .at('edges')
+    .via(Lens.key(edge_id))
+    .via(Lens.def(Edge([], [])))
+    .at('labels')
 }
 
 /** Revert at an edge id */

@@ -1,7 +1,7 @@
 import * as Utils from './Utils'
 
 export interface Token {
-  readonly text: string,
+  readonly text: string
   readonly id: string
 }
 
@@ -74,7 +74,7 @@ export function next_punc(tokens: string[], i: number): number {
   return -1
 }
 
-export type Span = {begin: number, end: number}
+export type Span = {begin: number; end: number}
 
 /** Merge two spans: makes a span that contains both spans
 
@@ -158,7 +158,10 @@ export function text_offset(texts: string[], index: number): number {
   Utils.throws(() => token_at(abc, 10)) // => true
 
 */
-export function token_at(tokens: string[], character_offset: number): {token: number, offset: number} {
+export function token_at(
+  tokens: string[],
+  character_offset: number
+): {token: number; offset: number} {
   let passed = 0
   for (let i = 0; i < tokens.length; i++) {
     const w = tokens[i].length
@@ -169,4 +172,3 @@ export function token_at(tokens: string[], character_offset: number): {token: nu
   }
   return Utils.raise('Out of bounds: ' + JSON.stringify({tokens, character_offset}))
 }
-

@@ -1,16 +1,26 @@
 import * as R from 'ramda'
 
-import {GraphState} from './Model'
 import * as D from './Diff'
 import * as G from './Graph'
 import * as RD from './RichDiff'
 import * as T from './Token'
 import * as Utils from './Utils'
 
+import {Store, Lens, Undo, Requests} from 'reactive-lens'
+
 declare var window: any
 declare var global: any
 if (typeof window == 'undefined') {
   global.window = {}
+}
+
+interface GraphState {
+  /** The parallel corpus */
+  readonly graph: Undo<G.Graph>
+  /** Index in target text for the sentence */
+  readonly cursor_index: number
+  /** Index we are currently labelling: selected index in the diff (todo: change to selected edge id?) */
+  readonly selected_index: number | null
 }
 
 declare const require: (json_file: string) => any
