@@ -46,10 +46,10 @@ Jag vill se hur många förekomster det finns av ett visst fenomen, tex när _o_
 
 Jag vill kunna se resultatet i en tabellform, tex såhär:
 
-L1 | Meningar totalt i korpusen med detta L1 | Antal meningar med detta L1 och fenomenet förekommer | Procent |
-- | - | - | -
-Franska | 1000 | 10 | 1%
-Spanska | 2000 | 50 | 2.5%
+| L1 | Meningar totalt i korpusen med detta L1 | Antal meningar med detta L1 och fenomenet förekommer | Procent |
+| --- | --- | --- | --- | 
+| Franska | 1000 | 10 | 1% |
+| Spanska | 2000 | 50 | 2.5% |
 
 #### Exempel 3: Hitta ett formfel i en viss ordklass (såsom determinerare)
 
@@ -67,10 +67,10 @@ som har formfel.
 
 Resultatet vill jag se i tabellform:
 
-Inläraridentifierare | % formfel i determinerare i uppgift A, dag 0 | i uppg. B, dag 14 | i uppg. C, dag 28
-- | - | - | - |
-Inlärare X | 6.25 | 2.75 | 1.85
-Inlärare Y | 7.25 | 8.16 | 9.15
+| Inläraridentifierare | % formfel i determinerare i uppgift A, dag 0 | i uppg. B, dag 14 | i uppg. C, dag 28 |
+| --- | --- | --- | --- |
+| Inlärare X | 6.25 | 2.75 | 1.85 |
+| Inlärare Y | 7.25 | 8.16 | 9.15 |
 
 #### Exempel 5: Hitta negationer på fel plats i bisatser
 
