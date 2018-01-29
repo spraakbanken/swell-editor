@@ -3,11 +3,14 @@
 _Dan Rosén, Systemutvecklare, Språkbanken, GU, januari 2018_
 
 Det här är ett initiativ till att samla in exempel på sökfrågor i
-andraspråkskorpusar. Exemplen kommer användas som beslutsunderlag till
+andraspråkskorpusar.
+Detta sker under ramen för [SweLL-projektet](https://spraakbanken.gu.se/swe/swell_infra).
+Exemplen kommer användas som beslutsunderlag till
 dessa två syften:
 
 1. hur korpussökningssystem bör designas och anpassas för att kunna ställa sådana sökfrågor
 2. vilka annoteringar som är användbara för att kunna besvara sådana sökfrågor
+
 
 Sökfrågeexempel eftersöks från alla slags slutanvändare
 (såsom forskare, lärare, inlärare och studenter).
