@@ -20,19 +20,22 @@ export const clean_ul = style({
   },
 })
 
+const intended_font_size = 16
+const px = (i: number) => `${i / intended_font_size}em`
+
 const BorderCell = style(
   {$debugName: 'BorderCell'},
-  csstips.border('1px #777 solid'),
-  {borderRadius: '2px'},
-  {fontSize: '13px'},
+  csstips.border(`${px(1)} #777 solid`),
+  {borderRadius: `${px(2)}`},
+  {fontSize: `${px(13)}`},
   {background: 'white'},
-  csstips.padding('4px', '4px'),
+  csstips.padding(`${px(4)}`, `${px(4)}`),
   csstips.centerJustified,
   {
     $nest: {
       '& > span:not(:last-child)': {
-        paddingRight: '4px',
-        marginRight: '4px',
+        paddingRight: `${px(4)}`,
+        marginRight: `${px(4)}`,
       },
     },
   }
@@ -40,7 +43,6 @@ const BorderCell = style(
 
 const LadderStyle = style(
   {$debugName: 'LadderStyle'},
-  {fontSize: '16px'},
   csstips.wrap,
   csstips.startJustified,
   csstips.horizontal,
@@ -48,25 +50,25 @@ const LadderStyle = style(
     $nest: {
       '& > ul': {
         ...csstips.vertical,
-        borderTop: '1px #ccc solid',
-        borderBottom: '1px #ccc solid',
-        marginBottom: '20px',
+        borderTop: `${px(1)} #ccc solid`,
+        borderBottom: `${px(1)} #ccc solid`,
+        marginBottom: `${px(20)}`,
       },
       '& > ul > li': {
-        height: '20px',
+        height: `${px(20)}`,
         width: '100%',
         ...csstips.selfCenter,
         ...csstips.horizontal,
-        paddingRight: '3px',
-        paddingLeft: '3px',
+        paddingRight: `${px(3)}`,
+        paddingLeft: `${px(3)}`,
         justifyContent: 'center',
       },
       '& > ul > li:nth-child(3)': {
-        height: '24px',
+        height: `${px(24)}`,
       },
       '& > ul > li:nth-child(even)': {
-        fontSize: '0px',
-        height: '24px',
+        // fontSize: `${px(0)}`,
+        height: `${px(24)}`,
       },
       '& ins': {
         color: '#070',
@@ -104,8 +106,9 @@ function Column(column: D.Line[], rel: VNode | null | false = null): VNode {
   const endpoint_id: string | undefined = column
     .filter(line => !LineIsHorizontal(line))
     .map(line => line.id)[0]
-  const grey: React.CSSProperties = {stroke: '#777', strokeWidth: 2}
-  const white: React.CSSProperties = {stroke: '#fff', strokeWidth: 6}
+  // multiply stroke widths with 2 because we set fontSize to 0.5em below
+  const grey: React.CSSProperties = {stroke: '#777', strokeWidth: px(2 * 2)}
+  const white: React.CSSProperties = {stroke: '#fff', strokeWidth: px(6 * 2)}
   return (
     <li style={{position: 'relative'}}>
       {rel}
@@ -117,7 +120,7 @@ function Column(column: D.Line[], rel: VNode | null | false = null): VNode {
           // table rounds the sizes in webkit
           display: 'table',
           // we try to make the sizes just about 50%
-          fontSize: '0px',
+          fontSize: '0.5em',
           width: 'calc(50% + 1px)',
           height: 'calc(50% + 1px)',
         }}>

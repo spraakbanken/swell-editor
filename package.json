@@ -12,6 +12,7 @@
     "react": "^16.2.0",
     "react-dom": "^16.2.0",
     "reactive-lens": "^0.4.0",
+    "remarkable": "^1.7.1",
     "typestyle": "^1.4.1"
   },
   "devDependencies": {
@@ -33,7 +34,7 @@
     "typescript": "^2.6.1"
   },
   "scripts": {
-    "start": "parcel index.html",
+    "serve": "parcel index.html",
     "build": "parcel build index.html",
     "test:watch": "tsc --watch & ava --watch dist/test",
     "test": "tsc && ava dist/test",

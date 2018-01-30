@@ -4,26 +4,25 @@
 // import 'lato-font/css/lato-font.min.css'
 
 import * as csstips from 'csstips'
-csstips.normalize()
-csstips.setupPage('body')
-
 import * as ReactDOM from 'react-dom'
 import * as ReactiveLens from 'reactive-lens'
 
-import * as ViewApp from './ViewApp'
+import * as VApp from './ViewApp'
+import * as App from './Slides'
 
-const root = document.getElementById('root') as HTMLElement
-const reattach = ReactiveLens.attach(vn => ReactDOM.render(vn, root), ViewApp.init, ViewApp.App)
+declare const module: {hot: {accept: Function}}
 
-declare const module: any
-declare const require: any
+const global = (window as any) as {reattach: Function}
+
+if (global.reattach === undefined) {
+  csstips.normalize()
+  csstips.setupPage('body')
+  const root = document.body.appendChild(document.createElement('div'))
+  global.reattach = ReactiveLens.attach(vn => ReactDOM.render(vn, root), App.init, App.App)
+}
 
 if (module.hot) {
   module.hot.accept(() => {
-    try {
-      reattach(require('./ViewApp.tsx').App)
-    } catch (e) {
-      console.error(e)
-    }
+    global.reattach(App.App)
   })
 }

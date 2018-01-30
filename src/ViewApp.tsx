@@ -49,14 +49,16 @@ export function App(store: Store<State>): () => VNode {
 export function View(store: Store<State>): VNode {
   const state = store.get()
   return (
-    <div className={L.clean_ul} style={{maxWidth: '850px', margin: 'auto', padding: '0 10px'}}>
-      <div style={{margin: '20px 0'}}>
+    <div
+      className={L.clean_ul}
+      style={{maxWidth: '50em', margin: 'auto', padding: '0 0.625em', fontSize: '16px'}}>
+      <div style={{margin: '1.25em 0'}}>
         {Object.keys(Pilot.ByText)
           .sort()
           .map(text => (
             <button
               key={text}
-              style={{marginRight: '10px'}}
+              style={{marginRight: '0.625em'}}
               onClick={() => store.update({graph_segments: Pilot.GraphSegments(text)})}>
               {text}
             </button>
@@ -69,8 +71,8 @@ export function View(store: Store<State>): VNode {
             {sep && (
               <div
                 style={{
-                  borderTop: '2px #ccc solid',
-                  marginBottom: '40px',
+                  borderTop: '0.125em #ccc solid',
+                  marginBottom: '2.5em',
                 }}
                 ref={d =>
                   d &&
@@ -89,7 +91,7 @@ export function View(store: Store<State>): VNode {
             <ul
               style={{
                 display: 'flex',
-                marginBottom: '30px',
+                marginBottom: '1.875em',
               }}>
               <li style={{flex: 1}}>{Utils.capitalize_head(m.annotator)}</li>
               <li style={{flex: 6}}>{L.Ladder(m.graph, m.rich_diff)}</li>
