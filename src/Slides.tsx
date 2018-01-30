@@ -15,7 +15,7 @@ import {VNode} from './LadderView'
 
 declare var require: any
 const Remarkable = require('remarkable')
-const remarkable = new Remarkable({linkify: true, typographer: true})
+const remarkable = new Remarkable({linkify: true, typographer: true, html: true})
 
 function md(snippets: TemplateStringsArray, ...vnodes: VNode[]): VNode {
   const init_spaces = (snippets[0].match(/^[^\n\S]*(?=\S)/m) || [''])[0]
@@ -77,6 +77,7 @@ const SlideStyle = style(
     padding: '0 1rem',
     borderBottom: '0.1em brown dotted',
     boxSizing: 'border-box',
+    position: 'relative'
   },
   {
     $nest: {
@@ -87,84 +88,22 @@ const SlideStyle = style(
         fontFamily: 'monospace',
       },
       '& *': {
-        fontFamily: 'Lato, sans-serif',
+        fontFamily: 'Lato',
+        fontWeight: 400,
         lineHeight: 1.5,
       },
       '& h1, & h2, & h3, & h4, & h5': {
+        fontFamily: 'Source Sans Pro, Lato, sans-serif',
+        fontWeight: 600,
         margin: 0,
       },
     },
   }
 )
 
-export function View(store: Store<State>): VNode {
-  const state = store.get()
-  const slides = [] as VNode[]
-  const slide = (v: VNode) => slides.push(v)
-  const ladder = () => L.Ladder(G.rearrange(G.init('hej du din lille torsk ! '), 0, 0, 4))
-  slide(md`
-    # Annoteringspiloten i november
-    * 9 texter annoterades
-    * 1-4 forskare per text
-    * återkoppling muntligt och skriftligt
-    * resultatet används som underlag för
-      - vidareutveckling av verktyget
-      - uppdatera kodboken
-      - insikt om vad det är för korpus vi bygger
-    ${(
-      <div>
-        <img src={require('../talk/hws/logo_gu.png')} />
-        <img style={{float: 'right'}} src={require('../talk/hws/logo_sb.jpg')} />
-      </div>
-    )}
-  `)
-  slide(md`
-    # Återkoppling
-
-    * 3 steg (Mats, Gunlög):
-      * normalisering
-      * ihoplänkning
-      * annotering
-    * svårt att få länkarna helt rätt
-    * generellt positivt: editorn är inte på helt fel spår
-  `)
-  slide(md`
-    # Återkoppling
-
-    * interpunktation förvirrande som eget token
-      * jag tror det går att förenkla
-    * svårt att justera över meningsgränser
-      * taggkategori saknas här också
-      * se text3 och text6
-  `)
-  slide(md`
-    # Återkoppling, gränssnittsmissar
-
-    * var redigering sker: markören borde markeras i de olika vyerna
-    * spaghettin ibland missvisande
-    * går inte att läsa långa rader
-    * inget sätt att se spaghettin för hela texten
-  `)
-  slide(md`
-    # Återkoppling, kommunikation
-
-    * lämna kommentarer från annotatör
-    * mer om detta under "annotation campaign management" i e.m.
-  `)
-  slide(md`
-    # Normalisering först, sen länkning
-
-    * 3 steg (Mats, Gunlög):
-      * normalisering
-      * ihoplänkning
-      * annotering
-    * Mats normaliserade först och fixade sen med länkarna
-      * Konceptuellt ett nytt steg att länka ihop källtexten med hypotesen
-    * Jag tror det går att förenkla annoteringsprocessen
-      * baserat på detta samt pga fåtalet komplicerade förflyttningar
-  `)
-
-  const apple = L.Ladder(G.modify_tokens(G.init('en äpple'), 0, 1, 'ett '))
+function secedge() {
+  const graph = G.modify_tokens(G.init('en äpple'), 0, 1, 'ett ')
+  const apple = L.Ladder(graph)
   const side_by_side: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'row',
@@ -184,7 +123,7 @@ export function View(store: Store<State>): VNode {
     strokeWidth: '0.1em',
     fill: 'none',
   }
-  const secedge = (
+  return (
     <div style={side_by_side}>
       {apple}
       <div style={{position: 'relative'}}>
@@ -199,13 +138,78 @@ export function View(store: Store<State>): VNode {
       </div>
     </div>
   )
+}
 
+const logos = () => <React.Fragment>
+    <img style={{position: 'absolute', bottom: '1rem', right: '1rem'}} src={require('../talk/hws/logo_sb.jpg')} />
+    <img style={{position: 'absolute', bottom: '1rem', left:  '1rem'}} src={require('../talk/hws/logo_gu.png')} />
+  </React.Fragment>
+
+export function View(store: Store<State>): VNode {
+  const state = store.get()
+  const slides = [] as VNode[]
+  const slide = (v: VNode) => slides.push(v)
   slide(md`
-    # Behövs sekundärbågar?
-    ${secedge}
+    # Annoteringspiloten i november
+    * 9 texter annoterades
+    * 1-4 forskare per text
+    * återkoppling muntligt och skriftligt
+    * resultatet används som underlag för
+      - vidareutveckling av verktyget
+      - uppdatera kodboken
+      - insikt om vad det är för korpus vi bygger
+    ${logos()}
+  `)
+  slide(md`
+    # Återkoppling
+
+    * tre steg (Mats, Gunlög):
+      - normalisering
+      - ihoplänkning
+      - annotering
+    * svårt att få länkarna helt rätt
+    * generellt positivt: editorn är inte på helt fel spår
+  `)
+  slide(md`
+    # Återkoppling
+
+    * interpunktation som eget token är förvirrande
+    * svårt att justera över meningsgränser
+      - taggkategori saknas här också
+      - se text3 och text6
+  `)
+  slide(md`
+    # Återkoppling, gränssnittsmissar
+
+    * var redigering sker: markören borde markeras i de olika vyerna
+    * spaghettin ibland missvisande
+    * går inte att läsa långa rader
+    * inget sätt att se spaghettin för hela texten
+  `)
+  slide(md`
+    # Återkoppling, kommunikation
+
+    * lämna kommentarer som annotatör för kluriga passager
+    * mer om detta under "annotation campaign management" i e.m.
+  `)
+  slide(md`
+    # Normalisering först, sen länkning
+
+    * tre steg (Mats, Gunlög):
+      - normalisering
+      - ihoplänkning
+      - annotering
+    * Mats normaliserade först och fixade sen med länkarna
+      - Konceptuellt ett nytt steg att länka ihop källtexten med hypotesen
+    * Kan leda till en förenklad annoteringsprocess:
+      - baserat på detta samt pga fåtalet komplicerade förflyttningar
+  `)
+  slide(md`
+    ## Behövs sekundärbågar?
+    ${secedge()}
     * för kongruensfel, följdfel m.m.
-    * lite mer jobb åt annotatörerna (och mig)
-    * är det ett viktigt bidrag till korpusen?
+    * något mer jobb åt annotatörerna (och mig)
+    * är dessa länkar ett viktigt bidrag till korpusen?
       - vill man någonsin söka på dessa bågar?
       - därav sökscenarioexempelsinsamlingsinitiativet
   `)
@@ -222,6 +226,65 @@ export function View(store: Store<State>): VNode {
     https://spraakbanken.gu.se/swell/private
 
     * använd samma inloggningsuppgifter som till piloten
+  `)
+
+  slide(md`
+    # Uppgiftsfördelningssystem
+    ## Annotation campaign management
+    ${logos()}
+  `)
+  slide(md`
+    # Uppgiftsfördelningssystem
+    Minst två huvudroller:
+    - **annotator**:
+      - har en lista på uppgifter och annoterar dem
+    - **admin**:
+       - ser till att uppgifter distribueras ut (sker med viss automation)
+       - besvara frågor från annotatörerna
+       - förvissar sig om att annotatorerna arbetar efter kodboken
+  `)
+  slide(md`
+    ## Två separata annoteringsprocesser
+    1. **transkribering och anonymisering**
+       - behöver ske med varsamhet då orginaldatan är känslig
+    2. **normalisering och ettikettering**:
+       - indatan är här anonym
+       - större krav på lingvistisk kunskap hos annotatören
+
+    Två instanser av uppgiftsfördelningssystemet kan köras
+  `)
+  slide(md`
+    ## Kravspecifikation
+    * Annoterare ska kunna:
+      - lista sina färdiga och återstående uppgifter
+        <!-- - _behövs en logg var de har jobbat senast?_ -->
+      - ställa och diskutera frågor...
+        - ...knutna till en viss plats i en inlärartext
+        - ...om något i kodboken
+      - undvika att bli påverkade av andra annotatörer
+      - se och söka i korpusen på sina egna och på "korrekta" delar
+        - administratörerna gör denna bedömning
+  `)
+  slide(md`
+    ## Kravspecifikation
+    * Administratörer ska kunna:
+      - lista allas färdiga och återstående uppgifter
+      - besvara och diskutera frågor
+      - distribuera uppgifter
+        - automatiskt (jämnt fördelat)
+        - manuellt (tex överensstämmighetsstickprov)
+      - se statistik
+        - tex etikettdistribution för annotatörerna
+        - annoteringshastighet
+      - se och söka i korpusen
+  `)
+  slide(md`
+    ## Stort projekt
+    - Svårt att avgöra hur lång tid det kan ta
+    - Har inte hittat något existerande verktyg som kan anpassas
+      - men har inte heller gett upp
+
+    - Kravspec på google docs
   `)
   return (
     <div
