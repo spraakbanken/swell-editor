@@ -51,6 +51,7 @@ function html_rem_aspect_ratio(ratio: number = 16 / 10) {
   const h = Math.min(root.height, w)
   const fontSize = (h / 20).toString() + 'px'
   html.style.fontSize = fontSize
+  html.style.overflow = 'hidden'
 }
 
 export function App(store: Store<State>): () => VNode {
@@ -75,7 +76,7 @@ const SlideStyle = style(
     height: '20rem',
     margin: 'auto',
     padding: '0 1rem',
-    borderBottom: '0.1em brown dotted',
+    //borderBottom: '0.1em brown dotted',
     boxSizing: 'border-box',
     position: 'relative'
   },
@@ -124,7 +125,7 @@ function secedge() {
     fill: 'none',
   }
   return (
-    <div style={side_by_side}>
+    <div style={{...side_by_side, fontSize: '0.9em'}}>
       {apple}
       <div style={{position: 'relative'}}>
         {apple}
@@ -152,7 +153,7 @@ export function View(store: Store<State>): VNode {
   slide(md`
     # Annoteringspiloten i november
     * 9 texter annoterades
-    * 1-4 forskare per text
+    * 1-4 annotationer per text
     * återkoppling muntligt och skriftligt
     * resultatet används som underlag för
       - vidareutveckling av verktyget
@@ -169,6 +170,7 @@ export function View(store: Store<State>): VNode {
       - annotering
     * svårt att få länkarna helt rätt
     * generellt positivt: editorn är inte på helt fel spår
+      - addresserar många problem från Merlin-Adriannes presentation
   `)
   slide(md`
     # Återkoppling
@@ -183,7 +185,7 @@ export function View(store: Store<State>): VNode {
 
     * var redigering sker: markören borde markeras i de olika vyerna
     * spaghettin ibland missvisande
-    * går inte att läsa långa rader
+    * går inte att läsa långa meningar
     * inget sätt att se spaghettin för hela texten
   `)
   slide(md`
@@ -191,6 +193,12 @@ export function View(store: Store<State>): VNode {
 
     * lämna kommentarer som annotatör för kluriga passager
     * mer om detta under "annotation campaign management" i e.m.
+  `)
+  slide(md`
+    # Återkoppling
+
+    * Er feedback är lagrad i ärendehanteringssystemet på github:
+      - https://github.com/spraakbanken/swell-editor/issues
   `)
   slide(md`
     # Normalisering först, sen länkning
@@ -205,7 +213,7 @@ export function View(store: Store<State>): VNode {
       - baserat på detta samt pga fåtalet komplicerade förflyttningar
   `)
   slide(md`
-    ## Behövs sekundärbågar?
+    # Behövs sekundärbågar?
     ${secedge()}
     * för kongruensfel, följdfel m.m.
     * något mer jobb åt annotatörerna (och mig)
@@ -213,12 +221,23 @@ export function View(store: Store<State>): VNode {
       - vill man någonsin söka på dessa bågar?
       - därav sökscenarioexempelsinsamlingsinitiativet
   `)
+  slide(<div>
+    <h1>Behövs sekundärbågar?</h1>
+    {secedge()}
+      <ul>
+    <li>för kongruensfel, följdfel m.m.</li>
+    <li>något mer jobb åt annotatörerna (och mig)</li>
+    <li>är dessa länkar ett viktigt bidrag till korpusen?</li>
+    </ul>
+      - vill man någonsin söka på dessa bågar?
+      - därav sökscenarioexempelsinsamlingsinitiativet
+  </div>)
   slide(md`
     # Separera ut lexikala fel
 
-    * cap, ort, spl, comp
-    * kanske kan ha etiktten på ordet istället för på bågen?
-    * eller två lager
+    * CAP, ORT, SPL, COMP
+    * dessa kanske kan ha etiktten på ordet istället för på bågen
+      - eller två lager
   `)
   slide(md`
     # Utforska pilotdatan!
@@ -279,12 +298,40 @@ export function View(store: Store<State>): VNode {
       - se och söka i korpusen
   `)
   slide(md`
-    ## Stort projekt
-    - Svårt att avgöra hur lång tid det kan ta
-    - Har inte hittat något existerande verktyg som kan anpassas
-      - men har inte heller gett upp
-
-    - Kravspec på google docs
+    # Koalakorpusen
+    - Gerlof Bouma och Yvonne Adesam, Språkbanken
+    - Issue tracker: trac
+    - Uppgiftsfördelning: förfördelade filer i GU-box
+    - Ingen kvalitetskontroll under annoteringen
+    - 2-3 annotatörer
+  `)
+  slide(md`
+    # Koala exempelissue
+    ${<img
+        style={{position: 'absolute', top: '-15%', left: '-25%', width: '120%', zIndex: -1}}
+        src={require('../talk/trac-issue.png')} />}
+  `)
+  slide(md`
+    ## Koala exempelissue
+    ${<img
+        style={{position: 'absolute', top: '-72%', left: '-45%', width: '200%', zIndex: -1}}
+        src={require('../talk/trac-issue.png')} />}
+  `)
+  slide(md`
+    # Koala exempelissues
+    ${<img
+        style={{position: 'absolute', top: '-15%', left: '-0%', width: '130%', zIndex: -1}}
+        src={require('../talk/trac-issues.png')} />}
+  `)
+  slide(md`
+    # Plan
+    - Ett filsystem där alla ens texter är (som annoterare)
+      - Administratören kan se alla annoterares filer
+    - Använda ett ärendehanteringssystem (antagligen trac)
+      - länkning till annoteringsverktyget
+      - lätt att klistra in spaghettibilder
+    - Ett frikopplat söksystem
+      - där statistik kan fås fram (tex korp samt något för IAA)
   `)
   return (
     <div
