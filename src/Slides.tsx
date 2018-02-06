@@ -293,29 +293,18 @@ export function View(store: Store<State>): VNode {
         - automatiskt (jämnt fördelat)
         - manuellt (tex överensstämmighetsstickprov)
       - se statistik
-        - tex etikettdistribution för annotatörerna
+        - tex agreement, confusion matrix, etikettdistribution
         - annoteringshastighet
       - se och söka i korpusen
   `)
   slide(md`
     # Koalakorpusen
     - Gerlof Bouma och Yvonne Adesam, Språkbanken
-    - Issue tracker: trac
+    - Frasträd och andra analyser för nusvenska texter
+    - Issue tracker: _trac_
     - Uppgiftsfördelning: förfördelade filer i GU-box
     - Ingen kvalitetskontroll under annoteringen
     - 2-3 annotatörer
-  `)
-  slide(md`
-    # Koala exempelissue
-    ${<img
-        style={{position: 'absolute', top: '-15%', left: '-25%', width: '120%', zIndex: -1}}
-        src={require('../talk/trac-issue.png')} />}
-  `)
-  slide(md`
-    ## Koala exempelissue
-    ${<img
-        style={{position: 'absolute', top: '-72%', left: '-45%', width: '200%', zIndex: -1}}
-        src={require('../talk/trac-issue.png')} />}
   `)
   slide(md`
     # Koala exempelissues
@@ -324,10 +313,22 @@ export function View(store: Store<State>): VNode {
         src={require('../talk/trac-issues.png')} />}
   `)
   slide(md`
+    ## Koala exempelissue
+    ${<img
+        style={{position: 'absolute', top: '-72%', left: '-45%', width: '200%', zIndex: -1}}
+        src={require('../talk/trac-issue.png')} />}
+  `)
+  slide(md`
+    # Koala exempelissue
+    ${<img
+        style={{position: 'absolute', top: '-15%', left: '-25%', width: '120%', zIndex: -1}}
+        src={require('../talk/trac-issue.png')} />}
+  `)
+  slide(md`
     # Plan
     - Ett filsystem där alla ens texter är (som annoterare)
       - Administratören kan se alla annoterares filer
-    - Använda ett ärendehanteringssystem (antagligen trac)
+    - Använda ett ärendehanteringssystem
       - länkning till annoteringsverktyget
       - lätt att klistra in spaghettibilder
     - Ett frikopplat söksystem
