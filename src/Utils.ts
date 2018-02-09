@@ -1,7 +1,7 @@
 import * as R from 'ramda'
 import {Lens, Store} from 'reactive-lens'
 import * as Dmp from 'diff-match-patch'
-export const dmp = new Dmp.diff_match_patch()
+export const dmp = new Dmp.diff_match_patch() as Dmp.diff_match_patch
 
 export type TokenDiff = [number, string][]
 
@@ -10,6 +10,12 @@ export function capitalize_head(s: string) {
 }
 
 /** Make a stream of all unicode characters
+
+We need this because the diff-match-patch library is hard-coded to work on characters.
+
+To make a polymorphic diff each unique element is assigned a unique character.
+We translate them back to the opaque type after diffing via the characters.
+This is used in `hdiff`.
 
   const next = char_stream()
   next().charCodeAt(0) = 0
@@ -105,7 +111,8 @@ export function hdiff<A, B>(
   }
   const s1 = xs.map(a => assign(a, a_cmp, a_from)).join('')
   const s2 = ys.map(b => assign(b, b_cmp, b_from)).join('')
-  return flatMap(dmp.diff_main(s1, s2), ([change, cs]) => {
+  const d = dmp.diff_main(s1, s2)
+  return flatMap(d, ([change, cs]) => {
     return str_map(cs, (c: string) => {
       if (change == 0) {
         const a = (a_from.get(c) as A[]).shift() as A
@@ -413,14 +420,14 @@ export function uniq<A>(xs: A[]): A[] {
 }
 
 /** Union-find data structure operations */
-interface UnionFind {
-  find(x: number): number
-  union(x: number, y: number): number
-  unions(xs: number[]): void
+interface UnionFind<A> {
+  find(x: A): A
+  union(x: A, y: A): A
+  unions(xs: A[]): void
 }
 
 /** Make a union-find data structure */
-export function UnionFind(): UnionFind {
+export function UnionFind(): UnionFind<number> {
   const rev = [] as number[]
   const find = (x: number) => {
     if (rev[x] == undefined) {
@@ -444,6 +451,37 @@ export function UnionFind(): UnionFind {
     }
   }
   return {find, union, unions}
+}
+
+/** Assign unique numbers to each distinct element */
+export function Renumber<A>(serialize = (a: A) => JSON.stringify(a)) {
+  const bw: Record<string, number> = {}
+  const fw: Record<string, A> = {}
+  let i = 0
+  return {
+    num(a: A) {
+      const s = serialize(a)
+      if (!(s in bw)) {
+        fw[i] = a
+        bw[s] = i++
+      }
+      return bw[s]
+    },
+    un(n: number) {
+      return fw[n]
+    },
+  }
+}
+
+/** Make a polymorphic union-find data structure */
+export function PolyUnionFind<A>(serialize = (a: A) => JSON.stringify(a)): UnionFind<A> {
+  const {un, num} = Renumber(serialize)
+  const uf = UnionFind()
+  return {
+    find: x => un(uf.find(num(x))),
+    union: (x, y) => un(uf.union(num(x), num(y))),
+    unions: xs => uf.unions(xs.map(num)),
+  }
 }
 
 export function splice<A>(xs: A[], start: number, count: number, ...insert: A[]): [A[], A[]] {

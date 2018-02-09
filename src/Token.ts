@@ -1,7 +1,10 @@
 import * as Utils from './Utils'
 
-export interface Token {
+export interface Text {
   readonly text: string
+}
+
+export interface Token extends Text {
   readonly id: string
 }
 
@@ -10,7 +13,7 @@ export interface Token {
   text(identify(tokenize('apa bepa cepa '), '#')) // => 'apa bepa cepa '
 
 */
-export function text(ts: Token[]): string {
+export function text(ts: Text[]): string {
   return texts(ts).join('')
 }
 
@@ -19,7 +22,7 @@ export function text(ts: Token[]): string {
   texts(identify(tokenize('apa bepa cepa '), '#')) // => ['apa ', 'bepa ', 'cepa ']
 
 */
-export function texts(ts: Token[]): string[] {
+export function texts(ts: Text[]): string[] {
   return ts.map(t => t.text)
 }
 
