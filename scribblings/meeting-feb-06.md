@@ -86,6 +86,7 @@
             - men vilket taggset?
             - 22 feb: Elena kanske demar på SB-forskarsem
             - Elena & Dan möts någon gång och diskuterar
+            - 20 februari: Dan visar demoläget
     - 20 feb-5 mars:
         - börja med transkriberingsverktyg och
           anonymiseringsverktyg
