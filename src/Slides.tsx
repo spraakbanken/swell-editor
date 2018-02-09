@@ -78,7 +78,7 @@ const SlideStyle = style(
     padding: '0 1rem',
     //borderBottom: '0.1em brown dotted',
     boxSizing: 'border-box',
-    position: 'relative'
+    position: 'relative',
   },
   {
     $nest: {
@@ -141,10 +141,18 @@ function secedge() {
   )
 }
 
-const logos = () => <React.Fragment>
-    <img style={{position: 'absolute', bottom: '1rem', right: '1rem'}} src={require('../talk/hws/logo_sb.jpg')} />
-    <img style={{position: 'absolute', bottom: '1rem', left:  '1rem'}} src={require('../talk/hws/logo_gu.png')} />
+const logos = () => (
+  <React.Fragment>
+    <img
+      style={{position: 'absolute', bottom: '1rem', right: '1rem'}}
+      src={require('../talk/hws/logo_sb.jpg')}
+    />
+    <img
+      style={{position: 'absolute', bottom: '1rem', left: '1rem'}}
+      src={require('../talk/hws/logo_gu.png')}
+    />
   </React.Fragment>
+)
 
 export function View(store: Store<State>): VNode {
   const state = store.get()
@@ -165,20 +173,20 @@ export function View(store: Store<State>): VNode {
     # Återkoppling
 
     * tre steg (Mats, Gunlög):
-      - normalisering
-      - ihoplänkning
-      - annotering
+      * normalisering
+      * ihoplänkning
+      * annotering
     * svårt att få länkarna helt rätt
     * generellt positivt: editorn är inte på helt fel spår
-      - addresserar många problem från Merlin-Adriannes presentation
+      * addresserar många problem från Merlin-Adriannes presentation
   `)
   slide(md`
     # Återkoppling
 
     * interpunktation som eget token är förvirrande
     * svårt att justera över meningsgränser
-      - taggkategori saknas här också
-      - se text3 och text6
+      * taggkategori saknas här också
+      * se text3 och text6
   `)
   slide(md`
     # Återkoppling, gränssnittsmissar
@@ -198,19 +206,19 @@ export function View(store: Store<State>): VNode {
     # Återkoppling
 
     * Er feedback är lagrad i ärendehanteringssystemet på github:
-      - https://github.com/spraakbanken/swell-editor/issues
+      * https://github.com/spraakbanken/swell-editor/issues
   `)
   slide(md`
     # Normalisering först, sen länkning
 
     * tre steg (Mats, Gunlög):
-      - normalisering
-      - ihoplänkning
-      - annotering
+      * normalisering
+      * ihoplänkning
+      * annotering
     * Mats normaliserade först och fixade sen med länkarna
-      - Konceptuellt ett nytt steg att länka ihop källtexten med hypotesen
+      * Konceptuellt ett nytt steg att länka ihop källtexten med hypotesen
     * Kan leda till en förenklad annoteringsprocess:
-      - baserat på detta samt pga fåtalet komplicerade förflyttningar
+      * baserat på detta samt pga fåtalet komplicerade förflyttningar
   `)
   slide(md`
     # Behövs sekundärbågar?
@@ -221,23 +229,12 @@ export function View(store: Store<State>): VNode {
       - vill man någonsin söka på dessa bågar?
       - därav sökscenarioexempelsinsamlingsinitiativet
   `)
-  slide(<div>
-    <h1>Behövs sekundärbågar?</h1>
-    {secedge()}
-      <ul>
-    <li>för kongruensfel, följdfel m.m.</li>
-    <li>något mer jobb åt annotatörerna (och mig)</li>
-    <li>är dessa länkar ett viktigt bidrag till korpusen?</li>
-    </ul>
-      - vill man någonsin söka på dessa bågar?
-      - därav sökscenarioexempelsinsamlingsinitiativet
-  </div>)
   slide(md`
     # Separera ut lexikala fel
 
     * CAP, ORT, SPL, COMP
     * dessa kanske kan ha etiktten på ordet istället för på bågen
-      - eller två lager
+      * eller två lager
   `)
   slide(md`
     # Utforska pilotdatan!
@@ -254,85 +251,101 @@ export function View(store: Store<State>): VNode {
   `)
   slide(md`
     # Uppgiftsfördelningssystem
+
     Minst två huvudroller:
-    - **annotator**:
-      - har en lista på uppgifter och annoterar dem
-    - **admin**:
-       - ser till att uppgifter distribueras ut (sker med viss automation)
-       - besvara frågor från annotatörerna
-       - förvissar sig om att annotatorerna arbetar efter kodboken
+
+    * **annotator**:
+      * har en lista på uppgifter och annoterar dem
+    * **admin**:
+      * ser till att uppgifter distribueras ut (sker med viss automation)
+      * besvara frågor från annotatörerna
+      * förvissar sig om att annotatorerna arbetar efter kodboken
   `)
   slide(md`
     ## Två separata annoteringsprocesser
+
     1. **transkribering och anonymisering**
-       - behöver ske med varsamhet då orginaldatan är känslig
+       * behöver ske med varsamhet då orginaldatan är känslig
     2. **normalisering och ettikettering**:
-       - indatan är här anonym
-       - större krav på lingvistisk kunskap hos annotatören
+       * indatan är här anonym
+       * större krav på lingvistisk kunskap hos annotatören
 
     Två instanser av uppgiftsfördelningssystemet kan köras
   `)
   slide(md`
     ## Kravspecifikation
+
     * Annoterare ska kunna:
-      - lista sina färdiga och återstående uppgifter
+      * lista sina färdiga och återstående uppgifter
         <!-- - _behövs en logg var de har jobbat senast?_ -->
-      - ställa och diskutera frågor...
-        - ...knutna till en viss plats i en inlärartext
-        - ...om något i kodboken
-      - undvika att bli påverkade av andra annotatörer
-      - se och söka i korpusen på sina egna och på "korrekta" delar
-        - administratörerna gör denna bedömning
+      * ställa och diskutera frågor...
+        * ...knutna till en viss plats i en inlärartext
+        * ...om något i kodboken
+      * undvika att bli påverkade av andra annotatörer
+      * se och söka i korpusen på sina egna och på "korrekta" delar
+        * administratörerna gör denna bedömning
   `)
   slide(md`
     ## Kravspecifikation
+
     * Administratörer ska kunna:
-      - lista allas färdiga och återstående uppgifter
-      - besvara och diskutera frågor
-      - distribuera uppgifter
-        - automatiskt (jämnt fördelat)
-        - manuellt (tex överensstämmighetsstickprov)
-      - se statistik
-        - tex agreement, confusion matrix, etikettdistribution
-        - annoteringshastighet
-      - se och söka i korpusen
+      * lista allas färdiga och återstående uppgifter
+      * besvara och diskutera frågor
+      * distribuera uppgifter
+        * automatiskt (jämnt fördelat)
+        * manuellt (tex överensstämmighetsstickprov)
+      * se statistik
+        * tex agreement, confusion matrix, etikettdistribution
+        * annoteringshastighet
+      * se och söka i korpusen
   `)
   slide(md`
     # Koalakorpusen
-    - Gerlof Bouma och Yvonne Adesam, Språkbanken
-    - Frasträd och andra analyser för nusvenska texter
-    - Issue tracker: _trac_
-    - Uppgiftsfördelning: förfördelade filer i GU-box
-    - Ingen kvalitetskontroll under annoteringen
-    - 2-3 annotatörer
+
+    * Gerlof Bouma och Yvonne Adesam, Språkbanken
+    * Frasträd och andra analyser för nusvenska texter
+    * Issue tracker: _trac_
+    * Uppgiftsfördelning: förfördelade filer i GU-box
+    * Ingen kvalitetskontroll under annoteringen
+    * 2-3 annotatörer
   `)
   slide(md`
     # Koala exempelissues
-    ${<img
+    ${(
+      <img
         style={{position: 'absolute', top: '-15%', left: '-0%', width: '130%', zIndex: -1}}
-        src={require('../talk/trac-issues.png')} />}
+        src={require('../talk/trac-issues.png')}
+      />
+    )}
   `)
   slide(md`
     ## Koala exempelissue
-    ${<img
+    ${(
+      <img
         style={{position: 'absolute', top: '-72%', left: '-45%', width: '200%', zIndex: -1}}
-        src={require('../talk/trac-issue.png')} />}
+        src={require('../talk/trac-issue.png')}
+      />
+    )}
   `)
   slide(md`
     # Koala exempelissue
-    ${<img
+    ${(
+      <img
         style={{position: 'absolute', top: '-15%', left: '-25%', width: '120%', zIndex: -1}}
-        src={require('../talk/trac-issue.png')} />}
+        src={require('../talk/trac-issue.png')}
+      />
+    )}
   `)
   slide(md`
     # Plan
-    - Ett filsystem där alla ens texter är (som annoterare)
-      - Administratören kan se alla annoterares filer
-    - Använda ett ärendehanteringssystem
-      - länkning till annoteringsverktyget
-      - lätt att klistra in spaghettibilder
-    - Ett frikopplat söksystem
-      - där statistik kan fås fram (tex korp samt något för IAA)
+
+    * Ett filsystem där alla ens texter är (som annoterare)
+      * Administratören kan se alla annoterares filer
+    * Använda ett ärendehanteringssystem
+      * länkning till annoteringsverktyget
+      * lätt att klistra in spaghettibilder
+    * Ett frikopplat söksystem
+      * där statistik kan fås fram (tex korp samt något för IAA)
   `)
   return (
     <div
