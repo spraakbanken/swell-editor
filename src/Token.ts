@@ -8,6 +8,14 @@ export interface Token extends Text {
   readonly id: string
 }
 
+export function Token(text: string, id: string): Token {
+  return {id, text}
+}
+
+export function token(t: Token): Token {
+  return Token(t.text, t.id)
+}
+
 /** The text in some tokens
 
   text(identify(tokenize('apa bepa cepa '), '#')) // => 'apa bepa cepa '
@@ -141,7 +149,7 @@ export function tokenize(s: string): string[] {
 
 */
 export function identify(toks: string[], prefix: string): Token[] {
-  return toks.map((text, i) => ({text, id: prefix + i}))
+  return toks.map((text, i) => Token(text, prefix + i))
 }
 
 /** The offset in the text at an index. */

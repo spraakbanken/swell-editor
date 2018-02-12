@@ -11,6 +11,8 @@ import * as RD from './RichDiff'
 import * as T from './Token'
 import * as Utils from './Utils'
 
+import * as C from './Compact'
+
 import {VNode} from './LadderView'
 
 declare var require: any
@@ -38,10 +40,14 @@ function md(snippets: TemplateStringsArray, ...vnodes: VNode[]): VNode {
 
 export interface State {
   readonly slide: number
+  readonly source: string
+  readonly target: string
 }
 
 export const init: State = {
   slide: 0,
+  source: 'preamble apa:Ort bepacepa xu depa flepa:Comp florp^preamble',
+  target: 'apa bpea cpea dpeaflpae xlbabulr postscriptum^preamble woop^',
 }
 
 function html_rem_aspect_ratio(ratio: number = 16 / 10) {
@@ -60,6 +66,8 @@ export function App(store: Store<State>): () => VNode {
   global.reset = () => store.set(init)
   global.G = G
   store.storage_connect('swell-slides')
+  store.at('source').modify(s => s || '')
+  store.at('target').modify(s => s || '')
 
   window.addEventListener('resize', () => html_rem_aspect_ratio(), true)
   html_rem_aspect_ratio()
@@ -154,10 +162,28 @@ const logos = () => (
   </React.Fragment>
 )
 
+export const Input = (store: Store<string>) => (
+  <input
+    value={store.get()}
+    style={{width: '100%'}}
+    onChange={(e: React.ChangeEvent<HTMLInputElement>) => store.set(e.target.value)}
+  />
+)
+
 export function View(store: Store<State>): VNode {
   const state = store.get()
   const slides = [] as VNode[]
   const slide = (v: VNode) => slides.push(v)
+  const s = C.test_parse(state.source)
+  const t = C.test_parse(state.target)
+  const g = C.units_to_graph(s, t)
+  slide(
+    <div>
+      <div>{L.Ladder(g)}</div>
+      <div>{Input(store.at('source'))}</div>
+      <div>{Input(store.at('target'))}</div>
+    </div>
+  )
   slide(md`
     # Annoteringspiloten i november
     * 9 texter annoterades
@@ -347,7 +373,7 @@ export function View(store: Store<State>): VNode {
     * Ett frikopplat söksystem
       * där statistik kan fås fram (tex korp samt något för IAA)
   `)
-  return (
+  return  slides[state.slide] || (
     <div
       className={SlideStyle}
       onKeyDown={e => {

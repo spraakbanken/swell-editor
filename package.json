@@ -9,7 +9,7 @@
     "diff-match-patch": "^1.0.0",
     "io-ts": "^0.9.8",
     "json-stringify-pretty-compact": "^1.1.0",
-    "parser-ts": "^0.4.2",
+    "parser-ts": "^0.4.3",
     "ramda": "^0.25.0",
     "react": "^16.2.0",
     "react-dom": "^16.2.0",

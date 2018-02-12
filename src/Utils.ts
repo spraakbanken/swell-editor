@@ -420,7 +420,7 @@ export function uniq<A>(xs: A[]): A[] {
 }
 
 /** Union-find data structure operations */
-interface UnionFind<A> {
+export interface UnionFind<A> {
   find(x: A): A
   union(x: A, y: A): A
   unions(xs: A[]): void
@@ -474,10 +474,13 @@ export function Renumber<A>(serialize = (a: A) => JSON.stringify(a)) {
 }
 
 /** Make a polymorphic union-find data structure */
-export function PolyUnionFind<A>(serialize = (a: A) => JSON.stringify(a)): UnionFind<A> {
+export function PolyUnionFind<A>(
+  serialize = (a: A) => JSON.stringify(a)
+): UnionFind<A> & {repr: (a: A) => number} {
   const {un, num} = Renumber(serialize)
   const uf = UnionFind()
   return {
+    repr: x => uf.find(num(x)),
     find: x => un(uf.find(num(x))),
     union: (x, y) => un(uf.union(num(x), num(y))),
     unions: xs => uf.unions(xs.map(num)),
@@ -851,4 +854,9 @@ export function KV<K, V>(s: (k: K) => string = JSON.stringify): KV<K, V> {
 
 export function expr<R>(k: () => R): R {
   return k()
+}
+
+export function push<K extends string, V>(obj: Record<K, V[]>, k: string, ...vs: V[]) {
+  const _obj = obj as any as Record<string, V[]>
+  ;(_obj[k] || (_obj[k] = [])).push(...vs)
 }

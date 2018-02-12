@@ -3892,9 +3892,9 @@ parse5@^3.0.1:
   dependencies:
     "@types/node" "*"
 
-parser-ts@^0.4.2:
-  version "0.4.2"
-  resolved "https://registry.npmjs.org/parser-ts/-/parser-ts-0.4.2.tgz#6f925882067e19d602923a249a51c6d5616cdf98"
+parser-ts@^0.4.3:
+  version "0.4.3"
+  resolved "https://registry.npmjs.org/parser-ts/-/parser-ts-0.4.3.tgz#0a860a520414f2cc0edd3e975fc02bca19c84ba1"
   dependencies:
     fp-ts "^0.6.0"
 
