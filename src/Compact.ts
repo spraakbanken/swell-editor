@@ -122,6 +122,21 @@ function assign_ids_and_manual_alignments(
 
 const space_id = '<space>'
 
+/**
+
+  const test = [
+    Simple('a', [], 'x'),
+    Simple('ja', [], 'y')
+  ]
+  const out = [
+    Simple('a', [], 'x'),
+    Simple(' ', [], space_id),
+    Simple('j', [], 'y'),
+    Simple('a', [], 'y'),
+  })
+  punctuate(test) // => out
+
+*/
 function punctuate(units: Simple[]): Simple[] {
   const slice = (u: Simple) => Utils.str_map(u.text, text => ({...u, text}))
   const slices = (us: Simple[]): Simple[][] => us.map(slice)
@@ -187,7 +202,6 @@ const test_input = `
   words
   "words"
   "wo\\"rds"
-  "wo\\\\rds"
   words#hej
   words:hej
   "words"#hej

@@ -121,7 +121,8 @@ export function ProtoLines(diff: Diff[], keep: 'Dragged' | 'Dropped'): ProtoLine
         // try to move to a source position close to the center of mass of all involved positions
         const proto_center_of_mass = Utils.sum(ds.map(d => d.index)) / ds.length
         // snap-to-grid center of mass calculated only from source positions
-        const dragged = ds.filter(d => d.edit != 'Dropped')
+        // actually, let's skip that for now:
+        const dragged = ds // .filter(d => d.edit != 'Dropped')
         // if there are any
         const morally_dragged = dragged.length > 0 ? dragged : ds
         const center_of_mass = Utils.minimumBy(

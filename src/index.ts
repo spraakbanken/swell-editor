@@ -8,7 +8,8 @@ import * as ReactDOM from 'react-dom'
 import * as ReactiveLens from 'reactive-lens'
 
 import * as VApp from './ViewApp'
-import * as App from './Slides'
+import * as SApp from './Slides'
+import * as App from './SpaghettiEditor'
 
 declare const module: {hot: {accept: Function}}
 

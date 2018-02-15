@@ -394,7 +394,7 @@ function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
 
 /** Calculate the diff
 
-  const expect = [
+  const expect: Diff[] = [
     {
       edit: 'Dragged',
       source: {text: 'apa ', id: 's0'},
@@ -421,7 +421,7 @@ function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
   const g = calculate_diff(rearrange(init('apa bepa cepa '), 1, 2, 0))
   g // => expect
 
-  const expect = [
+  const expect: Diff[] = [
     {
       edit: 'Edited',
       source: [{text: 'apa ', id: 's0'}],
