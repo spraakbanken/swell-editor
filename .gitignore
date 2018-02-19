@@ -13,3 +13,4 @@ coverage/
 test/snapshots/*md
 index_*.html
 src/index_*.ts
+pilot_data.json
