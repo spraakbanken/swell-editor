@@ -40,8 +40,8 @@
     "typescript": "^2.7.1"
   },
   "scripts": {
-    "serve": "parcel index.html",
-    "build": "parcel build index.html",
+    "serve": "parcel $(ts-node src/generate_index.ts ${App:-SpaghettiEditor})",
+    "build": "parcel build $(ts-node src/generate_index.ts ${App:-SpaghettiEditor})",
     "test": "tsc && ava dist/test",
     "test:watch": "tsc --watch & ava --watch dist/test",
     "doctest": "typescript-doctest src/*ts* --tape && ts-node node_modules/.bin/tape src/*doctest*.ts | tap-diff",

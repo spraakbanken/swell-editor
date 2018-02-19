@@ -177,13 +177,6 @@ export function View(store: Store<State>): VNode {
   const s = C.test_parse(state.source)
   const t = C.test_parse(state.target)
   const g = C.units_to_graph(s, t)
-  slide(
-    <div>
-      <div>{L.Ladder(g)}</div>
-      <div>{Input(store.at('source'))}</div>
-      <div>{Input(store.at('target'))}</div>
-    </div>
-  )
   slide(md`
     # Annoteringspiloten i november
     * 9 texter annoterades
@@ -373,7 +366,7 @@ export function View(store: Store<State>): VNode {
     * Ett frikopplat söksystem
       * där statistik kan fås fram (tex korp samt något för IAA)
   `)
-  return  slides[state.slide] || (
+  return (
     <div
       className={SlideStyle}
       onKeyDown={e => {

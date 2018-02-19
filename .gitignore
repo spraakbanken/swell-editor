@@ -11,3 +11,5 @@ index.html
 .nyc_output
 coverage/
 test/snapshots/*md
+index_*.html
+src/index_*.ts
