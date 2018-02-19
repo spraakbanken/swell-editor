@@ -50,7 +50,7 @@ export function View(store: Store<State>): VNode {
   const s = C.test_parse(state.source)
   const t = C.test_parse(state.target)
   const g = C.units_to_graph(s, t)
-  return(
+  return (
     <div>
       <div>{L.Ladder(g)}</div>
       <div>{Input(store.at('source'))}</div>
@@ -58,4 +58,3 @@ export function View(store: Store<State>): VNode {
     </div>
   )
 }
-

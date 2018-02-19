@@ -46,6 +46,7 @@ const LadderStyle = style(
   csstips.wrap,
   csstips.startJustified,
   csstips.horizontal,
+  csstips.inlineRoot,
   {
     $nest: {
       '& > ul': {
