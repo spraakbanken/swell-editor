@@ -11,7 +11,6 @@ import {Graph} from './Graph'
 import * as Utils from './Utils'
 import {UnionFind} from './Utils'
 
-
 type Link = {tag: 'text'; text: string} | {tag: 'id'; id: string} | {tag: 'unlinked'}
 
 const idLink = (id: string): Link => ({tag: 'id', id})
@@ -29,16 +28,18 @@ interface Unit extends Attributes {
 const space_padded = <A>(f: Parser<A>) =>
   pstr.spaces.chain(_ => f.chain(a => pstr.spaces.chain(_ => p.of(a))))
 
-const word = p.alts<string>(pstr.doubleQuotedString, pstr.many1(pchar.notOneOf(' \t\n":#^')))
-const id = pchar.char('#').chain(_ => pstr.many1(pchar.alphanum))
+const word = p.alts<string>(pstr.doubleQuotedString, pstr.many1(pchar.notOneOf(' \t\n":@^')))
+const id = pchar.char('@').chain(_ => pstr.many1(pchar.alphanum))
 const label = pchar.char(':').chain(_ => word)
-const link = pchar.char('^').chain(_ =>
-  p.alts<Link>(
-    word.map<Link>(text => ({tag: 'text', text})),
-    id.map(idLink),
-    p.of<Link>({tag: 'unlinked'}) // is it OK to have this accept-all consume-nothing -syntax?
+const link = pchar
+  .char('^')
+  .chain(_ =>
+    p.alts<Link>(
+      word.map<Link>(text => ({tag: 'text', text})),
+      id.map(idLink),
+      p.of<Link>({tag: 'unlinked'})
+    )
   )
-)
 
 type Attribute = Partial<Attributes>
 
@@ -69,7 +70,6 @@ function Unit(text: string, attrs: Attribute[]): Unit {
 
 const unit = word.chain(word => p.many(attribute).map(attrs => Unit(word, attrs)))
 const units = space_padded(p.sepBy(pstr.spaces1, unit))
-
 
 // these link to a representatitive for the whole edge group
 type Simple = {text: string; labels: string[]; id: string; link?: string}
@@ -124,17 +124,17 @@ const space_id = '<space>'
 
 /**
 
-  const test = [
+  const example = [
     Simple('a', [], 'x'),
     Simple('ja', [], 'y')
   ]
-  const out = [
+  const expect = [
     Simple('a', [], 'x'),
     Simple(' ', [], space_id),
     Simple('j', [], 'y'),
     Simple('a', [], 'y'),
   })
-  punctuate(test) // => out
+  punctuate(example) // => expect
 
 */
 function punctuate(units: Simple[]): Simple[] {
@@ -202,19 +202,19 @@ const test_input = `
   words
   "words"
   "wo\\"rds"
-  words#hej
+  words@hej
   words:hej
-  "words"#hej
+  "words"@hej
   "words":hej
   _^jeeha
   -^jeeha^beba
-  _^jeeha#beba
-  _^"y:#x"^aoeu
-  _#beba#cepa
-  _#bbeeba13
-  stuff^"y:#x"^aoeu
-  stuff^"y:#x"^aoeu#id^hej#ids
-  bil#12#etikett^bli^#15:Ort:Burk
+  _^jeeha@beba
+  _^"y:@x"^aoeu
+  _@beba@cepa
+  _@bbeeba13
+  stuff^"y:@x"^aoeu
+  stuff^"y:@x"^aoeu@id^hej@ids
+  bil@12@etikett^bli^@15:Ort:Burk
 `
 
 pp(test_parse(test_input))

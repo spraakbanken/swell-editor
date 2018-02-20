@@ -9,10 +9,12 @@ if (!App || App.includes('.') || App.includes('/')) {
   process.exit(1)
 }
 
-const index_html = `index_${App}.html`
-const index_ts = `./src/index_${App}.ts`
+const index_html = `index.html`
+const index_ts = `./src/index.ts`
 
-write(index_html, `
+write(
+  index_html,
+  `
 <!DOCTYPE html>
 <html>
     <head>
@@ -25,11 +27,12 @@ write(index_html, `
         <script type="text/javascript" src="${index_ts}"></script>
     </body>
 </html>
-`)
+`
+)
 
-write(index_ts, `
-// import "codemirror/lib/codemirror.css"
-// import 'lato-font/css/lato-font.min.css'
+write(
+  index_ts,
+  `
 
 import * as csstips from 'csstips'
 import * as ReactDOM from 'react-dom'
@@ -53,11 +56,11 @@ if (module.hot) {
     global.reattach(App.App)
   })
 }
-`)
+`
+)
 
 console.log(index_html)
 
 function write(filename: string, content: string) {
   fs.writeFileSync(filename, content, {encoding: 'utf8'})
 }
-

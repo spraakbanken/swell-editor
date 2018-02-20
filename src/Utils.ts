@@ -232,6 +232,15 @@ export function show(x: any): string {
   // return JSON.stringify(x, undefined, 2)
 }
 
+export function stderr(x: any): void {
+  console.error(show(x))
+  console.error()
+}
+
+export function stdout(x: any): void {
+  console.log(show(x))
+}
+
 /** Numeric sort */
 export function numsort(xs: number[]): number[] {
   return xs.slice().sort((u, v) => u - v)
@@ -857,6 +866,6 @@ export function expr<R>(k: () => R): R {
 }
 
 export function push<K extends string, V>(obj: Record<K, V[]>, k: string, ...vs: V[]) {
-  const _obj = obj as any as Record<string, V[]>
+  const _obj = (obj as any) as Record<string, V[]>
   ;(_obj[k] || (_obj[k] = [])).push(...vs)
 }

@@ -452,6 +452,60 @@ export function calculate_diff(g: Graph): Diff[] {
   return merge_diff(calculate_raw_diff(g))
 }
 
+/**
+
+  const diff = [
+    {
+      edit: 'Edited',
+      id: "e0",
+      source: [{text: 'a ', id: 's0'}],
+      target: [{text: 'b ', id: 't0'}],
+    },
+    {
+      edit: 'Edited',
+      source: [{text: 'c ', id: 's1'}],
+      target: [
+        {text: 'd ', id: 't3'},
+        {text: 'e ', id: 't4'}
+      ],
+      id: "e1",
+    }
+  ]
+  const expected = [
+    {"edit": "Dragged", "source": {"text": "a ", "id": "s0"}, "id": "e0"},
+    {"edit": "Dropped", "target": {"text": "b ", "id": "t0"}, "id": "e0"},
+    {"edit": "Dragged", "source": {"text": "c ", "id": "s1"}, "id": "e1"},
+    {"edit": "Dropped", "target": {"text": "d ", "id": "t3"}, "id": "e1"},
+    {"edit": "Dropped", "target": {"text": "e ", "id": "t4"}, "id": "e1"}
+  ]
+  split_up_edits(diff) // => expected
+  split_up_edits(diff, id => id == 'e0') // => [...expected.slice(0,2), diff[1]]
+  split_up_edits(diff, id => id == 'e1') // => [diff[0], ...expected.slice(2)]
+  split_up_edits(diff, _ => false) // => diff
+
+*/
+export function split_up_edits(ds: Diff[], audit = (edge_id: string) => true): Diff[] {
+  return Utils.flatMap<Diff, Diff>(ds, d => {
+    if (d.edit == 'Edited' && audit(d.id)) {
+      return [...d.source.map(t => D.Dragged(t, d.id)), ...d.target.map(t => D.Dropped(t, d.id))]
+    } else {
+      return [d]
+    }
+  })
+}
+
+/**
+
+  const g = modify_tokens(init('apa bepa cepa '), 1, 2, 'depa epa ')
+  const diff = calculate_diff(g)
+  const g2 = diff_to_graph(diff, g.edges)
+  g2 // => g
+
+*/
+export function diff_to_graph(diff: Diff[], edges: Record<string, Edge>): Graph {
+  return from_raw_diff(split_up_edits(diff) as any, edges)
+}
+
 /** Gets the sentence in the target text around some offset, without thinking about edits */
 export function target_sentence(g: Graph, i: number): Span {
   return T.sentence(target_texts(g), i)

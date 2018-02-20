@@ -6,6 +6,7 @@
   "description": "Editor for normalising second-language learner texts",
   "dependencies": {
     "csstips": "^0.2.2",
+    "dejavu-fonts-ttf": "^2.37.3",
     "diff-match-patch": "^1.0.0",
     "express": "^4.16.2",
     "io-ts": "^0.9.8",
@@ -48,7 +49,7 @@
   "scripts": {
     "iosass": "ts-node src/iosass.ts",
     "serve": "parcel $(ts-node src/generate_index.ts ${App:-SpaghettiEditor})",
-    "build": "parcel build $(ts-node src/generate_index.ts ${App:-SpaghettiEditor})",
+    "build": "parcel build --public-url ./ $(ts-node src/generate_index.ts ${App:-SpaghettiEditor})",
     "test": "tsc && ava dist/test",
     "test:watch": "tsc --watch & ava --watch dist/test",
     "doctest": "typescript-doctest src/*ts* --tape && ts-node node_modules/.bin/tape src/*doctest*.ts | tap-diff",

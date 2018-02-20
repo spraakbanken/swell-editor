@@ -11,6 +11,6 @@ index.html
 .nyc_output
 coverage/
 test/snapshots/*md
-index_*.html
-src/index_*.ts
+index.html
+src/index.ts
 pilot_data.json
