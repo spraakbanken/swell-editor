@@ -68,8 +68,10 @@ const LadderStyle = style(
         height: `${px(24)}`,
       },
       '& > ul > li:nth-child(even)': {
-        // fontSize: `${px(0)}`,
         height: `${px(24)}`,
+      },
+      '& *': {
+        color: '#222',
       },
       '& ins': {
         color: '#070',

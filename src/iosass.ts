@@ -16,6 +16,12 @@ const app = express()
 import * as phantom from 'phantom'
 import * as puppeteer from 'puppeteer'
 
+import * as pool from 'generic-pool'
+
+const express_throttle = require('express-throttle')
+const options = {burst: 5, period: '1s'}
+const throttle = express_throttle(options)
+
 function page_for(url: string): string {
   const q = decodeURIComponent(Url.parse(url).query || '')
   console.log(q)
@@ -44,64 +50,90 @@ function page_for(url: string): string {
 }
 
 async function main() {
-  app.get('/', (req, res) => {
-    res.send(page_for(req.url))
-  })
+  try {
+    app.get('/', (req, res) => {
+      res.send(page_for(req.url))
+    })
 
-  const phantom_browser = await phantom.create()
+    const opts = {min: 32, max: 32}
 
-  app.get('/pj.png', async (req, res) => {
-    try {
-      const page = await phantom_browser.createPage()
-      const status = await page.setContent(page_for(req.url), '')
-      const ladder: ClientRect | null = await page.evaluate(function() {
-        var ladder = document.querySelector('.ladder')
-        return ladder ? ladder.getBoundingClientRect() : null
-      })
-      if (!ladder) {
-        throw 'ladder not found on page!'
+    const phantom_browser = await phantom.create()
+
+    const phantom_page = pool.createPool(
+      {
+        create: () => phantom_browser.createPage(),
+        destroy: async page => (await page.close(), undefined),
+      },
+      opts
+    )
+
+    const chrome_browser = await puppeteer.launch({
+      args: ['--no-sandbox'],
+    })
+    const chrome_page = pool.createPool(
+      {
+        create: () => chrome_browser.newPage(),
+        destroy: async page => (await page.close(), undefined),
+      },
+      opts
+    )
+
+    app.get('/pj.png', throttle, async (req, res) => {
+      const page = await phantom_page.acquire()
+      try {
+        await page.property('viewportSize', {width: 800, height: 600})
+        const status = await page.setContent(page_for(req.url), '')
+        const ladder: ClientRect | null = await page.evaluate(function() {
+          var ladder = document.querySelector('.ladder')
+          return ladder ? ladder.getBoundingClientRect() : null
+        })
+        if (!ladder) {
+          throw 'ladder not found on page!'
+        }
+        await page.property('viewportSize', {width: ladder.right, height: ladder.bottom})
+        const b64png = await page.renderBase64('png')
+        res.send(new Buffer(b64png, 'base64'))
+      } catch (e) {
+        res.send(e.toString())
+      } finally {
+        phantom_page.release(page)
       }
-      await page.property('viewportSize', {width: ladder.right, height: ladder.bottom})
-      const b64png = await page.renderBase64('png')
-      res.send(new Buffer(b64png, 'base64'))
-      await page.close()
-    } catch (e) {
-      res.send(e.toString())
-    }
-  })
+    })
 
-  const chrome_browser = await puppeteer.launch({
-    args: ['--no-sandbox'],
-  })
-
-  app.get('/pup.png', async (req, res) => {
-    try {
-      const page = await chrome_browser.newPage()
-      const status = await page.setContent(page_for(req.url))
-      const ladder = await page.$('.ladder')
-      if (!ladder) {
-        throw 'ladder not found on page'
+    app.get('/pup.png', throttle, async (req, res) => {
+      const page = await chrome_page.acquire()
+      try {
+        const status = await page.setContent(page_for(req.url))
+        const ladder = await page.$('.ladder')
+        if (!ladder) {
+          throw 'ladder not found on chrome_page'
+        }
+        const png = await ladder.screenshot({type: 'png'})
+        res.send(png)
+      } catch (e) {
+        res.send(e.toString())
+      } finally {
+        chrome_page.release(page)
       }
-      const png = await ladder.screenshot({type: 'png'})
-      res.send(png)
-      await page.close()
-    } catch (e) {
-      res.send(e.toString())
+    })
+
+    const server = app.listen(3000, () => console.log('Setting phasers to stun...'))
+
+    async function cleanup() {
+      console.log('closing...')
+      await phantom_page.drain()
+      await chrome_page.drain()
+      phantom_browser.exit()
+      await chrome_browser.close()
+      server.close()
     }
-  })
 
-  const server = app.listen(3000, () => console.log('Setting phasers to stun...'))
-
-  function cleanup() {
-    console.log('closing...')
-    phantom_browser.exit()
-    chrome_browser.close()
-    server.close()
+    process.on('exit', cleanup)
+    process.on('SIGINT', cleanup)
+    process.on('SIGTERM', cleanup)
+  } catch (e) {
+    console.error(e)
   }
-
-  process.on('exit', cleanup)
-  process.on('SIGINT', cleanup)
-  process.on('SIGKILL', cleanup)
 }
 
 main()
