@@ -60,8 +60,8 @@ const LadderStyle = style(
         width: '100%',
         ...csstips.selfCenter,
         ...csstips.horizontal,
-        paddingRight: `${px(3)}`,
-        paddingLeft: `${px(3)}`,
+        marginRight: `${px(3)}`,
+        marginLeft: `${px(3)}`,
         justifyContent: 'center',
       },
       '& > ul > li:nth-child(3)': {
@@ -111,6 +111,10 @@ function Column(column: D.Line[], rel: VNode | null | false = null): VNode {
   const grey: React.CSSProperties = {stroke: '#777', strokeWidth: px(2 * 2)}
   const white: React.CSSProperties = {stroke: '#fff', strokeWidth: px(6 * 2)}
   return (
+    // the point of the scaling up and down here is to make the vertical lines
+    // be on exact pixel coordinates to not make them look blurry.
+    // however it interacts with zooming in a bad way: it makes the lines
+    // be affected twice as much by the zoom :(
     <li style={{position: 'relative'}}>
       {rel}
       <div
