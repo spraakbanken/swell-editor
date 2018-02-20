@@ -182,7 +182,7 @@ export function Ladder(g: G.Graph, rd: RD.RichDiff[] = RD.enrichen(g)): VNode {
   const u = grids.upper
   const l = grids.lower
   return (
-    <div className={`${LadderStyle} ${clean_ul}`}>
+    <div className={`${LadderStyle} ${clean_ul} ladder`}>
       {rd.map((d, i) => {
         const [s, t] = Utils.expr((): [VNode, VNode] => {
           switch (d.edit) {

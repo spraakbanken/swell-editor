@@ -54,6 +54,14 @@ async function main() {
     try {
       const page = await phantom_browser.createPage()
       const status = await page.setContent(page_for(req.url), '')
+      const ladder: ClientRect | null = await page.evaluate(function() {
+        var ladder = document.querySelector('.ladder')
+        return ladder ? ladder.getBoundingClientRect() : null
+      })
+      if (!ladder) {
+        throw 'ladder not found on page!'
+      }
+      await page.property('viewportSize', {width: ladder.right, height: ladder.bottom})
       const b64png = await page.renderBase64('png')
       res.send(new Buffer(b64png, 'base64'))
       await page.close()
@@ -70,7 +78,7 @@ async function main() {
     try {
       const page = await chrome_browser.newPage()
       const status = await page.setContent(page_for(req.url))
-      const ladder = await page.$('body>*')
+      const ladder = await page.$('.ladder')
       if (!ladder) {
         throw 'ladder not found on page'
       }

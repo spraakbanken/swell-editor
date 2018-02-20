@@ -54,21 +54,21 @@ export const Input = (store: Store<string>) => (
 const ex = (s: string, t: string) => ({s, t})
 
 const examples = `
-  Their was a problem yesteray . -> There was a problem yesterday .
+  Their was a problem yesteray . // There was a problem yesterday .
 
-The team that hits the most runs get ice cream . -> The team that hits the most runs gets ice cream .
+The team that hits the most runs get ice cream . // The team that hits the most runs gets ice cream .
 
-Blue birds have blue and pink feathers . -> Bluebirds have blue and pink feathers .
+Blue birds have blue and pink feathers . // Bluebirds have blue and pink feathers .
 
-I don’t know his lives . -> I don’t know where he^his lives .
+I don’t know his lives . // I don’t know where he^his lives .
 
-He get to cleaned his son . -> He got his^his son^his^son to clean the^ room^ .
+He get to cleaned his son . // He got his^his son^his^son to clean the^ room^ .
 
-We wrote down the number . -> We wrote the number down^down .
+We wrote down the number . // We wrote the number down^down .
 `
   .trim()
   .split(/\n+/gm)
-  .map(line => ex.apply({}, line.split(/->/).map(side => side.trim())))
+  .map(line => ex.apply({}, line.split('//').map(side => side.trim())))
 
 const Button = (label: string, title: string, on: () => void) => (
   <button title={title} onClick={on} style={{cursor: 'pointer'}}>

@@ -1,19 +1,23 @@
-function go {
-    path=$1
-    shift
-    echo -n -e "\n$path" 1>&2
-    2>/dev/null curl -G "http://localhost:3000/$path.png" --data-urlencode "$@"
+img=1
+function capture {
+    text=$1
+    img=$(($img + 1))
+    for path in pj pup; do
+      echo -n -e "\n$path" 1>&2
+      time >$path$img.png 2>/dev/null curl -G "http://localhost:3000/$path.png"  --data-urlencode "$text"
+    done
 }
 
-time > pup1.png go pup 'en dag jag vaknade // En:CAP dag vaknade jag^jag:WO'
-time > pup2.png go pup 'en dag jag vaknade // En:CAP dag vakmade jag^jag:WO'
-time > pup3.png go pup 'en dag jag vaknade // En:cap dag vaknade jag^jag:wo'
-time > pup4.png go pup 'en dag ja vaknade // En:CAP dag vaknade jag^ja:WO'
-time > pup5.png go pup 'en da jag vaknade // En:CAP dag vaknade jag^jag:WO'
-time > pup6.png go pup "do u:ort not:wwo dear:ort // don't^do^not you dare !:m_punc"
-time > pj1.png go pj 'en dag jag vaknade // En:CAP dag vaknade jag^jag:WO'
-time > pj2.png go pj 'en dag jag vaknade // En:CAP dag vakmade jag^jag:WO'
-time > pj3.png go pj 'en dag jag vaknade // En:cap dag vaknade jag^jag:wo'
-time > pj4.png go pj 'en dag ja vaknade // En:CAP dag vaknade jag^ja:WO'
-time > pj5.png go pj 'en da jag vaknade // En:CAP dag vaknade jag^jag:WO'
-time > pj6.png go pj "do u:ort not:wwo dear:ort // don't^do^not you dare !:m_punc"
+capture 'Their was a problem yesteray . // There was a problem yesterday .'
+capture 'The team that hits the most runs get ice cream . // The team that hits the most runs gets ice cream .'
+capture 'Blue birds have blue and pink feathers . // Bluebirds have blue and pink feathers .'
+capture 'I don’t know his lives . // I don’t know where he^his lives .'
+capture 'He get to cleaned his son . // He got his^his son^his^son to clean the^ room^ .'
+capture 'We wrote down the number . // We wrote the number down^down .'
+capture "do u:ort not:wwo dear:ort // don't^do^not you dare !:m_punc"
+capture 'en dag jag vaknade // En:CAP dag vaknade jag^jag:WO'
+capture 'en dag jag vaknade // En:CAP dag vakmade jag^jag:WO'
+capture 'en dag jag vaknade // En:cap dag vaknade jag^jag:wo'
+capture 'en dag ja vaknade // En:CAP dag vaknade jag^ja:WO'
+capture 'en da jag vaknade // En:CAP dag vaknade jag^jag:WO'
+
