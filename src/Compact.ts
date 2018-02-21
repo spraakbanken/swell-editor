@@ -25,7 +25,8 @@ interface Unit extends Attributes {
   text: string
 }
 
-const parse = <A>(p: Parser<A>, input: string): A | null => p.run(input).bimap(_ => null, x => x[0]).value
+const parse = <A>(p: Parser<A>, input: string): A | null =>
+  p.run(input).bimap(_ => null, x => x[0]).value
 
 /**
   parse(space_, '_') // => '_'
@@ -48,16 +49,19 @@ const quote = pchar.char(`'`)
   parse(quoted, `'\\''`) // => `'`
 */
 const quoted = quote
-  .chain(_ => pstr.many(
-    p.alts(
-      pstr.string(`\\\\`).map(_ => `\\`),
-      pstr.string(`\\'`).map(_ => `'`),
-      pchar.notOneOf(`'\\`))))
+  .chain(_ =>
+    pstr.many(
+      p.alts(
+        pstr.string(`\\\\`).map(_ => `\\`),
+        pstr.string(`\\'`).map(_ => `'`),
+        pchar.notOneOf(`'\\`)
+      )
+    )
+  )
   .chain(s => quote.chain(_ => p.of(s)))
 
 const head = pchar.notOneOf(` '_\t\n:@^~`)
 const tail = pstr.many(pchar.notOneOf(` _\t\n:@^~`))
-
 
 /**
   parse(word, `'apa'`) // => `apa`
@@ -135,7 +139,8 @@ function Unit(text: string, attrs: Attribute[]): Unit {
   parse(units, `  one:0  two:1  three:2  `) // => `one two three`.split(' ').map((x, i) => Unit(x, [{labels: [i+'']}]))
 */
 const unit = word.chain(word => p.many(attribute).map(attrs => Unit(word, attrs)))
-const space_padded = <A>(f: Parser<A>) => spaces_.chain(_ => f.chain(a => spaces_.chain(_ => p.of(a))))
+const space_padded = <A>(f: Parser<A>) =>
+  spaces_.chain(_ => f.chain(a => spaces_.chain(_ => p.of(a))))
 const units = space_padded(p.sepBy(spaces1_, unit))
 
 // these link to a representatitive for the whole edge group
