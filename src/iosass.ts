@@ -1,3 +1,4 @@
+import * as process from 'process'
 import * as express from 'express'
 import * as Url from 'url'
 
@@ -8,15 +9,17 @@ import * as L from './LadderView'
 import * as C from './Compact'
 
 import * as csstips from 'csstips'
-csstips.normalize()
-csstips.setupPage('body')
-
-const app = express()
 
 import * as phantom from 'phantom'
 import * as puppeteer from 'puppeteer'
 
 import * as pool from 'generic-pool'
+
+csstips.normalize()
+csstips.setupPage('body')
+
+const app = express()
+const port = parseInt(process.argv[2], 10) || 3000
 
 const express_throttle = require('express-throttle')
 const options = {burst: 5, period: '1s'}
@@ -117,7 +120,7 @@ async function main() {
       }
     })
 
-    const server = app.listen(3000, () => console.log('Setting phasers to stun...'))
+    const server = app.listen(port, () => console.log('Setting phasers to stun...'))
 
     async function cleanup() {
       console.log('closing...')
