@@ -25,14 +25,60 @@ interface Unit extends Attributes {
   text: string
 }
 
-const space_padded = <A>(f: Parser<A>) =>
-  pstr.spaces.chain(_ => f.chain(a => pstr.spaces.chain(_ => p.of(a))))
+const parse = <A>(p: Parser<A>, input: string): A | null => p.run(input).bimap(_ => null, x => x[0]).value
 
-const word = p.alts<string>(pstr.doubleQuotedString, pstr.many1(pchar.notOneOf(' \t\n":@^')))
-const id = pchar.char('@').chain(_ => pstr.many1(pchar.alphanum))
+/**
+  parse(space_, '_') // => '_'
+  parse(space_, ' ') // => ' '
+  parse(space_, '!') // => null
+*/
+const space_ = pchar.oneOf(' \n\t_')
+const spaces_ = pstr.many(space_)
+const spaces1_ = pstr.many1(space_)
+
+const quote = pchar.char(`'`)
+
+/**
+  parse(quoted, `'apa'`) // => `apa`
+  parse(quoted, `apa`) // => null
+  parse(quoted, `'apa`) // => null
+  parse(quoted, `apa'`) // => null
+  parse(quoted, `'a'a'`) // => `a`
+  parse(quoted, `'\\\\'`) // => `\\`
+  parse(quoted, `'\\''`) // => `'`
+*/
+const quoted = quote
+  .chain(_ => pstr.many(
+    p.alts(
+      pstr.string(`\\\\`).map(_ => `\\`),
+      pstr.string(`\\'`).map(_ => `'`),
+      pchar.notOneOf(`'\\`))))
+  .chain(s => quote.chain(_ => p.of(s)))
+
+const head = pchar.notOneOf(` '_\t\n:@^~`)
+const tail = pstr.many(pchar.notOneOf(` _\t\n:@^~`))
+
+
+/**
+  parse(word, `'apa'`) // => `apa`
+  parse(word, `apa`) // => `apa`
+  parse(word, `'apa`) // => null
+  parse(word, `apa'`) // => `apa'`
+  parse(word, `'a'a'`) // => `a`
+  parse(word, `'\\\\'`) // => `\\`
+  parse(word, `'\\''`) // => `'`
+  parse(word, `a b`) // => `a`
+  parse(word, `a_b`) // => `a`
+  parse(word, `a:b`) // => `a`
+  parse(word, `a^b`) // => `a`
+  parse(word, `a~b`) // => `a`
+  parse(word, `a+b`) // => `a+b`
+*/
+const word = p.alts<string>(quoted, head.chain(c => tail.map(s => c + s)))
+const id = pchar.char('@').chain(_ => word)
 const label = pchar.char(':').chain(_ => word)
 const link = pchar
-  .char('^')
+  .oneOf('^~')
   .chain(_ =>
     p.alts<Link>(
       word.map<Link>(text => ({tag: 'text', text})),
@@ -68,8 +114,29 @@ function Unit(text: string, attrs: Attribute[]): Unit {
   return {text, ...r}
 }
 
+/**
+  const expect = {
+    text: `apa`,
+    labels: [`bepa`],
+    ids: [`cepa`],
+    links: [{tag: 'text', text: `depa`}]
+  }
+  parse(unit, `'apa':'bepa'@'cepa'^'depa'`) // => expect
+  parse(unit, `apa:bepa@cepa^depa`) // => expect
+  parse(units, ` apa:bepa@cepa^depa 'apa':'bepa'@'cepa'^'depa' `) // => [expect, expect]
+  parse(units, `_apa:bepa@cepa^depa_'apa':'bepa'@'cepa'^'depa'_`) // => [expect, expect]
+
+  parse(units, `__one___two___three___`) // => `one two three`.split(' ').map(x => Unit(x, []))
+  parse(units, `__one@0_two@1_three@2_`) // => `one two three`.split(' ').map((x, i) => Unit(x, [{ids: [i+'']}]))
+  parse(units, `__one:0_two:1_three:2_`) // => `one two three`.split(' ').map((x, i) => Unit(x, [{labels: [i+'']}]))
+
+  parse(units, `  one    two    three    `) // => `one two three`.split(' ').map(x => Unit(x, []))
+  parse(units, `  one@0  two@1  three@2  `) // => `one two three`.split(' ').map((x, i) => Unit(x, [{ids: [i+'']}]))
+  parse(units, `  one:0  two:1  three:2  `) // => `one two three`.split(' ').map((x, i) => Unit(x, [{labels: [i+'']}]))
+*/
 const unit = word.chain(word => p.many(attribute).map(attrs => Unit(word, attrs)))
-const units = space_padded(p.sepBy(pstr.spaces1, unit))
+const space_padded = <A>(f: Parser<A>) => spaces_.chain(_ => f.chain(a => spaces_.chain(_ => p.of(a))))
+const units = space_padded(p.sepBy(spaces1_, unit))
 
 // these link to a representatitive for the whole edge group
 type Simple = {text: string; labels: string[]; id: string; link?: string}
