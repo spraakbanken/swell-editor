@@ -44,9 +44,10 @@ export function App(store: Store<State>): () => VNode {
   return () => View(store)
 }
 
-export const Input = (store: Store<string>) => (
+export const Input = (store: Store<string>, tabIndex?: number) => (
   <input
     value={store.get()}
+    tabIndex={tabIndex}
     onChange={(e: React.ChangeEvent<HTMLInputElement>) => store.set(e.target.value)}
   />
 )
@@ -119,10 +120,10 @@ export function View(store: Store<State>): VNode {
       <div className="main">{L.Ladder(g)}</div>
       {Button('\u2b1a', 'clear', () => source.set(''))}
       {Button('\u21e3', 'copy to target', () => target.set(state.source))}
-      {Input(source)}
+      {Input(source, 1)}
       {Button('\u2b1a', 'clear', () => target.set(''))}
       {Button('\u21e1', 'copy to source', () => target.set(state.source))}
-      {Input(target)}
+      {Input(target, 2)}
       <div className="main TopPad">
         <em>Examples:</em>
       </div>
