@@ -58,11 +58,11 @@ const LadderStyle = style(
       '& > ul > li': {
         height: `${px(20)}`,
         width: '100%',
-        ...csstips.selfCenter,
-        ...csstips.horizontal,
         marginRight: `${px(3)}`,
         marginLeft: `${px(3)}`,
-        justifyContent: 'center',
+        ...csstips.selfCenter,
+        ...csstips.horizontal,
+        ...csstips.centerJustified,
       },
       '& > ul > li:nth-child(3)': {
         height: `${px(24)}`,
