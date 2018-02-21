@@ -70,17 +70,6 @@ async function main() {
       opts
     )
 
-    const chrome_browser = await puppeteer.launch({
-      args: ['--no-sandbox'],
-    })
-    const chrome_page = pool.createPool(
-      {
-        create: () => chrome_browser.newPage(),
-        destroy: async page => (await page.close(), undefined),
-      },
-      opts
-    )
-
     app.get('/pj.png', throttle, async (req, res) => {
       const page = await phantom_page.acquire()
       try {
@@ -95,6 +84,7 @@ async function main() {
         }
         await page.property('viewportSize', {width: ladder.right, height: ladder.bottom})
         const b64png = await page.renderBase64('png')
+        res.contentType('image/png')
         res.send(new Buffer(b64png, 'base64'))
       } catch (e) {
         res.send(e.toString())
@@ -102,6 +92,18 @@ async function main() {
         phantom_page.release(page)
       }
     })
+
+    /*
+    const chrome_browser = await puppeteer.launch({
+      args: ['--no-sandbox'],
+    })
+    const chrome_page = pool.createPool(
+      {
+        create: () => chrome_browser.newPage(),
+        destroy: async page => (await page.close(), undefined),
+      },
+      opts
+    )
 
     app.get('/pup.png', throttle, async (req, res) => {
       const page = await chrome_page.acquire()
@@ -119,15 +121,19 @@ async function main() {
         chrome_page.release(page)
       }
     })
+    */
+    async function chrome_cleanup() {
+      // await chrome_page.drain()
+      // await chrome_browser.close()
+    }
 
     const server = app.listen(port, () => console.log('Setting phasers to stun...'))
 
     async function cleanup() {
       console.log('closing...')
+      await chrome_cleanup()
       await phantom_page.drain()
-      await chrome_page.drain()
       phantom_browser.exit()
-      await chrome_browser.close()
       server.close()
     }
 
