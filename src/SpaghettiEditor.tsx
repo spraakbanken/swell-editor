@@ -153,6 +153,7 @@ const topStyle = style({
       background: 'hsl(0,0%,95%)',
       borderTop: '2px hsl(220,65%,65%) solid',
       boxShadow: '2px 2px 3px 0px hsla(0,0%,0%,0.2)',
+      padding: '0.25em'
     },
     '& > .TopPad': {
       paddingTop: '4em',
@@ -183,7 +184,7 @@ export function View(store: Store<State>): VNode {
       {Button('\u21e3', 'copy to target', () => target.set(state.source))}
       <Textarea store={source} tabIndex={1 as number} rows={state.source.split('\n').length} style={{resize: 'vertical'}} placeholder={'Enter source text...'}/>
       {Button('\u2b1a', 'clear', () => target.set(''))}
-      {Button('\u21e1', 'copy to source', () => target.set(state.source))}
+      {Button('\u21e1', 'copy to source', () => source.set(state.target))}
       <Textarea store={target} tabIndex={2 as number} rows={state.target.split('\n').length} style={{resize: 'vertical'}} placeholder={'Enter target text...'}/>
       <div className="main" style={{opacity: '0.85', justifySelf: 'end'} as any}>
         graph: {checklink(store.at('show_g'))}
@@ -191,8 +192,8 @@ export function View(store: Store<State>): VNode {
         diff: {checklink(store.at('show_d'))}
       </div>
       <div className="main">
-        <pre style={display_if(store.get().show_g)}>graph = {Utils.show(g)}</pre>
         <pre style={display_if(store.get().show_d)}>diff = {Utils.show(rd)}</pre>
+        <pre style={display_if(store.get().show_g)}>graph = {Utils.show(g)}</pre>
       </div>
       <div className="main TopPad">
         <em>Examples:</em>
