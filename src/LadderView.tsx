@@ -109,14 +109,11 @@ function Column(column: D.Line[], rel: VNode | null | false = null): VNode {
   const endpoint_id: string | undefined = column
     .filter(line => !LineIsHorizontal(line))
     .map(line => line.id)[0]
-  // multiply stroke widths with 2 because we set fontSize to 0.5em below
-  const grey: React.CSSProperties = {stroke: '#777', strokeWidth: px(2 * 2)}
-  const white: React.CSSProperties = {stroke: '#fff', strokeWidth: px(6 * 2)}
+  const grey: React.CSSProperties = {stroke: '#777', strokeWidth: px(4)}
+  const white: React.CSSProperties = {stroke: '#fff', strokeWidth: px(12)}
   return (
     // the point of the scaling up and down here is to make the vertical lines
     // be on exact pixel coordinates to not make them look blurry.
-    // however it interacts with zooming in a bad way: it makes the lines
-    // be affected twice as much by the zoom :(
     <li style={{position: 'relative'}}>
       {rel}
       <div
@@ -124,10 +121,12 @@ function Column(column: D.Line[], rel: VNode | null | false = null): VNode {
           position: 'absolute',
           top: '0',
           left: '0',
+          // This needs to be <=0.5em, but smaller than that makes it not start
+          // growing until a sufficiently high zoom
+          fontSize: '0.25em',
           // table rounds the sizes in webkit
           display: 'table',
           // we try to make the sizes just about 50%
-          fontSize: '0.5em',
           width: 'calc(50% + 1px)',
           height: 'calc(50% + 1px)',
         }}>
