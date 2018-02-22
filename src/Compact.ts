@@ -25,13 +25,22 @@ interface Unit extends Attributes {
   text: string
 }
 
-const parse = <A>(p: Parser<A>, input: string): A | null =>
+const run_parser = <A>(p: Parser<A>, input: string): A | null =>
   p.run(input).bimap(_ => null, x => x[0]).value
 
+const run_parser_strict = <A>(p: Parser<A>, input: string): A => {
+  const r = run_parser(p, input)
+  if (r === null) {
+    throw 'Parse failed on input: ' + input
+  } else {
+    return r
+  }
+}
+
 /**
-  parse(space_, '_') // => '_'
-  parse(space_, ' ') // => ' '
-  parse(space_, '!') // => null
+  run_parser(space_, '_') // => '_'
+  run_parser(space_, ' ') // => ' '
+  run_parser(space_, '!') // => null
 */
 const space_ = pchar.oneOf(' \n\t_')
 const spaces_ = pstr.many(space_)
@@ -40,13 +49,13 @@ const spaces1_ = pstr.many1(space_)
 const quote = pchar.char(`'`)
 
 /**
-  parse(quoted, `'apa'`) // => `apa`
-  parse(quoted, `apa`) // => null
-  parse(quoted, `'apa`) // => null
-  parse(quoted, `apa'`) // => null
-  parse(quoted, `'a'a'`) // => `a`
-  parse(quoted, `'\\\\'`) // => `\\`
-  parse(quoted, `'\\''`) // => `'`
+  run_parser(quoted, `'apa'`) // => `apa`
+  run_parser(quoted, `apa`) // => null
+  run_parser(quoted, `'apa`) // => null
+  run_parser(quoted, `apa'`) // => null
+  run_parser(quoted, `'a'a'`) // => `a`
+  run_parser(quoted, `'\\\\'`) // => `\\`
+  run_parser(quoted, `'\\''`) // => `'`
 */
 const quoted = quote
   .chain(_ =>
@@ -64,19 +73,19 @@ const head = pchar.notOneOf(` '_\t\n:@^~`)
 const tail = pstr.many(pchar.notOneOf(` _\t\n:@^~`))
 
 /**
-  parse(word, `'apa'`) // => `apa`
-  parse(word, `apa`) // => `apa`
-  parse(word, `'apa`) // => null
-  parse(word, `apa'`) // => `apa'`
-  parse(word, `'a'a'`) // => `a`
-  parse(word, `'\\\\'`) // => `\\`
-  parse(word, `'\\''`) // => `'`
-  parse(word, `a b`) // => `a`
-  parse(word, `a_b`) // => `a`
-  parse(word, `a:b`) // => `a`
-  parse(word, `a^b`) // => `a`
-  parse(word, `a~b`) // => `a`
-  parse(word, `a+b`) // => `a+b`
+  run_parser(word, `'apa'`) // => `apa`
+  run_parser(word, `apa`) // => `apa`
+  run_parser(word, `'apa`) // => null
+  run_parser(word, `apa'`) // => `apa'`
+  run_parser(word, `'a'a'`) // => `a`
+  run_parser(word, `'\\\\'`) // => `\\`
+  run_parser(word, `'\\''`) // => `'`
+  run_parser(word, `a b`) // => `a`
+  run_parser(word, `a_b`) // => `a`
+  run_parser(word, `a:b`) // => `a`
+  run_parser(word, `a^b`) // => `a`
+  run_parser(word, `a~b`) // => `a`
+  run_parser(word, `a+b`) // => `a+b`
 */
 const word = p.alts<string>(quoted, head.chain(c => tail.map(s => c + s)))
 const id = pchar.char('@').chain(_ => word)
@@ -125,23 +134,42 @@ function Unit(text: string, attrs: Attribute[]): Unit {
     ids: [`cepa`],
     links: [{tag: 'text', text: `depa`}]
   }
-  parse(unit, `'apa':'bepa'@'cepa'^'depa'`) // => expect
-  parse(unit, `apa:bepa@cepa^depa`) // => expect
-  parse(units, ` apa:bepa@cepa^depa 'apa':'bepa'@'cepa'^'depa' `) // => [expect, expect]
-  parse(units, `_apa:bepa@cepa^depa_'apa':'bepa'@'cepa'^'depa'_`) // => [expect, expect]
+  run_parser(unit, `'apa':'bepa'@'cepa'^'depa'`) // => expect
+  run_parser(unit, `apa:bepa@cepa^depa`) // => expect
 
-  parse(units, `__one___two___three___`) // => `one two three`.split(' ').map(x => Unit(x, []))
-  parse(units, `__one@0_two@1_three@2_`) // => `one two three`.split(' ').map((x, i) => Unit(x, [{ids: [i+'']}]))
-  parse(units, `__one:0_two:1_three:2_`) // => `one two three`.split(' ').map((x, i) => Unit(x, [{labels: [i+'']}]))
-
-  parse(units, `  one    two    three    `) // => `one two three`.split(' ').map(x => Unit(x, []))
-  parse(units, `  one@0  two@1  three@2  `) // => `one two three`.split(' ').map((x, i) => Unit(x, [{ids: [i+'']}]))
-  parse(units, `  one:0  two:1  three:2  `) // => `one two three`.split(' ').map((x, i) => Unit(x, [{labels: [i+'']}]))
+  const expect = {
+    text: `apa`, labels: [], ids: [],
+    links: [{tag: 'unlinked'}]
+  }
+  run_parser(unit, `apa^`) // => expect
 */
+
 const unit = word.chain(word => p.many(attribute).map(attrs => Unit(word, attrs)))
 const space_padded = <A>(f: Parser<A>) =>
   spaces_.chain(_ => f.chain(a => spaces_.chain(_ => p.of(a))))
+
+/**
+  const expect = {
+    text: `apa`,
+    labels: [`bepa`],
+    ids: [`cepa`],
+    links: [{tag: 'text', text: `depa`}]
+  }
+  run_parser(units, ` apa:bepa@cepa^depa 'apa':'bepa'@'cepa'^'depa' `) // => [expect, expect]
+  run_parser(units, `_apa:bepa@cepa^depa_'apa':'bepa'@'cepa'^'depa'_`) // => [expect, expect]
+
+  run_parser(units, `__one___two___three___`) // => `one two three`.split(' ').map(x => Unit(x, []))
+  run_parser(units, `__one@0_two@1_three@2_`) // => `one two three`.split(' ').map((x, i) => Unit(x, [{ids: [i+'']}]))
+  run_parser(units, `__one:0_two:1_three:2_`) // => `one two three`.split(' ').map((x, i) => Unit(x, [{labels: [i+'']}]))
+
+  run_parser(units, `  one    two    three    `) // => `one two three`.split(' ').map(x => Unit(x, []))
+  run_parser(units, `  one@0  two@1  three@2  `) // => `one two three`.split(' ').map((x, i) => Unit(x, [{ids: [i+'']}]))
+  run_parser(units, `  one:0  two:1  three:2  `) // => `one two three`.split(' ').map((x, i) => Unit(x, [{labels: [i+'']}]))
+*/
 const units = space_padded(p.sepBy(spaces1_, unit))
+
+export const parse = (s: string) => run_parser(units, s) || []
+export const parse_strict = (s: string) => run_parser_strict(units, s)
 
 // these link to a representatitive for the whole edge group
 type Simple = {text: string; labels: string[]; id: string; link?: string}
@@ -166,13 +194,13 @@ function assign_ids_and_manual_alignments(
     uf.unions([
       ...u.ids.map(idLink),
       {tag: 'text', text: u.text},
-      ...u.links, // source text may have links
+      ...u.links.filter(link => link.tag != 'unlinked'),
     ])
   )
   t.forEach(u =>
     uf.unions([
       ...u.ids.map(idLink),
-      ...u.links,
+      ...u.links.filter(link => link.tag != 'unlinked'),
       // the text of a target text cannot be referred to
     ])
   )
@@ -235,6 +263,38 @@ function automatic_alignments(source: Simple[], target: Simple[]): UnionFind<str
   return uf
 }
 
+/**
+
+  const s1 = parse_strict(`b~ cc d`)
+  const t1 = parse_strict(`b cc d~`)
+  const s2 = parse_strict(`b cc d~`)
+  const t2 = parse_strict(`b~ cc d`)
+  units_to_graph(s1, t1) // => units_to_graph(s2, t2)
+
+  const s1 = parse_strict(`aa@1 bb cc@2`)
+  const t1 = parse_strict(`aa~aa bb cc~aa~cc`)
+  units_to_graph(s1, t1) // => units_to_graph(s1, parse_strict(`aa~aa~cc bb cc~aa`))
+  units_to_graph(s1, t1) // => units_to_graph(s1, parse_strict(`aa~@1 bb cc~@1~@2`))
+  units_to_graph(s1, t1) // => units_to_graph(s1, parse_strict(`aa~@1~@2 bb cc~@2`))
+  units_to_graph(s1, t1) // => units_to_graph(s1, parse_strict(`aa~aa bb cc~@1~@2`))
+  units_to_graph(s1, t1) // => units_to_graph(s1, parse_strict(`aa~@1~cc bb cc~cc`))
+
+  const s1 = parse_strict(`apa bepa cepa`)
+  const t1 = parse_strict(`apa bpea cpea`)
+  units_to_graph(s1, t1) // => units_to_graph(s1, parse_strict(`apa bpea~bepa cpea`))
+  units_to_graph(s1, t1) // => units_to_graph(s1, parse_strict(`apa bpea cpea~cepa`))
+  units_to_graph(s1, t1) // => units_to_graph(s1, parse_strict(`apa bpea~bepa cpea~cepa`))
+  units_to_graph(s1, t1) // => units_to_graph(s1, parse_strict(`apa~apa bpea cpea`))
+  units_to_graph(s1, t1) // => units_to_graph(s1, parse_strict(`apa~apa bpea~bepa cpea~cepa`))
+
+  const s1 = parse_strict(`w1:L1 w2:L2 w3:L3 `)
+  const t1 = parse_strict(`w1    w2    w3    `)
+  units_to_graph(s1, t1) // => units_to_graph(t1, s1)
+
+  const ex_s = parse_strict('preamble apa:Ort bepacepa xu depa flepa:Comp florp^preamble')
+  const ex_t = parse_strict('apa bpea cpea dpeaflpae xlbabulr postscriptum^preamble woop^')
+
+*/
 export function units_to_graph(source: Unit[], target: Unit[]): Graph {
   const r = assign_ids_and_manual_alignments(source, target)
   const auto = automatic_alignments(r.source, r.target)
@@ -260,39 +320,3 @@ export function units_to_graph(source: Unit[], target: Unit[]): Graph {
     edges,
   }
 }
-
-export const test_parse = (s: string) => units.run(s).getOrElseValue([[], ''])[0]
-
-/*
-import * as util from 'util'
-util.inspect.defaultOptions.depth = 5
-util.inspect.defaultOptions.colors = true
-const pp = (x: any) => (console.dir(x), console.log())
-
-const test_input = `
-  word
-  words
-  "words"
-  "wo\\"rds"
-  words@hej
-  words:hej
-  "words"@hej
-  "words":hej
-  _^jeeha
-  -^jeeha^beba
-  _^jeeha@beba
-  _^"y:@x"^aoeu
-  _@beba@cepa
-  _@bbeeba13
-  stuff^"y:@x"^aoeu
-  stuff^"y:@x"^aoeu@id^hej@ids
-  bil@12@etikett^bli^@15:Ort:Burk
-`
-
-pp(test_parse(test_input))
-
-const ex_s = test_parse('preamble apa:Ort bepacepa xu depa flepa:Comp florp^preamble')
-const ex_t = test_parse('apa bpea cpea dpeaflpae xlbabulr postscriptum^preamble woop^')
-
-pp(units_to_graph(ex_s, ex_t))
-*/

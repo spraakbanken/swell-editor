@@ -187,8 +187,8 @@ export function View(store: Store<State>): VNode {
   const state = store.get()
   const source = store.at('source')
   const target = store.at('target')
-  const s = C.test_parse(state.source)
-  const t = C.test_parse(state.target)
+  const s = C.parse(state.source)
+  const t = C.parse(state.target)
   const g = C.units_to_graph(s, t)
   const d = RD.enrichen(g, G.calculate_diff(g))
   return (
