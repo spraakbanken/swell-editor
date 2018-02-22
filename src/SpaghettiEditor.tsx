@@ -160,9 +160,10 @@ const topStyle = style({
     },
     '& pre': {
       fontSize: '0.85em',
-      background: 'hsl(0,0%,95%)',
+      background: 'hsl(0,0%,96%)',
       borderTop: '2px hsl(220,65%,65%) solid',
       boxShadow: '2px 2px 3px 0px hsla(0,0%,0%,0.2)',
+      borderRadius: '0px 0px 2px 2px',
       padding: '0.25em',
     },
     '& > .TopPad': {
