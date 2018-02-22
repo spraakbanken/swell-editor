@@ -1,4 +1,17 @@
 import * as process from 'process'
+interface png_itxt {
+  set(opts: {
+    type: 'tEXt' | 'zTXt' | 'iTXt',
+    keyword: string,
+    value: string,
+    language?: string,
+    translated?: string,
+    compressed?: boolean,
+    compression_type?: 0
+  }): NodeJS.WritableStream
+}
+const png: png_itxt = require('png-itxt')
+import {Readable} from 'stream'
 import * as express from 'express'
 import * as Url from 'url'
 
