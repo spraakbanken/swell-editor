@@ -67,9 +67,13 @@ export const Input = (store: Store<string>, tabIndex?: number) => (
   />
 )
 
-const ex = (s: string, t: string) => ({s, t})
+interface ex {
+  source: string
+  target: string
+}
+const ex = (source: string, target: string): ex => ({source, target})
 
-const examples = `
+const examples: ex[] = `
 Their was a problem yesteray . // There was a problem yesterday .
 
 The team that hits the most runs get ice cream . // The team that hits the most runs gets ice cream .
@@ -119,7 +123,7 @@ const Button = (label: string, title: string, on: () => void) => (
 )
 
 const checklink = (store: Store<boolean>, f = 'show json', t = 'hide json') => (
-  <a href="#" onClick={e => (store.modify(x => !x), e.preventDefault)}>
+  <a href="" onClick={e => (store.modify(x => !x), e.preventDefault())}>
     {store.get() ? t : f}
   </a>
 )
@@ -145,8 +149,14 @@ const topStyle = style({
     '& > .main': {
       gridColumnStart: 'main',
     },
-    '& button': {
+    '& > *': {
+      // Non-grid fallback
+      display: 'block',
+    },
+    '& > button': {
       marginTop: '-0.125em',
+      // Non-grid fallback
+      display: 'inline-block',
     },
     '& pre': {
       fontSize: '0.85em',
@@ -169,6 +179,10 @@ const topStyle = style({
   },
 })
 
+type side = 'source' | 'target'
+const sides = ['source' as side, 'target' as side]
+const op = (x: side) => (x == 'source' ? 'target' : 'source')
+
 export function View(store: Store<State>): VNode {
   const state = store.get()
   const source = store.at('source')
@@ -176,49 +190,50 @@ export function View(store: Store<State>): VNode {
   const s = C.test_parse(state.source)
   const t = C.test_parse(state.target)
   const g = C.units_to_graph(s, t)
-  const rd = RD.enrichen(g, G.calculate_diff(g))
+  const d = RD.enrichen(g, G.calculate_diff(g))
   return (
     <div className={topStyle}>
       <div className="main" style={{minHeight: '10em'}}>
         {L.Ladder(g)}
       </div>
-      {Button('\u2b1a', 'clear', () => source.set(''))}
-      {Button('\u21e3', 'copy to target', () => target.set(state.source))}
-      <Textarea
-        store={source}
-        tabIndex={1 as number}
-        rows={state.source.split('\n').length}
-        style={{resize: 'vertical'}}
-        placeholder={'Enter source text...'}
-      />
-      {Button('\u2b1a', 'clear', () => target.set(''))}
-      {Button('\u21e1', 'copy to source', () => source.set(state.target))}
-      <Textarea
-        store={target}
-        tabIndex={2 as number}
-        rows={state.target.split('\n').length}
-        style={{resize: 'vertical'}}
-        placeholder={'Enter target text...'}
-      />
+      {sides.map((side, i) => (
+        <React.Fragment key={i}>
+          {Button('\u2b1a', 'clear', () => store.at(side).set(''))}
+          {Button(i ? '\u21e1' : '\u21e3', 'copy to ' + side, () =>
+            store.at(op(side)).set(state[side])
+          )}
+          <Textarea
+            store={store.at(side)}
+            tabIndex={(i + 1) as number}
+            rows={state[side].split('\n').length}
+            style={{resize: 'vertical'}}
+            placeholder={'Enter ' + side + ' text...'}
+          />
+        </React.Fragment>
+      ))}
       <div className="main" style={{opacity: '0.85', justifySelf: 'end'} as any}>
         graph: {checklink(store.at('show_g'))} diff: {checklink(store.at('show_d'))}
       </div>
       <div className="main">
-        <pre style={display_if(store.get().show_d)}>diff = {Utils.show(rd)}</pre>
-        <pre style={display_if(store.get().show_g)}>graph = {Utils.show(g)}</pre>
+        {store.get().show_d && <pre>diff = {Utils.show(d)}</pre>}
+        {store.get().show_g && <pre>graph = {Utils.show(g)}</pre>}
       </div>
       <div className="main TopPad">
         <em>Examples:</em>
       </div>
       {examples.map((e, i) => (
         <React.Fragment key={i}>
-          {!e.t ? (
+          {!e.target ? (
             <div />
           ) : (
-            Button('\u21eb', 'see example analysis', () => (source.set(e.s), target.set(e.t)))
+            Button(
+              '\u21eb',
+              'see example analysis',
+              () => (source.set(e.source), target.set(e.target))
+            )
           )}
-          {Button('\u21ea', 'load example', () => (source.set(e.s), target.set(e.s)))}
-          <span>{e.s}</span>
+          {Button('\u21ea', 'load example', () => (source.set(e.source), target.set(e.source)))}
+          <span>{e.source}</span>
         </React.Fragment>
       ))}
     </div>
