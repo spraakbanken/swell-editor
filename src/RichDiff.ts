@@ -8,9 +8,9 @@ import {TokenDiff} from './Utils'
 import * as Utils from './Utils'
 
 export type RichDiff =
-  | Edited & {target_diffs: TokenDiff[]; source_diffs: TokenDiff[]}
-  | Dragged & {source_diff: TokenDiff}
-  | Dropped & {target_diff: TokenDiff}
+  | Edited & {index: number} & {target_diffs: TokenDiff[]; source_diffs: TokenDiff[]}
+  | Dragged & {index: number} & {source_diff: TokenDiff}
+  | Dropped & {index: number} & {target_diff: TokenDiff}
 
 /** Enrichen a diff with detailed intra-token diffs
 
@@ -20,12 +20,12 @@ export type RichDiff =
   const gm = G.modify(gr, 10, 10, 'h')
   G.target_text(gm) // => 'bepa cepa haporna depa'
   const rd = enrichen(gm)
-  rd[0] // => {edit: 'Dragged', source: {text: 'aporna ', id: 's0'}, id: 'e-t4-s0', source_diff: [[1, 'h'], [0, 'aporna ']]}
+  rd[0] // => {edit: 'Dragged', source: {text: 'aporna ', id: 's0'}, id: 'e-t4-s0', source_diff: [[1, 'h'], [0, 'aporna ']], index: 0}
 
 */
 export function enrichen(g: Graph, diff: Diff[] = G.calculate_diff(g)): RichDiff[] {
   const partition = G.partition_ids(g)
-  return diff.map((d: Diff) => {
+  return D.Index(diff).map((d: D.IndexedDiff) => {
     switch (d.edit) {
       case 'Edited':
         return {

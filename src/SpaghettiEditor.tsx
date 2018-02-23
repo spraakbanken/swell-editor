@@ -23,6 +23,7 @@ import 'dejavu-fonts-ttf/ttf/DejaVuSans.ttf'
 export interface State {
   readonly source: string
   readonly target: string
+  readonly drag_state?: L.DragState
   readonly show_g: boolean
   readonly show_d: boolean
 }
@@ -194,8 +195,29 @@ export function View(store: Store<State>): VNode {
   const d = RD.enrichen(g, G.calculate_diff(g))
   return (
     <div className={topStyle}>
+      {
+        // Button('tick', '', () => store.modify(x => x))
+      }
       <div className="main" style={{minHeight: '10em'}}>
-        {L.Ladder(g)}
+        {L.Ladder(
+          g,
+          undefined,
+          state.drag_state,
+          (ds: L.DragState) => (console.log('drag', ds), store.at('drag_state').set(ds)),
+          (ds: L.DragState) => (
+            console.log('drop', ds),
+            store.transaction(() => {
+              const g2 = G.diff_to_graph(L.ApplyMove(G.calculate_diff(g), ds), g.edges)
+              const us = C.graph_to_units(g2)
+              const s = C.units_to_string(us.source)
+              const t = C.units_to_string(us.target)
+              console.log({g2, us})
+              store.at('source').set(s)
+              store.at('target').set(t)
+              store.at('drag_state').set(undefined)
+            })
+          )
+        )}
       </div>
       {sides.map((side, i) => (
         <React.Fragment key={i}>

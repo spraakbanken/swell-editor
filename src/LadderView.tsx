@@ -64,6 +64,7 @@ const LadderStyle = style(
         ...csstips.horizontal,
         ...csstips.centerJustified,
       },
+      // note: li indexes starts from 1
       '& > ul > li:nth-child(3)': {
         height: `${px(24)}`,
       },
@@ -178,7 +179,32 @@ const {inserts, deletes} = Utils.expr(() => {
   }
 })
 
-export function Ladder(g: G.Graph, rd: RD.RichDiff[] = RD.enrichen(g)): VNode {
+export type DragState = {type: 'move'; from: number; to: number}
+//  | { request: 'merge', edge_ids: string[] }
+
+export function ApplyMove(diff: D.Diff[], {from, to}: {from: number; to: number}): D.Diff[] {
+  const d = diff[from]
+  switch (d.edit) {
+    case 'Dropped':
+      return Utils.rearrange(diff, from, from, to)
+    case 'Edited':
+      const dragged = D.Dragged(d.source[0], d.id)
+      const dropped = D.Dropped(d.target[0], d.id)
+      const [pre, [e], post] = Utils.splitAt3(diff, from, from + 1)
+      return ApplyMove([...pre, dropped, dragged, ...post], {from, to})
+    default:
+      return diff
+  }
+}
+
+export function Ladder(
+  g: G.Graph,
+  rd0: RD.RichDiff[] = RD.enrichen(g),
+  drag_state?: DragState,
+  onDrag?: (ds: DragState) => void,
+  onDrop?: (ds: DragState) => void
+): VNode {
+  const rd = drag_state ? RD.enrichen(g, ApplyMove(rd0, drag_state)) : rd0
   const grids = D.DiffToGrid(rd)
   const u = grids.upper
   const l = grids.lower
@@ -216,12 +242,56 @@ export function Ladder(g: G.Graph, rd: RD.RichDiff[] = RD.enrichen(g)): VNode {
             )
         )
         return (
-          <ul key={i}>
+          <ul
+            key={d.index}
+            onDragOver={e => {
+              // console.log(e.type, e.target, e.currentTarget)
+              if (drag_state) {
+                const hover = drag_state.to
+                const to = i
+                const w = e.currentTarget.clientWidth
+                const x0 = e.currentTarget.offsetLeft
+                const x = e.clientX
+                const left = x - x0 < w / 2
+                const yes =
+                  to < hover - 1 ||
+                  (to == hover - 1 && left) ||
+                  (to > hover + 1 || (to == hover + 1 && !left))
+                const to_left_adjusted = to // < hover ? to - 1 : to
+                // console.log({w, x0, x})
+                // console.log({hover, to, left, yes})
+                // console.log({onDrag, drag_state, index: d.index, to})
+                onDrag && drag_state && yes && onDrag({...drag_state, to})
+              }
+            }}
+            onDragEnd={e => {
+              console.log({onDrop, drag_state})
+              onDrop && drag_state && onDrop(drag_state)
+            }}>
             <li>{s}</li>
             {upper}
             {mid}
             {lower}
-            <li>{t}</li>
+            <li
+              draggable={onDrag !== undefined}
+              style={{cursor: 'pointer', background: '#fff0'}}
+              onDragStart={e => {
+                e.dataTransfer.setData(
+                  'text/plain',
+                  'https://stackoverflow.com/questions/19055264/why-doesnt-html5-drag-and-drop-work-in-firefox'
+                )
+                e.dataTransfer.dropEffect = 'move'
+                const t = (e.target as HTMLElement).firstChild as HTMLElement
+                if (t && t instanceof Element) {
+                  const x = t.clientWidth / 2
+                  const y = t.clientHeight / 2
+                  e.dataTransfer.setDragImage(t, x, y)
+                }
+                // console.log(e.type, e.target)
+                onDrag && onDrag({type: 'move', from: i, to: i})
+              }}>
+              {t}
+            </li>
           </ul>
         )
       })}

@@ -10,6 +10,8 @@ import * as G from './Graph'
 import {Graph} from './Graph'
 import * as Utils from './Utils'
 import {UnionFind} from './Utils'
+import * as D from './Diff'
+import {Diff} from './Diff'
 
 type Link = {tag: 'text'; text: string} | {tag: 'id'; id: string} | {tag: 'unlinked'}
 
@@ -319,4 +321,65 @@ export function units_to_graph(source: Unit[], target: Unit[]): Graph {
     target: r.target.map(t => T.Token(t.text + ' ', t.id)),
     edges,
   }
+}
+
+export function unit_to_string(unit: Unit): string {
+  const text_to_string = (text0: string) => {
+    const text = text0.trim()
+    const escape = text.search(/[ '_\t\n:@^~]/)
+    console.log({escape, text})
+    return escape != -1 ? `'${text.replace(/['\\']/g, s => '\\' + s)}'` : text
+  }
+  const text = text_to_string(unit.text)
+  const ids = unit.ids.map(id => '@' + text_to_string(id)).join('')
+  const link_to_string = (link: Link): string => {
+    if (link.tag == 'text') {
+      return text_to_string(link.text)
+    } else if (link.tag == 'id') {
+      return '@' + text_to_string(link.id)
+    } else if (link.tag == 'unlinked') {
+      return ''
+    } else {
+      return link
+    }
+  }
+  const links = unit.links.map(link => '~' + link_to_string(link)).join('')
+  const labels = unit.labels.map(label => ':' + text_to_string(label)).join('')
+  return text + ids + links + labels
+}
+
+export function units_to_string(units: Unit[]) {
+  return units.map(unit_to_string).join(' ')
+}
+
+export function diff_to_units(diff: Diff[]): {source: Unit[]; target: Unit[]} {
+  const source: Unit[] = []
+  const target: Unit[] = []
+  let count = 1
+  const seen: Record<string, string> = {}
+  const unit = (d: Diff) => (tok: T.Token): Unit => ({
+    text: tok.text,
+    labels: [],
+    links: seen[d.id] ? [{tag: 'id' as 'id', id: seen[d.id]}] : [],
+    ids: !seen[d.id] ? [(seen[d.id] = count++ + '')] : [],
+  })
+  diff.forEach(d => {
+    switch (d.edit) {
+      case 'Edited':
+        source.push(...d.source.map(unit(d)))
+        target.push(...d.target.map(unit(d)))
+        return
+      case 'Dropped':
+        target.push(unit(d)(d.target))
+        return
+      case 'Dragged':
+        source.push(unit(d)(d.source))
+        return
+    }
+  })
+  return {source, target}
+}
+
+export function graph_to_units(g: Graph): {source: Unit[]; target: Unit[]} {
+  return diff_to_units(G.calculate_diff(g))
 }
