@@ -192,11 +192,13 @@ function assign_ids_and_manual_alignments(
   const s = identify('s', source)
   const t = identify('t', target)
   const uf = Utils.PolyUnionFind<Link>()
+  const count = Utils.Counter(s.map(u => u.text))
   s.forEach(u =>
     uf.unions([
       ...u.ids.map(idLink),
-      {tag: 'text', text: u.text},
       ...u.links.filter(link => link.tag != 'unlinked'),
+      // one may link to the text if it is unique
+      ...Utils.guard(count(u.text) == 1, {tag: 'text' as 'text', text: u.text}),
     ])
   )
   t.forEach(u =>

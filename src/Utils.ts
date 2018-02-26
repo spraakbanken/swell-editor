@@ -482,6 +482,20 @@ export function Renumber<A>(serialize = (a: A) => JSON.stringify(a)) {
   }
 }
 
+export function guard<A>(p: boolean, x: A): A[] {
+  return p ? [x] : []
+}
+
+export function Counter<A>(xs: A[], serialize = (a: A) => JSON.stringify(a)) {
+  const count: Record<string, number> = {}
+  const insert = (x: A) => {
+    const s = serialize(x)
+    count[s] = 1 + (count[s] || 0)
+  }
+  xs.forEach(insert)
+  return (x: A) => count[serialize(x)] || 0
+}
+
 /** Make a polymorphic union-find data structure */
 export function PolyUnionFind<A>(
   serialize = (a: A) => JSON.stringify(a)
