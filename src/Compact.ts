@@ -69,7 +69,7 @@ const quoted = quote
       )
     )
   )
-  .chain(s => quote.chain(_ => p.of(s)))
+  .chain(s => quote.chain(_ => p.succeed(s)))
 
 const head = pchar.notOneOf(` '_\t\n:@^~`)
 const tail = pstr.many(pchar.notOneOf(` _\t\n:@^~`))
@@ -98,7 +98,7 @@ const link = pchar
     p.alts<Link>(
       word.map<Link>(text => ({tag: 'text', text})),
       id.map(idLink),
-      p.of<Link>({tag: 'unlinked'})
+      p.succeed<Link>({tag: 'unlinked'})
     )
   )
 
@@ -148,7 +148,7 @@ function Unit(text: string, attrs: Attribute[]): Unit {
 
 const unit = word.chain(word => p.many(attribute).map(attrs => Unit(word, attrs)))
 const space_padded = <A>(f: Parser<A>) =>
-  spaces_.chain(_ => f.chain(a => spaces_.chain(_ => p.of(a))))
+  spaces_.chain(_ => f.chain(a => spaces_.chain(_ => p.succeed(a))))
 
 /**
   const expect = {
