@@ -197,6 +197,7 @@ export function View(store: Store<State>): VNode {
       * annotering
     * svårt att få länkarna helt rätt
     * generellt positivt: editorn är inte på helt fel spår
+
       * addresserar många problem från Merlin-Adriannes presentation
   `)
   slide(md`
@@ -204,6 +205,7 @@ export function View(store: Store<State>): VNode {
 
     * interpunktation som eget token är förvirrande
     * svårt att justera över meningsgränser
+
       * taggkategori saknas här också
       * se text3 och text6
   `)
@@ -225,6 +227,7 @@ export function View(store: Store<State>): VNode {
     # Återkoppling
 
     * Er feedback är lagrad i ärendehanteringssystemet på github:
+
       * https://github.com/spraakbanken/swell-editor/issues
   `)
   slide(md`
@@ -237,6 +240,7 @@ export function View(store: Store<State>): VNode {
     * Mats normaliserade först och fixade sen med länkarna
       * Konceptuellt ett nytt steg att länka ihop källtexten med hypotesen
     * Kan leda till en förenklad annoteringsprocess:
+
       * baserat på detta samt pga fåtalet komplicerade förflyttningar
   `)
   slide(md`
@@ -253,6 +257,7 @@ export function View(store: Store<State>): VNode {
 
     * CAP, ORT, SPL, COMP
     * dessa kanske kan ha etiktten på ordet istället för på bågen
+
       * eller två lager
   `)
   slide(md`
@@ -276,6 +281,7 @@ export function View(store: Store<State>): VNode {
     * **annotator**:
       * har en lista på uppgifter och annoterar dem
     * **admin**:
+
       * ser till att uppgifter distribueras ut (sker med viss automation)
       * besvara frågor från annotatörerna
       * förvissar sig om att annotatorerna arbetar efter kodboken
@@ -283,11 +289,11 @@ export function View(store: Store<State>): VNode {
   slide(md`
     ## Två separata annoteringsprocesser
 
-    1. **transkribering och anonymisering**
-       * behöver ske med varsamhet då orginaldatan är känslig
-    2. **normalisering och ettikettering**:
-       * indatan är här anonym
-       * större krav på lingvistisk kunskap hos annotatören
+    1.  **transkribering och anonymisering**
+        * behöver ske med varsamhet då orginaldatan är känslig
+    2.  **normalisering och ettikettering**:
+        * indatan är här anonym
+        * större krav på lingvistisk kunskap hos annotatören
 
     Två instanser av uppgiftsfördelningssystemet kan köras
   `)
@@ -295,6 +301,7 @@ export function View(store: Store<State>): VNode {
     ## Kravspecifikation
 
     * Annoterare ska kunna:
+
       * lista sina färdiga och återstående uppgifter
         <!-- - _behövs en logg var de har jobbat senast?_ -->
       * ställa och diskutera frågor...
@@ -308,6 +315,7 @@ export function View(store: Store<State>): VNode {
     ## Kravspecifikation
 
     * Administratörer ska kunna:
+
       * lista allas färdiga och återstående uppgifter
       * besvara och diskutera frågor
       * distribuera uppgifter
@@ -364,6 +372,7 @@ export function View(store: Store<State>): VNode {
       * länkning till annoteringsverktyget
       * lätt att klistra in spaghettibilder
     * Ett frikopplat söksystem
+
       * där statistik kan fås fram (tex korp samt något för IAA)
   `)
   return (
