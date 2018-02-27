@@ -353,16 +353,12 @@ export function calculate_raw_diff(g: Graph): (Dragged | Dropped)[] {
 export function from_raw_diff(diff: (Dragged | Dropped)[], edges: Record<string, Edge>): Graph {
   const source = [] as Token[]
   const target = [] as Token[]
-  diff.forEach(d => {
-    switch (d.edit) {
-      case 'Dragged':
-        return source.push(d.source)
-      case 'Dropped':
-        return target.push(d.target)
-      default:
-        return Utils.absurd(d)
-    }
-  })
+  diff.forEach(
+    D.dnd_match({
+      Dragged: d => source.push(d.source),
+      Dropped: d => target.push(d.target),
+    })
+  )
   return {source, target, edges}
 }
 
@@ -671,9 +667,10 @@ export function revert(g: Graph, edge_id: string): Graph {
     const diff = calculate_raw_diff(g)
     let supply = Utils.next_id(g.target.map(t => t.id))
     const edges = Utils.record_filter(g.edges, (_, id) => id != edge_id)
-    const reverted = Utils.flatMap(diff, d => {
-      switch (d.edit) {
-        case 'Dragged':
+    const reverted = Utils.flatMap(
+      diff,
+      D.dnd_match({
+        Dragged(d) {
           if (d.id == edge_id) {
             const s = d.source
             const t = {...d.source, id: 't' + supply++}
@@ -683,16 +680,16 @@ export function revert(g: Graph, edge_id: string): Graph {
           } else {
             return [d]
           }
-        case 'Dropped':
+        },
+        Dropped(d) {
           if (d.id == edge_id) {
             return []
           } else {
             return [d]
           }
-        default:
-          return Utils.absurd(d)
-      }
-    })
+        },
+      })
+    )
     // console.log(Utils.show({diff, reverted}))
     return from_raw_diff(reverted, edges)
   }

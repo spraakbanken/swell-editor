@@ -9,52 +9,51 @@ import {Token} from './Token'
 import * as T from './Token'
 import {KV} from './Utils'
 
-export interface Dropped {
-  edit: 'Dropped'
-  target: Token
-  /** The edge id */
-  id: string
-}
+const dnd = Utils.ADT('edit')
+  .alt('Dropped')<{target: Token; id: string}>()
+  .alt('Dragged')<{source: Token; id: string}>()
+const diff = dnd.alt('Edited')<{source: Token[]; target: Token[]; id: string}>()
 
-export function Dropped(target: Token, id: string): Dropped {
-  return {edit: 'Dropped', target, id}
-}
+export type Dropped = typeof diff.Cons.Dropped
 
-export interface Dragged {
-  edit: 'Dragged'
-  source: Token
-  /** The edge id */
-  id: string
-}
+export const Dropped = (target: Token, id: string) => diff.cons.Dropped({target, id})
 
-export function Dragged(source: Token, id: string): Dragged {
-  return {edit: 'Dragged', source, id}
-}
+export type Dragged = typeof diff.Cons.Dragged
 
-export interface Edited {
-  edit: 'Edited'
-  source: Token[]
-  target: Token[]
-  /** The edge id */
-  id: string
-}
+export const Dragged = (source: Token, id: string): Dragged => diff.cons.Dragged({source, id})
 
-export function Edited(source: Token[], target: Token[], id: string): Edited {
-  return {edit: 'Edited', source, target, id}
-}
+export type Edited = typeof diff.Cons.Edited
 
-export type Diff = Dropped | Dragged | Edited
+export const Edited = (source: Token[], target: Token[], id: string): Edited =>
+  diff.cons.Edited({source, target, id})
+
+export type Diff = typeof diff.Ty
+
+export const {cons, match} = diff
+
+export const dnd_match = dnd.match
+
+export const source = match({
+  Edited: d => T.text(d.source),
+  Dragged: d => d.source.text,
+  Dropped: d => '',
+})
+
+export const target = match({
+  Edited: d => T.text(d.target),
+  Dragged: d => '',
+  Dropped: d => d.target.text,
+})
 
 export function partition(diff: (Dropped | Dragged)[]) {
   const dropped = [] as Dropped[]
   const dragged = [] as Dragged[]
-  diff.forEach(d => {
-    if (d.edit == 'Dragged') {
-      dragged.push(d)
-    } else {
-      dropped.push(d)
-    }
-  })
+  diff.forEach(
+    dnd_match({
+      Dragged: d => dragged.push(d),
+      Dropped: d => dropped.push(d),
+    })
+  )
   return {dropped, dragged}
 }
 

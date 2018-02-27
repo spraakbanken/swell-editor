@@ -365,20 +365,20 @@ export function diff_to_units(diff: Diff[]): {source: Unit[]; target: Unit[]} {
     links: seen[d.id] ? [{tag: 'id' as 'id', id: seen[d.id]}] : [],
     ids: !seen[d.id] ? [(seen[d.id] = count++ + '')] : [],
   })
-  diff.forEach(d => {
-    switch (d.edit) {
-      case 'Edited':
+  diff.forEach(
+    D.match({
+      Edited(d) {
         source.push(...d.source.map(unit(d)))
         target.push(...d.target.map(unit(d)))
-        return
-      case 'Dropped':
+      },
+      Dropped(d) {
         target.push(unit(d)(d.target))
-        return
-      case 'Dragged':
+      },
+      Dragged(d) {
         source.push(unit(d)(d.source))
-        return
-    }
-  })
+      },
+    })
+  )
   return {source, target}
 }
 

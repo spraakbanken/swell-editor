@@ -883,3 +883,61 @@ export function push<K extends string, V>(obj: Record<K, V[]>, k: string, ...vs:
   const _obj = (obj as any) as Record<string, V[]>
   ;(_obj[k] || (_obj[k] = [])).push(...vs)
 }
+
+// ADTs
+export interface ADT<
+  TagName extends string,
+  Ty,
+  Cons extends Record<string, {con: any; params: any}>
+> {
+  Ty: Ty
+  Params: {[K in keyof Cons]: Cons[K]['params']}
+  Cons: {[K in keyof Cons]: Cons[K]['con']}
+  cons: {[K in keyof Cons]: (a: Cons[K]['params']) => Cons[K]['con']}
+  alt<K extends string>(
+    k: K
+  ): <A>() => ADT<
+    TagName,
+    ({[T in TagName]: K} & A) | Ty,
+    {[k in K]: {con: {[T in TagName]: K} & A; params: A}} & Cons
+  >
+
+  match<R>(
+    cases:
+      | {[K in keyof Cons]: (a: Cons[K]['con']) => R}
+      | ({[K in keyof Cons]?: (a: Cons[K]['con']) => R} & {default(d: Ty): R})
+  ): (a: Ty) => R
+}
+
+export function ADT<TagName extends string>(tag_name: TagName): ADT<TagName, never, {}> {
+  return adt(tag_name, [])
+}
+
+function adt<TagName extends string, Ty, Cons extends Record<string, {con: any; params: any}>>(
+  tag_name: string,
+  ctors: (keyof Cons)[]
+): ADT<TagName, Ty, Cons> {
+  const cons = {} as any
+  for (const ctor of ctors) {
+    cons[ctor] = (d: any) => ({...d, [tag_name as string]: ctor})
+  }
+  return {
+    Ty: undefined as any,
+    Params: undefined as any,
+    Cons: undefined as any,
+    cons,
+    alt: k => () => adt(tag_name, ctors.concat([k])),
+    match: cases => a => {
+      const tag = (a as any)[tag_name]
+      if (tag in cases) {
+        return (cases as any)[tag](a)
+      } else if ('default' in cases) {
+        return (cases as any).default(a)
+      } else {
+        console.dir({msg: 'Irrefutable pattern', a, cons: Object.keys(cons), tag_name})
+        console.trace()
+        throw 'Irrefutable pattern'
+      }
+    },
+  }
+}
