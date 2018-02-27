@@ -353,7 +353,18 @@ export function units_to_string(units: Unit[]) {
   return units.map(unit_to_string).join(' ')
 }
 
-export function diff_to_units(diff: Diff[]): {source: Unit[]; target: Unit[]} {
+export type STS = {source: Simple[]; target: Simple[]}
+
+export function simple_to_unit(s: Simple): Unit {
+  return {
+    text: s.text,
+    ids: [s.id],
+    links: s.link ? [{tag: 'id', id: s.link}] : [],
+    labels: s.labels,
+  }
+}
+
+export function diff_to_units(diff: Diff[]): STU {
   const source: Unit[] = []
   const target: Unit[] = []
   let count = 1
@@ -381,6 +392,106 @@ export function diff_to_units(diff: Diff[]): {source: Unit[]; target: Unit[]} {
   return {source, target}
 }
 
-export function graph_to_units(g: Graph): {source: Unit[]; target: Unit[]} {
+export type STU = {source: Unit[]; target: Unit[]}
+
+function prefer_text_links({source, target}: STU): STU {
+  const count = Utils.Counter(source.map(u => u.text))
+  const repl = {} as Record<string, Link>
+  source.forEach(u => {
+    if (count(u.text) == 1) {
+      u.ids.forEach(id => (repl[id] = {tag: 'text', text: u.text}))
+    }
+  })
+  const replace_link = (link: Link) => {
+    if (link.tag == 'id' && repl[link.id]) {
+      return repl[link.id]
+    } else {
+      return link
+    }
+  }
+  return {
+    source: source.map(u => ({...u, links: u.links.map(replace_link)})),
+    target: target.map(u => ({...u, links: u.links.map(replace_link)})),
+  }
+}
+
+function remove_unused_ids({source, target}: STU): STU {
+  const ids: string[] = []
+  source.forEach(u => u.links.forEach(link => link.tag == 'id' && ids.push(link.id)))
+  target.forEach(u => u.links.forEach(link => link.tag == 'id' && ids.push(link.id)))
+  const count = Utils.Counter(ids)
+  return {
+    source: source.map(u => ({...u, ids: u.ids.filter(id => count(id) > 0)})),
+    target: target.map(u => ({...u, ids: u.ids.filter(id => count(id) > 0)})),
+  }
+}
+
+type LazyRoseTree<A> = {node: A; force(): LazyRoseTree<A>[]}
+
+// assumes t is ok to start with
+function dfs<A>(t: LazyRoseTree<A>, ok: (a: A) => boolean, fuel = -1): A {
+  if (fuel == 0) {
+    return t.node
+  }
+  const ts = t.force()
+  for (const child of ts) {
+    if (ok(child.node)) {
+      return dfs(child, ok, fuel - 1)
+    }
+  }
+  return t.node
+}
+
+function reduce_links({source, target}: STU, skip = 0): LazyRoseTree<STU> {
+  return {
+    node: {source, target},
+    force() {
+      const out: STU[] = []
+      source.forEach((u, i) =>
+        u.links.forEach((_, j) => {
+          const u2: Unit = {...u, links: Utils.splice(u.links, j, 1)[0]}
+          const s2 = Utils.splice(source, i, 1, u2)[0]
+          out.push({source: s2, target})
+        })
+      )
+      target.forEach((u, i) =>
+        u.links.forEach((_, j) => {
+          const u2: Unit = {...u, links: Utils.splice(u.links, j, 1)[0]}
+          const t2 = Utils.splice(target, i, 1, u2)[0]
+          out.push({source, target: t2})
+        })
+      )
+      return out.slice(skip).map((t, i) => reduce_links(t, i))
+    },
+  }
+}
+
+/**
+
+  const source = parse_strict(`w1    w2    w3`)
+  const target = parse_strict(`w1~w1 w2~w2 w3~w3`)
+  minimize({source, target}) // => {source, target: source}
+
+*/
+export function minimize(stu0: STU): STU {
+  const norm = (stu: STU) => G.normalize(units_to_graph(stu.source, stu.target))
+  const g0 = norm(stu0)
+  return remove_unused_ids(
+    prefer_text_links(dfs(reduce_links(stu0), stu => G.equal(g0, norm(stu))))
+  )
+}
+
+export function graph_to_units(g: Graph): STU {
   return diff_to_units(G.calculate_diff(g))
+}
+
+function testing() {
+  const source = parse_strict(`a b c@u c@z`)
+  const target = parse_strict(`a~@u b c~b`)
+  const m = minimize({source, target})
+  Utils.stderr(units_to_string(m.source))
+  Utils.stderr(units_to_string(m.target))
+  // Utils.stderr(units_to_graph(source, target))
+  // Utils.stderr(units_to_graph(m.source, m.target))
+  return 'ok'
 }

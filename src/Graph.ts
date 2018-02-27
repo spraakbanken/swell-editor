@@ -732,3 +732,54 @@ export function disconnect(g: Graph, id: string): Graph {
     return g
   }
 }
+
+/** Normalize the unique identifiers in this graph. Use before comparing deep equality.
+
+  const g = modify_tokens(init('apa bepa cepa '), 1, 2, 'depa epa ')
+  normalize(normalize(g)) // => normalize(g)
+
+  // new graphs are in normal form
+  const g = init('apa bepa cepa ')
+  normalize(g) // => g
+
+  const g = init('x')
+  const ab = {
+    source: [{id: 'a0', text: 'x'}],
+    target: [{id: 'b0', text: 'x'}],
+    edges: {'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: []}}
+  }
+  normalize(g, 'a', 'b') // => ab
+
+  const g = init('x')
+  const same = {
+    source: [{id: '0', text: 'x'}],
+    target: [{id: '1', text: 'x'}],
+    edges: {'e-0-1': {id: 'e-0-1', ids: ['0', '1'], labels: []}}
+  }
+  normalize(g, '', '') // => same
+
+*/
+export function normalize(g: Graph, s_prefix = 's', t_prefix = 't'): Graph {
+  const rev = {} as Record<string, string>
+  const rn = Utils.Renumber<string>()
+  g.source.forEach(tk => rn.num(tk.id))
+  g.target.forEach(tk => rn.num(tk.id))
+  const N = g.source.length
+  const new_id = (id: string) => {
+    const i = rn.num(id)
+    return i < N || s_prefix == t_prefix ? s_prefix + i : t_prefix + (i - N)
+  }
+  const source = g.source.map(s => Token(s.text, new_id(s.id)))
+  const target = g.target.map(s => Token(s.text, new_id(s.id)))
+  const edges = R.fromPairs(
+    Utils.record_traverse(g.edges, e => {
+      const E = Edge(e.ids.map(new_id), e.labels)
+      return [E.id, E] as [string, Edge]
+    })
+  )
+  return {source, target, edges}
+}
+
+export function equal(g1: Graph, g2: Graph): boolean {
+  return R.equals(normalize(g1), normalize(g2))
+}

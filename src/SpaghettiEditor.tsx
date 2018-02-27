@@ -208,7 +208,7 @@ export function View(store: Store<State>): VNode {
             ds &&
             store.transaction(() => {
               const g2 = G.diff_to_graph(L.ApplyMove(G.calculate_diff(g), ds), g.edges)
-              const us = C.graph_to_units(g2)
+              const us = C.minimize(C.graph_to_units(g2))
               const s = C.units_to_string(us.source)
               const t = C.units_to_string(us.target)
               console.log('drop:', {g2, us})
