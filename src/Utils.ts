@@ -491,20 +491,6 @@ export function Renumber<A>(serialize = (a: A) => JSON.stringify(a)) {
   }
 }
 
-export function guard<A>(p: boolean, x: A): A[] {
-  return p ? [x] : []
-}
-
-export function Counter<A>(xs: A[], serialize = (a: A) => JSON.stringify(a)) {
-  const count: Record<string, number> = {}
-  const insert = (x: A) => {
-    const s = serialize(x)
-    count[s] = 1 + (count[s] || 0)
-  }
-  xs.forEach(insert)
-  return (x: A) => count[serialize(x)] || 0
-}
-
 /** Make a polymorphic union-find data structure */
 export function PolyUnionFind<A>(
   serialize = (a: A) => JSON.stringify(a)
@@ -519,6 +505,32 @@ export function PolyUnionFind<A>(
   }
 }
 
+export function guard<A>(p: boolean | string | undefined, x: A): A[] {
+  return p ? [x] : []
+}
+
+export function Counter<A>(xs: A[], serialize = (a: A) => JSON.stringify(a)) {
+  const count: Record<string, number> = {}
+  const insert = (x: A) => {
+    const s = serialize(x)
+    count[s] = 1 + (count[s] || 0)
+  }
+  xs.forEach(insert)
+  return (x: A) => count[serialize(x)] || 0
+}
+
+/**
+
+  const [ex, rm] = splice('abcdef'.split(''), 3, 1, ' ', '_')
+  ex.join('') // => 'abc _ef'
+  rm.join('') // => 'd'
+
+  const [ex, rm] = splice('abcdef'.split(''), 3, 2, ' ', '_')
+  ex.join('') // => 'abc _f'
+  rm.join('') // => 'de'
+
+
+*/
 export function splice<A>(xs: A[], start: number, count: number, ...insert: A[]): [A[], A[]] {
   const ys = xs.slice()
   const zs = ys.splice(start, count, ...insert)
@@ -925,6 +937,9 @@ export interface ADT<
       | {[K in keyof Cons]: (a: Cons[K]['con']) => R}
       | ({[K in keyof Cons]?: (a: Cons[K]['con']) => R} & {default(d: Ty): R})
   ): (a: Ty) => R
+
+  // todo: implement partition
+  // partition: (xs: Ty[]) => {[K in keyof Cons]: Cons[K]['con'][]}
 }
 
 export function ADT<TagName extends string>(tag_name: TagName): ADT<TagName, never, {}> {
@@ -944,7 +959,7 @@ function adt<TagName extends string, Ty, Cons extends Record<string, {con: any; 
     Params: undefined as any,
     Cons: undefined as any,
     cons,
-    alt: k => () => adt(tag_name, ctors.concat([k])),
+    alt: k => () => adt(tag_name, ctors.concat([k])) as any,
     match: cases => a => {
       const tag = (a as any)[tag_name]
       if (tag in cases) {
