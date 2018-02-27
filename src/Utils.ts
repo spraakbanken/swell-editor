@@ -9,6 +9,15 @@ export function capitalize_head(s: string) {
   return s.slice(0, 1).toUpperCase() + s.slice(1)
 }
 
+export function debugName($debugName: string) {
+  const env = process.env.NODE_ENV
+  if (env === 'production') {
+    return {}
+  } else {
+    return {$debugName}
+  }
+}
+
 /** Make a stream of all unicode characters
 
 We need this because the diff-match-patch library is hard-coded to work on characters.
@@ -620,6 +629,15 @@ export function next_id(xs: string[]): number {
 /** Reductio ad Absurdum */
 export function absurd<A>(c: never): A {
   return c
+}
+
+export function record_create<K extends string, A>(
+  ks: K[],
+  f: (k: K, index: number) => A
+): Record<K, A> {
+  const obj = {} as Record<K, A>
+  ks.forEach((k, i) => (obj[k] = f(k, i)))
+  return obj
 }
 
 export function record_forEach<K extends string, A>(

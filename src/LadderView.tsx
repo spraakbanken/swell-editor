@@ -8,8 +8,7 @@ import * as D from './Diff'
 
 export type VNode = React.ReactElement<{}>
 
-export const clean_ul = style({
-  $debugName: 'clean_ul',
+export const clean_ul = style(Utils.debugName('clean_ul'), {
   $nest: {
     '& ul, & ol': {
       padding: '0px',
@@ -23,8 +22,17 @@ export const clean_ul = style({
 const intended_font_size = 16
 const px = (i: number) => `${i / intended_font_size}em`
 
+const Unselectable = style(Utils.debugName('Unselectable'), {
+  '-moz-user-select': 'none',
+  '-webkit-touch-callout': 'none',
+  '-webkit-user-select': 'none',
+  '-ms-user-select': 'none',
+  userSelect: 'none',
+  cursor: 'default',
+})
+
 const BorderCell = style(
-  {$debugName: 'BorderCell'},
+  Utils.debugName('BorderCell'),
   csstips.border(`${px(1)} #777 solid`),
   {borderRadius: `${px(2)}`},
   {fontSize: `${px(13)}`},
@@ -42,7 +50,7 @@ const BorderCell = style(
 )
 
 const LadderStyle = style(
-  {$debugName: 'LadderStyle'},
+  Utils.debugName('LadderStyle'),
   csstips.wrap,
   csstips.startJustified,
   csstips.horizontal,
@@ -179,7 +187,7 @@ const {inserts, deletes} = Utils.expr(() => {
   }
 })
 
-export type DragState = {type: 'move'; from: number; to: number}
+export type DragState = {type: 'move'; from: number; to: number} | null
 //  | { request: 'merge', edge_ids: string[] }
 
 export function ApplyMove(diff: D.Diff[], {from, to}: {from: number; to: number}): D.Diff[] {
@@ -209,7 +217,9 @@ export function Ladder(
   const u = grids.upper
   const l = grids.lower
   return (
-    <div className={`${LadderStyle} ${clean_ul} ladder`}>
+    <div
+      onMouseLeave={e => onDrag && onDrag(null)}
+      className={`${LadderStyle} ${clean_ul} ${Unselectable} ladder`}>
       {rd.map((d, i) => {
         const [s, t] = Utils.expr((): [VNode, VNode] => {
           switch (d.edit) {
@@ -244,8 +254,7 @@ export function Ladder(
         return (
           <ul
             key={d.index}
-            onDragOver={e => {
-              // console.log(e.type, e.target, e.currentTarget)
+            onMouseOver={e => {
               if (drag_state) {
                 const hover = drag_state.to
                 const to = i
@@ -253,43 +262,22 @@ export function Ladder(
                 const x0 = e.currentTarget.offsetLeft
                 const x = e.clientX
                 const left = x - x0 < w / 2
-                const yes =
-                  to < hover - 1 ||
-                  (to == hover - 1 && left) ||
-                  (to > hover + 1 || (to == hover + 1 && !left))
-                const to_left_adjusted = to // < hover ? to - 1 : to
-                // console.log({w, x0, x})
-                // console.log({hover, to, left, yes})
-                // console.log({onDrag, drag_state, index: d.index, to})
+                const yes_left = to < hover - 1 || (to == hover - 1 && left)
+                const yes_right = to > hover + 1 || (to == hover + 1 && !left)
+                const yes = yes_left || yes_right
                 onDrag && drag_state && yes && onDrag({...drag_state, to})
               }
             }}
-            onDragEnd={e => {
-              console.log({onDrop, drag_state})
-              onDrop && drag_state && onDrop(drag_state)
+            onMouseUp={e => {
+              onDrop && drag_state && (onDrop(drag_state), e.preventDefault())
             }}>
             <li>{s}</li>
             {upper}
             {mid}
             {lower}
             <li
-              draggable={onDrag !== undefined}
               style={{cursor: 'pointer', background: '#fff0'}}
-              onDragStart={e => {
-                e.dataTransfer.setData(
-                  'text/plain',
-                  'https://stackoverflow.com/questions/19055264/why-doesnt-html5-drag-and-drop-work-in-firefox'
-                )
-                e.dataTransfer.dropEffect = 'move'
-                const t = (e.target as HTMLElement).firstChild as HTMLElement
-                if (t && t instanceof Element) {
-                  const x = t.clientWidth / 2
-                  const y = t.clientHeight / 2
-                  e.dataTransfer.setDragImage(t, x, y)
-                }
-                // console.log(e.type, e.target)
-                onDrag && onDrag({type: 'move', from: i, to: i})
-              }}>
+              onMouseDown={e => onDrag && onDrag({type: 'move', from: i, to: i})}>
               {t}
             </li>
           </ul>

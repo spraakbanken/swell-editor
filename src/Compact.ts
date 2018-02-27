@@ -329,7 +329,6 @@ export function unit_to_string(unit: Unit): string {
   const text_to_string = (text0: string) => {
     const text = text0.trim()
     const escape = text.search(/[ '_\t\n:@^~]/)
-    console.log({escape, text})
     return escape != -1 ? `'${text.replace(/['\\']/g, s => '\\' + s)}'` : text
   }
   const text = text_to_string(unit.text)
