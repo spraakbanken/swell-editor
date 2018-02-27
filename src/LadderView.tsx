@@ -259,13 +259,13 @@ export function Ladder(
         return (
           <ul
             key={d.index}
-            onMouseOver={e => {
+            onMouseMove={e => {
               if (drag_state) {
                 const hover = drag_state.to
                 const to = i
                 const w = e.currentTarget.clientWidth
                 const x0 = e.currentTarget.offsetLeft
-                const x = e.clientX
+                const x = e.pageX
                 const left = x - x0 < w / 2
                 const yes_left = to < hover - 1 || (to == hover - 1 && left)
                 const yes_right = to > hover + 1 || (to == hover + 1 && !left)
