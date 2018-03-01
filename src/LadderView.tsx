@@ -270,7 +270,7 @@ export function Ladder(
                 const yes_left = to < hover - 1 || (to == hover - 1 && left)
                 const yes_right = to > hover + 1 || (to == hover + 1 && !left)
                 const yes = yes_left || yes_right
-                onDrag && drag_state && yes && onDrag({...drag_state, to})
+                onDrag && yes && onDrag({...drag_state, to})
               }
             }}
             onMouseUp={e => {

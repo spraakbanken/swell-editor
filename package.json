@@ -35,6 +35,7 @@
     "@types/react-dom": "^16.0.3",
     "@types/tape": "^4.2.31",
     "ava": "^0.25.0",
+    "doctest-ts": "^0.1.0",
     "enzyme": "^3.3.0",
     "enzyme-adapter-react-16": "^1.1.1",
     "faucet": "^0.0.1",
@@ -54,8 +55,8 @@
     "build": "parcel build --public-url ./ $(ts-node src/generate_index.ts ${App:-SpaghettiEditor})",
     "test": "tsc && ava dist/test",
     "test:watch": "tsc --watch & ava --watch dist/test",
-    "doctest": "typescript-doctest src/*ts* --tape && ts-node node_modules/.bin/tape src/*doctest*.ts | tap-diff",
-    "doctest:watch": "typescript-doctest src/*ts* --tape --watch | while read file; do echo tape $file; ts-node $file | tap-diff; done",
+    "doctest": "doctest-ts src/*ts* --tape && ts-node node_modules/.bin/tape src/*doctest*.ts | tap-diff",
+    "doctest:watch": "doctest-ts src/*ts* --tape --watch | while read file; do echo tape $file; ts-node $file | tap-diff; done",
     "coverage": "tsc && nyc ava dist/test",
     "prettier": "prettier --list-different --write src/*ts* test/*ts*"
   },
