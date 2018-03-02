@@ -5,19 +5,24 @@ import {enzyme} from './Common'
 import * as L from '../src/LadderView'
 import * as Utils from '../src/Utils'
 
-qc('Ladder text sanity', graph, (g, p) => {
-  const dom = enzyme.shallow(L.Ladder(g))
+qc(
+  'Ladder text sanity',
+  graph,
+  (g, p) => {
+    const dom = enzyme.shallow(L.Ladder(g))
 
-  function text_somewhere(s: string) {
-    if (dom.findWhere(w => w.text() == s).length === 0) {
-      p.fail(`Could not find DOM with text ${Utils.show(s)}`)
+    function text_somewhere(s: string) {
+      if (dom.findWhere(w => w.text() == s).length === 0) {
+        p.fail(`Could not find DOM with text ${Utils.show(s)}`)
+      }
     }
-  }
-  g.source.forEach(tok => text_somewhere(tok.text))
-  g.target.forEach(tok => text_somewhere(tok.text))
-  Utils.record_forEach(g.edges, e => e.labels.forEach(label => text_somewhere(label)))
-  return true
-}, QC.verbose)
+    g.source.forEach(tok => text_somewhere(tok.text))
+    g.target.forEach(tok => text_somewhere(tok.text))
+    Utils.record_forEach(g.edges, e => e.labels.forEach(label => text_somewhere(label)))
+    return true
+  },
+  QC.verbose
+)
 
 /*
 import * as R from 'ramda'

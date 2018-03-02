@@ -1,22 +1,26 @@
 import {QC, test, qc, Gen} from './Common'
 import {graph, insert_text} from './Common'
 
-import * as T from "../src/Token"
-import * as G from "../src/Graph"
-import { Graph } from "../src/Graph"
-import * as Utils from "../src/Utils"
-import { range } from "../src/Utils"
+import * as T from '../src/Token'
+import * as G from '../src/Graph'
+import {Graph} from '../src/Graph'
+import * as Utils from '../src/Utils'
+import {range} from '../src/Utils'
 
-qc('invariant', graph, g => G.check_invariant(g) == "ok")
+qc('invariant', graph, g => G.check_invariant(g) == 'ok')
 
 {
   const modify = graph.then(g =>
-    Gen.between(0, g.target.length).replicate(2).map(Utils.numsort).then(([from, to]) =>
-    insert_text.map(text =>
-    ({g, from, to, text}))))
+    Gen.between(0, g.target.length)
+      .replicate(2)
+      .map(Utils.numsort)
+      .then(([from, to]) => insert_text.map(text => ({g, from, to, text})))
+  )
 
-  qc('modify_tokens invariant', modify, ({g, from, to, text}) =>
-    G.check_invariant(G.modify_tokens(g, from, to, text)) == "ok"
+  qc(
+    'modify_tokens invariant',
+    modify,
+    ({g, from, to, text}) => G.check_invariant(G.modify_tokens(g, from, to, text)) == 'ok'
   )
 
   qc('modify_tokens content', modify, ({g, from, to, text}, p) => {
@@ -29,19 +33,22 @@ qc('invariant', graph, g => G.check_invariant(g) == "ok")
 }
 
 {
-
   const modify = graph.then(g =>
-    Gen.between(0, T.text(g.target).length).replicate(2).map(Utils.numsort).then(([from, to]) =>
-    insert_text.map(text =>
-    ({g, from, to, text}))))
+    Gen.between(0, T.text(g.target).length)
+      .replicate(2)
+      .map(Utils.numsort)
+      .then(([from, to]) => insert_text.map(text => ({g, from, to, text})))
+  )
 
-  qc('modify invariant', modify, ({g, from, to, text}) =>
-    G.check_invariant(G.modify(g, from, to, text)) == "ok"
+  qc(
+    'modify invariant',
+    modify,
+    ({g, from, to, text}) => G.check_invariant(G.modify(g, from, to, text)) == 'ok'
   )
 
   qc('modify content', modify, ({g, from, to, text}, p) => {
     const [a, mid, z] = Utils.stringSplitAt3(G.target_text(g), from, to)
-    const lhs0 = (a + text + z)
+    const lhs0 = a + text + z
     const lhs = lhs0.match(/^\s*$/) ? '' : lhs0
     const mod = G.modify(g, from, to, text)
     const rhs = G.target_text(mod)
@@ -129,30 +136,35 @@ qc('invariant', graph, g => G.check_invariant(g) == "ok")
     return true
   })
   */
-
 }
 
 {
-  const rearrange= graph.then(g =>
+  const rearrange = graph.then(g =>
     Gen.between(0, g.target.length).then(dest =>
-    Gen.between(0, g.target.length).replicate(2).map(Utils.numsort).map(([begin, end]) =>
-    ({g, begin, end, dest}))))
-
-  qc('rearrange invariant',rearrange, ({g, begin, end, dest}) =>
-    G.check_invariant(G.rearrange(g, begin, end, dest)) == "ok"
+      Gen.between(0, g.target.length)
+        .replicate(2)
+        .map(Utils.numsort)
+        .map(([begin, end]) => ({g, begin, end, dest}))
+    )
   )
 
-  qc('rearrange length',rearrange, ({g, begin, end, dest}) => {
+  qc(
+    'rearrange invariant',
+    rearrange,
+    ({g, begin, end, dest}) => G.check_invariant(G.rearrange(g, begin, end, dest)) == 'ok'
+  )
+
+  qc('rearrange length', rearrange, ({g, begin, end, dest}) => {
     const mod = G.rearrange(g, begin, end, dest)
     return G.target_text(mod).length == G.target_text(g).length
   })
 
-  qc('rearrange tokens',rearrange, ({g, begin, end, dest}) => {
+  qc('rearrange tokens', rearrange, ({g, begin, end, dest}) => {
     const mod = G.rearrange(g, begin, end, dest)
     return G.target_texts(mod).length == G.target_texts(g).length
   })
 
-  qc('rearrange permutation',rearrange, ({g, begin, end, dest}) => {
+  qc('rearrange permutation', rearrange, ({g, begin, end, dest}) => {
     const mod = G.rearrange(g, begin, end, dest)
     return Utils.array_multiset_eq(G.target_texts(mod), G.target_texts(g))
   })
@@ -195,12 +207,12 @@ qc('invariant', graph, g => G.check_invariant(g) == "ok")
 }
 
 {
-  const sentence = graph.then(g =>
-    Gen.between(0, g.target.length).map(i =>
-    ({g, i})))
+  const sentence = graph.then(g => Gen.between(0, g.target.length).map(i => ({g, i})))
 
-  qc('sentence subgraph invariant', sentence, ({g, i}) =>
-    G.check_invariant(G.subgraph(g, G.sentence(g, i))) === 'ok'
+  qc(
+    'sentence subgraph invariant',
+    sentence,
+    ({g, i}) => G.check_invariant(G.subgraph(g, G.sentence(g, i))) === 'ok'
   )
 }
 
@@ -214,8 +226,8 @@ qc('invariant', graph, g => G.check_invariant(g) == "ok")
   })
 
   const graph_and_edge = graph.then(g =>
-    Gen.between(0, Object.keys(g.edges).length).map(i =>
-    ({g, i})))
+    Gen.between(0, Object.keys(g.edges).length).map(i => ({g, i}))
+  )
 
   qc('revert invariant', graph_and_edge, ({g, i}) => {
     const edges = Object.keys(g.edges)
@@ -224,31 +236,29 @@ qc('invariant', graph, g => G.check_invariant(g) == "ok")
     return G.check_invariant(reverted) === 'ok'
   })
 
-  qc('revert everything target not reverting correctly', graph, (g, p) => {
-    const reverted = Object.keys(g.edges).reduce(G.revert, g)
-    const rtarget = G.target_texts(reverted)
-    const rsource = G.source_texts(reverted)
-    const source = G.source_texts(g)
-    return p.deepEquals(rtarget, source)
-  }, QC.expectFailure)
+  qc(
+    'revert everything target not reverting correctly',
+    graph,
+    (g, p) => {
+      const reverted = Object.keys(g.edges).reduce(G.revert, g)
+      const rtarget = G.target_texts(reverted)
+      const rsource = G.source_texts(reverted)
+      const source = G.source_texts(g)
+      return p.deepEquals(rtarget, source)
+    },
+    QC.expectFailure
+  )
 
   function known_bug() {
     const e0 = G.Edge('s0 t1 t2'.split(' '), [])
     const e1 = G.Edge('s1 t0'.split(' '), [])
     const g = {
-      source: [
-        { text: "a ", id: "s0" },
-        { text: "b ", id: "s1" }
-      ],
-      target: [
-        { text: "x ", id: "t0" },
-        { text: "y ", id: "t1" },
-        { text: "z ", id: "t2" }
-      ],
+      source: [{text: 'a ', id: 's0'}, {text: 'b ', id: 's1'}],
+      target: [{text: 'x ', id: 't0'}, {text: 'y ', id: 't1'}, {text: 'z ', id: 't2'}],
       edges: {
         [e0.id]: e0,
-        [e1.id]: e1
-      }
+        [e1.id]: e1,
+      },
     }
     const reverted = Object.keys(g.edges).reduce(G.revert, g)
     const rtarget = G.target_texts(reverted)

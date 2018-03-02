@@ -64,9 +64,10 @@
     "pretest": "yarn run doctest:generate",
     "test": "ts-node node_modules/.bin/tape src/*doctest*.ts test/*.ts | tap-diff",
     "doctest:generate": "doctest-ts src/*ts* --tape",
+    "doctest:clean": "rm -f -v src/*doctest*",
     "doctest:watch": "yarn run doctest:generate --watch | while read file; do echo running tape on $file; ts-node $file | tap-diff; done",
     "coverage": "yarn run pretest && yarn run tsc && for i in dist/*/*.doctest.js; do cp $i $(echo $i | sed s/doctest.//); done && yarn run nyc node_modules/tape/bin/tape dist/test/*js $(echo dist/*/*.doctest.js | sed s/doctest.//g)",
-    "prettier": "prettier --list-different --write src/*ts* test/*ts*"
+    "prettier": "yarn run doctest:clean && prettier --list-different --write src/*ts* test/*ts*"
   },
   "prettier": {
     "printWidth": 100,
