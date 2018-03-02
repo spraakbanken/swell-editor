@@ -23,7 +23,7 @@ interface Attributes {
   links: Link[]
 }
 
-interface Unit extends Attributes {
+export interface Unit extends Attributes {
   text: string
 }
 
@@ -267,6 +267,38 @@ function automatic_alignments(source: Simple[], target: Simple[]): UnionFind<str
   return uf
 }
 
+export type STU = {source: Unit[]; target: Unit[]}
+export function STU(source: Unit[], target: Unit[]): STU {
+  return {source, target}
+}
+const onSTU = <A>(f: (stu: STU) => A) => (source: Unit[], target: Unit[]) => f(STU(source, target))
+
+export function stu_to_graph({source, target}: STU): Graph {
+  const r = assign_ids_and_manual_alignments(source, target)
+  const auto = automatic_alignments(r.source, r.target)
+  const edge_targets = {} as Record<string, string[]>
+  const edge_labels = {} as Record<string, string[]>
+  const assign = (u: Simple) => {
+    if (u.id) {
+      const edge_repr = u.link || auto.find(u.id)
+      Utils.push(edge_targets, edge_repr, u.id)
+      Utils.push(edge_labels, edge_repr, ...u.labels)
+    }
+  }
+  r.source.forEach(assign)
+  r.target.forEach(assign)
+  const edges: Record<string, G.Edge> = {}
+  Utils.record_forEach(edge_targets, (ids, repr) => {
+    const edge = G.Edge(ids, edge_labels[repr] || [])
+    edges[edge.id] = edge
+  })
+  return {
+    source: r.source.map(t => T.Token(t.text + ' ', t.id)),
+    target: r.target.map(t => T.Token(t.text + ' ', t.id)),
+    edges,
+  }
+}
+
 /**
 
   const s1 = parse_strict(`b~ cc d`)
@@ -299,31 +331,7 @@ function automatic_alignments(source: Simple[], target: Simple[]): UnionFind<str
   const ex_t = parse_strict('apa bpea cpea dpeaflpae xlbabulr postscriptum^preamble woop^')
 
 */
-export function units_to_graph(source: Unit[], target: Unit[]): Graph {
-  const r = assign_ids_and_manual_alignments(source, target)
-  const auto = automatic_alignments(r.source, r.target)
-  const edge_targets = {} as Record<string, string[]>
-  const edge_labels = {} as Record<string, string[]>
-  const assign = (u: Simple) => {
-    if (u.id) {
-      const edge_repr = u.link || auto.find(u.id)
-      Utils.push(edge_targets, edge_repr, u.id)
-      Utils.push(edge_labels, edge_repr, ...u.labels)
-    }
-  }
-  r.source.forEach(assign)
-  r.target.forEach(assign)
-  const edges: Record<string, G.Edge> = {}
-  Utils.record_forEach(edge_targets, (ids, repr) => {
-    const edge = G.Edge(ids, edge_labels[repr] || [])
-    edges[edge.id] = edge
-  })
-  return {
-    source: r.source.map(t => T.Token(t.text + ' ', t.id)),
-    target: r.target.map(t => T.Token(t.text + ' ', t.id)),
-    edges,
-  }
-}
+export const units_to_graph = onSTU(stu_to_graph)
 
 export function unit_to_string(unit: Unit): string {
   const text_to_string = (text0: string) => {
@@ -364,14 +372,14 @@ export function simple_to_unit(s: Simple): Unit {
   }
 }
 
-export function diff_to_units(diff: Diff[]): STU {
+export function diff_to_units(diff: Diff[], g: Graph): STU {
   const source: Unit[] = []
   const target: Unit[] = []
   let count = 1
   const seen: Record<string, string> = {}
   const unit = (d: Diff) => (tok: T.Token): Unit => ({
     text: tok.text,
-    labels: [],
+    labels: !seen[d.id] ? g.edges[d.id].labels : [],
     links: seen[d.id] ? [{tag: 'id' as 'id', id: seen[d.id]}] : [],
     ids: !seen[d.id] ? [(seen[d.id] = count++ + '')] : [],
   })
@@ -391,8 +399,6 @@ export function diff_to_units(diff: Diff[]): STU {
   )
   return {source, target}
 }
-
-export type STU = {source: Unit[]; target: Unit[]}
 
 function prefer_text_links({source, target}: STU): STU {
   const count = Utils.Counter(source.map(u => u.text))
@@ -474,15 +480,14 @@ function reduce_links({source, target}: STU, skip = 0): LazyRoseTree<STU> {
 
 */
 export function minimize(stu0: STU): STU {
-  const norm = (stu: STU) => G.normalize(units_to_graph(stu.source, stu.target))
-  const g0 = norm(stu0)
+  const g0 = stu_to_graph(stu0)
   return remove_unused_ids(
-    prefer_text_links(dfs(reduce_links(stu0), stu => G.equal(g0, norm(stu))))
+    prefer_text_links(dfs(reduce_links(stu0), stu => G.equal(g0, stu_to_graph(stu))))
   )
 }
 
 export function graph_to_units(g: Graph): STU {
-  return diff_to_units(G.calculate_diff(g))
+  return diff_to_units(G.calculate_diff(g), g)
 }
 
 function testing() {
