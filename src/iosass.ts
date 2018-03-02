@@ -30,8 +30,8 @@ function page_for(url: string): string {
   console.log(q)
   const [source, target] = q.split('//', 2)
   if (source && target) {
-    const s = C.test_parse(source)
-    const t = C.test_parse(target)
+    const s = C.parse(source)
+    const t = C.parse(target)
     const g = C.units_to_graph(s, t)
     const css = typestyle.getStyles()
     const html = ReactSSR.renderToStaticMarkup(L.Ladder(g))

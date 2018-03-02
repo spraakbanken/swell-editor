@@ -11,8 +11,6 @@ import * as RD from './RichDiff'
 import * as T from './Token'
 import * as Utils from './Utils'
 
-import * as C from './Compact'
-
 import {VNode} from './LadderView'
 
 declare var require: any
@@ -174,9 +172,6 @@ export function View(store: Store<State>): VNode {
   const state = store.get()
   const slides = [] as VNode[]
   const slide = (v: VNode) => slides.push(v)
-  const s = C.test_parse(state.source)
-  const t = C.test_parse(state.target)
-  const g = C.units_to_graph(s, t)
   slide(md`
     # Annoteringspiloten i november
     * 9 texter annoterades

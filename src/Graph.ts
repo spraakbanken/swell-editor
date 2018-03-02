@@ -450,7 +450,7 @@ export function calculate_diff(g: Graph): Diff[] {
 
 /**
 
-  const diff = [
+  const diff: Diff[] = [
     {
       edit: 'Edited',
       id: "e0",
@@ -467,7 +467,7 @@ export function calculate_diff(g: Graph): Diff[] {
       id: "e1",
     }
   ]
-  const expected = [
+  const expected: Diff[] = [
     {"edit": "Dragged", "source": {"text": "a ", "id": "s0"}, "id": "e0"},
     {"edit": "Dropped", "target": {"text": "b ", "id": "t0"}, "id": "e0"},
     {"edit": "Dragged", "source": {"text": "c ", "id": "s1"}, "id": "e1"},
