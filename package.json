@@ -62,7 +62,7 @@
     "serve": "parcel $(ts-node src/generate_index.ts ${App:-SpaghettiEditor})",
     "build": "parcel build --public-url ./ $(ts-node src/generate_index.ts ${App:-SpaghettiEditor})",
     "pretest": "yarn run doctest:generate",
-    "test": "ts-node node_modulest.bin/tape src/*doctest*.ts test/*.ts | tap-diff",
+    "test": "ts-node node_modules/tape/bin/tape src/*doctest*.ts test/*.ts | tap-diff",
     "test:one": "test () { while true; do ts-node $1 | tap-diff; inotifywait -q -r -e modify .; clear; done; }; test",
     "doctest:generate": "doctest-ts src/*ts* --tape",
     "doctest:clean": "rm -f -v src/*doctest*",
