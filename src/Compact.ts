@@ -130,7 +130,7 @@ function Unit(text: string, attrs: Attribute[]): Unit {
 }
 
 /**
-  const expect = {
+  const expect: Unit = {
     text: `apa`,
     labels: [`bepa`],
     ids: [`cepa`],
@@ -139,7 +139,7 @@ function Unit(text: string, attrs: Attribute[]): Unit {
   run_parser(unit, `'apa':'bepa'@'cepa'^'depa'`) // => expect
   run_parser(unit, `apa:bepa@cepa^depa`) // => expect
 
-  const expect = {
+  const expect: Unit = {
     text: `apa`, labels: [], ids: [],
     links: [{tag: 'unlinked'}]
   }
@@ -151,7 +151,7 @@ const space_padded = <A>(f: Parser<A>) =>
   spaces_.chain(_ => f.chain(a => spaces_.chain(_ => p.succeed(a))))
 
 /**
-  const expect = {
+  const expect: Unit = {
     text: `apa`,
     labels: [`bepa`],
     ids: [`cepa`],

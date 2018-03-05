@@ -81,8 +81,8 @@ export function check_invariant(g: Graph): 'ok' | {violation: string; g: Graph} 
       e => e.ids.length > 0 || Utils.raise('Edge without any associated identifiers')
     )
   } catch (e) {
-    console.error(e)
-    console.error(JSON.stringify(g, undefined, 2))
+    // console.error(e)
+    // console.error(JSON.stringify(g, undefined, 2))
     return {violation: e, g}
   }
   return 'ok'

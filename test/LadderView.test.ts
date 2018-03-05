@@ -1,5 +1,7 @@
-import {QC, test, qc, Gen} from './Common'
+import {qc} from './Common'
+
 import {graph, insert_text} from './Common'
+
 import {enzyme} from './Common'
 
 import * as L from '../src/LadderView'
@@ -20,8 +22,7 @@ qc(
     g.target.forEach(tok => text_somewhere(tok.text))
     Utils.record_forEach(g.edges, e => e.labels.forEach(label => text_somewhere(label)))
     return true
-  },
-  QC.verbose
+  }
 )
 
 /*

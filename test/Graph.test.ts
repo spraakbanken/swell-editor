@@ -1,4 +1,7 @@
-import {QC, test, qc, Gen} from './Common'
+import {qc} from './Common'
+import * as QC from 'ts-quickcheck'
+import {Gen} from 'ts-quickcheck'
+
 import {graph, insert_text} from './Common'
 
 import * as T from '../src/Token'
@@ -9,12 +12,15 @@ import {range} from '../src/Utils'
 
 qc('invariant', graph, g => G.check_invariant(g) == 'ok')
 
-{
-  const modify = graph.then(g =>
-    Gen.between(0, g.target.length)
+import 'mocha'
+import * as chai from 'chai'
+
+describe('modify_tokens', () => {
+  const modify = graph.chain(g =>
+    QC.range(g.target.length)
       .replicate(2)
       .map(Utils.numsort)
-      .then(([from, to]) => insert_text.map(text => ({g, from, to, text})))
+      .chain(([from, to]) => insert_text.map(text => ({g, from, to, text})))
   )
 
   qc(
@@ -28,16 +34,16 @@ qc('invariant', graph, g => G.check_invariant(g) == 'ok')
     const lhs = a.concat([text], z).join('')
     const mod = G.modify_tokens(g, from, to, text)
     const rhs = G.target_text(mod)
-    return p.deepEquals(lhs, rhs)
+    return p.equals(lhs, rhs)
   })
-}
+})
 
-{
-  const modify = graph.then(g =>
-    Gen.between(0, T.text(g.target).length)
+describe('modify', () => {
+  const modify = graph.chain(g =>
+    QC.range(T.text(g.target).length)
       .replicate(2)
       .map(Utils.numsort)
-      .then(([from, to]) => insert_text.map(text => ({g, from, to, text})))
+      .chain(([from, to]) => insert_text.map(text => ({g, from, to, text})))
   )
 
   qc(
@@ -53,7 +59,7 @@ qc('invariant', graph, g => G.check_invariant(g) == 'ok')
     const mod = G.modify(g, from, to, text)
     const rhs = G.target_text(mod)
     // Utils.stdout({g, from, to, text, mod, a, mid, z, lhs, rhs})
-    return p.deepEquals(lhs, rhs)
+    return p.equals(lhs, rhs)
   })
 
   /*
@@ -136,12 +142,12 @@ qc('invariant', graph, g => G.check_invariant(g) == 'ok')
     return true
   })
   */
-}
+})
 
-{
-  const rearrange = graph.then(g =>
-    Gen.between(0, g.target.length).then(dest =>
-      Gen.between(0, g.target.length)
+describe('rearrange', () => {
+  const rearrange = graph.chain(g =>
+    QC.range(g.target.length).chain(dest =>
+      QC.range(g.target.length)
         .replicate(2)
         .map(Utils.numsort)
         .map(([begin, end]) => ({g, begin, end, dest}))
@@ -168,9 +174,9 @@ qc('invariant', graph, g => G.check_invariant(g) == 'ok')
     const mod = G.rearrange(g, begin, end, dest)
     return Utils.array_multiset_eq(G.target_texts(mod), G.target_texts(g))
   })
-}
+})
 
-{
+describe('diff', () => {
   qc('diff target text preversed', graph, g => {
     const diff = G.calculate_diff(g)
     const target = Utils.flatMap(diff, d => {
@@ -204,10 +210,10 @@ qc('invariant', graph, g => G.check_invariant(g) == 'ok')
     const edge_ids = diff.map(d => d.id)
     return Utils.array_set_eq(edge_ids, Utils.record_traverse(g.edges, e => e.id))
   })
-}
+})
 
 {
-  const sentence = graph.then(g => Gen.between(0, g.target.length).map(i => ({g, i})))
+  const sentence = graph.chain(g => QC.between(0, g.target.length).map(i => ({g, i})))
 
   qc(
     'sentence subgraph invariant',
@@ -222,11 +228,11 @@ qc('invariant', graph, g => G.check_invariant(g) == 'ok')
     const rtarget = G.target_texts(reverted)
     const rsource = G.source_texts(reverted)
     const source = G.source_texts(g)
-    return p.deepEquals(rsource, source)
+    return p.equals(rsource, source)
   })
 
-  const graph_and_edge = graph.then(g =>
-    Gen.between(0, Object.keys(g.edges).length).map(i => ({g, i}))
+  const graph_and_edge = graph.chain(g =>
+    QC.between(0, Object.keys(g.edges).length).map(i => ({g, i}))
   )
 
   qc('revert invariant', graph_and_edge, ({g, i}) => {
@@ -244,7 +250,7 @@ qc('invariant', graph, g => G.check_invariant(g) == 'ok')
       const rtarget = G.target_texts(reverted)
       const rsource = G.source_texts(reverted)
       const source = G.source_texts(g)
-      return p.deepEquals(rtarget, source)
+      return p.equals(rtarget, source)
     },
     QC.expectFailure
   )
