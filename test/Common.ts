@@ -19,7 +19,8 @@ import * as Utils from '../src/Utils'
 
 export const arrayOf = <A>(l: number, u: number, g: Gen<A>) =>
   QC.between(l, u).chain(i => g.replicate(i))
-export const stringOf = (l: number, u: number, g: Gen<string>) => arrayOf(l, u, g).map(s => s.join(''))
+export const stringOf = (l: number, u: number, g: Gen<string>) =>
+  arrayOf(l, u, g).map(s => s.join(''))
 
 export const ws0 = stringOf(0, 3, QC.of(' '))
 export const ws1 = stringOf(1, 3, QC.of(' '))
@@ -32,7 +33,8 @@ export const insert_text: Gen<string> = QC.concat([ws0, stringOf(0, 3, QC.ascii)
 
 // Generate a random graph
 export const graph_with_tokens = (token_text: Gen<string>): Gen<Graph> =>
-  QC.pos.pow(0.7)
+  QC.pos
+    .pow(0.7)
     .chain(i => QC.between(1, 1 + Math.round(i / 10)))
     .replicate(2)
     .chain(([ssize, tsize]) =>
