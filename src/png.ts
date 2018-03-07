@@ -27,14 +27,20 @@ const text: Text = require('png-chunk-text')
 import * as path from 'path'
 import * as fs from 'fs'
 
+export const SWELL_KEY = 'swell0'
+
 export const onBuffer = {
   set(key: string, data: any, png_buffer: Buffer): Buffer {
     const chunks = extract(png_buffer).filter(
       chunk => chunk.name != tEXt || text.decode(chunk.data).keyword != key
     )
 
+    // URI-encode because png tEXt must be all latin1
+    // I chose this over base64 because I wanted the data to be somewhat readable
+    const new_chunk = text.encode(key, encodeURI(JSON.stringify(data)))
+
     // Add new chunk before the IEND chunk
-    chunks.splice(-1, 0, text.encode(key, JSON.stringify(data)))
+    chunks.splice(-1, 0, new_chunk)
 
     return new Buffer(encode(chunks))
   },
@@ -46,7 +52,7 @@ export const onBuffer = {
         try {
           const kv = text.decode(chunk.data)
           if (kv.keyword === key) {
-            return JSON.parse(kv.text)
+            return JSON.parse(decodeURI(kv.text))
           }
         } catch (e) {}
       }
@@ -59,7 +65,7 @@ export const onFile = {
   set(key: string, data: any, infile: string, outfile: string): void {
     fs.writeFileSync(outfile, onBuffer.set(key, data, fs.readFileSync(infile)))
   },
-  get(key: string, infile: string): void {
-    console.log(onBuffer.get(key, fs.readFileSync(infile)))
+  get(key: string, infile: string): any | undefined {
+    return onBuffer.get(key, fs.readFileSync(infile))
   },
 }

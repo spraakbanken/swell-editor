@@ -7,6 +7,7 @@ import * as typestyle from 'typestyle'
 
 import * as L from './LadderView'
 import * as C from './Compact'
+import * as G from './Graph'
 
 import * as csstips from 'csstips'
 
@@ -14,6 +15,8 @@ import * as phantom from 'phantom'
 import * as puppeteer from 'puppeteer'
 
 import * as pool from 'generic-pool'
+
+import * as png from './png'
 
 csstips.normalize()
 csstips.setupPage('body')
@@ -25,17 +28,25 @@ const express_throttle = require('express-throttle')
 const options = {burst: 5, period: '1s'}
 const throttle = express_throttle(options)
 
-function page_for(url: string): string {
+interface Data {
+  source_string: string
+  target_string: string
+  source: C.Unit[]
+  target: C.Unit[]
+  graph: G.Graph
+}
+
+function page_for(url: string): {html: string; data: Data} {
   const q = decodeURIComponent(Url.parse(url).query || '')
   console.log(q)
-  const [source, target] = q.split('//', 2)
-  if (source && target) {
-    const s = C.parse(source)
-    const t = C.parse(target)
-    const g = C.units_to_graph(s, t)
+  const [source_string, target_string] = q.split('//', 2)
+  if (source_string && target_string) {
+    const source = C.parse(source_string)
+    const target = C.parse(target_string)
+    const graph = C.units_to_graph(source, target)
     const css = typestyle.getStyles()
-    const html = ReactSSR.renderToStaticMarkup(L.Ladder(g))
-    return `
+    const body = ReactSSR.renderToStaticMarkup(L.Ladder(graph))
+    const html = `
       <!DOCTYPE html>
       <html>
           <head>
@@ -44,11 +55,12 @@ function page_for(url: string): string {
               <title>constant spaghetti</title>
               <style>body{background:#ffffff;}${css}</style>
           </head>
-          <body>${html}</body>
+          <body>${body}</body>
       </html>
     `
+    return {html, data: {source, target, graph, source_string, target_string}}
   } else {
-    return 'need two //-separated lines'
+    return {html: 'need two //-separated lines', data: undefined as any}
   }
 }
 
@@ -74,7 +86,8 @@ async function main() {
       const page = await phantom_page.acquire()
       try {
         await page.property('viewportSize', {width: 800, height: 600})
-        const status = await page.setContent(page_for(req.url), '')
+        const {html, data} = page_for(req.url)
+        const status = await page.setContent(html, '')
         const ladder: ClientRect | null = await page.evaluate(function() {
           var ladder = document.querySelector('.ladder')
           return ladder ? ladder.getBoundingClientRect() : null
@@ -85,7 +98,7 @@ async function main() {
         await page.property('viewportSize', {width: ladder.right, height: ladder.bottom})
         const b64png = await page.renderBase64('png')
         res.contentType('image/png')
-        res.send(new Buffer(b64png, 'base64'))
+        res.send(png.onBuffer.set(png.SWELL_KEY, data, new Buffer(b64png, 'base64')))
       } catch (e) {
         res.send(e.toString())
       } finally {
@@ -114,6 +127,7 @@ async function main() {
           throw 'ladder not found on chrome_page'
         }
         const png = await ladder.screenshot({type: 'png'})
+        res.send(png.onBuffer.set(PNG_KEY, data, new Buffer(png ??)))
         res.send(png)
       } catch (e) {
         res.send(e.toString())

@@ -1,9 +1,15 @@
 function capture {
     img=$1
     text=$2
-    for path in pj pup; do
-      echo -n -e "\n$path$img" 1>&2
-      time >$path$img.png 2>/dev/null curl -G "http://localhost:3000/$path.png"  --data-urlencode "$text"
+    for path in pj; do
+      out=$path$img.png
+      echo -n -e "\n$out" 1>&2
+      time >$out 2>/dev/null curl -G "http://localhost:3000/$path.png"  --data-urlencode "$text"
+      stored=$(yarn run -s png-io $out --get swell0 | jq -r '[.source_string, .target_string] | join("//")')
+      echo
+      echo $stored
+      echo $2
+      test "$stored" == "$2" || echo --UNEQUAL--
     done
 }
 

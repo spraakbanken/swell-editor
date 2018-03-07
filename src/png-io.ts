@@ -1,3 +1,4 @@
+import * as Utils from './Utils'
 import {onFile} from './png'
 
 import * as minimist from 'minimist'
@@ -9,7 +10,7 @@ const {set, get, to, out, _: [infile]} = args
 if (set && to && out && infile) {
   onFile.set(set, to, infile, out)
 } else if (get && infile) {
-  onFile.get(get, infile)
+  Utils.stdout(onFile.get(get, infile))
 } else {
   console.error(`Usage:
     ts-node png-io.ts infile.png --set key --to value --out outfile.png
