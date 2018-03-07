@@ -68,7 +68,7 @@
   },
   "scripts": {
     "png-io": "ts-node src/png-io.ts",
-    "iosass": "ts-node src/iosass.ts",
+    "iosaas": "ts-node src/iosaas.ts",
     "serve": "parcel $(ts-node src/generate_index.ts ${App:-SpaghettiEditor})",
     "build": "parcel build --public-url ./ $(ts-node src/generate_index.ts ${App:-SpaghettiEditor})",
     "doctest:generate": "doctest-ts src/*ts* --mocha",

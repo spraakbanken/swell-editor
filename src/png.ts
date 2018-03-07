@@ -27,8 +27,6 @@ const text: Text = require('png-chunk-text')
 import * as path from 'path'
 import * as fs from 'fs'
 
-export const SWELL_KEY = 'swell0'
-
 export const onBuffer = {
   set(key: string, data: any, png_buffer: Buffer): Buffer {
     const chunks = extract(png_buffer).filter(

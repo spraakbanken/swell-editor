@@ -1,7 +1,7 @@
 function capture {
     img=$1
     text=$2
-    for path in pj; do
+    for path in i; do
       out=$path$img.png
       echo -n -e "\n$out" 1>&2
       time >$out 2>/dev/null curl -G "http://localhost:3000/$path.png"  --data-urlencode "$text"

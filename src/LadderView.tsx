@@ -33,11 +33,12 @@ const Unselectable = style(Utils.debugName('Unselectable'), {
 
 const BorderCell = style(
   Utils.debugName('BorderCell'),
-  csstips.border(`${px(1)} #777 solid`),
+  csstips.border(`${px(intended_font_size / 13)} #777 solid`),
+  // csstips.border(`${px(1)} #777 solid`),
   {borderRadius: `${px(2)}`},
   {fontSize: `${px(13)}`},
   {background: 'white'},
-  csstips.padding(`${px(4)}`, `${px(4)}`),
+  csstips.padding(px(5), px(3), px(1), px(3)),
   csstips.centerJustified,
   {
     $nest: {
