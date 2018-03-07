@@ -15,8 +15,12 @@
     "express-throttle": "^2.0.0",
     "generic-pool": "^3.4.2",
     "json-stringify-pretty-compact": "^1.1.0",
+    "minimist": "^1.2.0",
     "parser-ts": "0.5.0",
     "phantom": "^4.0.12",
+    "png-chunk-text": "^1.0.0",
+    "png-chunks-encode": "^1.0.0",
+    "png-chunks-extract": "^1.0.0",
     "puppeteer": "^1.1.0",
     "ramda": "^0.25.0",
     "react": "^16.2.0",
@@ -30,6 +34,7 @@
     "@types/enzyme": "^3.1.6",
     "@types/enzyme-adapter-react-16": "^1.0.1",
     "@types/express": "^4.11.1",
+    "@types/minimist": "^1.2.0",
     "@types/phantom": "^3.2.4",
     "@types/puppeteer": "^1.0.0",
     "@types/ramda": "github:types/npm-ramda#dist",
@@ -62,6 +67,7 @@
     ]
   },
   "scripts": {
+    "png-io": "ts-node src/png-io.ts",
     "iosass": "ts-node src/iosass.ts",
     "serve": "parcel $(ts-node src/generate_index.ts ${App:-SpaghettiEditor})",
     "build": "parcel build --public-url ./ $(ts-node src/generate_index.ts ${App:-SpaghettiEditor})",
