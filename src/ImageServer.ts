@@ -73,7 +73,6 @@ export async function ImageServer<Data>(
   const throttle = express_throttle(options)
   const app = express()
 
-  try {
     app.get('/', (req, res) => {
       res.send(vnode_to_html(image.data_to_react(image.string_to_data(req_to_string(req.url)))))
     })
@@ -88,16 +87,14 @@ export async function ImageServer<Data>(
 
     const server = app.listen(port, () => console.log('Setting phasers to stun...'))
 
-    async function cleanup() {
-      console.log('closing...')
+    async function shutdown() {
+      console.log('Webserver shutdown...')
       image_maker.cleanup()
       server.close()
     }
 
-    process.on('exit', cleanup)
-    process.on('SIGINT', cleanup)
-    process.on('SIGTERM', cleanup)
-  } catch (e) {
-    console.error(e)
-  }
+    process.on('exit', shutdown)
+    process.on('SIGINT', shutdown)
+    process.on('SIGTERM', shutdown)
+    return shutdown
 }

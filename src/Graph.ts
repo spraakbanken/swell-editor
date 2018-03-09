@@ -784,6 +784,7 @@ export function equal(g1: Graph, g2: Graph): boolean {
   return R.equals(normalize(g1), normalize(g2))
 }
 
+/** Make all trailing whitespace of a specific form */
 export function normalize_whitespace(g: Graph, ws = ' '): Graph {
   const on_tok = (s: Token) => Token((s.text.match(/\S+/) || [''])[0] + ws, s.id)
   return {...g, source: g.source.map(on_tok), target: g.target.map(on_tok)}

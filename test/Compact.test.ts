@@ -20,9 +20,11 @@ qc('roundtrip units<->graph', graph, (g0, p) => {
 })
 
 const graph_with_symbols = graph_with_tokens(QC.nestring(QC.char(`a:@^~'"\\`)).map(s => s + ' '))
-const gen_units = graph_with_symbols.map(
-  g => C.graph_to_units(G.normalize_whitespace(g, '')).source
+export const gen_stu = graph_with_symbols.map(
+  g => C.graph_to_units(G.normalize_whitespace(g, ''))
 )
+
+export const gen_units = gen_stu.map(stu => stu.source)
 
 qc('roundtrip string<->units', gen_units, (units, p) =>
   p.equals(units, C.parse_strict(C.units_to_string(units)))
