@@ -44,6 +44,6 @@ export const serve = (port?: number) => ImageServer(image, port)
 
 import {argv} from 'process'
 if (argv[2] == '--serve') {
-  serve()
+  serve(argv[3])
 }
 

@@ -85,7 +85,7 @@ export async function ImageServer<Data>(
       res.send(png)
     })
 
-    const server = app.listen(port, () => console.log('Setting phasers to stun...'))
+    const server = app.listen(port, () => console.log(`Serving on port ${port}`))
 
     async function shutdown() {
       console.log('Webserver shutdown...')
