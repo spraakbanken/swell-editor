@@ -21,7 +21,7 @@ describe('png metadata (note: whitespace normalized, only .graph considered)', a
     shutdown = await iosaas.serve(3001)
   })
   Utils.range(8).map(s0 => {
-    const size = s0 * 10
+    const size = (s0 + 1) * 12
     it(`roundtrips graph of size ${size}`, async () => {
       const g = graph_no_ws.sample(size)
       const data = iosaas.graph_to_data(g)

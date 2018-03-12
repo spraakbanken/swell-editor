@@ -19,7 +19,7 @@ qc('Ladder text sanity', graph, (g, p) => {
   g.target.forEach(tok => text_somewhere(tok.text))
   Utils.record_forEach(g.edges, e => e.labels.forEach(label => text_somewhere(label)))
   return true
-})
+}, {tests: 25})
 
 /*
 import * as R from 'ramda'
