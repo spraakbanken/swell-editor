@@ -1,6 +1,6 @@
 import {qc} from './Common'
-import * as QC from 'ts-quickcheck'
-import {Gen} from 'ts-quickcheck'
+import * as QC from 'proptest'
+import {Gen} from 'proptest'
 
 import {graph, insert_text} from './Common'
 

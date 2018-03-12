@@ -1,6 +1,6 @@
 import {qc, graph_no_ws} from './Common'
-import {Gen} from 'ts-quickcheck'
-import * as QC from 'ts-quickcheck'
+import {Gen} from 'proptest'
+import * as QC from 'proptest'
 import * as G from '../src/Graph'
 
 import * as iosaas from '../src/iosaas'
@@ -32,8 +32,7 @@ describe('png metadata (note: whitespace normalized, only .graph considered)', a
               reject('chunk not a buffer') :
               resolve(chunk))
             }))
-
-      fs.writeFileSync(`i${size}.png`, buf)
+      // fs.writeFileSync(`i${size}.png`, buf)
       const data2 = png.onBuffer.get(iosaas.key, buf)
       expect(data2.graph).to.deep.equal(data.graph)
     })

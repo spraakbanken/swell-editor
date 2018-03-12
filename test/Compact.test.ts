@@ -1,6 +1,6 @@
 import {qc} from './Common'
-import {Gen} from 'ts-quickcheck'
-import * as QC from 'ts-quickcheck'
+import {Gen} from 'proptest'
+import * as QC from 'proptest'
 
 import {graph, graph_with_tokens} from './Common'
 
