@@ -20,7 +20,7 @@ csstips.setupPage('body')
 import * as fs from 'fs'
 
 const lato = fs
-  .readFileSync('node_modules/lato-font/fonts/lato-medium/lato-medium.woff2')
+  .readFileSync('node_modules/lato-font/fonts/lato-medium/lato-medium.woff')
   .toString('base64')
 
 function vnode_to_html(vnode: React.ReactElement<{}>): string {
@@ -35,7 +35,7 @@ function vnode_to_html(vnode: React.ReactElement<{}>): string {
         <style>#capture{display:inline-block;}${css}
         @font-face {
           font-family: "lato";
-          src: url("data:font/woff2;base64,${lato}") format('woff2');
+          src: url("data:font/woff;base64,${lato}") format('woff');
         }
         body{background:#fff; font-family: lato;}
         </style>
