@@ -14,6 +14,9 @@ import * as Utils from './Utils'
 
 import * as C from './Compact'
 
+import * as png from './png'
+import {Data, key} from './SpaghettiTypes'
+
 import {VNode} from './LadderView'
 
 // import "codemirror/lib/codemirror.css"
@@ -26,6 +29,7 @@ export interface State {
   readonly drag_state: L.DragState
   readonly show_g: boolean
   readonly show_d: boolean
+  readonly drop_target: boolean
 }
 
 export const init: State = {
@@ -36,6 +40,7 @@ export const init: State = {
   drag_state: null,
   show_g: false,
   show_d: false,
+  drop_target: false,
 }
 
 export function App(store: Store<State>): () => VNode {
@@ -47,7 +52,6 @@ export function App(store: Store<State>): () => VNode {
   store.at('drag_state').set(null)
   store.at('source').modify(s => s || '')
   store.at('target').modify(s => s || '')
-
   return () => View(store)
 }
 
@@ -135,6 +139,21 @@ const display_if = (b: boolean) => ({
   display: b ? 'inherit' : 'none',
 })
 
+const dropTargetClass = (() => {
+  const ambient = style({
+    ...Utils.debugName('ambient'),
+    border: '0.3em dashed #0000',
+    margin: '0.1em',
+  })
+  const dropping = style({
+    ...Utils.debugName('dropping'),
+    borderColor: '#ccc !important',
+  })
+  return (b: boolean) => ambient + ' ' + (b ? dropping : '')
+})()
+
+
+
 const topStyle = style({
   ...Utils.debugName('topStyle'),
   fontFamily: 'lato, sans-serif, DejaVu Sans',
@@ -196,7 +215,56 @@ export function View(store: Store<State>): VNode {
   const t = C.parse(state.target)
   const g = C.units_to_graph(s, t)
   const d = RD.enrichen(g, G.calculate_diff(g))
+  const set_via_graph = (g: G.Graph) => {
+    const us = C.minimize(C.graph_to_units(g))
+    const s = C.units_to_string(us.source)
+    const t = C.units_to_string(us.target)
+    store.transaction(() => {
+      store.at('source').set(s)
+      store.at('target').set(t)
+    })
+  }
+  const onDrop: React.DragEventHandler<HTMLDivElement> = e => {
+    store.update({drop_target: false})
+    e.preventDefault()
+    e.stopPropagation()
+    const dt = e.dataTransfer
+    // console.log(dt.files)
+    // console.log(dt.items)
+    // console.log(dt.types)
+    // dt.items[0].getAsString(s => console.log('str', s))
+    const file = dt.items[0].getAsFile()
+    if (file) {
+      const r = new FileReader()
+      r.readAsArrayBuffer(file)
+      r.onload = () => {
+        console.log(r.readyState)
+        if (r.readyState === 2) {
+          const buf = new Buffer(r.result)
+          const data = png.onBuffer.get(key, buf)
+          set_via_graph(data.graph)
+          set_drop_target(false)
+        }
+      }
+    }
+    return false
+  }
+  const set_drop_target = Utils.debounce(50, b => {
+    store.get().drop_target != b && store.update({drop_target: b})
+  })
+
   return (
+    <div className={dropTargetClass(state.drop_target)}
+        onDrop={onDrop}
+        onDragLeave={e => set_drop_target(false)}
+        onDragOver={e =>{
+          e.preventDefault()
+          e.stopPropagation()
+          store.get().drop_target || store.update({drop_target: true})
+          set_drop_target(true)
+          return false
+        }}>
+
     <div className={topStyle}>
       <div className="main" style={{minHeight: '10em'}}>
         {L.Ladder(
@@ -207,13 +275,7 @@ export function View(store: Store<State>): VNode {
           (ds: L.DragState) =>
             ds &&
             store.transaction(() => {
-              const g2 = G.diff_to_graph(L.ApplyMove(G.calculate_diff(g), ds), g.edges)
-              const us = C.minimize(C.graph_to_units(g2))
-              const s = C.units_to_string(us.source)
-              const t = C.units_to_string(us.target)
-              console.log('drop:', {g2, us})
-              store.at('source').set(s)
-              store.at('target').set(t)
+              set_via_graph(G.diff_to_graph(L.ApplyMove(G.calculate_diff(g), ds), g.edges))
               store.at('drag_state').set(null)
             })
         )}
@@ -258,6 +320,7 @@ export function View(store: Store<State>): VNode {
           <span>{e.source}</span>
         </React.Fragment>
       ))}
+    </div>
     </div>
   )
 }
