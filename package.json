@@ -5,9 +5,6 @@
   "author": "Dan Rosén",
   "description": "Editor for normalising second-language learner texts",
   "dependencies": {
-    "@types/chai": "^4.1.2",
-    "@types/generic-pool": "^3.1.0",
-    "@types/mocha": "^2.2.48",
     "csstips": "^0.2.2",
     "dejavu-fonts-ttf": "^2.37.3",
     "diff-match-patch": "^1.0.0",
@@ -30,6 +27,9 @@
     "typestyle": "^1.4.1"
   },
   "devDependencies": {
+    "@types/chai": "^4.1.2",
+    "@types/generic-pool": "^3.1.0",
+    "@types/mocha": "^2.2.48",
     "@types/diff-match-patch": "^1.0.31",
     "@types/enzyme": "^3.1.6",
     "@types/enzyme-adapter-react-16": "^1.0.1",
