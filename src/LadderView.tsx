@@ -22,7 +22,7 @@ export const clean_ul = style(Utils.debugName('clean_ul'), {
 const intended_font_size = 16
 const px = (i: number) => `${i / intended_font_size}em`
 
-const Unselectable = style(Utils.debugName('Unselectable'), {
+export const Unselectable = style(Utils.debugName('Unselectable'), {
   '-moz-user-select': 'none',
   '-webkit-touch-callout': 'none',
   '-webkit-user-select': 'none',

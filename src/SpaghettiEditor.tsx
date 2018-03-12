@@ -226,27 +226,68 @@ export function View(store: Store<State>): VNode {
   }
   const onDrop: React.DragEventHandler<HTMLDivElement> = e => {
     store.update({drop_target: false})
+    set_drop_target(false)
     e.preventDefault()
     e.stopPropagation()
     const dt = e.dataTransfer
-    // console.log(dt.files)
-    // console.log(dt.items)
-    // console.log(dt.types)
-    // dt.items[0].getAsString(s => console.log('str', s))
-    const file = dt.items[0].getAsFile()
-    if (file) {
+    console.log(dt.files)
+    console.log(dt.items)
+    console.log(dt.types)
+    const files = Array.from(dt.files)
+    console.log('items', dt.items.length)
+    Array.from(dt.items).forEach((item, ix) => {
+      console.log(item)
+      item.getAsString(s => console.log('item', ix, 'as string:', s))
+      if (item.kind === 'string' && item.type === 'text/html') {
+        // for large images github sends an <img> with data-canonical-src being the original src which contains
+        // the data in the string itself... cannot get the image directly because of CORS
+        // maybe should make the iosaas server be able to get a remote image and return its meta-data
+        // this doesn't work in Firefox because it doesn't get the same items (!?)
+        item.getAsString(s => {
+          console.log('text/html', s)
+          const p = new DOMParser
+          const doc = p.parseFromString(s, 'text/html')
+          Array.from(doc.querySelectorAll('img')).forEach(img => {
+            const src = img.dataset.canonicalSrc || ''
+            const qmark = src.indexOf('?')
+            console.log(src, qmark)
+            if (qmark != -1) {
+              const line = src.substring(qmark + 1)
+              console.log(src, qmark, line)
+              const [s, t] = line.split('//')
+              const su = C.parse(decodeURIComponent(s))
+              const tu = C.parse(decodeURIComponent(t))
+              set_via_graph(C.units_to_graph(su, tu))
+            }
+          })
+        })
+
+      }
+      try {
+        const file = item.getAsFile()
+        file && files.push(file)
+      } catch (e) {
+        console.log('item not a file:', item, e)
+      }})
+    console.log('files', files)
+    files.forEach(file => {
+      console.log(file, file)
       const r = new FileReader()
       r.readAsArrayBuffer(file)
       r.onload = () => {
-        console.log(r.readyState)
+        console.log('readyState', r.readyState)
         if (r.readyState === 2) {
-          const buf = new Buffer(r.result)
-          const data = png.onBuffer.get(key, buf)
-          set_via_graph(data.graph)
-          set_drop_target(false)
+          try {
+            const buf = new Buffer(r.result)
+            const data = png.onBuffer.get(key, buf)
+            console.log({data})
+            set_via_graph(data.graph)
+          } catch (e) {
+            console.log('file not a png with meta data:', file, r.result)
+          }
         }
       }
-    }
+    })
     return false
   }
   const set_drop_target = Utils.debounce(50, b => {
@@ -256,14 +297,22 @@ export function View(store: Store<State>): VNode {
   return (
     <div className={dropTargetClass(state.drop_target)}
         onDrop={onDrop}
-        onDragLeave={e => set_drop_target(false)}
+        onDragExit={e => (e.preventDefault(), set_drop_target(false), false)}
         onDragOver={e =>{
           e.preventDefault()
           e.stopPropagation()
           store.get().drop_target || store.update({drop_target: true})
           set_drop_target(true)
           return false
-        }}>
+        }}
+        onDragEnter={e =>{
+          e.preventDefault()
+          e.stopPropagation()
+          store.get().drop_target || store.update({drop_target: true})
+          set_drop_target(true)
+          return false
+        }}
+        >
 
     <div className={topStyle}>
       <div className="main" style={{minHeight: '10em'}}>
@@ -302,6 +351,15 @@ export function View(store: Store<State>): VNode {
         {store.get().show_d && <pre>diff = {Utils.show(d)}</pre>}
         {store.get().show_g && <pre>graph = {Utils.show(g)}</pre>}
       </div>
+      {(function() {
+          const s = encodeURIComponent(C.units_to_string(C.parse(state.source), '_'))
+          const t = encodeURIComponent(C.units_to_string(C.parse(state.target), '_'))
+          const md = `![](https://ws.spraakbanken.gu.se/ws/swell/png?${s}//${t})`
+          return <pre className={"main " + L.Unselectable} style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}
+            draggable={true}
+            onDragStart={e => { e.dataTransfer.setData('text/plain', md) }}
+          >{md}</pre>
+        })()}
       <div className="main TopPad">
         <em>Examples:</em>
       </div>
