@@ -84,7 +84,7 @@ export async function ImageServer<Data>(
     res.send(vnode_to_html(image.data_to_react(image.string_to_data(req_to_string(req.url)))))
   })
 
-  const image_maker = await ImageMaker(image, renderers.makePhantomRenderer)
+  const image_maker = await ImageMaker(image)
 
   const throttle1 = express_throttle(options)
   app.get('/i.png', throttle1, async (req, res) => {
