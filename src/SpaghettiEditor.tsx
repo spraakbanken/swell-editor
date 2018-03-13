@@ -55,24 +55,28 @@ export function App(store: Store<State>): () => VNode {
   return () => View(store)
 }
 
-export const Textarea = ({
+export function Textarea({
   store,
   ...props
-}: {store: Store<string>} & React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
-  <textarea
-    {...props}
-    value={store.get()}
-    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => store.set(e.target.value)}
-  />
-)
+}: {store: Store<string>} & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea
+      {...props}
+      value={store.get()}
+      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => store.set(e.target.value)}
+    />
+  )
+}
 
-export const Input = (store: Store<string>, tabIndex?: number) => (
-  <input
-    value={store.get()}
-    tabIndex={tabIndex}
-    onChange={(e: React.ChangeEvent<HTMLInputElement>) => store.set(e.target.value)}
-  />
-)
+export function Input(store: Store<string>, tabIndex?: number) {
+  return (
+    <input
+      value={store.get()}
+      tabIndex={tabIndex}
+      onChange={(e: React.ChangeEvent<HTMLInputElement>) => store.set(e.target.value)}
+    />
+  )
+}
 
 interface ex {
   source: string
@@ -205,6 +209,8 @@ type side = 'source' | 'target'
 const sides = ['source' as side, 'target' as side]
 const op = (x: side) => (x == 'source' ? 'target' : 'source')
 
+const ws_url = 'https://ws.spraakbanken.gu.se/ws/swell'
+
 export function View(store: Store<State>): VNode {
   const state = store.get()
   const source = store.at('source')
@@ -223,65 +229,56 @@ export function View(store: Store<State>): VNode {
     })
   }
   const onDrop: React.DragEventHandler<HTMLDivElement> = e => {
+    const log = (...xs: any[]) => false || console.log(...xs)
     store.update({drop_target: false})
     set_drop_target(false)
     e.preventDefault()
     e.stopPropagation()
     const dt = e.dataTransfer
-    console.log(dt.files)
-    console.log(dt.items)
-    console.log(dt.types)
+    log(dt.files)
+    log(dt.items)
+    log(dt.types)
     const files = Array.from(dt.files)
-    console.log('items', dt.items.length)
-    Array.from(dt.items).forEach((item, ix) => {
-      console.log(item)
-      item.getAsString(s => console.log('item', ix, 'as string:', s))
-      if (item.kind === 'string' && item.type === 'text/html') {
-        // for large images github sends an <img> with data-canonical-src being the original src which contains
-        // the data in the string itself... cannot get the image directly because of CORS
-        // maybe should make the iosaas server be able to get a remote image and return its meta-data
-        // this doesn't work in Firefox because it doesn't get the same items (!?)
-        item.getAsString(s => {
-          console.log('text/html', s)
-          const p = new DOMParser()
-          const doc = p.parseFromString(s, 'text/html')
-          Array.from(doc.querySelectorAll('img')).forEach(img => {
-            const src = img.dataset.canonicalSrc || ''
-            const qmark = src.indexOf('?')
-            console.log(src, qmark)
-            if (qmark != -1) {
-              const line = src.substring(qmark + 1)
-              console.log(src, qmark, line)
-              const [s, t] = line.split('//')
-              const su = C.parse(decodeURIComponent(s))
-              const tu = C.parse(decodeURIComponent(t))
-              set_via_graph(C.units_to_graph(su, tu))
-            }
+    const items = Array.from(dt.items)
+    log('items', dt.items.length)
+    items.forEach((item, ix) => {
+      log(item)
+      item.getAsString(s => {
+        log(item, ix, 'as string:', s)
+        const m_url = s.match(/https?:[A-Za-z0-9%\-._~:/?#@!$&'*+,;=`.]+/)
+        if (m_url) {
+          const url = m_url[0]
+          log(url, 'looks like an address')
+          const query_url = ws_url + '/metadata.json?' + encodeURIComponent(url)
+          Utils.GET(query_url, str => {
+            const data = JSON.parse(str)
+            log(data, 'from', url)
+            set_via_graph(data.graph)
           })
-        })
-      }
+        }
+      })
       try {
         const file = item.getAsFile()
         file && files.push(file)
       } catch (e) {
-        console.log('item not a file:', item, e)
+        log('item not a file:', item, e)
       }
     })
-    console.log('files', files)
+    log('files', files)
     files.forEach(file => {
-      console.log(file, file)
+      log(file, file)
       const r = new FileReader()
       r.readAsArrayBuffer(file)
       r.onload = () => {
-        console.log('readyState', r.readyState)
+        log('readyState', r.readyState)
         if (r.readyState === 2) {
           try {
             const buf = new Buffer(r.result)
             const data = png.onBuffer.get(key, buf)
-            console.log({data})
+            log({data})
             set_via_graph(data.graph)
           } catch (e) {
-            console.log('file not a png with meta data:', file, r.result)
+            log('file not a png with meta data:', file, r.result)
           }
         }
       }
@@ -296,7 +293,7 @@ export function View(store: Store<State>): VNode {
     <div
       className={dropTargetClass(state.drop_target)}
       onDrop={onDrop}
-      onDragExit={e => (e.preventDefault(), set_drop_target(false), false)}
+      onDragLeave={e => (e.preventDefault(), set_drop_target(false), false)}
       onDragOver={e => {
         e.preventDefault()
         e.stopPropagation()
@@ -349,9 +346,13 @@ export function View(store: Store<State>): VNode {
           {store.get().show_g && <pre>graph = {Utils.show(g)}</pre>}
         </div>
         {(function() {
-          const s = encodeURIComponent(C.units_to_string(C.parse(state.source), '_'))
-          const t = encodeURIComponent(C.units_to_string(C.parse(state.target), '_'))
-          const md = `![](https://ws.spraakbanken.gu.se/ws/swell/png?${s}//${t})`
+          const esc = (s: string) =>
+            encodeURIComponent(s)
+              .replace('(', '%28')
+              .replace(')', '%29')
+          const s = esc(C.units_to_string(C.parse(state.source), '_'))
+          const t = esc(C.units_to_string(C.parse(state.target), '_'))
+          const md = `![](${ws_url}/png?${s}//${t})`
           return (
             <pre
               className={'main ' + L.Unselectable}
