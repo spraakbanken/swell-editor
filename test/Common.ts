@@ -34,7 +34,7 @@ export const insert_text: Gen<string> = QC.concat([ws0, stringOf(0, 3, QC.ascii)
 // Generate a random graph
 export const graph_with_tokens = (token_text: Gen<string>): Gen<Graph> =>
   QC.pos
-    .pow(2/3)
+    .pow(2 / 3)
     .replicate(2)
     .chain(([ssize, tsize]) =>
       QC.between(1, Math.min(ssize, tsize)).chain(esize =>

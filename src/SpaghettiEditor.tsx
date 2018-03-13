@@ -152,8 +152,6 @@ const dropTargetClass = (() => {
   return (b: boolean) => ambient + ' ' + (b ? dropping : '')
 })()
 
-
-
 const topStyle = style({
   ...Utils.debugName('topStyle'),
   fontFamily: 'lato, sans-serif, DejaVu Sans',
@@ -245,7 +243,7 @@ export function View(store: Store<State>): VNode {
         // this doesn't work in Firefox because it doesn't get the same items (!?)
         item.getAsString(s => {
           console.log('text/html', s)
-          const p = new DOMParser
+          const p = new DOMParser()
           const doc = p.parseFromString(s, 'text/html')
           Array.from(doc.querySelectorAll('img')).forEach(img => {
             const src = img.dataset.canonicalSrc || ''
@@ -261,14 +259,14 @@ export function View(store: Store<State>): VNode {
             }
           })
         })
-
       }
       try {
         const file = item.getAsFile()
         file && files.push(file)
       } catch (e) {
         console.log('item not a file:', item, e)
-      }})
+      }
+    })
     console.log('files', files)
     files.forEach(file => {
       console.log(file, file)
@@ -295,90 +293,96 @@ export function View(store: Store<State>): VNode {
   })
 
   return (
-    <div className={dropTargetClass(state.drop_target)}
-        onDrop={onDrop}
-        onDragExit={e => (e.preventDefault(), set_drop_target(false), false)}
-        onDragOver={e =>{
-          e.preventDefault()
-          e.stopPropagation()
-          store.get().drop_target || store.update({drop_target: true})
-          set_drop_target(true)
-          return false
-        }}
-        onDragEnter={e =>{
-          e.preventDefault()
-          e.stopPropagation()
-          store.get().drop_target || store.update({drop_target: true})
-          set_drop_target(true)
-          return false
-        }}
-        >
-
-    <div className={topStyle}>
-      <div className="main" style={{minHeight: '10em'}}>
-        {L.Ladder(
-          g,
-          undefined,
-          state.drag_state,
-          (ds: L.DragState) => store.at('drag_state').set(ds),
-          (ds: L.DragState) =>
-            ds &&
-            store.transaction(() => {
-              set_via_graph(G.diff_to_graph(L.ApplyMove(G.calculate_diff(g), ds), g.edges))
-              store.at('drag_state').set(null)
-            })
-        )}
-      </div>
-      {sides.map((side, i) => (
-        <React.Fragment key={i}>
-          {Button('\u2b1a', 'clear', () => store.at(side).set(''))}
-          {Button(i ? '\u21e1' : '\u21e3', 'copy to ' + side, () =>
-            store.at(op(side)).set(state[side])
+    <div
+      className={dropTargetClass(state.drop_target)}
+      onDrop={onDrop}
+      onDragExit={e => (e.preventDefault(), set_drop_target(false), false)}
+      onDragOver={e => {
+        e.preventDefault()
+        e.stopPropagation()
+        store.get().drop_target || store.update({drop_target: true})
+        set_drop_target(true)
+        return false
+      }}
+      onDragEnter={e => {
+        e.preventDefault()
+        e.stopPropagation()
+        store.get().drop_target || store.update({drop_target: true})
+        set_drop_target(true)
+        return false
+      }}>
+      <div className={topStyle}>
+        <div className="main" style={{minHeight: '10em'}}>
+          {L.Ladder(
+            g,
+            undefined,
+            state.drag_state,
+            (ds: L.DragState) => store.at('drag_state').set(ds),
+            (ds: L.DragState) =>
+              ds &&
+              store.transaction(() => {
+                set_via_graph(G.diff_to_graph(L.ApplyMove(G.calculate_diff(g), ds), g.edges))
+                store.at('drag_state').set(null)
+              })
           )}
-          <Textarea
-            store={store.at(side)}
-            tabIndex={(i + 1) as number}
-            rows={state[side].split('\n').length}
-            style={{resize: 'vertical'}}
-            placeholder={'Enter ' + side + ' text...'}
-          />
-        </React.Fragment>
-      ))}
-      <div className="main" style={{opacity: '0.85', justifySelf: 'end'} as any}>
-        graph: {checklink(store.at('show_g'))} diff: {checklink(store.at('show_d'))}
-      </div>
-      <div className="main">
-        {store.get().show_d && <pre>diff = {Utils.show(d)}</pre>}
-        {store.get().show_g && <pre>graph = {Utils.show(g)}</pre>}
-      </div>
-      {(function() {
+        </div>
+        {sides.map((side, i) => (
+          <React.Fragment key={i}>
+            {Button('\u2b1a', 'clear', () => store.at(side).set(''))}
+            {Button(i ? '\u21e1' : '\u21e3', 'copy to ' + side, () =>
+              store.at(op(side)).set(state[side])
+            )}
+            <Textarea
+              store={store.at(side)}
+              tabIndex={(i + 1) as number}
+              rows={state[side].split('\n').length}
+              style={{resize: 'vertical'}}
+              placeholder={'Enter ' + side + ' text...'}
+            />
+          </React.Fragment>
+        ))}
+        <div className="main" style={{opacity: '0.85', justifySelf: 'end'} as any}>
+          graph: {checklink(store.at('show_g'))} diff: {checklink(store.at('show_d'))}
+        </div>
+        <div className="main">
+          {store.get().show_d && <pre>diff = {Utils.show(d)}</pre>}
+          {store.get().show_g && <pre>graph = {Utils.show(g)}</pre>}
+        </div>
+        {(function() {
           const s = encodeURIComponent(C.units_to_string(C.parse(state.source), '_'))
           const t = encodeURIComponent(C.units_to_string(C.parse(state.target), '_'))
           const md = `![](https://ws.spraakbanken.gu.se/ws/swell/png?${s}//${t})`
-          return <pre className={"main " + L.Unselectable} style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}
-            draggable={true}
-            onDragStart={e => { e.dataTransfer.setData('text/plain', md) }}
-          >{md}</pre>
+          return (
+            <pre
+              className={'main ' + L.Unselectable}
+              style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}
+              draggable={true}
+              onDragStart={e => {
+                e.dataTransfer.setData('text/plain', md)
+              }}>
+              {md}
+            </pre>
+          )
         })()}
-      <div className="main TopPad">
-        <em>Examples:</em>
+        <div className="main TopPad">
+          <em>Examples:</em>
+        </div>
+        {examples.map((e, i) => (
+          <React.Fragment key={i}>
+            {!e.target ? (
+              <div />
+            ) : (
+              Button(
+                '\u21eb',
+                'see example analysis',
+                () => (source.set(e.source), target.set(e.target))
+              )
+            )}
+            {Button('\u21ea', 'load example', () => (source.set(e.source), target.set(e.source)))}
+            <span>{e.source}</span>
+          </React.Fragment>
+        ))}
       </div>
-      {examples.map((e, i) => (
-        <React.Fragment key={i}>
-          {!e.target ? (
-            <div />
-          ) : (
-            Button(
-              '\u21eb',
-              'see example analysis',
-              () => (source.set(e.source), target.set(e.target))
-            )
-          )}
-          {Button('\u21ea', 'load example', () => (source.set(e.source), target.set(e.source)))}
-          <span>{e.source}</span>
-        </React.Fragment>
-      ))}
-    </div>
     </div>
   )
 }

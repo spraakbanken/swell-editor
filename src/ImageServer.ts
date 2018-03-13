@@ -11,6 +11,8 @@ import * as png from './png'
 
 import * as renderers from './render'
 
+import fetch from 'node-fetch'
+
 import {Image} from './ImageType'
 export {Image}
 
@@ -64,37 +66,50 @@ function req_to_string(url: string) {
   return decodeURIComponent(Url.parse(url).query || '')
 }
 
+export async function metadata_from_url<Data>(image: Image<Data>, url: string): Promise<Data> {
+  const buf = await fetch(url).then(res => res.buffer())
+  // console.log(buf.length, 'bytes from', url)
+  return png.onBuffer.get(image.key, buf)
+}
+
 export async function ImageServer<Data>(
   image: Image<Data>,
   port = parseInt(process.argv[2], 10) || 3000
 ) {
   const express_throttle = require('express-throttle')
   const options = {burst: 5, period: '1s'}
-  const throttle = express_throttle(options)
   const app = express()
 
-    app.get('/', (req, res) => {
-      res.send(vnode_to_html(image.data_to_react(image.string_to_data(req_to_string(req.url)))))
-    })
+  app.get('/', (req, res) => {
+    res.send(vnode_to_html(image.data_to_react(image.string_to_data(req_to_string(req.url)))))
+  })
 
-    const image_maker = await ImageMaker(image, renderers.makePhantomRenderer)
+  const image_maker = await ImageMaker(image, renderers.makePhantomRenderer)
 
-    app.get('/i.png', throttle, async (req, res) => {
-      const png = await image_maker.snap(req_to_string(req.url))
-      res.contentType('image/png')
-      res.send(png)
-    })
+  const throttle1 = express_throttle(options)
+  app.get('/i.png', throttle1, async (req, res) => {
+    const png = await image_maker.snap(req_to_string(req.url))
+    res.contentType('image/png')
+    res.send(png)
+  })
 
-    const server = app.listen(port, () => console.log(`Serving on port ${port}`))
+  const throttle2 = express_throttle(options)
+  app.get('/metadata.json', throttle2, async (req, res) => {
+    const data = await metadata_from_url(image, req_to_string(req.url))
+    res.contentType('application/json')
+    res.send(data)
+  })
 
-    async function shutdown() {
-      console.log('Webserver shutdown...')
-      image_maker.cleanup()
-      server.close()
-    }
+  const server = app.listen(port, () => console.log(`Serving on port ${port}`))
 
-    process.on('exit', shutdown)
-    process.on('SIGINT', shutdown)
-    process.on('SIGTERM', shutdown)
-    return shutdown
+  async function shutdown() {
+    console.log('Webserver shutdown...')
+    image_maker.cleanup()
+    server.close()
+  }
+
+  process.on('exit', shutdown)
+  process.on('SIGINT', shutdown)
+  process.on('SIGTERM', shutdown)
+  return shutdown
 }

@@ -9,13 +9,14 @@ export {Data, key}
 export function graph_to_data(graph: G.Graph): Data {
   const stu = C.graph_to_units(graph)
   const {source, target} = stu
-  return  {graph, ...stu,
+  return {
+    graph,
+    ...stu,
 
-      source_string: C.units_to_string(source),
+    source_string: C.units_to_string(source),
 
-      target_string: C.units_to_string(target),
-}
-
+    target_string: C.units_to_string(target),
+  }
 }
 
 function string_to_data(query_string: string): Data {
@@ -34,7 +35,7 @@ function data_to_react(data: Data): React.ReactElement<{}> {
   return L.Ladder(data.graph)
 }
 
-const image: Image<Data> = {
+export const image: Image<Data> = {
   string_to_data,
   data_to_react,
   key,
@@ -46,4 +47,3 @@ import {argv} from 'process'
 if (argv[2] == '--serve') {
   serve(argv[3])
 }
-

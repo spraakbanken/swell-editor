@@ -357,7 +357,7 @@ export function unit_to_string(unit: Unit): string {
   return text + ids + links + labels
 }
 
-export function units_to_string(units: Unit[], sep=' ' as ' '|'_') {
+export function units_to_string(units: Unit[], sep = ' ' as ' ' | '_') {
   return units.map(unit_to_string).join(sep)
 }
 
