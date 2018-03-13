@@ -95,9 +95,8 @@ export async function ImageServer<Data>(
 
   const throttle2 = express_throttle(options)
   app.get('/metadata.json', throttle2, async (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    const data = await metadata_from_url(image, req_to_string(req.url))
     res.contentType('application/json')
+    const data = await metadata_from_url(image, req_to_string(req.url))
     res.send(data)
   })
 
