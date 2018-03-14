@@ -17,7 +17,7 @@ declare var require: any
 const Remarkable = require('remarkable')
 const remarkable = new Remarkable({linkify: true, typographer: true, html: true})
 
-function md(snippets: TemplateStringsArray, ...vnodes: VNode[]): VNode {
+export function md(snippets: TemplateStringsArray, ...vnodes: VNode[]): VNode {
   const init_spaces = (snippets[0].match(/^[^\n\S]*(?=\S)/m) || [''])[0]
   const drop = (s: string) =>
     s

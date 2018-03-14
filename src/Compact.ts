@@ -124,7 +124,7 @@ const attribute: Parser<Attribute> = p.alts<Attribute>(
   link.map(x => [x]).map(links => ({links}))
 )
 
-function Unit(text: string, attrs: Attribute[]): Unit {
+export function Unit(text: string, attrs: Attribute[]): Unit {
   const r = flatten(['ids', 'labels', 'links'], attrs)
   return {text, ...r}
 }
@@ -174,8 +174,8 @@ export const parse = (s: string) => run_parser(units, s) || []
 export const parse_strict = (s: string) => run_parser_strict(units, s)
 
 // these link to a representatitive for the whole edge group
-type Simple = {text: string; labels: string[]; id: string; link?: string}
-function Simple(text: string, labels: string[], id: string, link?: string): Simple {
+export type Simple = {text: string; labels: string[]; id: string; link?: string}
+export function Simple(text: string, labels: string[], id: string, link?: string): Simple {
   return {text, labels, id, link}
 }
 
@@ -185,7 +185,7 @@ const identify = (prefix: string, us: Unit[]) =>
 // to try to preserve the user-supplied id
 // one problem is possible name-collision
 
-function assign_ids_and_manual_alignments(
+export function assign_ids_and_manual_alignments(
   source: Unit[],
   target: Unit[]
 ): {source: Simple[]; target: Simple[]} {
@@ -224,7 +224,7 @@ function assign_ids_and_manual_alignments(
   return {source: s.map(link), target: t.map(link)}
 }
 
-const space_id = '<space>'
+export const space_id = '<space>'
 
 /**
 
@@ -241,7 +241,7 @@ const space_id = '<space>'
   punctuate(example) // => expect
 
 */
-function punctuate(units: Simple[]): Simple[] {
+export function punctuate(units: Simple[]): Simple[] {
   const slice = (u: Simple) => Utils.str_map(u.text, text => ({...u, text}))
   const slices = (us: Simple[]): Simple[][] => us.map(slice)
   const space = Simple(' ', [], space_id)
@@ -250,7 +250,7 @@ function punctuate(units: Simple[]): Simple[] {
 
 const is_auto = (u: Simple) => u.link === undefined
 
-function automatic_alignments(source: Simple[], target: Simple[]): UnionFind<string> {
+export function automatic_alignments(source: Simple[], target: Simple[]): UnionFind<string> {
   const uf = Utils.PolyUnionFind<string>(u => u)
   const s = punctuate(source.filter(is_auto))
   const t = punctuate(target.filter(is_auto))
