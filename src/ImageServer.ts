@@ -1,8 +1,10 @@
 import * as process from 'process'
 import * as express from 'express'
 import * as compression from 'compression'
+const throttle = require('express-throttle')
+
 import * as memoizee from 'memoizee'
-const express_throttle = require('express-throttle')
+const memo = <A>(f: (a: string) => Promise<A>) => memoizee(f, {promise: true, length: 1})
 
 import * as Url from 'url'
 
@@ -89,19 +91,17 @@ export async function ImageServer<Data>(
   })
 
   const image_maker = await ImageMaker(image)
-  const memo = <A>(f: (a: string) => Promise<A>) => memoizee(f, {promise: true, length: 1})
   const snap = memo(url => image_maker.snap(req_to_string(url)))
   const metadata = memo(url => metadata_from_url(image, req_to_string(url)))
 
-  const throttle1 = express_throttle(options)
-  app.get('/i.png', throttle1, async (req, res) => {
+  app.get('/i.png', throttle(options), async (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache')
     res.contentType('image/png')
     const png = await snap(req.url)
     res.send(png)
   })
 
-  const throttle2 = express_throttle(options)
-  app.get('/metadata.json', throttle2, async (req, res) => {
+  app.get('/metadata.json', throttle(options), async (req, res) => {
     res.contentType('application/json')
     const data = await metadata(req.url)
     res.send(data)
