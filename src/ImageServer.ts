@@ -1,6 +1,7 @@
 import * as process from 'process'
 import * as express from 'express'
 import * as compression from 'compression'
+import * as morgan from 'morgan'
 const throttle = require('express-throttle')
 
 import * as memoizee from 'memoizee'
@@ -26,6 +27,8 @@ csstips.normalize()
 csstips.setupPage('body')
 
 import * as fs from 'fs'
+import * as path from 'path'
+import * as process from 'process'
 
 const lato = fs
   .readFileSync('node_modules/lato-font/fonts/lato-medium/lato-medium.woff')
@@ -82,9 +85,18 @@ export async function ImageServer<Data>(
   image: Image<Data>,
   port = parseInt(process.argv[2], 10) || 3000
 ) {
-  const options = {burst: 32, period: '10s'}
+  const throttle_options = {burst: 32, period: '10s'}
   const app = express()
   app.use(compression())
+
+  if (process.env.NODE_ENV === 'development') {
+    app.use(morgan('dev'))
+  } else {
+    const access_log = path.join(__dirname, 'access.log')
+    const stream = fs.createWriteStream(access_log, {flags: 'a'})
+    console.log('Writing to ' + access_log)
+    app.use(morgan('combined', {stream}))
+  }
 
   app.get('/', (req, res) => {
     res.send(vnode_to_html(image.data_to_react(image.string_to_data(req_to_string(req.url)))))
@@ -94,17 +106,25 @@ export async function ImageServer<Data>(
   const snap = memo(url => image_maker.snap(req_to_string(url)))
   const metadata = memo(url => metadata_from_url(image, req_to_string(url)))
 
-  app.get('/i.png', throttle(options), async (req, res) => {
-    res.setHeader('Cache-Control', 'no-cache')
-    res.contentType('image/png')
-    const png = await snap(req.url)
-    res.send(png)
+  app.get('/*png', throttle(throttle_options), async (req, res) => {
+    try {
+      const png = await snap(req.url)
+      res.setHeader('Cache-Control', 'no-cache')
+      res.contentType('image/png')
+      res.send(png)
+    } catch (e) {
+      res.status(400).send(e.toString())
+    }
   })
 
-  app.get('/metadata.json', throttle(options), async (req, res) => {
-    res.contentType('application/json')
-    const data = await metadata(req.url)
-    res.send(data)
+  app.get('/metadata.json', throttle(throttle_options), async (req, res) => {
+    try {
+      res.contentType('application/json')
+      const data = await metadata(req.url)
+      res.send(data)
+    } catch (e) {
+      res.status(400).send(e.toString())
+    }
   })
 
   const server = app.listen(port, () => console.log(`Serving on port ${port}`))
