@@ -28,14 +28,17 @@ describe('png metadata (note: whitespace normalized, only .graph considered)', a
   })
   Utils.range(8).map(s0 => {
     const size = (s0 + 1) * 12
-    it(`roundtrips graph of size ${size}`, async () => {
-      const g = graph_no_ws.sample(size)
-      const data = iosaas.graph_to_data(g)
-      // const data2 = await ImageServer.metadata_from_url(iosaas.image, png_url(data))
-      // expect(data2.graph).to.deep.equal(data.graph)
-      const data3 = await fetch(metadata_url(data)).then(x => x.json())
-      expect(data3.graph).to.deep.equal(data.graph)
-    })
+    const mem = (i: number) => (i > 0 ? `, and hits memo` : '')
+    Utils.range(4).forEach(i =>
+      it(`roundtrips graph of size ${size}${mem(i)}`, async () => {
+        const g = graph_no_ws.sample(size, 45)
+        const data = iosaas.graph_to_data(g)
+        // const data2 = await ImageServer.metadata_from_url(iosaas.image, png_url(data))
+        // expect(data2.graph).to.deep.equal(data.graph)
+        const data3 = await fetch(metadata_url(data)).then(x => x.json())
+        expect(data3.graph).to.deep.equal(data.graph)
+      })
+    )
   })
   after(async () => {
     await shutdown()

@@ -1,5 +1,9 @@
 import * as process from 'process'
 import * as express from 'express'
+import * as compression from 'compression'
+import * as memoizee from 'memoizee'
+const express_throttle = require('express-throttle')
+
 import * as Url from 'url'
 
 import * as ReactSSR from 'react-dom/server'
@@ -76,27 +80,30 @@ export async function ImageServer<Data>(
   image: Image<Data>,
   port = parseInt(process.argv[2], 10) || 3000
 ) {
-  const express_throttle = require('express-throttle')
-  const options = {burst: 5, period: '1s'}
+  const options = {burst: 32, period: '10s'}
   const app = express()
+  app.use(compression())
 
   app.get('/', (req, res) => {
     res.send(vnode_to_html(image.data_to_react(image.string_to_data(req_to_string(req.url)))))
   })
 
   const image_maker = await ImageMaker(image)
+  const memo = <A>(f: (a: string) => Promise<A>) => memoizee(f, {promise: true, length: 1})
+  const snap = memo(url => image_maker.snap(req_to_string(url)))
+  const metadata = memo(url => metadata_from_url(image, req_to_string(url)))
 
   const throttle1 = express_throttle(options)
   app.get('/i.png', throttle1, async (req, res) => {
-    const png = await image_maker.snap(req_to_string(req.url))
     res.contentType('image/png')
+    const png = await snap(req.url)
     res.send(png)
   })
 
   const throttle2 = express_throttle(options)
   app.get('/metadata.json', throttle2, async (req, res) => {
     res.contentType('application/json')
-    const data = await metadata_from_url(image, req_to_string(req.url))
+    const data = await metadata(req.url)
     res.send(data)
   })
 
