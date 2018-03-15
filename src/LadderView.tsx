@@ -91,9 +91,20 @@ const LadderStyle = style(
         color: '#d00',
         textDecoration: 'none',
       },
+      '& .EditedTop': {
+        boxShadow: `0 ${px(2)} 0 0 #777`,
+        zIndex: 2,
+      },
     },
   }
 )
+
+const greyPath: React.CSSProperties = {stroke: '#777', strokeWidth: px(4), fill: 'none'}
+const whitePath: React.CSSProperties = {stroke: '#fff', strokeWidth: px(12), fill: 'none'}
+
+function PixelPath(d: string, css: React.CSSProperties) {
+  return <path d={d} style={css} vectorEffect="non-scaling-stroke" />
+}
 
 export function Key(nodes: VNode[], s: string | number = '') {
   return (
@@ -108,54 +119,62 @@ function Line({x0, y0, x1, y1, id}: D.Line, css: React.CSSProperties) {
   const yi = ff ? y1 : y0
   const xi = ff ? x0 : x1
   const d = `M ${x0} ${y0} C ${xi} ${yi} ${xi} ${yi} ${x1} ${y1}`
-  return <path vectorEffect="non-scaling-stroke" d={d} style={{...css, fill: 'none'}} />
+  return PixelPath(d, css)
 }
 
 function LineIsHorizontal({y0, y1}: D.Line) {
   return y0 == y1
 }
 
+function PixelPerfectSVG(svg: VNode, css: React.CSSProperties = {}) {
+  // the point of the scaling up and down here is to make the vertical lines
+  // be on exact pixel coordinates to not make them look blurry.
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: '0',
+        left: '0',
+        // This needs to be <=0.5em, but smaller than that makes it not start
+        // growing until a sufficiently high zoom
+        fontSize: '0.25em',
+        // table rounds the sizes in webkit
+        display: 'table',
+        // we try to make the sizes just about 50%
+        width: 'calc(50% + 1px)',
+        height: 'calc(50% + 1px)',
+      }}>
+      <div
+        style={{
+          // and scale this div 200% of this to make it an even number of pixels
+          width: '200%',
+          height: '200%',
+          position: 'absolute',
+          ...css,
+        }}>
+        {svg}
+      </div>
+    </div>
+  )
+}
+
 function Column(column: D.Line[], rel: VNode | null | false = null): VNode {
   const endpoint_id: string | undefined = column
     .filter(line => !LineIsHorizontal(line))
     .map(line => line.id)[0]
-  const grey: React.CSSProperties = {stroke: '#777', strokeWidth: px(4)}
-  const white: React.CSSProperties = {stroke: '#fff', strokeWidth: px(12)}
   return (
-    // the point of the scaling up and down here is to make the vertical lines
-    // be on exact pixel coordinates to not make them look blurry.
     <li style={{position: 'relative'}}>
       {rel}
-      <div
-        style={{
-          position: 'absolute',
-          top: '0',
-          left: '0',
-          // This needs to be <=0.5em, but smaller than that makes it not start
-          // growing until a sufficiently high zoom
-          fontSize: '0.25em',
-          // table rounds the sizes in webkit
-          display: 'table',
-          // we try to make the sizes just about 50%
-          width: 'calc(50% + 1px)',
-          height: 'calc(50% + 1px)',
-        }}>
-        <div
-          style={{
-            // and scale this div 200% of this to make it an even number of pixels
-            width: '200%',
-            height: '200%',
-            position: 'absolute',
-          }}>
-          <svg height="100%" width="100%" viewBox="0 0 1 1" preserveAspectRatio="none">
-            {Key([
-              ...column.filter(line => line.id != endpoint_id).map(line => Line(line, grey)),
-              ...column.filter(line => line.id == endpoint_id).map(line => Line(line, white)),
-              ...column.filter(line => line.id == endpoint_id).map(line => Line(line, grey)),
-            ])}
-          </svg>
-        </div>
-      </div>
+      {PixelPerfectSVG(
+        <svg height="100%" width="100%" viewBox="0 0 1 1" preserveAspectRatio="none">
+          {Key([
+            ...column.filter(line => line.id != endpoint_id).map(line => Line(line, greyPath)),
+            ...column.filter(line => line.id == endpoint_id).map(line => Line(line, whitePath)),
+            ...column.filter(line => line.id == endpoint_id).map(line => Line(line, greyPath)),
+          ])}
+        </svg>,
+        {zIndex: -2}
+      )}
     </li>
   )
 }
@@ -222,6 +241,14 @@ export function Ladder(
   const grids = D.DiffToGrid(rd)
   const u = grids.upper
   const l = grids.lower
+  const mustache_side = PixelPath('M 0 0.85 C 0 1.1 1 0.85 1 1.1', greyPath)
+  const mustache2x2 = (
+    <>
+      {PixelPath('M 1 1.1 L 1 0.8', whitePath)}
+      {mustache_side}
+      <g transform="translate(2, 0) scale(-1,1)">{mustache_side}</g>
+    </>
+  )
   return (
     <div
       onMouseLeave={e => onDrag && onDrag(null)}
@@ -231,8 +258,26 @@ export function Ladder(
           switch (d.edit) {
             case 'Edited':
               return [
-                <div>{Key(d.source_diffs.map(deletes))}</div>,
-                <div>{Key(d.target_diffs.map(inserts))}</div>,
+                <div style={{position: 'relative'}}>
+                  {Key(d.source_diffs.map(deletes))}
+                  {d.source.length > 1 &&
+                    PixelPerfectSVG(
+                      <svg height="200%" width="100%" viewBox="0 0 2 2" preserveAspectRatio="none">
+                        {mustache2x2}
+                      </svg>,
+                      {zIndex: -1, position: 'absolute', top: '10%'}
+                    )}
+                </div>,
+                <div style={{position: 'relative'}}>
+                  {Key(d.target_diffs.map(inserts))}
+                  {d.target.length > 1 &&
+                    PixelPerfectSVG(
+                      <svg height="200%" width="100%" viewBox="0 0 2 2" preserveAspectRatio="none">
+                        <g transform="translate(0,2) scale(1,-1)">{mustache2x2}</g>
+                      </svg>,
+                      {zIndex: -1, position: 'absolute', top: '-190%'}
+                    )}
+                </div>,
               ]
             case 'Dragged':
               return [deletes(d.source_diff), <React.Fragment />]

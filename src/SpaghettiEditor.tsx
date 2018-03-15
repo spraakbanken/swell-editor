@@ -352,21 +352,29 @@ export function View(store: Store<State>): VNode {
               .replace(')', '%29')
           const s = esc(C.units_to_string(C.parse(state.source), '_'))
           const t = esc(C.units_to_string(C.parse(state.target), '_'))
-          const url = `${ws_url}/png?${s}//${t}`
+          const st = s + '//' + t
+          const url = `${ws_url}/png?${st}`
           const md = `![](${url})`
           return (
-            <pre
-              className={'main ' + L.Unselectable}
-              style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}
-              draggable={true}
-              onDragStart={e => {
-                e.dataTransfer.setData('text/plain', md)
-                e.dataTransfer.setData('text/uri-list', url)
-              }}>
-              {md}
-            </pre>
+            <>
+              <pre
+                className={'main ' + L.Unselectable}
+                style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}
+                draggable={true}
+                onDragStart={e => {
+                  e.dataTransfer.setData('text/plain', md)
+                }}>
+                {md}
+              </pre>
+              <pre className={'main '} style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}>
+                {`${C.units_to_string(C.parse(state.source))} // ${C.units_to_string(
+                  C.parse(state.target)
+                )}`}
+              </pre>
+            </>
           )
         })()}
+
         <div className="main TopPad">
           <em>Examples:</em>
         </div>

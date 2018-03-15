@@ -150,14 +150,16 @@ export function alignment(): VNode {
 
     We now read off from this which tokens should be aligned, namely into these six groups:
 
-    | group id | ids | words |
-    | --- | --- | --- |
-    | 1 | s0 t0    | Examples
-    | 2 | t1       | always
-    | 3 | s1 s2 t2 | high light highlight
-    | 4 | s3 t3 t4 | lotsof lots of
-    | 5 | s4  t5   | futures  features
-    | 6 | s5       | always
+    | group | token identifiers | source words | target words |
+    | ---   | ---               | ---          | ---          |
+    | 1     | s0 t0             | Examples     | Examples     |
+    | 2     | t1                |              | always       |
+    | 3     | s1 s2 t2          | high light   | highlight    |
+    | 4     | s3 t3 t4          | lotsof       | lots of      |
+    | 5     | s4  t5            | futures      | features     |
+    | 6     | s5                | always       |              |
+
+    Writing parallell corpora this way is sometimes called standoff and is used in tools like Falco.
 
     ### Manual alignment
 
@@ -274,23 +276,32 @@ export function View(store: Store<State>): VNode {
   `
 
   const gallery = [
-    ` a_b//b_c                                                      `,
-    ` b_c//a_b~b                                                    `,
-    ` a_b//b_a~a                                                    `,
-    ` b_a//a_b~b                                                    `,
-    ` a_x_b//A~a~b_x                                                `,
-    ` a_x_b//x_A~a~b                                                `,
-    ` a_x_b_y_c//w~a~b~c_x_y                                        `,
-    ` a_x_b_y_c//x_w~a~b~c_y                                        `,
-    ` a_x_b_y_c//x_y_w~a~b~c                                        `,
-    ` a_x_b_y_c//w~a~b~c_x~x~y_y~y                                  `,
-    ` a_x_b_y_c//x~x~y_w~a~b~c_y~y                                  `,
-    ` a_x_b_y_c//x~x~y_y~y_w~a~b~c                                  `,
-    ` c@1  c~@1 c~@1 d@2 d~@2 d~@2 d~@2 // d~@2 d~@2 c~@1 c~@1 c~@1 `,
-    ` d~@2 d~@2 c~@1 c~@1 c~@1 // c@1  c~@1 c~@1 d@2 d~@2 d~@2 d~@2 `,
-    ` X_always_highlight_xyz// X_high_light_always~always_xyz       `,
-    ` X_high_light_always_xyz // X_always~always_highlight_xyz      `,
-    ` X_high_light_a_b_c_X// X_c~c_highlight_a_b_X                  `,
+    ` a b       // b c                                                   `,
+    ` b c       // a b~b                                                 `,
+    ` a b       // b a~a                                                 `,
+    ` b a       // a b~b                                                 `,
+    ` a bc  // b c a~a                                                   `,
+    ` b c a // a~a bc                                                    `,
+    ` abbc  // ab bc                                                     `,
+    ` ab bc // abbc                                                      `,
+    ` ab qp ef // abq pef                                                `,
+    ` a x b     // A~a~b x                                               `,
+    ` a x b     // x A~a~b                                               `,
+    ` a b       // ins b a~a                                             `,
+    ` b a del   // a~a b                                                 `,
+    ` a b       // b a~a ins                                             `,
+    ` del b a   // a~a b                                                 `,
+    ` a x b y c // w~a~b~c x y                                           `,
+    ` a x b y c // x w~a~b~c y                                           `,
+    ` a x b y c // x y w~a~b~c                                           `,
+    ` a x b y c // w~a~b~c x~x~y y~y                                     `,
+    ` a x b y c // x~x~y w~a~b~c y~y                                     `,
+    ` a x b y c // x~x~y y~y w~a~b~c                                     `,
+    ` b~@2 b~@2 a~@1 a~@1 a~@1 // a@1  a~@1 a~@1 b@2 b~@2 b~@2 b~@2      `,
+    ` a@1  a~@1 a~@1 b@2 b~@2 b~@2 b~@2 // b~@2 b~@2 a~@1 a~@1 a~@1 a~@1 `,
+    ` a@1  a~@1 a~@1 a~@1 b@2 b~@2 b~@2 b~@2 // b~@2 b~@2 a~@1 a~@1 a~@1 `,
+    ` a@1  a~@1 a~@1 b@2 b~@2 b~@2 b~@2 // b~@2 b~@2 a~@1 a~@1 a~@1      `,
+    ` a@1 a~@1 v a~@1 w a~@1 a~@1 // a~@1 a~@1 v a~@1 w a~@1 a~@1        `,
   ]
     .map(L.align)
     .map(x => <div style={{display: 'inline-table', marginRight: '40px'}}>{x}</div>)
