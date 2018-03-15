@@ -331,23 +331,54 @@ export function rearrange(g: Graph, begin: number, end: number, dest: number): G
   return {...g, target: Utils.rearrange(g.target, begin, end, dest)}
 }
 
+type ScoreDDL = {score: number; diff: DDL}
+
+type DDL = Utils.SnocList<Dragged | Dropped>
+
 /** Calculate the ladder diff without merging contiguous edits */
 export function calculate_raw_diff(g: Graph): (Dragged | Dropped)[] {
   const m = edge_map(g)
   const lookup = (id: string) => m.get(id) as Edge
   const edge_id = (tok: Token) => lookup(tok.id).id
-  const d = Utils.hdiff<Token, Token>(g.source, g.target, edge_id, edge_id)
-  return Utils.flatMap(d, c => {
-    if (c.change == 0) {
-      return [D.Dragged(c.a, edge_id(c.a)), D.Dropped(c.b, edge_id(c.b))]
-    } else if (c.change == -1) {
-      return [D.Dragged(c.a, edge_id(c.a))]
-    } else if (c.change == 1) {
-      return [D.Dropped(c.b, edge_id(c.b))]
-    } else {
-      return Utils.absurd(c)
+
+  const align = Utils.memo2<number, number, ScoreDDL>((i, j) => {
+    if (i < 0 && j < 0) {
+      return {score: 0, diff: null}
     }
+    const cands: ScoreDDL[] = []
+    const same = (ii: number, jj: number) =>
+      ii >= 0 && jj >= 0 && edge_id(g.source[ii]) === edge_id(g.target[jj])
+    if (i >= 0 && j >= 0 && same(i, j)) {
+      let ii = i
+      let jj = j
+      while (same(--ii, j));
+      while (same(i, --jj));
+      const ei = edge_id(g.source[i])
+      const {score, diff} = align(ii, jj)
+      cands.push({
+        score: score + (i - ii) + (j - jj),
+        diff:
+          // snoc(diff, D.Edited(g.source.slice(ii,i),g.target.slice(jj,j), edge_id(g.source[i])))
+          Utils.snocs(diff, [
+            ...g.source.slice(ii + 1, i + 1).map(tok => D.Dragged(tok, ei) as Dragged | Dropped),
+            ...g.target.slice(jj + 1, j + 1).map(tok => D.Dropped(tok, ei) as Dragged | Dropped),
+          ]),
+      })
+    }
+    if (j >= 0) {
+      const {score, diff} = align(i, j - 1)
+      cands.push({score, diff: Utils.snoc(diff, D.Dropped(g.target[j], edge_id(g.target[j])))})
+    }
+    if (i >= 0) {
+      const {score, diff} = align(i - 1, j)
+      cands.push({score, diff: Utils.snoc(diff, D.Dragged(g.source[i], edge_id(g.source[i])))})
+    }
+    return R.sortBy(x => -x.score, cands)[0]
   })
+
+  const {score, diff} = align(g.source.length - 1, g.target.length - 1)
+
+  return Utils.snocsToArray(diff)
 }
 
 export function from_raw_diff(diff: (Dragged | Dropped)[], edges: Record<string, Edge>): Graph {

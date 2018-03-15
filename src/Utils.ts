@@ -927,6 +927,50 @@ export function KV<K, V>(s: (k: K) => string = JSON.stringify): KV<K, V> {
   return api
 }
 
+export function memo<A, B>(f: (a: A) => B, s: (a: A) => string = JSON.stringify): (a: A) => B {
+  const mem = KV<A, B>()
+  function ff(a: A): B {
+    const m = mem.get(a)
+    if (m) {
+      return m
+    }
+    const ret = f(a)
+    mem.set(a, ret)
+    return ret
+  }
+  return ff
+}
+
+export function memo2<A1, A2, B>(
+  f: (a1: A1, a2: A2) => B,
+  s: (a1: A1, a2: A2) => string = (a1, a2) => JSON.stringify([a1, a2])
+): (a1: A1, a2: A2) => B {
+  const ff = memo<[A1, A2], B>(a => f(a[0], a[1]))
+  return (a1, a2) => ff([a1, a2])
+}
+
+export type SnocList<A> = Snoc<A> | null
+export interface Snoc<A> {
+  0: SnocList<A>
+  1: A
+}
+export function snoc<A>(xs: SnocList<A>, x: A): SnocList<A> {
+  return [xs, x]
+}
+
+export function snocs<A>(xs: SnocList<A>, ys: A[]): SnocList<A> {
+  return ys.reduce((xs, y) => snoc(xs, y), xs)
+}
+
+export function snocsToArray<A>(xs: SnocList<A>): A[] {
+  const out: A[] = []
+  while (xs !== null) {
+    out.push(xs[1])
+    xs = xs[0]
+  }
+  return out.reverse()
+}
+
 export function expr<R>(k: () => R): R {
   return k()
 }

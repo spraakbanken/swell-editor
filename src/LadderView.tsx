@@ -292,3 +292,18 @@ export function Ladder(
     </div>
   )
 }
+
+import * as C from './Compact'
+
+export function Align(source: string, target: string) {
+  const s = C.parse(source)
+  const t = C.parse(target)
+  return Ladder(C.units_to_graph(s, t))
+}
+
+export function align(x: string) {
+  const [source, target] = x.split('//')
+  const s = C.parse(source)
+  const t = C.parse(target)
+  return Ladder(C.units_to_graph(s, t))
+}

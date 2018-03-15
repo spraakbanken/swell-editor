@@ -7,6 +7,7 @@ import * as csstips from 'csstips'
 import * as D from './Diff'
 import * as G from './Graph'
 import * as L from './LadderView'
+import {Align, align} from './LadderView'
 import * as C from './Compact'
 
 import * as RD from './RichDiff'
@@ -82,12 +83,6 @@ const ArticleStyle = style(Utils.debugName('ArticleStyle'), {
   },
 })
 
-export function Align(source: string, target: string) {
-  const s = C.parse(source)
-  const t = C.parse(target)
-  return L.Ladder(C.units_to_graph(s, t))
-}
-
 export function alignment(): VNode {
   const s = 'Examples high light lotsof futures always'
   const t = 'Examples always highlight lots of features'
@@ -95,30 +90,31 @@ export function alignment(): VNode {
   const s_u = C.parse(s)
   const t_u = C.parse(t)
 
-  function go(zap?:string) {
-  const filter = <A extends Record<string, any> & {text: string}>(us: A[]) =>  us.filter(x => x.text != zap)
+  function go(zap?: string) {
+    const filter = <A extends Record<string, any> & {text: string}>(us: A[]) =>
+      us.filter(x => x.text != zap)
 
-  const simple = C.assign_ids_and_manual_alignments(s_u, t_u)
+    const simple = C.assign_ids_and_manual_alignments(s_u, t_u)
 
-  const s_punc = C.punctuate(filter(simple.source))
-  const t_punc = C.punctuate(filter(simple.target))
+    const s_punc = C.punctuate(filter(simple.source))
+    const t_punc = C.punctuate(filter(simple.target))
 
-  const fixup_punc = (u: C.Simple) =>
-    C.Unit(u.text === ' ' ? ';' : u.text, [{labels: u.id === C.space_id ? [] : [u.id]}])
+    const fixup_punc = (u: C.Simple) =>
+      C.Unit(u.text === ' ' ? ';' : u.text, [{labels: u.id === C.space_id ? [] : [u.id]}])
 
-  const s_label = s_punc.map(fixup_punc)
-  const t_label = t_punc.map(fixup_punc)
+    const s_label = s_punc.map(fixup_punc)
+    const t_label = t_punc.map(fixup_punc)
 
-  const s_unlab = s_label.map(u => C.Unit(u.text, []))
-  const t_unlab = t_label.map(u => C.Unit(u.text, []))
+    const s_unlab = s_label.map(u => C.Unit(u.text, []))
+    const t_unlab = t_label.map(u => C.Unit(u.text, []))
 
-  const g0 = C.units_to_graph(filter(s_u), filter(s_u))
-  const g = C.units_to_graph(filter(s_u), filter(t_u))
+    const g0 = C.units_to_graph(filter(s_u), filter(s_u))
+    const g = C.units_to_graph(filter(s_u), filter(t_u))
 
-  const g_label = C.units_to_graph(s_label, t_label)
-  const g_unlab = C.units_to_graph(s_unlab, t_unlab)
+    const g_label = C.units_to_graph(s_label, t_label)
+    const g_unlab = C.units_to_graph(s_unlab, t_unlab)
 
-  return {g0, g, g_label, g_unlab}
+    return {g0, g, g_label, g_unlab}
   }
 
   const full = go()
@@ -274,12 +270,37 @@ export function View(store: Store<State>): VNode {
     The visualisation can be rotated 90 degrees to work with sentence-aligned
     parallell corpora.
 
+    ## Gallery
   `
+
+  const gallery = [
+    ` a_b//b_c                                                      `,
+    ` b_c//a_b~b                                                    `,
+    ` a_b//b_a~a                                                    `,
+    ` b_a//a_b~b                                                    `,
+    ` a_x_b//A~a~b_x                                                `,
+    ` a_x_b//x_A~a~b                                                `,
+    ` a_x_b_y_c//w~a~b~c_x_y                                        `,
+    ` a_x_b_y_c//x_w~a~b~c_y                                        `,
+    ` a_x_b_y_c//x_y_w~a~b~c                                        `,
+    ` a_x_b_y_c//w~a~b~c_x~x~y_y~y                                  `,
+    ` a_x_b_y_c//x~x~y_w~a~b~c_y~y                                  `,
+    ` a_x_b_y_c//x~x~y_y~y_w~a~b~c                                  `,
+    ` c@1  c~@1 c~@1 d@2 d~@2 d~@2 d~@2 // d~@2 d~@2 c~@1 c~@1 c~@1 `,
+    ` d~@2 d~@2 c~@1 c~@1 c~@1 // c@1  c~@1 c~@1 d@2 d~@2 d~@2 d~@2 `,
+    ` X_always_highlight_xyz// X_high_light_always~always_xyz       `,
+    ` X_high_light_always_xyz // X_always~always_highlight_xyz      `,
+    ` X_high_light_a_b_c_X// X_c~c_highlight_a_b_X                  `,
+  ]
+    .map(L.align)
+    .map(x => <div style={{display: 'inline-table', marginRight: '40px'}}>{x}</div>)
+
   return (
     <div className={ArticleStyle}>
       {intro}
       {alignment()}
       {future}
+      <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap'}}>{gallery}</div>
     </div>
   )
 }
