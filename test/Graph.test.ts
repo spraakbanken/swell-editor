@@ -1,174 +1,79 @@
-;(global as any).it = () => { throw "don't use 'it'" }
-import * as jsc from "jsverify"
-import * as test from 'tape'
+import {qc} from './Common'
+import * as QC from 'proptest'
+import {Gen} from 'proptest'
 
-import * as T from "../src/Token"
-import * as G from "../src/Graph"
-import { Graph } from "../src/Graph"
-import * as Utils from "../src/Utils"
-import { range } from "../src/Utils"
+import {graph, insert_text} from './Common'
 
-function permute<A>(xs: A[]): jsc.Generator<A[]> {
-  return jsc.generator.bless(() => {
-    let ys = xs.slice()
-    // Fisher-Yates shuffle
-    for (let i = 0; i < ys.length - 1; i++) {
-      const j = jsc.random(i + 1, ys.length - 1);
-      [ys[i], ys[j]] = [ys[j], ys[i]]
-    }
-    return ys
-  })
-}
+import * as T from '../src/Token'
+import * as G from '../src/Graph'
+import {Graph} from '../src/Graph'
+import * as Utils from '../src/Utils'
+import {range} from '../src/Utils'
 
-function quickCheck<A>(name: string, arb: jsc.Arbitrary<A>, k: (a: A, assert: test.Test, skip: (reason?: string) => void, count: () => void) => boolean) {
-  let skips = 0
-  let counted = 0
-  const skip = (reason: string = '') => {
-    skips++
-  }
-  test(name, assert => {
-    assert.is(jsc.checkForall(arb, a => k(a, assert, skip, () => counted++)), true)
-    assert.end()
-    if (counted > 0) {
-      console.warn()
-      console.warn(name, 'skipped: ' + skips + '/' + counted + ' (' + Math.round((skips * 100.0) / counted) + '%)')
-      console.warn()
-    }
-  })
-}
+qc('invariant', graph, g => G.check_invariant(g) == 'ok')
 
-quickCheck('permute', jsc.array(jsc.integer),
-  xs => Utils.array_multiset_eq(xs, permute(xs)(0))
-)
+import 'mocha'
+import * as chai from 'chai'
 
-function nearray<A>(g: jsc.Arbitrary<A>) {
-  return jsc.pair(g, jsc.array(g)).smap<A[]>(
-    ([a, as]) => [a].concat(as),
-    as => [as[0], as.slice(1)])
-}
-
-quickCheck('nearray', nearray(jsc.integer),
-  xs => xs.length > 0
-)
-
-function alphabet(cs: string): jsc.Arbitrary<string> {
-  return jsc.array(
-    jsc.oneof<string>(Utils.str_map(cs, c => jsc.constant(c)))
-  ).smap((ss) => ss.join(''), (s) => Utils.str_map(s, c => c))
-}
-
-function nealphabet(cs: string): jsc.Arbitrary<string> {
-  return nearray(
-    jsc.oneof<string>(Utils.str_map(cs, c => jsc.constant(c)))
-  ).smap((ss) => ss.join(''), (s) => Utils.str_map(s, c => c))
-}
-
-const Ss_text: jsc.Arbitrary<string> =
-  jsc.pair(nealphabet('abc'), nealphabet(' '))
-     .smap(([a, b]) => a + b, Utils.whitespace_split)
-
-const token_text: jsc.Arbitrary<string> =
-  jsc.pair(alphabet(' '), Ss_text)
-     .smap(([a, b]) => a + b, Utils.initial_whitespace_split)
-
-function replicate<A>(n: number, g: jsc.Arbitrary<A>): jsc.Arbitrary<A[]> {
-  const gs = [] as jsc.Arbitrary<A>[]
-  for(let i=0; i<n; ++i) {
-    gs.push(g)
-  }
-  return jsc.tuple(gs) as jsc.Arbitrary<A[]>
-}
-
-
-/** Generate a random graph */
-const gen_graph = jsc.generator.bless(
-  (sizein: number) => {
-    const size = Math.max(2, Math.round(sizein / 5))
-    const ssize = jsc.random(1, size - 1)
-    const tsize = size - ssize
-    const source = replicate(ssize, token_text).generator(sizein).map((text, i) => ({text, id: 's' + i}))
-    const target = replicate(tsize, token_text).generator(sizein).map((text, i) => ({text, id: 't' + i}))
-    const esize = jsc.random(1, Math.min(ssize, tsize))
-    const proto_edges = replicate(esize, token_text).generator(sizein).map((label) => ({ids: [] as string[], labels: [label]}))
-    const sedges = permute(range(ssize).map(i => i % esize))(sizein)
-    const tedges = permute(range(tsize).map(i => i % esize))(sizein)
-    source.forEach(s => proto_edges[sedges.pop() as number].ids.push(s.id))
-    target.forEach(t => proto_edges[tedges.pop() as number].ids.push(t.id))
-    return {source, target, edges: G.edge_record(proto_edges.map(e => G.Edge(e.ids, e.labels)))}
-  }
-)
-
-const arb_graph: jsc.Arbitrary<Graph> =
-  jsc.bless({
-    generator: gen_graph,
-    show: jsc.show.def,
-    shrink: jsc.shrink.noop
-  })
-
-quickCheck('invariant', arb_graph, g =>
-  G.check_invariant(g) == "ok"
-)
-
-{
-  const arb_modify_tokens =
-    jsc.record({
-      g: arb_graph,
-      from: jsc.nat,
-      to: jsc.nat,
-      text: alphabet('ab ')
-    }).smap(({g, from, to, text}) => {
-      const n = g.target.length
-      const [a, b] = Utils.numsort([from % n, to % n])
-      return {g, from: a, to: b, text}
-    }, t => t)
-
-  quickCheck('modify_tokens invariant', arb_modify_tokens, ({g, from, to, text}) =>
-    G.check_invariant(G.modify_tokens(g, from, to, text)) == "ok"
+describe('modify_tokens', () => {
+  const modify = graph.chain(g =>
+    QC.range(g.target.length)
+      .replicate(2)
+      .map(Utils.numsort)
+      .chain(([from, to]) => insert_text.map(text => ({g, from, to, text})))
   )
 
-  quickCheck('modify_tokens content', arb_modify_tokens, ({g, from, to, text}, assert) => {
+  qc(
+    'modify_tokens invariant',
+    modify,
+    ({g, from, to, text}) => G.check_invariant(G.modify_tokens(g, from, to, text)) == 'ok'
+  )
+
+  qc('modify_tokens content', modify, ({g, from, to, text}, p) => {
     const [a, mid, z] = Utils.splitAt3(G.target_texts(g), from, to)
     const lhs = a.concat([text], z).join('')
     const mod = G.modify_tokens(g, from, to, text)
     const rhs = G.target_text(mod)
-    // assert.equal(lhs, rhs)
-    return lhs === rhs
+    return p.equals(lhs, rhs)
   })
-}
+})
 
-{
-  const arb_modify =
-    jsc.record({
-      g: arb_graph,
-      from: jsc.nat,
-      to: jsc.nat,
-      text: alphabet('ab ')
-    }).smap(({g, from, to, text}) => {
-      const n = g.target.map(t => t.text).join('').length
-      const [a, b] = Utils.numsort([from % n, to % n])
-      return {g, from: a, to: b, text}
-    }, t => t)
-
-  quickCheck('modify invariant', arb_modify, ({g, from, to, text}) =>
-    G.check_invariant(G.modify(g, from, to, text)) == "ok"
+describe('modify', () => {
+  const modify = graph.chain(g =>
+    QC.range(T.text(g.target).length)
+      .replicate(2)
+      .map(Utils.numsort)
+      .chain(([from, to]) => insert_text.map(text => ({g, from, to, text})))
   )
 
-  quickCheck('modify content', arb_modify, ({g, from, to, text}, assert) => {
+  qc(
+    'modify invariant',
+    modify,
+    ({g, from, to, text}) => G.check_invariant(G.modify(g, from, to, text)) == 'ok'
+  )
+
+  qc('modify content', modify, ({g, from, to, text}, p) => {
     const [a, mid, z] = Utils.stringSplitAt3(G.target_text(g), from, to)
-    const lhs0 = (a + text + z)
+    const lhs0 = a + text + z
     const lhs = lhs0.match(/^\s*$/) ? '' : lhs0
     const mod = G.modify(g, from, to, text)
     const rhs = G.target_text(mod)
-    // console.log(Utils.show({g, from, to, text, mod, a, mid, z, lhs, rhs}))
-    assert.equal(lhs, rhs)
-    return lhs === rhs
+    // Utils.stdout({g, from, to, text, mod, a, mid, z, lhs, rhs})
+    return p.equals(lhs, rhs)
   })
 
-  quickCheck('modify links', arb_modify, ({g, from, to, text}, assert, skip, count) => {
+  /*
+  quickCheck('modify links', modify, ({g, from, to, text}, assert, skip, count) => {
     // properties about links:
     // within segment: superset of all links that are within bound
     // partially outside segment: now part of the new component
     // wholly outside segment: preserved
+
+    // const cov = (pred: boolean, pct: number, s: string) => (p.cover(!pred, pct, s), pred)
+    //
+    // if (cov(null != text.match(/^\s*$/), 80, 'whitespace-only replacement')) {
+    //   return true
+    // }
 
     if (text.match(/^\s*$/)) {
       skip('whitespace-only replacement')
@@ -236,44 +141,43 @@ quickCheck('invariant', arb_graph, g =>
     }
     return true
   })
+  */
+})
 
-}
-
-{
-  const arb_rearrange =
-    jsc.record({
-      g: arb_graph,
-      begin: jsc.nat,
-      end: jsc.nat,
-      dest: jsc.nat,
-    }).smap(({g, begin, end, dest}) => {
-      const n = g.target.length
-      const [a, b] = Utils.numsort([begin % n, end % n])
-      return {g, begin: a, end: b, dest: dest % n}
-    }, t => t)
-
-  quickCheck('rearrange invariant', arb_rearrange, ({g, begin, end, dest}) =>
-    G.check_invariant(G.rearrange(g, begin, end, dest)) == "ok"
+describe('rearrange', () => {
+  const rearrange = graph.chain(g =>
+    QC.range(g.target.length).chain(dest =>
+      QC.range(g.target.length)
+        .replicate(2)
+        .map(Utils.numsort)
+        .map(([begin, end]) => ({g, begin, end, dest}))
+    )
   )
 
-  quickCheck('rearrange length', arb_rearrange, ({g, begin, end, dest}) => {
+  qc(
+    'rearrange invariant',
+    rearrange,
+    ({g, begin, end, dest}) => G.check_invariant(G.rearrange(g, begin, end, dest)) == 'ok'
+  )
+
+  qc('rearrange length', rearrange, ({g, begin, end, dest}) => {
     const mod = G.rearrange(g, begin, end, dest)
     return G.target_text(mod).length == G.target_text(g).length
   })
 
-  quickCheck('rearrange tokens', arb_rearrange, ({g, begin, end, dest}) => {
+  qc('rearrange tokens', rearrange, ({g, begin, end, dest}) => {
     const mod = G.rearrange(g, begin, end, dest)
     return G.target_texts(mod).length == G.target_texts(g).length
   })
 
-  quickCheck('rearrange permutation', arb_rearrange, ({g, begin, end, dest}) => {
+  qc('rearrange permutation', rearrange, ({g, begin, end, dest}) => {
     const mod = G.rearrange(g, begin, end, dest)
     return Utils.array_multiset_eq(G.target_texts(mod), G.target_texts(g))
   })
-}
+})
 
-{
-  quickCheck('diff target text preversed', arb_graph, g => {
+describe('diff', () => {
+  qc('diff target text preversed', graph, g => {
     const diff = G.calculate_diff(g)
     const target = Utils.flatMap(diff, d => {
       if (d.edit == 'Dropped') {
@@ -287,7 +191,7 @@ quickCheck('invariant', arb_graph, g =>
     return G.target_text(g) == T.text(target)
   })
 
-  quickCheck('diff source text preversed', arb_graph, g => {
+  qc('diff source text preversed', graph, g => {
     const diff = G.calculate_diff(g)
     const source = Utils.flatMap(diff, d => {
       if (d.edit == 'Dragged') {
@@ -301,80 +205,71 @@ quickCheck('invariant', arb_graph, g =>
     return G.source_text(g) == T.text(source)
   })
 
-  quickCheck('diff edge set preserved', arb_graph, g => {
+  qc('diff edge set preserved', graph, g => {
     const diff = G.calculate_diff(g)
     const edge_ids = diff.map(d => d.id)
     return Utils.array_set_eq(edge_ids, Utils.record_traverse(g.edges, e => e.id))
   })
-}
+})
 
 {
-  const arb_sentence =
-    jsc.record({
-      g: arb_graph,
-      i: jsc.nat,
-    }).smap(
-      ({g, i}) => ({g, i: i % g.target.length}),
-      t => t
-    )
+  const sentence = graph.chain(g => QC.between(0, g.target.length).map(i => ({g, i})))
 
-  quickCheck('sentence subgraph invariant', arb_sentence, ({g, i}) =>
-    G.check_invariant(G.subgraph(g, G.sentence(g, i))) === 'ok'
+  qc(
+    'sentence subgraph invariant',
+    sentence,
+    ({g, i}) => G.check_invariant(G.subgraph(g, G.sentence(g, i))) === 'ok'
   )
 }
 
 {
-  quickCheck('revert everything', arb_graph, (g, assert) => {
+  qc('revert everything', graph, (g, p) => {
+    const reverted = Object.keys(g.edges).reduce(G.revert, g)
+    const rtarget = G.target_texts(reverted)
+    const rsource = G.source_texts(reverted)
+    const source = G.source_texts(g)
+    return p.equals(rsource, source)
+  })
+
+  const graph_and_edge = graph.chain(g =>
+    QC.between(0, Object.keys(g.edges).length).map(i => ({g, i}))
+  )
+
+  qc('revert invariant', graph_and_edge, ({g, i}) => {
+    const edges = Object.keys(g.edges)
+    const id = edges[i % edges.length]
+    const reverted = G.revert(g, id)
+    return G.check_invariant(reverted) === 'ok'
+  })
+
+  qc(
+    'revert everything target not reverting correctly',
+    graph,
+    (g, p) => {
+      const reverted = Object.keys(g.edges).reduce(G.revert, g)
+      const rtarget = G.target_texts(reverted)
+      const rsource = G.source_texts(reverted)
+      const source = G.source_texts(g)
+      return p.equals(rtarget, source)
+    },
+    QC.expectFailure
+  )
+
+  function known_bug() {
+    const e0 = G.Edge('s0 t1 t2'.split(' '), [])
+    const e1 = G.Edge('s1 t0'.split(' '), [])
+    const g = {
+      source: [{text: 'a ', id: 's0'}, {text: 'b ', id: 's1'}],
+      target: [{text: 'x ', id: 't0'}, {text: 'y ', id: 't1'}, {text: 'z ', id: 't2'}],
+      edges: {
+        [e0.id]: e0,
+        [e1.id]: e1,
+      },
+    }
     const reverted = Object.keys(g.edges).reduce(G.revert, g)
     const rtarget = G.target_texts(reverted)
     const rsource = G.source_texts(reverted)
     const source = G.source_texts(g)
     // console.log(Utils.show({g, reverted, rtarget, rsource, source}))
-    // this doesn't hold right now:
-    // assert.deepEquals(rtarget, source)
-    assert.deepEquals(rsource, source)
-    return true
-  })
-
-  quickCheck('revert invariant', jsc.record({g: arb_graph, i: jsc.nat}), ({g, i}, assert) => {
-    const edges = Object.keys(g.edges)
-    if (edges.length > 0) {
-      const id = edges[i % edges.length]
-      const reverted = G.revert(g, id)
-      const inv = G.check_invariant(reverted)
-      if (inv !== 'ok') {
-        console.log(Utils.show({id, g, reverted}))
-        return false
-      }
-      return true
-    } else {
-      return true
-    }
-  })
-}
-
-// A known bug:
-{
-  const e0 = G.Edge('s0 t1 t2'.split(' '), [])
-  const e1 = G.Edge('s1 t0'.split(' '), [])
-  const g = {
-    source: [
-      { text: "a ", id: "s0" },
-      { text: "b ", id: "s1" }
-    ],
-    target: [
-      { text: "x ", id: "t0" },
-      { text: "y ", id: "t1" },
-      { text: "z ", id: "t2" }
-    ],
-    edges: {
-      [e0.id]: e0,
-      [e1.id]: e1
-    }
   }
-  const reverted = Object.keys(g.edges).reduce(G.revert, g)
-  const rtarget = G.target_texts(reverted)
-  const rsource = G.source_texts(reverted)
-  const source = G.source_texts(g)
-  // console.log(Utils.show({g, reverted, rtarget, rsource, source}))
 }

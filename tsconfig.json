@@ -1,17 +1,22 @@
 {
     "compilerOptions": {
-        "outDir": "./dist/",
-        "sourceMap": false,
+        "outDir": "./dist",
+        "sourceMap": true,
         "noImplicitAny": true,
         "strict": true,
+        "target": "es6",
         "module": "commonjs",
         "moduleResolution": "node",
-        "allowUnreachableCode": true,
-        "target": "es6",
-        "noEmitOnError": true
+        "jsx": "react",
+        "lib": ["es2017", "dom"],
+        "noEmitOnError": true,
+        "allowUnreachableCode": true
     },
     "include": [
-        "./src/*",
-        "./test/*"
-    ]
+        "src",
+        "test"
+    ],
+    "parcelTsPluginOptions": {
+        "transpileOnly": false
+    }
 }

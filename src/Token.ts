@@ -1,8 +1,19 @@
 import * as Utils from './Utils'
 
-export interface Token {
-  readonly text: string,
+export interface Text {
+  readonly text: string
+}
+
+export interface Token extends Text {
   readonly id: string
+}
+
+export function Token(text: string, id: string): Token {
+  return {id, text}
+}
+
+export function token(t: Token): Token {
+  return Token(t.text, t.id)
 }
 
 /** The text in some tokens
@@ -10,7 +21,7 @@ export interface Token {
   text(identify(tokenize('apa bepa cepa '), '#')) // => 'apa bepa cepa '
 
 */
-export function text(ts: Token[]): string {
+export function text(ts: Text[]): string {
   return texts(ts).join('')
 }
 
@@ -19,7 +30,7 @@ export function text(ts: Token[]): string {
   texts(identify(tokenize('apa bepa cepa '), '#')) // => ['apa ', 'bepa ', 'cepa ']
 
 */
-export function texts(ts: Token[]): string[] {
+export function texts(ts: Text[]): string[] {
   return ts.map(t => t.text)
 }
 
@@ -30,12 +41,14 @@ export function texts(ts: Token[]): string[] {
   punc(' !')   // => true
   punc('!?')   // => true
   punc(', ')    // => false
-  punc('apa. ') // => false
+  punc('apa. ') // => true
   punc('?.., ') // => false
 
 */
 export function punc(s: string): boolean {
-  return !!s.match(/^\s*[.!?]+\s*$/)
+  return (
+    !!s.match(/^\s*[.!?]+\s*$/) || (!!s.match(/\.\s*$/) && !s.match(/^t\./)) || !!s.match(/^\.\s/)
+  )
 }
 
 /** Where is the previous punctuation token?
@@ -72,7 +85,7 @@ export function next_punc(tokens: string[], i: number): number {
   return -1
 }
 
-export type Span = {begin: number, end: number}
+export type Span = {begin: number; end: number}
 
 /** Merge two spans: makes a span that contains both spans
 
@@ -136,7 +149,7 @@ export function tokenize(s: string): string[] {
 
 */
 export function identify(toks: string[], prefix: string): Token[] {
-  return toks.map((text, i) => ({text, id: prefix + i}))
+  return toks.map((text, i) => Token(text, prefix + i))
 }
 
 /** The offset in the text at an index. */
@@ -156,7 +169,10 @@ export function text_offset(texts: string[], index: number): number {
   Utils.throws(() => token_at(abc, 10)) // => true
 
 */
-export function token_at(tokens: string[], character_offset: number): {token: number, offset: number} {
+export function token_at(
+  tokens: string[],
+  character_offset: number
+): {token: number; offset: number} {
   let passed = 0
   for (let i = 0; i < tokens.length; i++) {
     const w = tokens[i].length
@@ -167,4 +183,3 @@ export function token_at(tokens: string[], character_offset: number): {token: nu
   }
   return Utils.raise('Out of bounds: ' + JSON.stringify({tokens, character_offset}))
 }
-
