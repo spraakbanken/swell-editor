@@ -11,7 +11,7 @@ to make it read like an actual text (this is referred to as _random exchange_ in
 I've sketched out the details of a metadata record before and then I wrote this:
 
 ```typescript
-corpus: Array<string | AnonymizationRecord>
+type corpus = Array<string | AnonymizationRecord>
 
 interface AnonymizationRecord {
   unique_number: int,
@@ -30,7 +30,7 @@ to how you want to view the data. This separates the anonymisation problem into 
 The second task means that you can choose how you want to view these records,
 for example replace them with suitable names that could be the same across all texts. Or unique.
 
-This separation makes it easy to see that we need to make decisions if this meta-data will be necessary:
+This separation makes it easy to see that there are many meta-data decisions to make. Here are some examples from the top off my head:
 
 1. Morphosyntactic features of the word. Such as being in genitive (my mothers's). This will be necessary to
 linearise the abstract records to grammatically correct text. Full msd might be necessary when anonymising
