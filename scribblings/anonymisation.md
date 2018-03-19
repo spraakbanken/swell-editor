@@ -36,3 +36,24 @@ This separation makes it easy to see that there are many meta-data decisions to 
 linearise the abstract records to grammatically correct text. Full msd might be necessary when anonymising
 entities such as _Språkintroduktion på lindholmen_.
 2. Correct spelling (such as _Ungen_ instead of _Ungern_), correct capitalization. Has the learner written the entity correctly?
+
+### Questions from video meeting 16/3
+
+Mats suggests using a full msd tag for the anonymized entities. Suggestion: SUC3.
+
+Gunlög says that spelling mistakes might not be so important, however she might
+be biased and will consider how important it might be for other researchers.
+Bea raised the question about how to render records that are marked as having
+incorrect spelling. Probably we should not try to do that since they will
+just give a systematically incorrect error. A label will have to do.
+
+Follow-up errors from professions, subjects of study and what kind of public transport is used.
+
+Elena notes that the meta-data from anonymisation can be used for other experiments,
+for example checking biases by rendering the names differently.
+
+I wonder if it make sense to anoymize data that exists in the student meta-data anyway.
+For example, if we know the L1 the country of origin could stay in place.
+
+Texts with the student itself as topic, _"om mig"_ could be aggregated, for example under the same swell-id.
+
