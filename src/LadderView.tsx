@@ -129,31 +129,43 @@ function LineIsHorizontal({y0, y1}: D.Line) {
 function PixelPerfectSVG(svg: VNode, css: React.CSSProperties = {}) {
   // the point of the scaling up and down here is to make the vertical lines
   // be on exact pixel coordinates to not make them look blurry.
+  const more_css = {
+    ...css,
+    // table rounds the sizes in webengine
+    display: 'table',
+    // we try to make the sizes just about 50%
+    width: 'calc(50% + 1px)',
+    height: 'calc(50% + 1px)',
+  }
+  return Absolute(
+    <div
+      style={{
+        // and scale this div 200% of this to make it an even number of pixels
+        width: '200%',
+        height: '200%',
+        position: 'absolute',
+      }}>
+      {svg}
+    </div>,
+    more_css
+  )
+}
+
+function Absolute(vnode: VNode, css: React.CSSProperties = {}) {
   return (
     <div
       style={{
         position: 'absolute',
         top: '0',
         left: '0',
+        width: '100%',
+        height: '100%',
         // This needs to be <=0.5em, but smaller than that makes it not start
         // growing until a sufficiently high zoom
         fontSize: '0.25em',
-        // table rounds the sizes in webkit
-        display: 'table',
-        // we try to make the sizes just about 50%
-        width: 'calc(50% + 1px)',
-        height: 'calc(50% + 1px)',
+        ...css,
       }}>
-      <div
-        style={{
-          // and scale this div 200% of this to make it an even number of pixels
-          width: '200%',
-          height: '200%',
-          position: 'absolute',
-          ...css,
-        }}>
-        {svg}
-      </div>
+      {vnode}
     </div>
   )
 }
@@ -230,6 +242,28 @@ export function ApplyMove(diff: D.Diff[], {from, to}: {from: number; to: number}
   }
 }
 
+const mustache_side = PixelPath('M 0 0.90 C 0 1.1 1 0.85 1 1.15', greyPath)
+const mustache2x2 = (
+  <>
+    {PixelPath('M 1 1.1 L 1 0.8', whitePath)}
+    {mustache_side}
+    <g transform="translate(2, 0) scale(-1,1)">{mustache_side}</g>
+  </>
+)
+
+const underbrow = Absolute(
+  <svg height="200%" width="100%" viewBox="0 0 2 2" preserveAspectRatio="none">
+    {mustache2x2}
+  </svg>,
+  {zIndex: -1, position: 'absolute', top: '10%', left: '0.5px'}
+)
+const overbrow = Absolute(
+  <svg height="200%" width="100%" viewBox="0 0 2 2" preserveAspectRatio="none">
+    <g transform="translate(0,2) scale(1,-1)">{mustache2x2}</g>
+  </svg>,
+  {zIndex: -1, position: 'absolute', top: '-80%', left: '0.5px'}
+)
+
 export function Ladder(
   g: G.Graph,
   rd0: RD.RichDiff[] = RD.enrichen(g),
@@ -241,14 +275,6 @@ export function Ladder(
   const grids = D.DiffToGrid(rd)
   const u = grids.upper
   const l = grids.lower
-  const mustache_side = PixelPath('M 0 0.85 C 0 1.1 1 0.85 1 1.1', greyPath)
-  const mustache2x2 = (
-    <>
-      {PixelPath('M 1 1.1 L 1 0.8', whitePath)}
-      {mustache_side}
-      <g transform="translate(2, 0) scale(-1,1)">{mustache_side}</g>
-    </>
-  )
   return (
     <div
       onMouseLeave={e => onDrag && onDrag(null)}
@@ -260,23 +286,11 @@ export function Ladder(
               return [
                 <div style={{position: 'relative'}}>
                   {Key(d.source_diffs.map(deletes))}
-                  {d.source.length > 1 &&
-                    PixelPerfectSVG(
-                      <svg height="200%" width="100%" viewBox="0 0 2 2" preserveAspectRatio="none">
-                        {mustache2x2}
-                      </svg>,
-                      {zIndex: -1, position: 'absolute', top: '10%'}
-                    )}
+                  {d.source.length > 1 && underbrow}
                 </div>,
                 <div style={{position: 'relative'}}>
                   {Key(d.target_diffs.map(inserts))}
-                  {d.target.length > 1 &&
-                    PixelPerfectSVG(
-                      <svg height="200%" width="100%" viewBox="0 0 2 2" preserveAspectRatio="none">
-                        <g transform="translate(0,2) scale(1,-1)">{mustache2x2}</g>
-                      </svg>,
-                      {zIndex: -1, position: 'absolute', top: '-190%'}
-                    )}
+                  {d.target.length > 1 && overbrow}
                 </div>,
               ]
             case 'Dragged':
