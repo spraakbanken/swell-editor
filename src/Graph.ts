@@ -55,7 +55,12 @@ export function edge_record(es: Edge[]): Record<string, Edge> {
 
   check_invariant(init('apa bepa cepa')) // => 'ok'
 
-It's ok for edges to be connected with only tokens from one side.
+  const g0 = init('apa')
+  const g = {...g0, edges: {'oops': g0.edges['e-s0-t0']}}
+  'violation' in check_invariant(g) // => true
+
+It's ok for edges to be connected with only tokens from one side,
+but should it be?
 
 */
 export function check_invariant(g: Graph): 'ok' | {violation: string; g: Graph} {
@@ -86,7 +91,8 @@ export function check_invariant(g: Graph): 'ok' | {violation: string; g: Graph} 
       )
       Utils.record_forEach(
         g.edges,
-        e => unique_id(e.id) || Utils.raise('Duplicate edge id: ' + e.id)
+        (e, id) =>
+          e.id === id || Utils.raise(`Edge key and id do not match: ${id} and ${Utils.show(e)}`)
       )
     }
     Utils.record_forEach(
