@@ -8,6 +8,7 @@ import {TokenDiff} from './Utils'
 import {Token} from './Token'
 import * as T from './Token'
 import {KV} from './Utils'
+import * as record from './record'
 
 const dnd = Utils.ADT('edit')
   .alt('Dropped')<{target: Token; id: string}>()
@@ -114,7 +115,7 @@ export type ProtoLines = {id: string; center_of_mass: number; lines: ProtoLine[]
 export function ProtoLines(diff: Diff[], keep: 'Dragged' | 'Dropped'): ProtoLines {
   return R.sortBy(
     r => r.lines.length,
-    Utils.record_traverse(
+    record.traverse(
       R.groupBy(d => d.id, Index(diff)) as Record<string, IndexedDiff[]>,
       (ds, id) => {
         // try to move to a source position close to the center of mass of all involved positions

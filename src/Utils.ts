@@ -1,3 +1,4 @@
+import * as record from './record'
 import * as R from 'ramda'
 import {Lens, Store} from 'reactive-lens'
 import * as Dmp from 'diff-match-patch'
@@ -321,7 +322,7 @@ export function contiguous(xs: number[]): boolean {
 
 /** Flatten an array of arrays */
 export function flatten<A>(xss: A[][]): A[] {
-  return ([] as any).concat(...xss)
+  return ([] as A[]).concat(...xss)
 }
 
 /** Flatten an array of arrays */
@@ -439,7 +440,7 @@ export function uniq<A>(xs: A[]): A[] {
 
 /** Removes adjacent elements that are equal, using === */
 export function drop_adjacent_equal<A>(xs: A[]): A[] {
-  return xs.filter((x, i) => i == 0 || x !== xs[i-1])
+  return xs.filter((x, i) => i == 0 || x !== xs[i - 1])
 }
 
 /** Union-find data structure operations */
@@ -648,52 +649,6 @@ export function absurd<A>(c: never): A {
   return c
 }
 
-export function record_create<K extends string, A>(
-  ks: K[],
-  f: (k: K, index: number) => A
-): Record<K, A> {
-  const obj = {} as Record<K, A>
-  ks.forEach((k, i) => (obj[k] = f(k, i)))
-  return obj
-}
-
-export function record_forEach<K extends string, A>(
-  x: Record<K, A>,
-  k: (a: A, id: K) => void
-): void {
-  ;(Object.keys(x) as K[]).forEach((id: K) => k(x[id], id))
-}
-
-export function record_traverse<K extends string, A, B>(
-  x: Record<K, A>,
-  k: (a: A, id: K) => B,
-  sort_keys: boolean = false
-): B[] {
-  const ks = Object.keys(x) as K[]
-  if (sort_keys) {
-    ks.sort()
-  }
-  return ks.map((id: K) => k(x[id], id))
-}
-
-export function record_map<K extends string, A, B>(
-  x: Record<K, A>,
-  k: (a: A, id: K) => B
-): Record<K, B> {
-  const out = {} as Record<K, B>
-  record_forEach(x, (a, id) => (out[id] = k(a, id)))
-  return out
-}
-
-export function record_filter<A>(
-  x: Record<string, A>,
-  k: (a: A, id: string) => boolean
-): Record<string, A> {
-  const out = {} as Record<string, A>
-  record_forEach(x, (a, id) => k(a, id) && (out[id] = a))
-  return out
-}
-
 // Store stuff
 
 /**
@@ -731,7 +686,7 @@ export function array_store(store: Store<string[]>): Store<Record<string, true>>
   return store.via(
     Lens.iso(
       (xs: string[]) => fromPairs(xs.map(x => [x, true] as [string, true])),
-      (r: Record<string, true>) => record_traverse(r, (_, s) => s)
+      (r: Record<string, true>) => record.traverse(r, (_, s) => s)
     )
   )
 }
@@ -875,15 +830,15 @@ export function merge_series<K extends string, S, A>(
   cmp: (a: A, b: A) => boolean
 ): Record<K, A>[] {
   const coords = cartesian<Record<K, number>, K>(
-    record_map(r, (ss: S[]) => ss.map((_, i) => i))
+    record.map(r, (ss: S[]) => ss.map((_, i) => i))
   ).sort((a, b) => sum(Object.values(a)) - sum(Object.values(b)))
-  const prev = record_map(r, _ => 0)
+  const prev = record.map(r, _ => 0)
   const out: Record<K, A>[] = []
   coords.forEach(coord => {
-    if (record_traverse(coord, (i: number, k: K) => i >= prev[k]).every((b: boolean) => b)) {
-      const a = record_map(r, (s, k) => concat(fromTo(prev[k], coord[k] + 1).map(i => s[i])))
+    if (record.traverse(coord, (i: number, k: K) => i >= prev[k]).every((b: boolean) => b)) {
+      const a = record.map(r, (s, k) => concat(fromTo(prev[k], coord[k] + 1).map(i => s[i])))
       if (upper_triangular<A>(Object.values(a)).every(([x, y]) => cmp(x, y))) {
-        record_forEach(coord, (i: number, k: K) => (prev[k] = i + 1))
+        record.forEach(coord, (i: number, k: K) => (prev[k] = i + 1))
         out.push(a)
       }
     }
@@ -978,6 +933,10 @@ export function snocsToArray<A>(xs: SnocList<A>): A[] {
 
 export function expr<R>(k: () => R): R {
   return k()
+}
+
+export function chain<A, B>(a: A, f: (a: A) => B): B {
+  return f(a)
 }
 
 export function push<K extends string, V>(obj: Record<K, V[]>, k: string, ...vs: V[]) {

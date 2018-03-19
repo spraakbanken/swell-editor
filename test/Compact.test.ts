@@ -15,7 +15,8 @@ import * as assert from 'assert'
 
 qc('roundtrip units<->graph', graph, (g0, p) => {
   const g = G.normalize_whitespace(g0)
-  const g2 = C.stu_to_graph(C.graph_to_units(g))
+  const u = C.graph_to_units(g)
+  const g2 = C.units_to_graph(u.source, u.target)
   return p.equals(g, G.normalize_whitespace(g2))
 })
 

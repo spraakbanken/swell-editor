@@ -53,7 +53,7 @@ export const graph_with_tokens = (token_text: Gen<string>): Gen<Graph> =>
           return {
             source,
             target,
-            edges: G.edge_record(proto_edges.map(e => G.Edge(e.ids, e.labels))),
+            edges: G.edge_record(proto_edges.map(e => G.Edge(e.ids, e.labels, true))),
           }
         })
       )

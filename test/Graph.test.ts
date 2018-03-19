@@ -7,6 +7,7 @@ import {graph, insert_text} from './Common'
 import * as T from '../src/Token'
 import * as G from '../src/Graph'
 import {Graph} from '../src/Graph'
+import * as record from '../src/record'
 import * as Utils from '../src/Utils'
 import {range} from '../src/Utils'
 
@@ -208,7 +209,7 @@ describe('diff', () => {
   qc('diff edge set preserved', graph, g => {
     const diff = G.calculate_diff(g)
     const edge_ids = diff.map(d => d.id)
-    return Utils.array_set_eq(edge_ids, Utils.record_traverse(g.edges, e => e.id))
+    return Utils.array_set_eq(edge_ids, record.traverse(g.edges, e => e.id))
   })
 })
 

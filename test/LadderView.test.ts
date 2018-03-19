@@ -6,6 +6,7 @@ import {enzyme} from './Common'
 
 import * as L from '../src/LadderView'
 import * as Utils from '../src/Utils'
+import * as record from '../src/record'
 
 qc(
   'Ladder text sanity',
@@ -20,7 +21,7 @@ qc(
     }
     g.source.forEach(tok => text_somewhere(tok.text))
     g.target.forEach(tok => text_somewhere(tok.text))
-    Utils.record_forEach(g.edges, e => e.labels.forEach(label => text_somewhere(label)))
+    record.forEach(g.edges, e => e.labels.forEach(label => text_somewhere(label)))
     return true
   },
   {tests: 25}

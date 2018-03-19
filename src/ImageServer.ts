@@ -1,4 +1,3 @@
-import * as process from 'process'
 import * as express from 'express'
 import * as compression from 'compression'
 import * as morgan from 'morgan'

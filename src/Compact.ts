@@ -7,15 +7,17 @@ import * as pstr from 'parser-ts/lib/string'
 
 import * as T from './Token'
 import * as G from './Graph'
-import {Graph} from './Graph'
+import {Graph, ST, Edge} from './Graph'
 import * as Utils from './Utils'
 import {UnionFind} from './Utils'
 import * as D from './Diff'
 import {Diff} from './Diff'
+import * as record from './record'
 
 type Link = {tag: 'text'; text: string} | {tag: 'id'; id: string} | {tag: 'unlinked'}
 
 const idLink = (id: string): Link => ({tag: 'id', id})
+const unlinked: Link = {tag: 'unlinked'}
 
 interface Attributes {
   ids: string[]
@@ -173,24 +175,15 @@ const units = space_padded(p.sepBy(spaces1_, unit))
 export const parse = (s: string) => run_parser(units, s) || []
 export const parse_strict = (s: string) => run_parser_strict(units, s)
 
-// these link to a representatitive for the whole edge group
-export type Simple = {text: string; labels: string[]; id: string; link?: string}
-export function Simple(text: string, labels: string[], id: string, link?: string): Simple {
-  return {text, labels, id, link}
-}
-
 const identify = (prefix: string, us: Unit[]) =>
   us.map((u, i) => ({...u, ids: [prefix + i, ...u.ids]}))
 // could also put the user-supplied ids first and append the generated ID
 // to try to preserve the user-supplied id
 // one problem is possible name-collision
 
-export function assign_ids_and_manual_alignments(
-  source: Unit[],
-  target: Unit[]
-): {source: Simple[]; target: Simple[]} {
-  const s = identify('s', source)
-  const t = identify('t', target)
+export function to_unaligned_graph(source_units: Unit[], target_units: Unit[]): Graph {
+  const s = identify('s', source_units)
+  const t = identify('t', target_units)
   const uf = Utils.PolyUnionFind<Link>()
   const count = Utils.Counter(s.map(u => u.text))
   s.forEach(u =>
@@ -208,130 +201,55 @@ export function assign_ids_and_manual_alignments(
       // the text of a target text cannot be referred to
     ])
   )
-  const repr = (u: Unit) => uf.repr(idLink(u.ids[0]))
-  const s_reprs = new Map(s.map(u => [repr(u), u.ids[0]] as [number, string]))
-  const linked = new Set(t.map(repr).filter(tr => s_reprs.has(tr)))
-  function link(u: Unit): Simple {
-    const r = repr(u)
-    if (linked.has(r)) {
-      return Simple(u.text, u.labels, u.ids[0], s_reprs.get(r))
-    } else if (u.links.some(l => l.tag == 'unlinked')) {
-      return Simple(u.text, u.labels, u.ids[0], u.ids[0])
-    } else {
-      return Simple(u.text, u.labels, u.ids[0])
-    }
+
+  const proto_edges = {} as Record<string, G.Edge>
+
+  function link(u: Unit): T.Token {
+    const id = u.ids[0]
+    const r = '' + uf.repr(idLink(id))
+    record.modify(proto_edges, r, G.zero_edge, e =>
+      G.merge_edges(e, G.Edge([id], u.labels, u.links.length > 0))
+    )
+    return T.Token(u.text, id)
   }
-  return {source: s.map(link), target: t.map(link)}
-}
 
-export const space_id = '<space>'
-
-/**
-
-  const example = [
-    Simple('a', [], 'x'),
-    Simple('ja', [], 'y')
-  ]
-  const expect = [
-    Simple('a', [], 'x'),
-    Simple(' ', [], space_id),
-    Simple('j', [], 'y'),
-    Simple('a', [], 'y'),
-  })
-  punctuate(example) // => expect
-
-*/
-export function punctuate(units: Simple[]): Simple[] {
-  const slice = (u: Simple) => Utils.str_map(u.text, text => ({...u, text}))
-  const slices = (us: Simple[]): Simple[][] => us.map(slice)
-  const space = Simple(' ', [], space_id)
-  return R.pipe(slices, R.intersperse([space]), R.flatten)(units)
-}
-
-const is_auto = (u: Simple) => u.link === undefined
-
-export function automatic_alignments(source: Simple[], target: Simple[]): UnionFind<string> {
-  const uf = Utils.PolyUnionFind<string>(u => u)
-  const s = punctuate(source.filter(is_auto))
-  const t = punctuate(target.filter(is_auto))
-  const char_diff = Utils.hdiff(s, t, u => u.text, u => u.text)
-
-  char_diff.forEach(c => {
-    if (c.change == 0) {
-      if (c.a.id != space_id && c.b.id != space_id) {
-        uf.union(c.a.id, c.b.id)
-      }
-    }
-  })
-
-  return uf
-}
-
-export type STU = {source: Unit[]; target: Unit[]}
-export function STU(source: Unit[], target: Unit[]): STU {
-  return {source, target}
-}
-const onSTU = <A>(f: (stu: STU) => A) => (source: Unit[], target: Unit[]) => f(STU(source, target))
-
-export function stu_to_graph({source, target}: STU): Graph {
-  const r = assign_ids_and_manual_alignments(source, target)
-  const auto = automatic_alignments(r.source, r.target)
-  const edge_targets = {} as Record<string, string[]>
-  const edge_labels = {} as Record<string, string[]>
-  const assign = (u: Simple) => {
-    if (u.id) {
-      const edge_repr = u.link || auto.find(u.id)
-      Utils.push(edge_targets, edge_repr, u.id)
-      Utils.push(edge_labels, edge_repr, ...u.labels)
-    }
-  }
-  r.source.forEach(assign)
-  r.target.forEach(assign)
-  const edges: Record<string, G.Edge> = {}
-  Utils.record_forEach(edge_targets, (ids, repr) => {
-    const edge = G.Edge(ids, edge_labels[repr] || [])
-    edges[edge.id] = edge
-  })
-  return {
-    source: r.source.map(t => T.Token(t.text + ' ', t.id)),
-    target: r.target.map(t => T.Token(t.text + ' ', t.id)),
-    edges,
-  }
+  const source = s.map(link)
+  const target = t.map(link)
+  const edges = G.edge_record(record.traverse(proto_edges, e => e))
+  return {source, target, edges}
 }
 
 /**
 
+  const norm = (g: Graph) => G.normalize(g)
   const s1 = parse_strict(`b~ cc d`)
   const t1 = parse_strict(`b cc d~`)
-  const s2 = parse_strict(`b cc d~`)
-  const t2 = parse_strict(`b~ cc d`)
-  units_to_graph(s1, t1) // => units_to_graph(s2, t2)
-
-  const s1 = parse_strict(`aa@1 bb cc@2`)
-  const t1 = parse_strict(`aa~aa bb cc~aa~cc`)
-  units_to_graph(s1, t1) // => units_to_graph(s1, parse_strict(`aa~aa~cc bb cc~aa`))
-  units_to_graph(s1, t1) // => units_to_graph(s1, parse_strict(`aa~@1 bb cc~@1~@2`))
-  units_to_graph(s1, t1) // => units_to_graph(s1, parse_strict(`aa~@1~@2 bb cc~@2`))
-  units_to_graph(s1, t1) // => units_to_graph(s1, parse_strict(`aa~aa bb cc~@1~@2`))
-  units_to_graph(s1, t1) // => units_to_graph(s1, parse_strict(`aa~@1~cc bb cc~cc`))
-
-  const s1 = parse_strict(`apa bepa cepa`)
-  const t1 = parse_strict(`apa bpea cpea`)
-  units_to_graph(s1, t1) // => units_to_graph(s1, parse_strict(`apa bpea~bepa cpea`))
-  units_to_graph(s1, t1) // => units_to_graph(s1, parse_strict(`apa bpea cpea~cepa`))
-  units_to_graph(s1, t1) // => units_to_graph(s1, parse_strict(`apa bpea~bepa cpea~cepa`))
-  units_to_graph(s1, t1) // => units_to_graph(s1, parse_strict(`apa~apa bpea cpea`))
-  units_to_graph(s1, t1) // => units_to_graph(s1, parse_strict(`apa~apa bpea~bepa cpea~cepa`))
-
-  const s1 = parse_strict(`w1:L1 w2:L2 w3:L3 `)
-  const t1 = parse_strict(`w1    w2    w3    `)
-  units_to_graph(s1, t1) // => units_to_graph(t1, s1)
-
-  const ex_s = parse_strict('preamble apa:Ort bepacepa xu depa flepa:Comp florp^preamble')
-  const ex_t = parse_strict('apa bpea cpea dpeaflpae xlbabulr postscriptum^preamble woop^')
+  norm(units_to_graph(s1, t1)) // => norm(units_to_graph(t1, s1))
+  //
+  const s2 = parse_strict(`aa@1 bb cc@2`)
+  const t2 = parse_strict(`aa~aa bb cc~aa~cc`)
+  norm(units_to_graph(s2, t2)) // => norm(units_to_graph(s2, parse_strict(`aa~aa~cc bb cc~aa`)))
+  norm(units_to_graph(s2, t2)) // => norm(units_to_graph(s2, parse_strict(`aa~@1 bb cc~@1~@2`)))
+  norm(units_to_graph(s2, t2)) // => norm(units_to_graph(s2, parse_strict(`aa~@1~@2 bb cc~@2`)))
+  norm(units_to_graph(s2, t2)) // => norm(units_to_graph(s2, parse_strict(`aa~aa bb cc~@1~@2`)))
+  norm(units_to_graph(s2, t2)) // => norm(units_to_graph(s2, parse_strict(`aa~@1~cc bb cc~cc`)))
+  //
+  const s3 = parse_strict(`apa bepa cepa`)
+  const t3 = parse_strict(`apa bpea cpea`)
+  norm(units_to_graph(s3, t3)) // => norm(units_to_graph(s3, parse_strict(`apa bpea~bepa cpea`)))
+  norm(units_to_graph(s3, t3)) // => norm(units_to_graph(s3, parse_strict(`apa bpea cpea~cepa`)))
+  norm(units_to_graph(s3, t3)) // => norm(units_to_graph(s3, parse_strict(`apa bpea~bepa cpea~cepa`)))
+  norm(units_to_graph(s3, t3)) // => norm(units_to_graph(s3, parse_strict(`apa~apa bpea cpea`)))
+  norm(units_to_graph(s3, t3)) // => norm(units_to_graph(s3, parse_strict(`apa~apa bpea~bepa cpea~cepa`)))
+  //
+  const s4 = parse_strict(`w1:L1 w2:L2 w3:L3 `)
+  const t4 = parse_strict(`w1    w2    w3    `)
+  norm(units_to_graph(s4, t4)) // => norm(units_to_graph(t4, s4))
 
 */
-export const units_to_graph = onSTU(stu_to_graph)
+export function units_to_graph(source: Unit[], target: Unit[]): Graph {
+  return G.align(to_unaligned_graph(source, target))
+}
 
 export function unit_to_string(unit: Unit): string {
   const text_to_string = (text0: string) => {
@@ -361,49 +279,63 @@ export function units_to_string(units: Unit[], sep = ' ' as ' ' | '_') {
   return units.map(unit_to_string).join(sep)
 }
 
-export type STS = {source: Simple[]; target: Simple[]}
+type STU = ST<Unit[]>
 
-export function simple_to_unit(s: Simple): Unit {
-  return {
-    text: s.text,
-    ids: [s.id],
-    links: s.link ? [{tag: 'id', id: s.link}] : [],
-    labels: s.labels,
-  }
-}
-
-export function diff_to_units(diff: Diff[], g: Graph): STU {
-  const source: Unit[] = []
-  const target: Unit[] = []
-  let count = 1
-  const seen: Record<string, string> = {}
-  const unit = (d: Diff) => (tok: T.Token): Unit => ({
-    text: tok.text,
-    labels: !seen[d.id] ? g.edges[d.id].labels : [],
-    links: seen[d.id] ? [{tag: 'id' as 'id', id: seen[d.id]}] : [],
-    ids: !seen[d.id] ? [(seen[d.id] = count++ + '')] : [],
-  })
-  diff.forEach(
-    D.match({
-      Edited(d) {
-        source.push(...d.source.map(unit(d)))
-        target.push(...d.target.map(unit(d)))
-      },
-      Dropped(d) {
-        target.push(unit(d)(d.target))
-      },
-      Dragged(d) {
-        source.push(unit(d)(d.source))
-      },
+export function proto_graph_to_units(g: Graph): STU {
+  const em = Utils.chain(G.edge_map(g), m => (id: string): G.Edge =>
+    m.get(id) || Utils.raise(`Token id ${id} not in edge map`)
+  )
+  const first = Utils.unique_check<string>()
+  return G.with_st(g, tokens =>
+    tokens.map((token): Unit => {
+      const e = em(token.id)
+      const labels = first(e.id) ? e.labels : []
+      const links = Utils.expr(() => {
+        if (!e.manual) {
+          return []
+        }
+        if (e.ids.length === 1) {
+          return [unlinked]
+        }
+        return [idLink(e.ids[0])]
+      })
+      return Unit(token.text, [{ids: [token.id], links, labels}])
     })
   )
-  return {source, target}
 }
 
-function prefer_text_links({source, target}: STU): STU {
-  const count = Utils.Counter(source.map(u => u.text))
+/**
+
+  const With = {
+    source: parse_strict(`w@1 w w@3`),
+    target: parse_strict(`w@2 w w~@3`)
+  }
+  const Without = {
+    source: parse_strict(`w w w@3`),
+    target: parse_strict(`w w w~@3`)
+  }
+  minimize(With) // => Without
+
+  const With = {
+    source: parse_strict(`a b c@3`),
+    target: parse_strict(`a b c~@3`)
+  }
+  const Without = {
+    source: parse_strict(`a b c`),
+    target: parse_strict(`a b c~c`)
+  }
+  minimize(With) // => Without
+
+
+*/
+export function minimize(stu: STU): STU {
+  return remove_unused_ids(prefer_text_links(stu))
+}
+
+function prefer_text_links(stu: STU): STU {
+  const count = Utils.Counter(stu.source.map(u => u.text))
   const repl = {} as Record<string, Link>
-  source.forEach(u => {
+  stu.source.forEach(u => {
     if (count(u.text) == 1) {
       u.ids.forEach(id => (repl[id] = {tag: 'text', text: u.text}))
     }
@@ -415,79 +347,20 @@ function prefer_text_links({source, target}: STU): STU {
       return link
     }
   }
-  return {
-    source: source.map(u => ({...u, links: u.links.map(replace_link)})),
-    target: target.map(u => ({...u, links: u.links.map(replace_link)})),
-  }
+  return G.with_st(stu, units => units.map(u => ({...u, links: u.links.map(replace_link)})))
 }
 
-function remove_unused_ids({source, target}: STU): STU {
+function remove_unused_ids(stu: STU): STU {
   const ids: string[] = []
-  source.forEach(u => u.links.forEach(link => link.tag == 'id' && ids.push(link.id)))
-  target.forEach(u => u.links.forEach(link => link.tag == 'id' && ids.push(link.id)))
-  const count = Utils.Counter(ids)
-  return {
-    source: source.map(u => ({...u, ids: u.ids.filter(id => count(id) > 0)})),
-    target: target.map(u => ({...u, ids: u.ids.filter(id => count(id) > 0)})),
-  }
-}
-
-type LazyRoseTree<A> = {node: A; force(): LazyRoseTree<A>[]}
-
-// assumes t is ok to start with
-function dfs<A>(t: LazyRoseTree<A>, ok: (a: A) => boolean, fuel = -1): A {
-  if (fuel == 0) {
-    return t.node
-  }
-  const ts = t.force()
-  for (const child of ts) {
-    if (ok(child.node)) {
-      return dfs(child, ok, fuel - 1)
-    }
-  }
-  return t.node
-}
-
-function reduce_links({source, target}: STU, skip = 0): LazyRoseTree<STU> {
-  return {
-    node: {source, target},
-    force() {
-      const out: STU[] = []
-      source.forEach((u, i) =>
-        u.links.forEach((_, j) => {
-          const u2: Unit = {...u, links: Utils.splice(u.links, j, 1)[0]}
-          const s2 = Utils.splice(source, i, 1, u2)[0]
-          out.push({source: s2, target})
-        })
-      )
-      target.forEach((u, i) =>
-        u.links.forEach((_, j) => {
-          const u2: Unit = {...u, links: Utils.splice(u.links, j, 1)[0]}
-          const t2 = Utils.splice(target, i, 1, u2)[0]
-          out.push({source, target: t2})
-        })
-      )
-      return out.slice(skip).map((t, i) => reduce_links(t, i))
-    },
-  }
-}
-
-/**
-
-  const source = parse_strict(`w1    w2    w3`)
-  const target = parse_strict(`w1~w1 w2~w2 w3~w3`)
-  minimize({source, target}) // => {source, target: source}
-
-*/
-export function minimize(stu0: STU): STU {
-  const g0 = stu_to_graph(stu0)
-  return remove_unused_ids(
-    prefer_text_links(dfs(reduce_links(stu0), stu => G.equal(g0, stu_to_graph(stu))))
+  G.with_st(stu, units =>
+    units.forEach(u => u.links.forEach(link => link.tag == 'id' && ids.push(link.id)))
   )
+  const count = Utils.Counter(ids)
+  return G.with_st(stu, units => units.map(u => ({...u, ids: u.ids.filter(id => count(id) > 0)})))
 }
 
-export function graph_to_units(g: Graph): STU {
-  return diff_to_units(G.calculate_diff(g), g)
+export function graph_to_units(g: Graph): ST<Unit[]> {
+  return minimize(proto_graph_to_units(g))
 }
 
 function testing() {

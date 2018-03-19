@@ -23,15 +23,23 @@ function's preferred view before executing
 */
 import * as R from 'ramda'
 import * as Utils from './Utils'
+import * as record from './record'
 import {Diff, Dragged, Dropped} from './Diff'
 import * as D from './Diff'
 import {Token, Span} from './Token'
 import * as T from './Token'
 import {Lens, Store} from 'reactive-lens'
 
-export interface Graph {
-  readonly source: Token[]
-  readonly target: Token[]
+export function with_st<A, B>(g: ST<A>, f: (a: A, side: 'source' | 'target') => B): ST<B> {
+  return {source: f(g.source, 'source'), target: f(g.target, 'target')}
+}
+
+export interface ST<A> {
+  readonly source: A
+  readonly target: A
+}
+
+export interface Graph extends ST<Token[]> {
   readonly edges: Record<string, Edge>
 }
 
@@ -39,11 +47,22 @@ export interface Edge {
   readonly id: string
   readonly ids: string[]
   readonly labels: string[]
+  readonly manual?: boolean
 }
 
-export function Edge(ids: string[], labels: string[]): Edge {
-  return {id: 'e-' + ids.join('-'), ids, labels}
+export function Edge(ids: string[], labels: string[], manual = false): Edge {
+  return {id: 'e-' + ids.join('-'), ids, labels, manual}
 }
+
+export function merge_edges(...es: Edge[]) {
+  return Edge(
+    Utils.flatMap(es, e => e.ids),
+    Utils.flatMap(es, e => e.labels),
+    es.some(e => !!e.manual)
+  )
+}
+
+export const zero_edge = merge_edges()
 
 export function edge_record(es: Edge[]): Record<string, Edge> {
   const out = {} as Record<string, Edge>
@@ -69,6 +88,10 @@ export function check_invariant(g: Graph): 'ok' | {violation: string; g: Graph} 
     {
       const unique_id = Utils.unique_check<string>()
       tokens.forEach(t => unique_id(t.id) || Utils.raise('Duplicate id: ' + t))
+      record.forEach(
+        g.edges,
+        e => unique_id(e.id) || Utils.raise('Duplicate id from edges: ' + e.id)
+      )
     }
     const check_tokens = (toks: string[]) =>
       toks.forEach((t, i) => {
@@ -80,22 +103,22 @@ export function check_invariant(g: Graph): 'ok' | {violation: string; g: Graph} 
       })
     check_tokens(target_texts(g))
     check_tokens(source_texts(g))
-    const ids = new Set(tokens.map(t => t.id))
+    const token_ids = new Set(tokens.map(t => t.id))
     {
       const unique_id = Utils.unique_check<string>()
-      Utils.record_forEach(g.edges, e =>
+      record.forEach(g.edges, e =>
         e.ids.forEach(id => {
           unique_id(id) || Utils.raise('Duplicate id in edge id list: ' + id)
-          ids.has(id) || Utils.raise('Edge talks about unknown id: ' + id)
+          token_ids.has(id) || Utils.raise('Edge talks about unknown token id: ' + id)
         })
       )
-      Utils.record_forEach(
+      record.forEach(
         g.edges,
         (e, id) =>
           e.id === id || Utils.raise(`Edge key and id do not match: ${id} and ${Utils.show(e)}`)
       )
     }
-    Utils.record_forEach(
+    record.forEach(
       g.edges,
       e => e.ids.length > 0 || Utils.raise('Edge without any associated identifiers')
     )
@@ -129,7 +152,7 @@ export function init_from(tokens: string[]): Graph {
   }
 }
 
-/** Map from token to edges
+/** Map from token ids to edges
 
   const g = init('w')
   const e = Edge(['s0', 't0'], [])
@@ -140,7 +163,7 @@ export function init_from(tokens: string[]): Graph {
 */
 export function edge_map(g: Graph): Map<string, Edge> {
   return new Map(
-    Utils.flatten(Utils.record_traverse(g.edges, e => e.ids.map(id => [id, e] as [string, Edge])))
+    Utils.flatten(record.traverse(g.edges, e => e.ids.map(id => [id, e] as [string, Edge])))
   )
 }
 
@@ -324,17 +347,19 @@ export function modify_tokens(g: Graph, from: number, to: number, text: string):
   const ids_removed = new Set(removed.map(t => t.id))
   const new_edge_ids = new Set<string>(tokens.map(t => t.id))
   const new_edge_labels = new Set<string>()
-  const edges = Utils.record_filter(g.edges, e => {
+  let new_edge_manual = false
+  const edges = record.filter(g.edges, e => {
     if (e.ids.some(id => ids_removed.has(id))) {
       e.ids.forEach(id => ids_removed.has(id) || new_edge_ids.add(id))
       e.labels.forEach(lbl => new_edge_labels.add(lbl))
+      new_edge_manual = new_edge_manual || e.manual === true
       return false
     } else {
       return true
     }
   })
   if (new_edge_ids.size > 0) {
-    const e = Edge([...new_edge_ids], [...new_edge_labels])
+    const e = Edge([...new_edge_ids], [...new_edge_labels], new_edge_manual)
     edges[e.id] = e
   }
   return {source: g.source, target, edges}
@@ -348,6 +373,63 @@ Indexes are token offsets
 */
 export function rearrange(g: Graph, begin: number, end: number, dest: number): Graph {
   return {...g, target: Utils.rearrange(g.target, begin, end, dest)}
+}
+
+interface CharId {
+  char: string
+  id?: string
+}
+
+/**
+
+  [
+    {char: ' ', id: undefined},
+    {char: 'a', id: 'id'},
+    {char: 'b', id: 'id'},
+    {char: ' ', id: undefined}
+  ] // => punctuate(Token(' ab ', 'id'))
+
+*/
+function punctuate(token: Token): CharId[] {
+  return Utils.str_map(token.text, char => ({char, id: char === ' ' ? undefined : token.id}))
+}
+
+export function align(g: Graph): Graph {
+  const uf = Utils.PolyUnionFind<string>(u => u)
+  const em = Utils.chain(edge_map(g), m => (id: string): Edge =>
+    m.get(id) || Utils.raise(`Token id ${id} not in edge map`)
+  )
+
+  {
+    const chars = with_st(g, tokens =>
+      Utils.flatMap(tokens.filter(token => !em(token.id).manual), punctuate)
+    )
+
+    const char_diff = Utils.hdiff(chars.source, chars.target, u => u.char, u => u.char)
+
+    char_diff.forEach(c => {
+      if (c.change == 0) {
+        if (c.a.id !== undefined && c.b.id !== undefined) {
+          uf.union(c.a.id, c.b.id)
+        }
+      }
+    })
+  }
+
+  const proto_edges = record.filter(g.edges, e => !!e.manual)
+
+  with_st(g, (tokens, side) =>
+    tokens.forEach(token => {
+      let e0 = em(token.id)
+      if (!e0.manual) {
+        record.modify(proto_edges, uf.find(token.id), zero_edge, e => merge_edges(e, e0))
+      }
+    })
+  )
+
+  const edges = edge_record(record.traverse(proto_edges, e => e))
+
+  return {...g, edges}
 }
 
 type ScoreDDL = {score: number; diff: DDL}
@@ -619,11 +701,7 @@ export function sentences(g: Graph, begin: number = 0): Subspan[] {
 
 Uses merge_series which is very inefficient */
 export function sentence_groups<K extends string>(gs: Record<K, Graph>): Record<K, Subspan>[] {
-  return Utils.merge_series(
-    Utils.record_map(gs, g => sentences(g)),
-    subspan_merge,
-    R.eqProps('source')
-  )
+  return Utils.merge_series(record.map(gs, g => sentences(g)), subspan_merge, R.eqProps('source'))
 }
 
 export function proto_sentence(g: Graph, i: number): Subspan {
@@ -681,7 +759,7 @@ export function subgraph(g: Graph, s: Subspan): Graph {
   const proto_g = {source, target, edges: edge_record([])}
   const sm = source_map(proto_g)
   const tm = target_map(proto_g)
-  const edges = Utils.record_filter(g.edges, e => e.ids.some(id => sm.has(id) || tm.has(id)))
+  const edges = record.filter(g.edges, e => e.ids.some(id => sm.has(id) || tm.has(id)))
   return {source, target, edges}
 }
 
@@ -716,7 +794,7 @@ export function revert(g: Graph, edge_id: string): Graph {
   } else {
     const diff = calculate_raw_diff(g)
     let supply = Utils.next_id(g.target.map(t => t.id))
-    const edges = Utils.record_filter(g.edges, (_, id) => id != edge_id)
+    const edges = record.filter(g.edges, (_, id) => id != edge_id)
     const reverted = Utils.flatMap(
       diff,
       D.dnd_match({
@@ -751,11 +829,11 @@ export function connect(g: Graph, edge_id: string, with_edge_id: string): Graph 
     // these are already connected!
     return g
   }
-  const edges = Utils.record_filter(g.edges, (_, id) => id != edge_id && id != with_edge_id)
+  const edges = record.filter(g.edges, (_, id) => id != edge_id && id != with_edge_id)
   const e1 = g.edges[edge_id]
   const e2 = g.edges[with_edge_id]
   if (e1 && e2) {
-    const edge = Edge(e1.ids.concat(e2.ids), e1.labels.concat(e2.labels))
+    const edge = merge_edges(Edge([], [], true), e1, e2)
     edges[edge.id] = edge
     return {...g, edges}
   } else {
@@ -771,7 +849,7 @@ export function disconnect(g: Graph, id: string): Graph {
   if (edge) {
     const edge_without = Edge(edge.ids.filter(i => i != id), edge.labels)
     const edge_with = Edge([id], [])
-    const edges = Utils.record_filter(g.edges, (_, id) => id != edge.id)
+    const edges = record.filter(g.edges, (_, id) => id != edge.id)
     edges[edge_with.id] = edge_with
     if (edge_without.ids.length > 0) {
       edges[edge_without.id] = edge_without
@@ -788,28 +866,33 @@ export function disconnect(g: Graph, id: string): Graph {
   const g = modify_tokens(init('apa bepa cepa '), 1, 2, 'depa epa ')
   normalize(normalize(g)) // => normalize(g)
 
-  // new graphs are in normal form
+  // new graphs are in normal form, except that they are not marked as manual
   const g = init('apa bepa cepa ')
-  normalize(g) // => g
+  normalize(g, 'keep') // => g
 
   const g = init('x')
   const ab = {
     source: [{id: 'a0', text: 'x'}],
     target: [{id: 'b0', text: 'x'}],
-    edges: {'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: []}}
+    edges: {'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: [], manual: false}}
   }
-  normalize(g, 'a', 'b') // => ab
+  normalize(g, 'keep', 'a', 'b') // => ab
 
   const g = init('x')
   const same = {
     source: [{id: '0', text: 'x'}],
     target: [{id: '1', text: 'x'}],
-    edges: {'e-0-1': {id: 'e-0-1', ids: ['0', '1'], labels: []}}
+    edges: {'e-0-1': {id: 'e-0-1', ids: ['0', '1'], labels: [], manual: false}}
   }
-  normalize(g, '', '') // => same
+  normalize(g, 'keep', '', '') // => same
 
 */
-export function normalize(g: Graph, s_prefix = 's', t_prefix = 't'): Graph {
+export function normalize(
+  g: Graph,
+  set_manual_to: boolean | 'keep' = true,
+  s_prefix = 's',
+  t_prefix = 't'
+): Graph {
   const rev = {} as Record<string, string>
   const rn = Utils.Renumber<string>()
   g.source.forEach(tk => rn.num(tk.id))
@@ -822,8 +905,12 @@ export function normalize(g: Graph, s_prefix = 's', t_prefix = 't'): Graph {
   const source = g.source.map(s => Token(s.text, new_id(s.id)))
   const target = g.target.map(s => Token(s.text, new_id(s.id)))
   const edges = R.fromPairs(
-    Utils.record_traverse(g.edges, e => {
-      const E = Edge(e.ids.map(new_id), e.labels)
+    record.traverse(g.edges, e => {
+      const E = Edge(
+        e.ids.map(new_id),
+        e.labels,
+        set_manual_to === 'keep' ? e.manual : set_manual_to
+      )
       return [E.id, E] as [string, Edge]
     })
   )
