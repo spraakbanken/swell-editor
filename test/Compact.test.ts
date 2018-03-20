@@ -2,7 +2,7 @@ import {qc} from './Common'
 import {Gen} from 'proptest'
 import * as QC from 'proptest'
 
-import {graph, graph_with_tokens} from './Common'
+import {graph, graph_one_space, graph_with_tokens} from './Common'
 
 import * as T from '../src/Token'
 import * as G from '../src/Graph'
@@ -13,11 +13,10 @@ import * as C from '../src/Compact'
 
 import * as assert from 'assert'
 
-qc('roundtrip units<->graph', graph, (g0, p) => {
-  const g = G.normalize_whitespace(g0)
-  const u = C.graph_to_units(g)
-  const g2 = C.units_to_graph(u.source, u.target)
-  return p.equals(g, G.normalize_whitespace(g2))
+qc('roundtrip units<->graph', graph_one_space, (g, p) => {
+  const stu = C.graph_to_units(g)
+  const g2 = C.units_to_graph(stu.source, stu.target)
+  return p.equals(g, g2)
 })
 
 const graph_with_symbols = graph_with_tokens(QC.nestring(QC.char(`a:@^~'"\\`)).map(s => s + ' '))

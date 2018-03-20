@@ -181,9 +181,9 @@ const identify = (prefix: string, us: Unit[]) =>
 // to try to preserve the user-supplied id
 // one problem is possible name-collision
 
-export function to_unaligned_graph(source_units: Unit[], target_units: Unit[]): Graph {
-  const s = identify('s', source_units)
-  const t = identify('t', target_units)
+export function to_unaligned_graph(stu: STU): Graph {
+  const s = identify('s', stu.source)
+  const t = identify('t', stu.target)
   const uf = Utils.PolyUnionFind<Link>()
   const count = Utils.Counter(s.map(u => u.text))
   s.forEach(u =>
@@ -210,7 +210,9 @@ export function to_unaligned_graph(source_units: Unit[], target_units: Unit[]): 
     record.modify(proto_edges, r, G.zero_edge, e =>
       G.merge_edges(e, G.Edge([id], u.labels, u.links.length > 0))
     )
-    return T.Token(u.text, id)
+    // NB: Units text has no whitespace so this normalizes
+    // all tokens to have one trailing space
+    return T.Token(u.text + ' ', id)
   }
 
   const source = s.map(link)
@@ -248,7 +250,7 @@ export function to_unaligned_graph(source_units: Unit[], target_units: Unit[]): 
 
 */
 export function units_to_graph(source: Unit[], target: Unit[]): Graph {
-  return G.align(to_unaligned_graph(source, target))
+  return G.align(to_unaligned_graph({source, target}))
 }
 
 export function unit_to_string(unit: Unit): string {
@@ -299,7 +301,8 @@ export function proto_graph_to_units(g: Graph): STU {
         }
         return [idLink(e.ids[0])]
       })
-      return Unit(token.text, [{ids: [token.id], links, labels}])
+      // NB: should not have units with whitespace so we trim
+      return Unit(token.text.trim(), [{ids: [token.id], links, labels}])
     })
   )
 }

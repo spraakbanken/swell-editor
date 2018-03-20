@@ -61,4 +61,4 @@ export const graph_with_tokens = (token_text: Gen<string>): Gen<Graph> =>
 
 export const graph = graph_with_tokens(token_text)
 
-export const graph_no_ws = graph_with_tokens(word.map(w => w + ' '))
+export const graph_one_space = graph_with_tokens(word.map(w => w + ' '))
