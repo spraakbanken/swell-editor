@@ -5,6 +5,7 @@
   "author": "Dan Rosén",
   "description": "Editor for normalising second-language learner texts",
   "dependencies": {
+    "codemirror": "^5.36.0",
     "compression": "^1.7.2",
     "csstips": "^0.2.2",
     "dejavu-fonts-ttf": "^2.37.3",
@@ -32,6 +33,7 @@
   },
   "devDependencies": {
     "@types/chai": "^4.1.2",
+    "@types/codemirror": "^0.0.55",
     "@types/compression": "^0.0.36",
     "@types/diff-match-patch": "^1.0.31",
     "@types/enzyme": "^3.1.6",

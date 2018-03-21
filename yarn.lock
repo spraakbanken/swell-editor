@@ -31,6 +31,10 @@
   version "0.22.7"
   resolved "https://registry.npmjs.org/@types/cheerio/-/cheerio-0.22.7.tgz#4a92eafedfb2b9f4437d3a4410006d81114c66ce"
 
+"@types/codemirror@^0.0.55":
+  version "0.0.55"
+  resolved "https://registry.npmjs.org/@types/codemirror/-/codemirror-0.0.55.tgz#f4292b7a5f33b2aab509501c3db7e45d19a7c057"
+
 "@types/compression@^0.0.36":
   version "0.0.36"
   resolved "https://registry.npmjs.org/@types/compression/-/compression-0.0.36.tgz#7646602ffbfc43ea48a8bf0b2f1d5e5f9d75c0d0"
@@ -1301,6 +1305,10 @@ coa@~2.0.1:
 code-point-at@^1.0.0:
   version "1.1.0"
   resolved "https://registry.npmjs.org/code-point-at/-/code-point-at-1.1.0.tgz#0d070b4d043a5bea33a2f1a40e2edb3d9a4ccf77"
+
+codemirror@^5.36.0:
+  version "5.36.0"
+  resolved "https://registry.npmjs.org/codemirror/-/codemirror-5.36.0.tgz#1172ad9dc298056c06e0b34e5ccd23825ca15b40"
 
 collection-visit@^1.0.0:
   version "1.0.0"

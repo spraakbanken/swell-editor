@@ -40,8 +40,10 @@ export interface ST<A> {
 }
 
 export interface Graph extends ST<Token[]> {
-  readonly edges: Record<string, Edge>
+  edges: Edges
 }
+
+export type Edges = Record<string, Edge>
 
 export interface Edge {
   readonly id: string

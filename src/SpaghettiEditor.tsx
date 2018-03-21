@@ -1,11 +1,12 @@
 import * as R from 'ramda'
 import * as React from 'react'
-import {Store} from 'reactive-lens'
+import {Store, Lens, Undo} from 'reactive-lens'
 import {style, types, getStyles} from 'typestyle'
 import * as typestyle from 'typestyle'
 import * as csstips from 'csstips'
 
 import * as D from './Diff'
+import {Graph} from './Graph'
 import * as G from './Graph'
 import * as L from './LadderView'
 import * as RD from './RichDiff'
@@ -19,40 +20,57 @@ import {Data, key} from './SpaghettiTypes'
 
 import {VNode} from './LadderView'
 
-// import "codemirror/lib/codemirror.css"
+import 'codemirror/lib/codemirror.css'
 import 'lato-font/css/lato-font.min.css'
 import 'dejavu-fonts-ttf/ttf/DejaVuSans.ttf'
 
+import * as CodeMirror from 'codemirror'
+
+function Wrap(h: HTMLElement, k: () => void) {
+  return <div
+    ref={el => {
+      if (el) {
+      while(el && el.lastChild) {
+        el.removeChild(el.lastChild)
+      }
+      el.appendChild(h)
+      k()
+      }
+    }}/>
+}
+
+type CMVN = {vn: VNode, cm: CodeMirror.Editor}
+
+function CM(opts: CodeMirror.EditorConfiguration): CMVN {
+  const div = document.createElement('div')
+  const cm = CodeMirror(div, {lineWrapping: true, ...opts})
+  return {vn: Wrap(div, () => cm.refresh()), cm}
+}
+
 export interface State {
-  readonly source: string
-  readonly target: string
   readonly drag_state: L.DragState
   readonly show_g: boolean
   readonly show_d: boolean
   readonly drop_target: boolean
+  readonly inner: Undo<InnerState>
+}
+
+export interface InnerState {
+  readonly source: string
+  readonly target: string
 }
 
 export const init: State = {
-  // source: 'preamble apa:Ort bepacepa xu depa flepa:Comp florp^preamble',
-  // target: 'apa bpea cpea dpeaflpae xlbabulr postscriptum^preamble woop^',
-  source: '',
-  target: '',
+  inner: Undo.init({
+    // source: 'preamble apa:Ort bepacepa xu depa flepa:Comp florp^preamble',
+    // target: 'apa bpea cpea dpeaflpae xlbabulr postscriptum^preamble woop^',
+    source: '',
+    target: '',
+  }),
   drag_state: null,
   show_g: false,
   show_d: false,
   drop_target: false,
-}
-
-export function App(store: Store<State>): () => VNode {
-  const global = window as any
-  global.store = store
-  global.reset = () => store.set(init)
-  global.G = G
-  store.storage_connect('swell-spaghetti')
-  store.at('drag_state').set(null)
-  store.at('source').modify(s => s || '')
-  store.at('target').modify(s => s || '')
-  return () => View(store)
 }
 
 export function Textarea({
@@ -171,6 +189,15 @@ const topStyle = style({
   alignItems: 'start',
 
   $nest: {
+
+      '& .CodeMirror':{
+        border: '1px solid #ddd',
+        height: '300px',
+        minWidth: '250px',
+        lineHeight: '1.5em',
+        fontFamily: "'Lato', sans-serif",
+      },
+
     '& > .main': {
       gridColumnStart: 'main',
     },
@@ -183,7 +210,7 @@ const topStyle = style({
       // Non-grid fallback
       display: 'inline-block',
     },
-    '& pre': {
+    '& pre.pre-box': {
       fontSize: '0.85em',
       background: 'hsl(0,0%,96%)',
       borderTop: '2px hsl(220,65%,65%) solid',
@@ -211,21 +238,83 @@ const op = (x: side) => (x == 'source' ? 'target' : 'source')
 
 const ws_url = 'https://ws.spraakbanken.gu.se/ws/swell'
 
-export function View(store: Store<State>): VNode {
+export function App(store: Store<State>): () => VNode {
+  const global = window as any
+  global.store = store
+  global.reset = () => store.set(init)
+  global.G = G
+  store.storage_connect('swell-spaghetti-2')
+
+  const graph = store.at('inner').at('now').pick('source', 'target').via(
+    Lens.iso(
+      state => {
+        const s = C.parse(state.source)
+        const t = C.parse(state.target)
+        return C.units_to_graph(s, t)
+      },
+      g => G.with_st(C.graph_to_units(g), us => C.units_to_string(us))
+    )
+  )
+
+  function undo() {
+    store.at('inner').modify(Undo.undo)
+    console.log('undo')
+  }
+  function redo() {
+    store.at('inner').modify(Undo.redo)
+  }
+
+  const extraKeys = {
+    "Ctrl-Z": () => undo(),
+    "Ctrl-Y": () => redo(),
+    "Cmd-Z": () => undo(),
+    "Cmd-Y": () => redo(),
+    // "Ctrl-X": () => cut(),
+    // "Ctrl-V": () => paste(),
+    // "Ctrl-R": () => revert(),
+    // "Ctrl-C": () => connect(),
+    // "Ctrl-D": () => disconnect(),
+  }
+
+  const cmvn = CM({extraKeys})
+  const cm = cmvn.cm
+  cm.setValue(G.target_text(graph.get()))
+  graph.ondiff((now, past) =>  {
+    const tnow = G.target_text(now)
+    const tpast = G.target_text(past)
+    if (tnow !== tpast) {
+      cm.setValue(tnow)
+    }
+  })
+
+  return () => View(store, graph, cmvn)
+}
+
+export function TargetHypothesis(store: Store<Graph>, cmvn: CMVN) {
+  return <div className="main">{cmvn.vn}</div>
+}
+
+export function View(store: Store<State>, graph: Store<G.Graph>, cmvn: CMVN): VNode {
   const state = store.get()
-  const source = store.at('source')
-  const target = store.at('target')
-  const s = C.parse(state.source)
-  const t = C.parse(state.target)
-  const g = C.units_to_graph(s, t)
+  const now = store.at('inner').at('now')
+  const inner_state = now.get()
+  const source = now.at('source')
+  const target = now.at('target')
+  const g = graph.get()
   const d = RD.enrichen(g, G.calculate_diff(g))
+  function advance(k: () => void) {
+    store.transaction(() => {
+      store.at('inner').modify(Undo.advance)
+      k()
+    })
+  }
   const set_via_graph = (g: G.Graph) => {
     const us = C.minimize(C.graph_to_units(g))
     const s = C.units_to_string(us.source)
     const t = C.units_to_string(us.target)
-    store.transaction(() => {
-      store.at('source').set(s)
-      store.at('target').set(t)
+    advance(() => {
+      now.at('source').set(s)
+      now.at('target').set(t)
     })
   }
   const onDrop: React.DragEventHandler<HTMLDivElement> = e => {
@@ -245,7 +334,7 @@ export function View(store: Store<State>): VNode {
       log(item)
       item.getAsString(s => {
         log(item, ix, 'as string:', s)
-        const m_url = s.match(/https?:[A-Za-z0-9%\-._~:/?#@!$&'*+,;=`.]+/)
+        const m_url = s.match(/https?:[A-Za-z0-9%\-._~:\/?#@!$&'*+,;=`.]+/)
         if (m_url) {
           const url = m_url[0]
           log(url, 'looks like an address')
@@ -309,6 +398,9 @@ export function View(store: Store<State>): VNode {
         return false
       }}>
       <div className={topStyle}>
+        <div className="main">
+          {cmvn.vn}
+        </div>
         <div className="main" style={{minHeight: '10em'}}>
           {L.Ladder(
             g,
@@ -325,19 +417,20 @@ export function View(store: Store<State>): VNode {
         </div>
         {sides.map((side, i) => (
           <React.Fragment key={i}>
-            {Button('\u2b1a', 'clear', () => store.at(side).set(''))}
+            {Button('\u2b1a', 'clear', () => advance(() => now.at(side).set('')))}
             {Button(i ? '\u21e1' : '\u21e3', 'copy to ' + side, () =>
-              store.at(op(side)).set(state[side])
+              advance(() => now.at(op(side)).set(inner_state[side]))
             )}
             <Textarea
-              store={store.at(side)}
+              store={now.at(side)}
               tabIndex={(i + 1) as number}
-              rows={state[side].split('\n').length}
+              rows={inner_state[side].split('\n').length}
               style={{resize: 'vertical'}}
               placeholder={'Enter ' + side + ' text...'}
             />
           </React.Fragment>
         ))}
+        {TargetHypothesis(graph, cmvn)}
         <div className="main" style={{opacity: '0.85', justifySelf: 'end'} as any}>
           graph: {checklink(store.at('show_g'))} diff: {checklink(store.at('show_d'))}
         </div>
@@ -350,15 +443,15 @@ export function View(store: Store<State>): VNode {
             encodeURIComponent(s)
               .replace('(', '%28')
               .replace(')', '%29')
-          const s = esc(C.units_to_string(C.parse(state.source), '_'))
-          const t = esc(C.units_to_string(C.parse(state.target), '_'))
+          const s = esc(C.units_to_string(C.parse(inner_state.source), '_'))
+          const t = esc(C.units_to_string(C.parse(inner_state.target), '_'))
           const st = s + '//' + t
           const url = `${ws_url}/png?${st}`
           const md = `![](${url})`
           return (
             <>
               <pre
-                className={'main ' + L.Unselectable}
+                className={'pre-box main ' + L.Unselectable}
                 style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}
                 draggable={true}
                 onDragStart={e => {
@@ -366,9 +459,9 @@ export function View(store: Store<State>): VNode {
                 }}>
                 {md}
               </pre>
-              <pre className={'main '} style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}>
-                {`${C.units_to_string(C.parse(state.source))} // ${C.units_to_string(
-                  C.parse(state.target)
+              <pre className={'pre-box main '} style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}>
+                {`${C.units_to_string(C.parse(inner_state.source))} // ${C.units_to_string(
+                  C.parse(inner_state.target)
                 )}`}
               </pre>
             </>

@@ -4,6 +4,7 @@ import * as RD from './RichDiff'
 import {style, types} from 'typestyle'
 import * as csstips from 'csstips'
 import * as Utils from './Utils'
+import * as record from './record'
 import * as D from './Diff'
 
 export type VNode = React.ReactElement<{}>
@@ -84,11 +85,11 @@ const LadderStyle = style(
         color: '#222',
       },
       '& ins': {
-        color: '#070',
+        color: '#383',
         textDecoration: 'none',
       },
       '& del ': {
-        color: '#d00',
+        color: '#a00',
         textDecoration: 'none',
       },
       '& .EditedTop': {
@@ -99,7 +100,8 @@ const LadderStyle = style(
   }
 )
 
-const greyPath: React.CSSProperties = {stroke: '#777', strokeWidth: px(4), fill: 'none'}
+const greyPath = (manual: boolean): React.CSSProperties => ({
+  stroke: manual ? '#6699cc' : '#999', strokeWidth: px(4), fill: 'none'})
 const whitePath: React.CSSProperties = {stroke: '#fff', strokeWidth: px(12), fill: 'none'}
 
 function PixelPath(d: string, css: React.CSSProperties) {
@@ -170,7 +172,7 @@ function Absolute(vnode: VNode, css: React.CSSProperties = {}) {
   )
 }
 
-function Column(column: D.Line[], rel: VNode | null | false = null): VNode {
+function Column(column: D.Line[], edges: G.Edges, rel: VNode | null | false = null): VNode {
   const endpoint_id: string | undefined = column
     .filter(line => !LineIsHorizontal(line))
     .map(line => line.id)[0]
@@ -180,9 +182,9 @@ function Column(column: D.Line[], rel: VNode | null | false = null): VNode {
       {PixelPerfectSVG(
         <svg height="100%" width="100%" viewBox="0 0 1 1" preserveAspectRatio="none">
           {Key([
-            ...column.filter(line => line.id != endpoint_id).map(line => Line(line, greyPath)),
+            ...column.filter(line => line.id != endpoint_id).map(line => Line(line, greyPath(!!edges[line.id].manual))),
             ...column.filter(line => line.id == endpoint_id).map(line => Line(line, whitePath)),
-            ...column.filter(line => line.id == endpoint_id).map(line => Line(line, greyPath)),
+            ...column.filter(line => line.id == endpoint_id).map(line => Line(line, greyPath(!!edges[line.id].manual))),
           ])}
         </svg>,
         {zIndex: -2}
@@ -226,9 +228,9 @@ export function ApplyMove(diff: D.Diff[], {from, to}: {from: number; to: number}
   const d = diff[from]
   switch (d.edit) {
     case 'Dropped':
-      // TODO: this needs to set manual to true
-      return Utils.rearrange(diff, from, from, to).map((d, i) =>
-        (i === from || i === to) ? ({...d, manual: true}) : d )
+      return Utils.rearrange(
+        diff.map((d, i) => (i == from) ? ({...d, manual: true}) : d)
+      , from, from, to)
     case 'Edited':
       if (d.source.length != 1 || d.target.length != 1) {
         console.error('TODO: handle Edited that is not 1-1')
@@ -244,7 +246,7 @@ export function ApplyMove(diff: D.Diff[], {from, to}: {from: number; to: number}
   }
 }
 
-const mustache_side = PixelPath('M 0 0.90 C 0 1.1 1 0.85 1 1.15', greyPath)
+const mustache_side = PixelPath('M 0 0.90 C 0 1.1 1 0.85 1 1.15', greyPath(false))
 const mustache2x2 = (
   <>
     {PixelPath('M 1 1.1 L 1 0.8', whitePath)}
@@ -301,8 +303,8 @@ export function Ladder(
               return [<React.Fragment />, inserts(d.target_diff)]
           }
         })
-        const upper = Column(u[i])
-        const lower = Column(l[i])
+        const upper = Column(u[i], g.edges)
+        const lower = Column(l[i], g.edges)
         const labels = g.edges[d.id].labels.filter(lbl => lbl.length > 0)
         const show_label_now = u[i].some(b => b.y1 == 1) || l[i].some(b => b.y1 == 0)
         const has_line_below_label = show_label_now && l[i].length > 0
@@ -311,6 +313,7 @@ export function Ladder(
           : []
         const mid = Column(
           line_below_label,
+          g.edges,
           labels.length > 0 &&
             show_label_now && (
               <div style={{zIndex: 1}}>

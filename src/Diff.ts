@@ -154,6 +154,7 @@ export interface Line {
   x1: number
   y0: number
   y1: number
+  /** Edge id */
   id: string
 }
 
