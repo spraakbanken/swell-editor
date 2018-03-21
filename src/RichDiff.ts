@@ -14,13 +14,21 @@ export type RichDiff =
 
 /** Enrichen a diff with detailed intra-token diffs
 
-  const g = G.init('aporna bepa cepa depa')
+  const g = G.init('aporna bepa cepa depa', true)
   const gr = G.rearrange(g, 1, 2, 0)
   G.target_text(gr) // => 'bepa cepa aporna depa'
   const gm = G.modify(gr, 10, 10, 'h')
   G.target_text(gm) // => 'bepa cepa haporna depa'
   const rd = enrichen(gm)
-  rd[0] // => {edit: 'Dragged', source: {text: 'aporna ', id: 's0'}, id: 'e-t4-s0', source_diff: [[1, 'h'], [0, 'aporna ']], index: 0}
+  const expected_rd0 = {
+    edit: 'Dragged',
+    source: {text: 'aporna ', id: 's0'},
+    id: 'e-t4-s0',
+    source_diff: [[1, 'h'], [0, 'aporna ']],
+    index: 0,
+    manual: true
+  }
+  rd[0] // => expected_rd0
 
 */
 export function enrichen(g: Graph, diff: Diff[] = G.calculate_diff(g)): RichDiff[] {

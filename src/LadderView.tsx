@@ -226,15 +226,17 @@ export function ApplyMove(diff: D.Diff[], {from, to}: {from: number; to: number}
   const d = diff[from]
   switch (d.edit) {
     case 'Dropped':
-      return Utils.rearrange(diff, from, from, to)
+      // TODO: this needs to set manual to true
+      return Utils.rearrange(diff, from, from, to).map((d, i) =>
+        (i === from || i === to) ? ({...d, manual: true}) : d )
     case 'Edited':
       if (d.source.length != 1 || d.target.length != 1) {
         console.error('TODO: handle Edited that is not 1-1')
         console.debug(Utils.show(d))
         return diff
       }
-      const dragged = D.Dragged(d.source[0], d.id)
-      const dropped = D.Dropped(d.target[0], d.id)
+      const dragged = D.Dragged(d.source[0], d.id, true)
+      const dropped = D.Dropped(d.target[0], d.id, true)
       const [pre, [e], post] = Utils.splitAt3(diff, from, from + 1)
       return ApplyMove([...pre, dropped, dragged, ...post], {from, to})
     default:

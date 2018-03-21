@@ -24,7 +24,7 @@ export const stringOf = (l: number, u: number, g: Gen<string>) =>
 
 export const ws0 = stringOf(0, 3, QC.of(' '))
 export const ws1 = stringOf(1, 3, QC.of(' '))
-export const word = stringOf(1, 3, QC.lower)
+export const word = stringOf(1, 3, QC.char('ab'))
 export const str = stringOf(0, 3, QC.ascii)
 
 export const token_text = QC.concat([ws0, word, ws1])
@@ -41,9 +41,9 @@ export const graph_with_tokens = (token_text: Gen<string>): Gen<Graph> =>
         QC.record({
           source: token_text.replicate(ssize).map(xs => xs.map((text, i) => ({text, id: 's' + i}))),
           target: token_text.replicate(tsize).map(xs => xs.map((text, i) => ({text, id: 't' + i}))),
-          proto_edges: arrayOf(0, 2, stringOf(1, 3, QC.upper))
+          proto_edges: QC.record({labels: arrayOf(0, 2, stringOf(1, 3, QC.upper)), manual: QC.bool})
             .replicate(esize)
-            .map(xs => xs.map(labels => ({ids: [] as string[], labels}))),
+            .map(xs => xs.map(labels_manual => ({ids: [] as string[], ...labels_manual}))),
           sedges: QC.permute(Utils.range(ssize).map(i => i % esize)),
           tedges: QC.permute(Utils.range(tsize).map(i => i % esize)),
         }).map(r => {

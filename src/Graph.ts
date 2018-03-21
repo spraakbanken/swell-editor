@@ -93,14 +93,20 @@ export function check_invariant(g: Graph): 'ok' | {violation: string; g: Graph} 
         e => unique_id(e.id) || Utils.raise('Duplicate id from edges: ' + e.id)
       )
     }
-    const check_tokens = (toks: string[]) =>
-      toks.forEach((t, i) => {
-        if (i != toks.length - 1) {
-          t.match(/^\s*\S+\s+$/) || Utils.raise('Bad text token: ' + JSON.stringify(t))
-        } else {
-          t.match(/^\s*\S+\s*$/) || Utils.raise('Bad last token: ' + JSON.stringify(t))
-        }
-      })
+    const check_tokens = (toks: string[]) => {
+      if (toks.length == 1) {
+        const t = toks[0]
+        t.match(/^\s*\S*\s*$/) || Utils.raise('Bad single token: ' + JSON.stringify(t))
+      } else {
+        toks.forEach((t, i) => {
+          if (i != toks.length - 1) {
+            t.match(/^\s*\S+\s+$/) || Utils.raise('Bad text token: ' + JSON.stringify(t))
+          } else {
+            t.match(/^\s*\S+\s*$/) || Utils.raise('Bad last token: ' + JSON.stringify(t))
+          }
+        })
+      }
+    }
     check_tokens(target_texts(g))
     check_tokens(source_texts(g))
     const token_ids = new Set(tokens.map(t => t.id))
@@ -139,16 +145,16 @@ export function check_invariant(g: Graph): 'ok' | {violation: string; g: Graph} 
   g // => {source, target, edges}
 
 */
-export function init(s: string): Graph {
-  return init_from(T.tokenize(s))
+export function init(s: string, manual = false): Graph {
+  return init_from(T.tokenize(s), manual)
 }
 
 /** Makes a graph from tokens */
-export function init_from(tokens: string[]): Graph {
+export function init_from(tokens: string[], manual = false): Graph {
   return {
     source: T.identify(tokens, 's'),
     target: T.identify(tokens, 't'),
-    edges: edge_record(tokens.map((_, i) => Edge(['s' + i, 't' + i], []))),
+    edges: edge_record(tokens.map((_, i) => Edge(['s' + i, 't' + i], [], manual))),
   }
 }
 
@@ -285,22 +291,24 @@ export function source_texts(g: Graph): string[] {
   const ids = (g: Graph) => g.target.map(t => t.id).join(' ')
   const g = init('test graph hello')
   show(g) // => ['test ', 'graph ', 'hello']
-  show(modify(g, 0, 0, 'new')) // => ['newtest ', 'graph ', 'hello']
-  show(modify(g, 0, 1, 'new')) // => ['newest ', 'graph ', 'hello']
-  show(modify(g, 0, 5, 'new ')) // => ['new ', 'graph ', 'hello']
-  show(modify(g, 0, 5, 'new')) // => ['newgraph ', 'hello']
-  show(modify(g, 5, 5, ' ')) // => ['test ', ' graph ', 'hello']
-  show(modify(g, 5, 6, ' ')) // => ['test ', ' raph ', 'hello']
+  show(proto_modify(g, 0, 0, 'new')) // => ['newtest ', 'graph ', 'hello']
+  show(proto_modify(g, 0, 1, 'new')) // => ['newest ', 'graph ', 'hello']
+  show(proto_modify(g, 0, 5, 'new ')) // => ['new ', 'graph ', 'hello']
+  show(proto_modify(g, 0, 5, 'new')) // => ['newgraph ', 'hello']
+  show(proto_modify(g, 5, 5, ' ')) // => ['test ', ' graph ', 'hello']
+  show(proto_modify(g, 5, 6, ' ')) // => ['test ', ' raph ', 'hello']
+  show(proto_modify(g, 0, 15, '_')) // => ['_o']
+  show(proto_modify(g, 0, 16, '_')) // => ['_']
+  show(proto_modify(g, 16, 16, ' !')) // => ['test ', 'graph ', 'hello', ' !']
 
 Indexes are character offsets (use CodeMirror's doc.posFromIndex and doc.indexFromPos to convert) */
-export function modify(g: Graph, from: number, to: number, text: string): Graph {
+export function proto_modify(g: Graph, from: number, to: number, text: string): Graph {
   const tokens = target_texts(g)
   const {token: from_token, offset: from_ix} = T.token_at(tokens, from)
   const {token: to_token, offset: to_ix} = T.token_at(tokens, to)
-  const slice = g.target.slice(from_token, to_token + 1)
-  const pre = slice.length > 0 ? slice[0].text.slice(0, from_ix) : ''
-  const post = slice.length > 0 ? slice[slice.length - 1].text.slice(to_ix) : ''
-  return modify_tokens(g, from_token, to_token + 1, pre + text + post)
+  const pre = (tokens[from_token] || '').slice(0, from_ix)
+  const post = (tokens[to_token] || '').slice(to_ix)
+  return proto_modify_tokens(g, from_token, to_token + 1, pre + text + post)
 }
 
 /** Replace the text at some position, merging the spans it touches upon.
@@ -309,40 +317,47 @@ export function modify(g: Graph, from: number, to: number, text: string): Graph 
   const ids = (g: Graph) => g.target.map(t => t.id).join(' ')
   const g = init('test graph hello')
   show(g) // => ['test ', 'graph ', 'hello']
-  show(modify_tokens(g, 0, 0, 'this '))     // => ['this ', 'test ', 'graph ', 'hello']
-  show(modify_tokens(g, 0, 1, 'this '))     // => ['this ', 'graph ', 'hello']
-  show(modify_tokens(g, 0, 1, '  white '))  // => ['  white ', 'graph ', 'hello']
-  show(modify_tokens(g, 0, 1, 'this'))      // => ['thisgraph ', 'hello']
-  show(modify_tokens(g, 1, 2, 'graph'))     // => ['test ', 'graphhello']
-  show(modify_tokens(g, 1, 2, ' graph '))   // => ['test ', ' graph ', 'hello']
-  show(modify_tokens(g, 0, 1, 'for this ')) // => ['for ', 'this ', 'graph ', 'hello']
-  show(modify_tokens(g, 0, 2, '')) // => ['hello']
-  show(modify_tokens(g, 0, 2, '  ')) // => ['  hello']
-  show(modify_tokens(g, 1, 3, '  ')) // => ['test   ']
+  show(proto_modify_tokens(g, 0, 0, 'this '))     // => ['this ', 'test ', 'graph ', 'hello']
+  show(proto_modify_tokens(g, 0, 1, 'this '))     // => ['this ', 'graph ', 'hello']
+  show(proto_modify_tokens(g, 0, 1, '  white '))  // => ['  white ', 'graph ', 'hello']
+  show(proto_modify_tokens(g, 0, 1, 'this'))      // => ['thisgraph ', 'hello']
+  show(proto_modify_tokens(g, 1, 2, 'graph'))     // => ['test ', 'graphhello']
+  show(proto_modify_tokens(g, 1, 2, ' graph '))   // => ['test ', ' graph ', 'hello']
+  show(proto_modify_tokens(g, 0, 1, 'for this ')) // => ['for ', 'this ', 'graph ', 'hello']
+  show(proto_modify_tokens(g, 0, 2, '')) // => ['hello']
+  show(proto_modify_tokens(g, 0, 2, '  ')) // => ['  hello']
+  show(proto_modify_tokens(g, 1, 3, '  ')) // => ['test   ']
+  show(proto_modify_tokens(g, 4, 4, ' !')) // => ['test ', 'graph ', 'hello', ' !']
+  show(proto_modify_tokens(init('a'), 0, 1, ' ')) // => [' ']
   ids(g) // => 't0 t1 t2'
-  ids(modify_tokens(g, 0, 0, 'this '))     // => 't3 t0 t1 t2'
-  ids(modify_tokens(g, 0, 1, 'this '))     // => 't3 t1 t2'
-  ids(modify_tokens(g, 0, 1, 'this'))      // => 't3 t2'
+  ids(proto_modify_tokens(g, 0, 0, 'this '))     // => 't3 t0 t1 t2'
+  ids(proto_modify_tokens(g, 0, 1, 'this '))     // => 't3 t1 t2'
+  ids(proto_modify_tokens(g, 0, 1, 'this'))      // => 't3 t2'
 
 Indexes are token offsets */
-export function modify_tokens(g: Graph, from: number, to: number, text: string): Graph {
+export function proto_modify_tokens(g: Graph, from: number, to: number, text: string): Graph {
   if (text.match(/^\s+$/)) {
     // replacement text is only whitespace: need to find some token to put it on
     if (from > 0) {
-      return modify_tokens(g, from - 1, to, g.target[from - 1].text + text)
+      return proto_modify_tokens(g, from - 1, to, g.target[from - 1].text + text)
     } else if (to < g.target.length) {
-      return modify_tokens(g, from, to + 1, text + g.target[to].text)
+      return proto_modify_tokens(g, from, to + 1, text + g.target[to].text)
     } else {
       // console.warn('Introducing whitespace into empty graph')
     }
   }
   if (text.match(/\S$/) && to < g.target.length) {
     // if replacement text does not end with whitespace, grab the next word as well
-    return modify_tokens(g, from, to + 1, text + g.target[to].text)
+    return proto_modify_tokens(g, from, to + 1, text + g.target[to].text)
+  }
+  if (from == g.target.length && to === g.target.length) {
+    // we're adding a word at the end but the last token might not end in whitespace:
+    // glue them together
+    return proto_modify_tokens(g, from - 1, to, g.target[from - 1].text + text)
   }
 
   const id_offset = Utils.next_id(g.target.map(t => t.id))
-  const tokens = T.tokenize(text).map((t, i) => ({text: t, id: 't' + (id_offset + i)}))
+  const tokens = T.tokenize(text).map((t, i) => Token(t, 't' + (id_offset + i)))
   const [target, removed] = Utils.splice(g.target, from, to - from, ...tokens)
   const ids_removed = new Set(removed.map(t => t.id))
   const new_edge_ids = new Set<string>(tokens.map(t => t.id))
@@ -367,12 +382,41 @@ export function modify_tokens(g: Graph, from: number, to: number, text: string):
 
 /** Moves a slice of the target tokens and puts it at a new destination.
 
-  target_text(rearrange(init('apa bepa cepa depa'), 1, 2, 0)) // => 'bepa cepa apa depa'
+  target_text(proto_rearrange(init('apa bepa cepa depa'), 1, 2, 0)) // => 'bepa cepa apa depa'
 
 Indexes are token offsets
 */
-export function rearrange(g: Graph, begin: number, end: number, dest: number): Graph {
+export function proto_rearrange(g: Graph, begin: number, end: number, dest: number): Graph {
   return {...g, target: Utils.rearrange(g.target, begin, end, dest)}
+}
+
+export const modify = (g: Graph, from: number, to: number, text: string): Graph =>
+  align(proto_modify(g, from, to, text))
+export const modify_tokens = (g: Graph, from: number, to: number, text: string): Graph =>
+  align(proto_modify_tokens(g, from, to, text))
+export const rearrange = (g: Graph, begin: number, end: number, dest: number): Graph =>
+  align(proto_rearrange(g, begin, end, dest))
+
+/**
+
+  T.text(set_target(init('apa bepa'), 'aupa bpa').target) // => 'aupa bpa'
+  T.text(set_target(init('fz'), 'bar').target) // => 'bar'
+  T.text(set_target(init('foo'), 'bar').target) // => 'bar'
+  T.text(set_target(init('fooz'), 'bar').target) // => 'bar'
+  T.text(set_target(init('a'), 'a').target) // => 'a'
+  T.text(set_target(init('a'), ' ').target) // => ' '
+
+*/
+export function set_target(g: Graph, text: string): Graph {
+  const patches = Utils.token_diff(T.text(g.target), text)
+  const pre = R.takeWhile<[number, string]>(i => i[0] == 0, patches)
+  const post = R.takeLastWhile<[number, string]>(i => i[0] == 0, R.drop(pre.length, patches))
+  const from = pre.map(i => i[1]).join('').length
+  const postlen = post.map(i => i[1]).join('').length
+  const to = T.text(g.target).length - postlen
+  const new_text = text.slice(from, text.length - postlen)
+  const g2 = modify(g, from, to, new_text)
+  return g2
 }
 
 interface CharId {
@@ -439,8 +483,7 @@ type DDL = Utils.SnocList<Dragged | Dropped>
 /** Calculate the ladder diff without merging contiguous edits */
 export function calculate_raw_diff(g: Graph): (Dragged | Dropped)[] {
   const m = edge_map(g)
-  const lookup = (id: string) => m.get(id) as Edge
-  const edge_id = (tok: Token) => lookup(tok.id).id
+  const lookup = (tok: Token) => m.get(tok.id) as Edge
 
   const align = Utils.memo2<number, number, ScoreDDL>((i, j) => {
     if (i < 0 && j < 0) {
@@ -448,31 +491,37 @@ export function calculate_raw_diff(g: Graph): (Dragged | Dropped)[] {
     }
     const cands: ScoreDDL[] = []
     const same = (ii: number, jj: number) =>
-      ii >= 0 && jj >= 0 && edge_id(g.source[ii]) === edge_id(g.target[jj])
+      ii >= 0 && jj >= 0 && lookup(g.source[ii]).id === lookup(g.target[jj]).id
     if (i >= 0 && j >= 0 && same(i, j)) {
       let ii = i
       let jj = j
       while (same(--ii, j));
       while (same(i, --jj));
-      const ei = edge_id(g.source[i])
+      const edge = lookup(g.source[i])
       const {score, diff} = align(ii, jj)
       cands.push({
         score: score + (i - ii) + (j - jj),
         diff:
           // snoc(diff, D.Edited(g.source.slice(ii,i),g.target.slice(jj,j), edge_id(g.source[i])))
           Utils.snocs(diff, [
-            ...g.source.slice(ii + 1, i + 1).map(tok => D.Dragged(tok, ei) as Dragged | Dropped),
-            ...g.target.slice(jj + 1, j + 1).map(tok => D.Dropped(tok, ei) as Dragged | Dropped),
+            ...g.source
+              .slice(ii + 1, i + 1)
+              .map(tok => D.Dragged(tok, edge.id, !!edge.manual) as Dragged | Dropped),
+            ...g.target
+              .slice(jj + 1, j + 1)
+              .map(tok => D.Dropped(tok, edge.id, !!edge.manual) as Dragged | Dropped),
           ]),
       })
     }
     if (j >= 0) {
       const {score, diff} = align(i, j - 1)
-      cands.push({score, diff: Utils.snoc(diff, D.Dropped(g.target[j], edge_id(g.target[j])))})
+      const edge = lookup(g.target[j])
+      cands.push({score, diff: Utils.snoc(diff, D.Dropped(g.target[j], edge.id, !!edge.manual))})
     }
     if (i >= 0) {
       const {score, diff} = align(i - 1, j)
-      cands.push({score, diff: Utils.snoc(diff, D.Dragged(g.source[i], edge_id(g.source[i])))})
+      const edge = lookup(g.source[i])
+      cands.push({score, diff: Utils.snoc(diff, D.Dragged(g.source[i], edge.id, !!edge.manual))})
     }
     return R.sortBy(x => -x.score, cands)[0]
   })
@@ -482,9 +531,13 @@ export function calculate_raw_diff(g: Graph): (Dragged | Dropped)[] {
   return Utils.snocsToArray(diff)
 }
 
-export function from_raw_diff(diff: (Dragged | Dropped)[], edges: Record<string, Edge>): Graph {
+export function from_raw_diff(diff: (Dragged | Dropped)[], edges0: Record<string, Edge>): Graph {
   const source = [] as Token[]
   const target = [] as Token[]
+  const edges = R.clone(edges0)
+  diff.forEach(d =>
+    record.modify(edges, d.id, zero_edge, e => merge_edges(e, Edge([], [], d.manual)))
+  )
   diff.forEach(
     D.dnd_match({
       Dragged: d => source.push(d.source),
@@ -511,7 +564,14 @@ function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
     const m = rev.get(d.id)
     if (m && Utils.contiguous(m)) {
       const {dragged, dropped} = D.partition(diff.slice(i, i + m.length))
-      out.push(D.Edited(dragged.map(c => c.source), dropped.map(c => c.target), d.id))
+      out.push(
+        D.Edited(
+          dragged.map(c => c.source),
+          dropped.map(c => c.target),
+          d.id,
+          [...dragged, ...dropped].some(d => d.manual)
+        )
+      )
       i += m.length - 1
     } else {
       out.push(d)
@@ -527,26 +587,30 @@ function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
       edit: 'Dragged',
       source: {text: 'apa ', id: 's0'},
       id: "e-s0-t0",
+      manual: true
     },
     {
       edit: 'Edited',
       source: [{text: 'bepa ', id: 's1'}],
       target: [{text: 'bepa ', id: 't1'}],
       id: "e-s1-t1",
+      manual: true
     },
     {
       edit: 'Edited',
       source: [{text: 'cepa ', id: 's2'}],
       target: [{text: 'cepa ', id: 't2'}],
       id: "e-s2-t2",
+      manual: true
     },
     {
       edit: 'Dropped',
       target: {text: 'apa ', id: 't0'},
       id: "e-s0-t0",
+      manual: true
     }
   ]
-  const g = calculate_diff(rearrange(init('apa bepa cepa '), 1, 2, 0))
+  const g = calculate_diff(rearrange(init('apa bepa cepa ', true), 1, 2, 0))
   g // => expect
 
   const expect: Diff[] = [
@@ -555,6 +619,7 @@ function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
       source: [{text: 'apa ', id: 's0'}],
       target: [{text: 'apa ', id: 't0'}],
       id: "e-s0-t0",
+      manual: true
     }
     {
       edit: 'Edited',
@@ -564,15 +629,17 @@ function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
         {text: 'epa ', id: 't4'}
       ],
       id: "e-t3-t4-s1",
+      manual: true
     },
     {
       edit: 'Edited',
       source: [{text: 'cepa ', id: 's2'}],
       target: [{text: 'cepa ', id: 't2'}],
       id: "e-s2-t2",
+      manual: true
     }
   ]
-  const g = calculate_diff(modify_tokens(init('apa bepa cepa '), 1, 2, 'depa epa '))
+  const g = calculate_diff(modify_tokens(init('apa bepa cepa ', true), 1, 2, 'depa epa '))
   g // => expect
 
 */
@@ -585,9 +652,10 @@ export function calculate_diff(g: Graph): Diff[] {
   const diff: Diff[] = [
     {
       edit: 'Edited',
-      id: "e0",
       source: [{text: 'a ', id: 's0'}],
       target: [{text: 'b ', id: 't0'}],
+      id: 'e0',
+      manual: true
     },
     {
       edit: 'Edited',
@@ -596,15 +664,16 @@ export function calculate_diff(g: Graph): Diff[] {
         {text: 'd ', id: 't3'},
         {text: 'e ', id: 't4'}
       ],
-      id: "e1",
+      id: 'e1',
+      manual: true
     }
   ]
   const expected: Diff[] = [
-    {"edit": "Dragged", "source": {"text": "a ", "id": "s0"}, "id": "e0"},
-    {"edit": "Dropped", "target": {"text": "b ", "id": "t0"}, "id": "e0"},
-    {"edit": "Dragged", "source": {"text": "c ", "id": "s1"}, "id": "e1"},
-    {"edit": "Dropped", "target": {"text": "d ", "id": "t3"}, "id": "e1"},
-    {"edit": "Dropped", "target": {"text": "e ", "id": "t4"}, "id": "e1"}
+    {edit: 'Dragged', source: {text: 'a ', id: 's0'}, id: 'e0', manual: true},
+    {edit: 'Dropped', target: {text: 'b ', id: 't0'}, id: 'e0', manual: true},
+    {edit: 'Dragged', source: {text: 'c ', id: 's1'}, id: 'e1', manual: true},
+    {edit: 'Dropped', target: {text: 'd ', id: 't3'}, id: 'e1', manual: true},
+    {edit: 'Dropped', target: {text: 'e ', id: 't4'}, id: 'e1', manual: true}
   ]
   split_up_edits(diff) // => expected
   split_up_edits(diff, id => id == 'e0') // => [...expected.slice(0,2), diff[1]]
@@ -615,7 +684,10 @@ export function calculate_diff(g: Graph): Diff[] {
 export function split_up_edits(ds: Diff[], audit = (edge_id: string) => true): Diff[] {
   return Utils.flatMap<Diff, Diff>(ds, d => {
     if (d.edit == 'Edited' && audit(d.id)) {
-      return [...d.source.map(t => D.Dragged(t, d.id)), ...d.target.map(t => D.Dropped(t, d.id))]
+      return [
+        ...d.source.map(t => D.Dragged(t, d.id, d.manual)),
+        ...d.target.map(t => D.Dropped(t, d.id, d.manual)),
+      ]
     } else {
       return [d]
     }
@@ -804,7 +876,7 @@ export function revert(g: Graph, edge_id: string): Graph {
             const t = {...d.source, id: 't' + supply++}
             const e = Edge([s.id, t.id], [])
             edges[e.id] = e
-            return [Dragged(s, e.id), Dropped(t, e.id)]
+            return [Dragged(s, e.id, false), Dropped(t, e.id, false)]
           } else {
             return [d]
           }

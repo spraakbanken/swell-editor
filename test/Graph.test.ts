@@ -11,10 +11,24 @@ import * as record from '../src/record'
 import * as Utils from '../src/Utils'
 import {range} from '../src/Utils'
 
-qc('invariant', graph, g => G.check_invariant(g) == 'ok')
+qc('invariant', graph, (g, p) => p.equals(G.check_invariant(g), 'ok'))
 
 import 'mocha'
 import * as chai from 'chai'
+
+describe('set_target', () => {
+  qc(
+    'from init',
+    QC.char('ab ')
+      .nestring()
+      .two(),
+    ([a, b]) => G.target_text(G.set_target(G.init(a), b)) === b
+  )
+
+  qc('preserves invariant', QC.record({graph, text: QC.char('ab ').nestring()}), (r, p) =>
+    p.equals('ok', G.check_invariant(p.tap(G.set_target(r.graph, r.text))))
+  )
+})
 
 describe('modify_tokens', () => {
   const modify = graph.chain(g =>
@@ -24,10 +38,8 @@ describe('modify_tokens', () => {
       .chain(([from, to]) => insert_text.map(text => ({g, from, to, text})))
   )
 
-  qc(
-    'modify_tokens invariant',
-    modify,
-    ({g, from, to, text}) => G.check_invariant(G.modify_tokens(g, from, to, text)) == 'ok'
+  qc('modify_tokens invariant', modify, ({g, from, to, text}, p) =>
+    p.equals(G.check_invariant(G.modify_tokens(g, from, to, text)), 'ok')
   )
 
   qc('modify_tokens content', modify, ({g, from, to, text}, p) => {
@@ -47,16 +59,13 @@ describe('modify', () => {
       .chain(([from, to]) => insert_text.map(text => ({g, from, to, text})))
   )
 
-  qc(
-    'modify invariant',
-    modify,
-    ({g, from, to, text}) => G.check_invariant(G.modify(g, from, to, text)) == 'ok'
+  qc('modify invariant', modify, ({g, from, to, text}, p) =>
+    p.equals(G.check_invariant(G.modify(g, from, to, text)), 'ok')
   )
 
   qc('modify content', modify, ({g, from, to, text}, p) => {
     const [a, mid, z] = Utils.stringSplitAt3(G.target_text(g), from, to)
-    const lhs0 = a + text + z
-    const lhs = lhs0.match(/^\s*$/) ? '' : lhs0
+    const lhs = a + text + z
     const mod = G.modify(g, from, to, text)
     const rhs = G.target_text(mod)
     // Utils.stdout({g, from, to, text, mod, a, mid, z, lhs, rhs})
@@ -155,10 +164,8 @@ describe('rearrange', () => {
     )
   )
 
-  qc(
-    'rearrange invariant',
-    rearrange,
-    ({g, begin, end, dest}) => G.check_invariant(G.rearrange(g, begin, end, dest)) == 'ok'
+  qc('rearrange invariant', rearrange, ({g, begin, end, dest}, p) =>
+    p.equals(G.check_invariant(G.rearrange(g, begin, end, dest)), 'ok')
   )
 
   qc('rearrange length', rearrange, ({g, begin, end, dest}) => {
@@ -178,6 +185,8 @@ describe('rearrange', () => {
 })
 
 describe('diff', () => {
+  qc('diff roundtrip', graph, (g, p) => p.equals(g, G.diff_to_graph(G.calculate_diff(g), g.edges)))
+
   qc('diff target text preversed', graph, g => {
     const diff = G.calculate_diff(g)
     const target = Utils.flatMap(diff, d => {
@@ -216,10 +225,8 @@ describe('diff', () => {
 {
   const sentence = graph.chain(g => QC.between(0, g.target.length).map(i => ({g, i})))
 
-  qc(
-    'sentence subgraph invariant',
-    sentence,
-    ({g, i}) => G.check_invariant(G.subgraph(g, G.sentence(g, i))) === 'ok'
+  qc('sentence subgraph invariant', sentence, ({g, i}, p) =>
+    p.equals(G.check_invariant(G.subgraph(g, G.sentence(g, i))), 'ok')
   )
 }
 
@@ -236,11 +243,11 @@ describe('diff', () => {
     QC.between(0, Object.keys(g.edges).length).map(i => ({g, i}))
   )
 
-  qc('revert invariant', graph_and_edge, ({g, i}) => {
+  qc('revert invariant', graph_and_edge, ({g, i}, p) => {
     const edges = Object.keys(g.edges)
     const id = edges[i % edges.length]
     const reverted = G.revert(g, id)
-    return G.check_invariant(reverted) === 'ok'
+    return p.equals(G.check_invariant(reverted), 'ok')
   })
 
   qc(

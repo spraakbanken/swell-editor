@@ -133,14 +133,15 @@ export function sentence(tokens: string[], i: number): Span {
 /** Tokenizes text on whitespace, prefers to have trailing whitespace
 
   tokenize('') // => []
-  tokenize('    ') // => []
+  tokenize(' ') // => [' ']
+  tokenize('    ') // => ['    ']
   tokenize('apa bepa cepa') // => ['apa ', 'bepa ', 'cepa']
   tokenize('  apa bepa cepa') // => ['  apa ', 'bepa ', 'cepa']
   tokenize('  apa bepa cepa  ') // => ['  apa ', 'bepa ', 'cepa  ']
 
 */
 export function tokenize(s: string): string[] {
-  return s.match(/\s*\S+\s*/g) || []
+  return s.match(/\s*\S+\s*/g) || s.match(/^\s+$/g) || []
 }
 
 /** Tokenizes text on whitespace, prefers to have trailing whitespace
@@ -166,7 +167,8 @@ export function text_offset(texts: string[], index: number): number {
   token_at(abc, 6) // => {token: 1, offset: 3}
   token_at(abc, 7) // => {token: 2, offset: 0}
   token_at(abc, 9) // => {token: 2, offset: 2}
-  Utils.throws(() => token_at(abc, 10)) // => true
+  token_at(abc, 10) // => {token: 3, offset: 0}
+  Utils.throws(() => token_at(abc, 11)) // => true
 
 */
 export function token_at(
@@ -180,6 +182,9 @@ export function token_at(
     if (passed > character_offset) {
       return {token: i, offset: character_offset - passed + w}
     }
+  }
+  if (character_offset == tokens.join('').length) {
+    return {token: tokens.length, offset: 0}
   }
   return Utils.raise('Out of bounds: ' + JSON.stringify({tokens, character_offset}))
 }

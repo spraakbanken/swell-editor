@@ -242,13 +242,15 @@ export function show(x: any): string {
   // return JSON.stringify(x, undefined, 2)
 }
 
-export function stderr(x: any): void {
+export function stderr<A>(x: A): A {
   console.error(show(x))
   console.error()
+  return x
 }
 
-export function stdout(x: any): void {
+export function stdout<A>(x: A): A {
   console.log(show(x))
+  return x
 }
 
 /** Numeric sort */
@@ -356,31 +358,6 @@ export function stringSplitAt3(xs: string, start: number, end: number): [string,
   const [ab, c] = R.splitAt(end, xs)
   const [a, b] = R.splitAt(start, ab)
   return [a, b, c]
-}
-
-export function escape_pipe(x: string): string {
-  return x.replace(/\\/g, '\\b').replace(/[|]/g, '\\|')
-}
-
-export function unescape_pipe(x: string): string {
-  return x.replace(/\\[|]/g, '|').replace(/\\b/g, '\\')
-}
-
-export function pipesep(x: string[]): string {
-  if (x.length == 0) {
-    return '|'
-  } else {
-    return '|' + x.map(escape_pipe).join('|') + '|'
-  }
-}
-
-export function pipeunsep(x: string): string[] {
-  const m = x.match(/[|](?:\\[|]|[^|])*/g)
-  if (!m || m[m.length - 1] != '|') {
-    throw 'Not well-formed pipe-separated list: ' + x + ' ' + show(m)
-  } else {
-    return m.slice(0, m.length - 1).map(x => unescape_pipe(x.slice(1)))
-  }
 }
 
 export function cat<A>(xs: (A | null)[]): A[] {
@@ -1003,4 +980,36 @@ function adt<TagName extends string, Ty, Cons extends Record<string, {con: any; 
       }
     },
   }
+}
+
+/**
+  Currently unused, but could be used in Compact
+
+  drop_one_last_space('w ') // => 'w'
+  drop_one_last_space('w  ') // => 'w '
+  drop_one_last_space('w\n') // => 'w\n'
+  drop_one_last_space('w \n') // => 'w \n'
+  drop_one_last_space('w\n ') // => 'w\n'
+
+  // should this one error instead?
+  drop_one_last_space('w') // => 'w'
+*/
+function drop_one_last_space(s: string): string {
+  return s.replace(/ +$/, x => x.slice(1))
+}
+
+/**
+  Currently unused, but could be used in Compact
+
+  add_one_last_space('w') // => 'w '
+  add_one_last_space('w ') // => 'w  '
+  add_one_last_space('w\n') // => 'w\n'
+  add_one_last_space('w \n') // => 'w \n'
+  add_one_last_space('w\n') // => 'w\n'
+
+  // should this one error instead?
+  add_one_last_space('w') // => 'w '
+*/
+function add_one_last_space(s: string): string {
+  return s.match(/\S *$/) ? s + ' ' : s
 }

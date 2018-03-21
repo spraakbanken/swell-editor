@@ -11,22 +11,24 @@ import {KV} from './Utils'
 import * as record from './record'
 
 const dnd = Utils.ADT('edit')
-  .alt('Dropped')<{target: Token; id: string}>()
-  .alt('Dragged')<{source: Token; id: string}>()
-const diff = dnd.alt('Edited')<{source: Token[]; target: Token[]; id: string}>()
+  .alt('Dropped')<{target: Token; id: string; manual: boolean}>()
+  .alt('Dragged')<{source: Token; id: string; manual: boolean}>()
+const diff = dnd.alt('Edited')<{source: Token[]; target: Token[]; id: string; manual: boolean}>()
 
 export type Dropped = typeof diff.Cons.Dropped
 
-export const Dropped = (target: Token, id: string) => diff.cons.Dropped({target, id})
+export const Dropped = (target: Token, id: string, manual: boolean) =>
+  diff.cons.Dropped({target, id, manual})
 
 export type Dragged = typeof diff.Cons.Dragged
 
-export const Dragged = (source: Token, id: string): Dragged => diff.cons.Dragged({source, id})
+export const Dragged = (source: Token, id: string, manual: boolean): Dragged =>
+  diff.cons.Dragged({source, id, manual})
 
 export type Edited = typeof diff.Cons.Edited
 
-export const Edited = (source: Token[], target: Token[], id: string): Edited =>
-  diff.cons.Edited({source, target, id})
+export const Edited = (source: Token[], target: Token[], id: string, manual: boolean): Edited =>
+  diff.cons.Edited({source, target, id, manual})
 
 export type Diff = typeof diff.Ty
 
