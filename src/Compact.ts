@@ -77,23 +77,60 @@ const head = pchar.notOneOf(` '_\t\n:@^~`)
 const tail = pstr.many(pchar.notOneOf(` _\t\n:@^~`))
 
 /**
-  run_parser(word, `'apa'`) // => `apa`
-  run_parser(word, `apa`) // => `apa`
-  run_parser(word, `'apa`) // => null
-  run_parser(word, `apa'`) // => `apa'`
-  run_parser(word, `'a'a'`) // => `a`
-  run_parser(word, `'\\\\'`) // => `\\`
-  run_parser(word, `'\\''`) // => `'`
-  run_parser(word, `a b`) // => `a`
-  run_parser(word, `a_b`) // => `a`
-  run_parser(word, `a:b`) // => `a`
-  run_parser(word, `a^b`) // => `a`
-  run_parser(word, `a~b`) // => `a`
-  run_parser(word, `a+b`) // => `a+b`
+  run_parser(text, `'apa'`) // => `apa`
+  run_parser(text, `apa`) // => `apa`
+  run_parser(text, `'apa`) // => null
+  run_parser(text, `apa'`) // => `apa'`
+  run_parser(text, `'a'a'`) // => `a`
+  run_parser(text, `'\\\\'`) // => `\\`
+  run_parser(text, `'\\''`) // => `'`
+  run_parser(text, `a b`) // => `a`
+  run_parser(text, `a_b`) // => `a`
+  run_parser(text, `a:b`) // => `a`
+  run_parser(text, `a^b`) // => `a`
+  run_parser(text, `a~b`) // => `a`
+  run_parser(text, `a+b`) // => `a+b`
 */
-const word = p.alts<string>(quoted, head.chain(c => tail.map(s => c + s)))
-const id = pchar.char('@').chain(_ => word)
-const label = pchar.char(':').chain(_ => word)
+const text = p.alts<string>(quoted, head.chain(c => tail.map(s => c + s)))
+
+/**
+  drop_one_last_space('w ') // => 'w'
+  drop_one_last_space('w  ') // => 'w '
+  drop_one_last_space('w\n') // => 'w\n'
+  drop_one_last_space('w \n') // => 'w \n'
+  drop_one_last_space('w\n ') // => 'w\n'
+
+  // should this one error instead?
+  drop_one_last_space('w') // => 'w'
+*/
+function drop_one_last_space(s: string): string {
+  return s.replace(/ +$/, x => x.slice(1))
+}
+
+/**
+  add_one_last_space('w') // => 'w '
+  add_one_last_space('w ') // => 'w  '
+  add_one_last_space('w\n') // => 'w\n'
+  add_one_last_space('w \n') // => 'w \n'
+  add_one_last_space('w\n') // => 'w\n'
+
+  // should this one error instead?
+  add_one_last_space('w') // => 'w '
+*/
+function add_one_last_space(s: string): string {
+  return s.match(/\S *$/) ? s + ' ' : s
+}
+
+/**
+  run_parser(word, `'apa'`) // => `apa `
+  run_parser(word, `apa`) // => `apa `
+  run_parser(word, `'apa`) // => null
+  run_parser(word, `apa'`) // => `apa' `
+*/
+const word = text.map(add_one_last_space)
+
+const id = pchar.char('@').chain(_ => text)
+const label = pchar.char(':').chain(_ => text)
 const link = pchar
   .oneOf('^~')
   .chain(_ =>
@@ -133,16 +170,16 @@ export function Unit(text: string, attrs: Attribute[]): Unit {
 
 /**
   const expect: Unit = {
-    text: `apa`,
+    text: `apa `,
     labels: [`bepa`],
     ids: [`cepa`],
-    links: [{tag: 'text', text: `depa`}]
+    links: [{tag: 'text', text: `depa `}]
   }
   run_parser(unit, `'apa':'bepa'@'cepa'^'depa'`) // => expect
   run_parser(unit, `apa:bepa@cepa^depa`) // => expect
 
   const expect: Unit = {
-    text: `apa`, labels: [], ids: [],
+    text: `apa `, labels: [], ids: [],
     links: [{tag: 'unlinked'}]
   }
   run_parser(unit, `apa^`) // => expect
@@ -154,21 +191,21 @@ const space_padded = <A>(f: Parser<A>) =>
 
 /**
   const expect: Unit = {
-    text: `apa`,
+    text: `apa `,
     labels: [`bepa`],
     ids: [`cepa`],
-    links: [{tag: 'text', text: `depa`}]
+    links: [{tag: 'text', text: `depa `}]
   }
   run_parser(units, ` apa:bepa@cepa^depa 'apa':'bepa'@'cepa'^'depa' `) // => [expect, expect]
   run_parser(units, `_apa:bepa@cepa^depa_'apa':'bepa'@'cepa'^'depa'_`) // => [expect, expect]
 
-  run_parser(units, `__one___two___three___`) // => `one two three`.split(' ').map(x => Unit(x, []))
-  run_parser(units, `__one@0_two@1_three@2_`) // => `one two three`.split(' ').map((x, i) => Unit(x, [{ids: [i+'']}]))
-  run_parser(units, `__one:0_two:1_three:2_`) // => `one two three`.split(' ').map((x, i) => Unit(x, [{labels: [i+'']}]))
+  run_parser(units, `__one___two___three___`) // => `one two three`.split(' ').map(x => Unit(x + ' ', []))
+  run_parser(units, `__one@0_two@1_three@2_`) // => `one two three`.split(' ').map((x, i) => Unit(x + ' ', [{ids: [i+'']}]))
+  run_parser(units, `__one:0_two:1_three:2_`) // => `one two three`.split(' ').map((x, i) => Unit(x + ' ', [{labels: [i+'']}]))
 
-  run_parser(units, `  one    two    three    `) // => `one two three`.split(' ').map(x => Unit(x, []))
-  run_parser(units, `  one@0  two@1  three@2  `) // => `one two three`.split(' ').map((x, i) => Unit(x, [{ids: [i+'']}]))
-  run_parser(units, `  one:0  two:1  three:2  `) // => `one two three`.split(' ').map((x, i) => Unit(x, [{labels: [i+'']}]))
+  run_parser(units, `  one    two    three    `) // => `one two three`.split(' ').map(x => Unit(x + ' ', []))
+  run_parser(units, `  one@0  two@1  three@2  `) // => `one two three`.split(' ').map((x, i) => Unit(x + ' ', [{ids: [i+'']}]))
+  run_parser(units, `  one:0  two:1  three:2  `) // => `one two three`.split(' ').map((x, i) => Unit(x + ' ', [{labels: [i+'']}]))
 */
 const units = space_padded(p.sepBy(spaces1_, unit))
 
@@ -210,9 +247,7 @@ export function to_unaligned_graph(stu: STU): Graph {
     record.modify(proto_edges, r, G.zero_edge, e =>
       G.merge_edges(e, G.Edge([id], u.labels, u.links.length > 0))
     )
-    // NB: Units text has no whitespace so this normalizes
-    // all tokens to have one trailing space
-    return T.Token(u.text + ' ', id)
+    return T.Token(u.text, id)
   }
 
   const source = s.map(link)
@@ -254,18 +289,23 @@ export function units_to_graph(source: Unit[], target: Unit[]): Graph {
 }
 
 export function unit_to_string(unit: Unit): string {
-  const text_to_string = (text0: string) => {
-    const text = text0.trim()
+  const quote_as_necessary = (text: string) => {
     const escape = text.search(/[ '_\t\n:@^~]/)
-    return escape != -1 ? `'${text.replace(/['\\']/g, s => '\\' + s)}'` : text
+    if (escape != -1) {
+      const escaped = text.replace(/['\\']/g, s => '\\' + s)
+      return `'${escaped}'`
+    } else {
+      return text
+    }
   }
-  const text = text_to_string(unit.text)
-  const ids = unit.ids.map(id => '@' + text_to_string(id)).join('')
+  const word = (text: string) => quote_as_necessary(drop_one_last_space(text))
+  const text = word(unit.text)
+  const ids = unit.ids.map(id => '@' + quote_as_necessary(id)).join('')
   const link_to_string = (link: Link): string => {
     if (link.tag == 'text') {
-      return text_to_string(link.text)
+      return word(link.text)
     } else if (link.tag == 'id') {
-      return '@' + text_to_string(link.id)
+      return '@' + quote_as_necessary(link.id)
     } else if (link.tag == 'unlinked') {
       return ''
     } else {
@@ -273,7 +313,7 @@ export function unit_to_string(unit: Unit): string {
     }
   }
   const links = unit.links.map(link => '~' + link_to_string(link)).join('')
-  const labels = unit.labels.map(label => ':' + text_to_string(label)).join('')
+  const labels = unit.labels.map(label => ':' + quote_as_necessary(label)).join('')
   return text + ids + links + labels
 }
 
@@ -301,8 +341,7 @@ export function proto_graph_to_units(g: Graph): STU {
         }
         return [idLink(e.ids[0])]
       })
-      // NB: should not have units with whitespace so we trim
-      return Unit(token.text.trim(), [{ids: [token.id], links, labels}])
+      return Unit(token.text, [{ids: [token.id], links, labels}])
     })
   )
 }
@@ -327,7 +366,7 @@ export function proto_graph_to_units(g: Graph): STU {
     source: parse_strict(`a b c`),
     target: parse_strict(`a b c~c`)
   }
-  minimize(With) // => Without
+  Utils.stderr(minimize(With)) // => Utils.stderr(Without)
 
 
 */

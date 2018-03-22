@@ -982,34 +982,3 @@ function adt<TagName extends string, Ty, Cons extends Record<string, {con: any; 
   }
 }
 
-/**
-  Currently unused, but could be used in Compact
-
-  drop_one_last_space('w ') // => 'w'
-  drop_one_last_space('w  ') // => 'w '
-  drop_one_last_space('w\n') // => 'w\n'
-  drop_one_last_space('w \n') // => 'w \n'
-  drop_one_last_space('w\n ') // => 'w\n'
-
-  // should this one error instead?
-  drop_one_last_space('w') // => 'w'
-*/
-function drop_one_last_space(s: string): string {
-  return s.replace(/ +$/, x => x.slice(1))
-}
-
-/**
-  Currently unused, but could be used in Compact
-
-  add_one_last_space('w') // => 'w '
-  add_one_last_space('w ') // => 'w  '
-  add_one_last_space('w\n') // => 'w\n'
-  add_one_last_space('w \n') // => 'w \n'
-  add_one_last_space('w\n') // => 'w\n'
-
-  // should this one error instead?
-  add_one_last_space('w') // => 'w '
-*/
-function add_one_last_space(s: string): string {
-  return s.match(/\S *$/) ? s + ' ' : s
-}
