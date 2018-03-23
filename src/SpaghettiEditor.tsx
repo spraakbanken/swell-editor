@@ -60,12 +60,10 @@ function CM(opts: CodeMirror.EditorConfiguration): CMVN {
 
 export interface State {
   readonly graph: Undo<Graph>
-  readonly drop_target: boolean
 }
 
 export const init: State = {
   graph: Undo.init(G.init('')),
-  drop_target: false,
 }
 
 export function Textarea({
@@ -227,8 +225,12 @@ export class If extends React.Component<
   },
   {b: boolean}
 > {
+  constructor(p: any) {
+    super(p)
+    this.state = {b: p.init === undefined ? false : p.init}
+  }
   render() {
-    const b = !!(this.state ? this.state.b : this.props.init)
+    const b = this.state.b
     return this.props.children(b, next => this.setState({b: typeof next === 'boolean' ? next : !b}))
   }
 }
@@ -362,6 +364,106 @@ export function GraphEditingCM(store: Store<Undo<Graph>>): VNode {
   return vnode
 }
 
+export class DropZone extends React.Component<
+  {
+    onDrop: (g: Graph) => void
+    children: VNode
+  },
+  {drop_target: boolean}
+> {
+  constructor(p: any) {
+    super(p)
+    this.state = {drop_target: false}
+  }
+
+  _onDrop(e: React.DragEvent<HTMLDivElement>) {
+    const log = (...xs: any[]) => false || console.log(...xs)
+    this.setState({drop_target: false})
+    e.preventDefault()
+    e.stopPropagation()
+    const dt = e.dataTransfer
+    log(dt.files)
+    log(dt.items)
+    log(dt.types)
+    const files = Array.from(dt.files)
+    const items = Array.from(dt.items)
+    log('items', dt.items.length)
+    items.forEach((item, ix) => {
+      log(item)
+      item.getAsString(s => {
+        log(item, ix, 'as string:', s)
+        const m_url = s.match(/https?:[A-Za-z0-9%\-._~:\/?#@!$&'*+,;=`.]+/)
+        if (m_url) {
+          const url = m_url[0]
+          log(url, 'looks like an address')
+          const query_url = ws_url + '/metadata.json?' + encodeURIComponent(url)
+          Utils.GET(query_url, str => {
+            const data = JSON.parse(str)
+            log(data, 'from', url)
+            this.props.onDrop(data.graph)
+          })
+        }
+      })
+      try {
+        const file = item.getAsFile()
+        file && files.push(file)
+      } catch (e) {
+        log('item not a file:', item, e)
+      }
+    })
+    log('files', files)
+    files.forEach(file => {
+      log(file, file)
+      const r = new FileReader()
+      r.readAsArrayBuffer(file)
+      r.onload = () => {
+        log('readyState', r.readyState)
+        if (r.readyState === 2) {
+          try {
+            const buf = new Buffer(r.result)
+            const data = png.onBuffer.get(key, buf)
+            log({data})
+            this.props.onDrop(data.graph)
+          } catch (e) {
+            log('file not a png with meta data:', file, r.result)
+          }
+        }
+      }
+    })
+    return false
+  }
+
+  _set_drop_target = Utils.debounce(50, b => {
+    console.log('setting drop target', this.state, b)
+    this.state.drop_target != b && this.setState({drop_target: b})
+  })
+
+  render() {
+    const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault()
+      e.stopPropagation()
+      this.state.drop_target || this.setState({drop_target: true})
+      this._set_drop_target(true)
+      return false
+    }
+    return (
+      <div
+        className={dropTargetClass(this.state.drop_target)}
+        onDrop={e => this._onDrop(e)}
+        onDragLeave={e => {
+          console.log('drag leave')
+          e.preventDefault()
+          this._set_drop_target(false)
+          return false
+        }}
+        onDragOver={onDragOver}
+        onDragEnter={onDragOver}>
+        {this.props.children}
+      </div>
+    )
+  }
+}
+
 export function App(store: Store<State>): () => VNode {
   const global = window as any
   global.store = store
@@ -422,86 +524,9 @@ export function View(store: Store<State>, cm_vnode: VNode): VNode {
       k()
     })
   }
-  const onDrop: React.DragEventHandler<HTMLDivElement> = e => {
-    const log = (...xs: any[]) => false || console.log(...xs)
-    store.update({drop_target: false})
-    set_drop_target(false)
-    e.preventDefault()
-    e.stopPropagation()
-    const dt = e.dataTransfer
-    log(dt.files)
-    log(dt.items)
-    log(dt.types)
-    const files = Array.from(dt.files)
-    const items = Array.from(dt.items)
-    log('items', dt.items.length)
-    items.forEach((item, ix) => {
-      log(item)
-      item.getAsString(s => {
-        log(item, ix, 'as string:', s)
-        const m_url = s.match(/https?:[A-Za-z0-9%\-._~:\/?#@!$&'*+,;=`.]+/)
-        if (m_url) {
-          const url = m_url[0]
-          log(url, 'looks like an address')
-          const query_url = ws_url + '/metadata.json?' + encodeURIComponent(url)
-          Utils.GET(query_url, str => {
-            const data = JSON.parse(str)
-            log(data, 'from', url)
-            advance(() => graph.set(data.graph))
-          })
-        }
-      })
-      try {
-        const file = item.getAsFile()
-        file && files.push(file)
-      } catch (e) {
-        log('item not a file:', item, e)
-      }
-    })
-    log('files', files)
-    files.forEach(file => {
-      log(file, file)
-      const r = new FileReader()
-      r.readAsArrayBuffer(file)
-      r.onload = () => {
-        log('readyState', r.readyState)
-        if (r.readyState === 2) {
-          try {
-            const buf = new Buffer(r.result)
-            const data = png.onBuffer.get(key, buf)
-            log({data})
-            advance(() => graph.set(data.graph))
-          } catch (e) {
-            log('file not a png with meta data:', file, r.result)
-          }
-        }
-      }
-    })
-    return false
-  }
-  const set_drop_target = Utils.debounce(50, b => {
-    store.get().drop_target != b && store.update({drop_target: b})
-  })
 
   return (
-    <div
-      className={dropTargetClass(state.drop_target)}
-      onDrop={onDrop}
-      onDragLeave={e => (e.preventDefault(), set_drop_target(false), false)}
-      onDragOver={e => {
-        e.preventDefault()
-        e.stopPropagation()
-        store.get().drop_target || store.update({drop_target: true})
-        set_drop_target(true)
-        return false
-      }}
-      onDragEnter={e => {
-        e.preventDefault()
-        e.stopPropagation()
-        store.get().drop_target || store.update({drop_target: true})
-        set_drop_target(true)
-        return false
-      }}>
+    <DropZone onDrop={g => advance(() => graph.set(g))}>
       <div className={topStyle}>
         <div className="main" style={{minHeight: '10em'}}>
           <L.LadderComponent graph={graph.get()} onDrop={g => advance(() => graph.set(g))} />
@@ -522,8 +547,8 @@ export function View(store: Store<State>, cm_vnode: VNode): VNode {
           </React.Fragment>
         ))}
         <div className="main">{cm_vnode}</div>
-        {showhide('graph json', `graph = ${Utils.show(g)}`)}
-        {showhide('diff json', `diff = ${Utils.show(d)}`)}
+        {showhide('graph json', Utils.show(g))}
+        {showhide('diff json', Utils.show(d))}
         {links(graph.get())}
         <div className="main TopPad">
           <em>Examples:</em>
@@ -544,7 +569,7 @@ export function View(store: Store<State>, cm_vnode: VNode): VNode {
           </React.Fragment>
         ))}
       </div>
-    </div>
+    </DropZone>
   )
 }
 
@@ -561,6 +586,12 @@ function links(g: Graph) {
   return (
     <>
       {showhide(
+        'compact form',
+        <pre className={'pre-box main '} style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}>
+          {`${C.units_to_string(stu.source)} // ${C.units_to_string(stu.target)}`}
+        </pre>
+      )}
+      {showhide(
         'copy link',
         <pre
           className={'pre-box main ' + L.Unselectable}
@@ -570,13 +601,8 @@ function links(g: Graph) {
             e.dataTransfer.setData('text/plain', md)
           }}>
           {md}
-        </pre>
-      )}
-      {showhide(
-        'compact form',
-        <pre className={'pre-box main '} style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}>
-          {`${C.units_to_string(stu.source)} // ${C.units_to_string(stu.target)}`}
-        </pre>
+        </pre>,
+        true
       )}
     </>
   )

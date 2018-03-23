@@ -288,13 +288,14 @@ export class LadderComponent extends React.Component<
   constructor(p: any) {
     super(p)
     console.log('creating a new LadderComponent')
+    this.state = {drag_state: null}
   }
   render() {
     const {graph, onDrop} = this.props
     return Ladder(
       graph,
       undefined,
-      this.state && this.state.drag_state,
+      this.state.drag_state,
       drag_state => this.setState({drag_state}),
       drag_state => {
         if (drag_state && onDrop) {
