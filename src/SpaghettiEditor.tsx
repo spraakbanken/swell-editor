@@ -60,22 +60,11 @@ function CM(opts: CodeMirror.EditorConfiguration): CMVN {
 
 export interface State {
   readonly graph: Undo<Graph>
-  readonly drag_state: L.DragState
-  readonly show_g: boolean
-  readonly show_d: boolean
   readonly drop_target: boolean
-}
-
-export interface InnerState {
-  readonly source: string
-  readonly target: string
 }
 
 export const init: State = {
   graph: Undo.init(G.init('')),
-  drag_state: null,
-  show_g: false,
-  show_d: false,
   drop_target: false,
 }
 
@@ -157,12 +146,6 @@ const Button = (label: string, title: string, on: () => void) => (
   </button>
 )
 
-const checklink = (store: Store<boolean>, f = 'show json', t = 'hide json') => (
-  <a href="" onClick={e => (store.modify(x => !x), e.preventDefault())}>
-    {store.get() ? t : f}
-  </a>
-)
-
 const display_if = (b: boolean) => ({
   display: b ? 'inherit' : 'none',
 })
@@ -236,6 +219,38 @@ const topStyle = style({
     },
   },
 })
+
+export class If extends React.Component<
+  {
+    children: (b: boolean, set: (b?: any) => void) => React.ReactNode
+    init?: boolean
+  },
+  {b: boolean}
+> {
+  render() {
+    const b = !!(this.state ? this.state.b : this.props.init)
+    return this.props.children(b, next => this.setState({b: typeof next === 'boolean' ? next : !b}))
+  }
+}
+
+function showhide(what: string, show: string | VNode, init = false) {
+  return (
+    <If init={init}>
+      {(b, flip) => (
+        <React.Fragment>
+          <a
+            style={{opacity: '0.85', justifySelf: 'end'} as any}
+            className="main"
+            href=""
+            onClick={e => (e.preventDefault(), flip())}>
+            {b ? 'hide' : 'show'} {what}
+          </a>
+          {b && (typeof show === 'string' ? <pre className="pre-box main">{show}</pre> : show)}
+        </React.Fragment>
+      )}
+    </If>
+  )
+}
 
 type side = 'source' | 'target'
 const sides = ['source' as side, 'target' as side]
@@ -489,18 +504,7 @@ export function View(store: Store<State>, cm_vnode: VNode): VNode {
       }}>
       <div className={topStyle}>
         <div className="main" style={{minHeight: '10em'}}>
-          {L.Ladder(
-            g,
-            undefined,
-            state.drag_state,
-            (ds: L.DragState) => store.at('drag_state').set(ds),
-            (ds: L.DragState) =>
-              ds &&
-              advance(() => {
-                graph.set(G.diff_to_graph(L.ApplyMove(G.calculate_diff(g), ds), g.edges))
-                store.at('drag_state').set(null)
-              })
-          )}
+          <L.LadderComponent graph={graph.get()} onDrop={g => advance(() => graph.set(g))} />
         </div>
         {sides.map((side, i) => (
           <React.Fragment key={i}>
@@ -518,45 +522,9 @@ export function View(store: Store<State>, cm_vnode: VNode): VNode {
           </React.Fragment>
         ))}
         <div className="main">{cm_vnode}</div>
-        <div className="main" style={{opacity: '0.85', justifySelf: 'end'} as any}>
-          graph: {checklink(store.at('show_g'))} diff: {checklink(store.at('show_d'))}
-        </div>
-        <div className="main">
-          {store.get().show_d && <pre>diff = {Utils.show(d)}</pre>}
-          {store.get().show_g && <pre>graph = {Utils.show(g)}</pre>}
-        </div>
-        {(function() {
-          const esc = (s: string) =>
-            encodeURIComponent(s)
-              .replace('(', '%28')
-              .replace(')', '%29')
-          const s = esc(C.units_to_string(C.parse(units.get().source), '_'))
-          const t = esc(C.units_to_string(C.parse(units.get().target), '_'))
-          const st = s + '//' + t
-          const url = `${ws_url}/png?${st}`
-          const md = `![](${url})`
-          return (
-            <>
-              <pre
-                className={'pre-box main ' + L.Unselectable}
-                style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}
-                draggable={true}
-                onDragStart={e => {
-                  e.dataTransfer.setData('text/plain', md)
-                }}>
-                {md}
-              </pre>
-              <pre
-                className={'pre-box main '}
-                style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}>
-                {`${C.units_to_string(C.parse(units.get().source))} // ${C.units_to_string(
-                  C.parse(units.get().target)
-                )}`}
-              </pre>
-            </>
-          )
-        })()}
-
+        {showhide('graph json', `graph = ${Utils.show(g)}`)}
+        {showhide('diff json', `diff = ${Utils.show(d)}`)}
+        {links(graph.get())}
         <div className="main TopPad">
           <em>Examples:</em>
         </div>
@@ -577,5 +545,39 @@ export function View(store: Store<State>, cm_vnode: VNode): VNode {
         ))}
       </div>
     </div>
+  )
+}
+
+function links(g: Graph) {
+  const stu = C.graph_to_units(g)
+  const esc = (s: string) =>
+    encodeURIComponent(s)
+      .replace('(', '%28')
+      .replace(')', '%29')
+  const escaped = G.with_st(stu, units => esc(C.units_to_string(units, '_')))
+  const st = escaped.source + '//' + escaped.target
+  const url = `${ws_url}/png?${st}`
+  const md = `![](${url})`
+  return (
+    <>
+      {showhide(
+        'copy link',
+        <pre
+          className={'pre-box main ' + L.Unselectable}
+          style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}
+          draggable={true}
+          onDragStart={e => {
+            e.dataTransfer.setData('text/plain', md)
+          }}>
+          {md}
+        </pre>
+      )}
+      {showhide(
+        'compact form',
+        <pre className={'pre-box main '} style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}>
+          {`${C.units_to_string(stu.source)} // ${C.units_to_string(stu.target)}`}
+        </pre>
+      )}
+    </>
   )
 }

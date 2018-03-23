@@ -278,6 +278,34 @@ const overbrow = Absolute(
   {zIndex: -1, position: 'absolute', top: '-80%', left: '0.5px'}
 )
 
+export class LadderComponent extends React.Component<
+  {
+    graph: G.Graph
+    onDrop?: (dropped_graph: G.Graph) => void
+  },
+  {drag_state: DragState}
+> {
+  constructor(p: any) {
+    super(p)
+    console.log('creating a new LadderComponent')
+  }
+  render() {
+    const {graph, onDrop} = this.props
+    return Ladder(
+      graph,
+      undefined,
+      this.state && this.state.drag_state,
+      drag_state => this.setState({drag_state}),
+      drag_state => {
+        if (drag_state && onDrop) {
+          onDrop(G.diff_to_graph(ApplyMove(G.calculate_diff(graph), drag_state), graph.edges))
+        }
+        this.setState({drag_state: null})
+      }
+    )
+  }
+}
+
 export function Ladder(
   g: G.Graph,
   rd0: RD.RichDiff[] = RD.enrichen(g),
