@@ -301,16 +301,20 @@ export function source_texts(g: Graph): string[] {
   show(proto_modify(g, 5, 6, ' ')) // => ['test ', ' raph ', 'hello']
   show(proto_modify(g, 0, 15, '_')) // => ['_o']
   show(proto_modify(g, 0, 16, '_')) // => ['_']
-  show(proto_modify(g, 16, 16, ' !')) // => ['test ', 'graph ', 'hello', ' !']
+  show(proto_modify(g, 16, 16, ' !')) // => ['test ', 'graph ', 'hello ', '!']
 
 Indexes are character offsets (use CodeMirror's doc.posFromIndex and doc.indexFromPos to convert) */
 export function proto_modify(g: Graph, from: number, to: number, text: string): Graph {
   const tokens = target_texts(g)
   const {token: from_token, offset: from_ix} = T.token_at(tokens, from)
-  const {token: to_token, offset: to_ix} = T.token_at(tokens, to)
   const pre = (tokens[from_token] || '').slice(0, from_ix)
-  const post = (tokens[to_token] || '').slice(to_ix)
-  return proto_modify_tokens(g, from_token, to_token + 1, pre + text + post)
+  if (to === target_text(g).length) {
+    return proto_modify_tokens(g, from_token, g.target.length, pre + text)
+  } else {
+    const {token: to_token, offset: to_ix} = T.token_at(tokens, to)
+    const post = (tokens[to_token] || '').slice(to_ix)
+    return proto_modify_tokens(g, from_token, to_token + 1, pre + text + post)
+  }
 }
 
 /** Replace the text at some position, merging the spans it touches upon.
@@ -329,7 +333,7 @@ export function proto_modify(g: Graph, from: number, to: number, text: string): 
   show(proto_modify_tokens(g, 0, 2, '')) // => ['hello']
   show(proto_modify_tokens(g, 0, 2, '  ')) // => ['  hello']
   show(proto_modify_tokens(g, 1, 3, '  ')) // => ['test   ']
-  show(proto_modify_tokens(g, 4, 4, ' !')) // => ['test ', 'graph ', 'hello', ' !']
+  show(proto_modify_tokens(g, 3, 3, ' !')) // => ['test ', 'graph ', 'hello ', '!']
   show(proto_modify_tokens(init('a'), 0, 1, ' ')) // => [' ']
   ids(g) // => 't0 t1 t2'
   ids(proto_modify_tokens(g, 0, 0, 'this '))     // => 't3 t0 t1 t2'
@@ -338,6 +342,9 @@ export function proto_modify(g: Graph, from: number, to: number, text: string): 
 
 Indexes are token offsets */
 export function proto_modify_tokens(g: Graph, from: number, to: number, text: string): Graph {
+  if (from < 0 || to < 0 || from > g.target.length || to > g.target.length || from > to) {
+    throw new Error('Invalid coordinates ' + Utils.show({g, from, to, text}))
+  }
   if (text.match(/^\s+$/)) {
     // replacement text is only whitespace: need to find some token to put it on
     if (from > 0) {
@@ -352,9 +359,11 @@ export function proto_modify_tokens(g: Graph, from: number, to: number, text: st
     // if replacement text does not end with whitespace, grab the next word as well
     return proto_modify_tokens(g, from, to + 1, text + g.target[to].text)
   }
+
   if (from == g.target.length && to === g.target.length) {
     // we're adding a word at the end but the last token might not end in whitespace:
     // glue them together
+
     return proto_modify_tokens(g, from - 1, to, g.target[from - 1].text + text)
   }
 

@@ -51,26 +51,57 @@ describe('modify_tokens', () => {
   })
 })
 
+interface Modify {
+  g: Graph
+  from: number
+  to: number
+  text: string
+}
+
 describe('modify', () => {
-  const modify = graph.chain(g =>
-    QC.range(T.text(g.target).length)
-      .replicate(2)
-      .map(Utils.numsort)
-      .chain(([from, to]) => insert_text.map(text => ({g, from, to, text})))
+  function use_gen(modify: QC.Gen<Modify>, suffix = '') {
+    qc('modify invariant' + suffix, modify, ({g, from, to, text}, p) =>
+      p.equals(G.check_invariant(p.tap(G.modify(g, from, to, text))), 'ok')
+    )
+
+    qc('modify content' + suffix, modify, ({g, from, to, text}, p) => {
+      const [a, mid, z] = Utils.stringSplitAt3(G.target_text(g), from, to)
+      const lhs = a + text + z
+      const mod = G.modify(g, from, to, text)
+      const rhs = G.target_text(mod)
+      // Utils.stdout({g, from, to, text, mod, a, mid, z, lhs, rhs})
+      return p.equals(lhs, rhs)
+    })
+  }
+
+  use_gen(
+    graph.chain(g =>
+      QC.range(G.target_text(g).length + 1)
+        .replicate(2)
+        .map(Utils.numsort)
+        .chain(([from, to]) => insert_text.map(text => ({g, from, to, text})))
+    )
   )
 
-  qc('modify invariant', modify, ({g, from, to, text}, p) =>
-    p.equals(G.check_invariant(G.modify(g, from, to, text)), 'ok')
+  use_gen(
+    graph.chain(g =>
+      QC.between(Math.max(0, G.target_text(g).length - 1), G.target_text(g).length)
+        .replicate(2)
+        .map(Utils.numsort)
+        .chain(([from, to]) => insert_text.map(text => ({g, from, to, text})))
+    ),
+    ' at end'
   )
 
-  qc('modify content', modify, ({g, from, to, text}, p) => {
-    const [a, mid, z] = Utils.stringSplitAt3(G.target_text(g), from, to)
-    const lhs = a + text + z
-    const mod = G.modify(g, from, to, text)
-    const rhs = G.target_text(mod)
-    // Utils.stdout({g, from, to, text, mod, a, mid, z, lhs, rhs})
-    return p.equals(lhs, rhs)
-  })
+  use_gen(
+    graph.chain(g =>
+      QC.between(0, 1)
+        .replicate(2)
+        .map(Utils.numsort)
+        .chain(([from, to]) => insert_text.map(text => ({g, from, to, text})))
+    ),
+    ' in the beginning'
+  )
 
   /*
   quickCheck('modify links', modify, ({g, from, to, text}, assert, skip, count) => {
