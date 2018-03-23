@@ -21,6 +21,7 @@ describe('set_target', () => {
     'from init',
     QC.char('ab ')
       .nestring()
+      .map(Utils.end_with_space)
       .two(),
     ([a, b]) => G.target_text(G.set_target(G.init(a), b)) === b
   )
@@ -44,7 +45,7 @@ describe('modify_tokens', () => {
 
   qc('modify_tokens content', modify, ({g, from, to, text}, p) => {
     const [a, mid, z] = Utils.splitAt3(G.target_texts(g), from, to)
-    const lhs = a.concat([text], z).join('')
+    const lhs = Utils.end_with_space([...a, text, ...z].join(''))
     const mod = G.modify_tokens(g, from, to, text)
     const rhs = G.target_text(mod)
     return p.equals(lhs, rhs)
@@ -66,7 +67,7 @@ describe('modify', () => {
 
     qc('modify content' + suffix, modify, ({g, from, to, text}, p) => {
       const [a, mid, z] = Utils.stringSplitAt3(G.target_text(g), from, to)
-      const lhs = a + text + z
+      const lhs = Utils.end_with_space(a + text + z)
       const mod = G.modify(g, from, to, text)
       const rhs = G.target_text(mod)
       // Utils.stdout({g, from, to, text, mod, a, mid, z, lhs, rhs})
@@ -262,41 +263,43 @@ describe('diff', () => {
 }
 
 {
-  qc('revert everything', graph, (g, p) => {
-    const reverted = Object.keys(g.edges).reduce(G.revert, g)
-    const rtarget = G.target_texts(reverted)
+  const graph_and_edge = graph.chain(g =>
+    QC.choose(Object.values(g.edges)).map(edge => ({g, edge}))
+  )
+
+  qc('revert preservers source text', graph_and_edge, ({g, edge}, p) => {
+    const reverted = G.revert(g, edge.id)
     const rsource = G.source_texts(reverted)
     const source = G.source_texts(g)
     return p.equals(rsource, source)
   })
 
-  const graph_and_edge = graph.chain(g =>
-    QC.between(0, Object.keys(g.edges).length).map(i => ({g, i}))
-  )
-
-  qc('revert invariant', graph_and_edge, ({g, i}, p) => {
-    const edges = Object.keys(g.edges)
-    const id = edges[i % edges.length]
-    const reverted = G.revert(g, id)
+  qc('revert preserves invariant', graph_and_edge, ({g, edge}, p) => {
+    const reverted = G.revert(g, edge.id)
     return p.equals(G.check_invariant(reverted), 'ok')
   })
+
+  /*
+  // It's a bit difficult to specify reverting at every target token
+  // because neither indicies nor identifiers are not stable between reverts
 
   qc(
     'revert everything target not reverting correctly',
     graph,
     (g, p) => {
-      const reverted = Object.keys(g.edges).reduce(G.revert, g)
-      const rtarget = G.target_texts(reverted)
-      const rsource = G.source_texts(reverted)
-      const source = G.source_texts(g)
-      return p.equals(rtarget, source)
+      const reverted = g.target.reduce<Graph>((g, token) =>
+        G.revert(g, (G.edge_map(g).get((token).id) || Utils.raise<G.Edge>('Edge vanished!' + Utils.show({g, token}))).id), g
+      )
+      const rtarget = G.target_text(reverted)
+      const source = G.source_text(g)
+      return Utils.str_map(rtarget, c => c).every(c => -1 != source.indexOf(c))
     },
-    QC.expectFailure
   )
+  */
 
   function known_bug() {
-    const e0 = G.Edge('s0 t1 t2'.split(' '), [])
-    const e1 = G.Edge('s1 t0'.split(' '), [])
+    const e0 = G.Edge('s0 t1 t2'.split(' '), [], true)
+    const e1 = G.Edge('s1 t0'.split(' '), [], true)
     const g = {
       source: [{text: 'a ', id: 's0'}, {text: 'b ', id: 's1'}],
       target: [{text: 'x ', id: 't0'}, {text: 'y ', id: 't1'}, {text: 'z ', id: 't2'}],

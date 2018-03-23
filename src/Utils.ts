@@ -140,6 +140,11 @@ export function hdiff<A, B>(
   })
 }
 
+/** Adds a final space if there is none */
+export function end_with_space(s: string): string {
+  return s.match(/\s$/) ? s : s + ' '
+}
+
 export function token_diff(s1: string, s2: string) {
   const d = dmp.diff_main(s1, s2)
   dmp.diff_cleanupSemantic(d)
@@ -557,8 +562,8 @@ export function unique_check<S>(): (s: S) => boolean {
 }
 
 /** Raise an exception */
-export function raise(s: string): any {
-  throw s
+export function raise<A>(s: string): A {
+  throw new Error(s)
 }
 
 export function overlaps<A>(s: Set<A>, t: Set<A>) {
@@ -981,4 +986,3 @@ function adt<TagName extends string, Ty, Cons extends Record<string, {con: any; 
     },
   }
 }
-

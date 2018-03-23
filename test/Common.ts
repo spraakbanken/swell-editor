@@ -28,9 +28,6 @@ export const word = stringOf(1, 2, QC.char('ab'))
 export const str = stringOf(0, 2, QC.ascii)
 
 export const token_text = QC.concat([ws0, word, ws1])
-export const last_token_text = QC.concat([ws0, word, ws0])
-export const n_token_texts = (n: number) =>
-  QC.sequence(Utils.range(n).map((_, i) => (i === n - 1 ? last_token_text : token_text)))
 
 export const insert_text: Gen<string> = QC.concat([ws0, stringOf(0, 3, QC.ascii), ws0])
 
@@ -42,8 +39,8 @@ export const graph_with_tokens = (token_text: Gen<string>): Gen<Graph> =>
     .chain(([ssize, tsize]) =>
       QC.between(1, Math.min(ssize, tsize)).chain(esize =>
         QC.record({
-          source: n_token_texts(ssize).map(xs => xs.map((text, i) => ({text, id: 's' + i}))),
-          target: n_token_texts(tsize).map(xs => xs.map((text, i) => ({text, id: 't' + i}))),
+          source: token_text.replicate(ssize).map(xs => xs.map((text, i) => ({text, id: 's' + i}))),
+          target: token_text.replicate(tsize).map(xs => xs.map((text, i) => ({text, id: 't' + i}))),
           proto_edges: QC.record({labels: arrayOf(0, 2, stringOf(1, 3, QC.upper)), manual: QC.bool})
             .replicate(esize)
             .map(xs => xs.map(labels_manual => ({ids: [] as string[], ...labels_manual}))),

@@ -135,13 +135,13 @@ export function sentence(tokens: string[], i: number): Span {
   tokenize('') // => []
   tokenize(' ') // => [' ']
   tokenize('    ') // => ['    ']
-  tokenize('apa bepa cepa') // => ['apa ', 'bepa ', 'cepa']
-  tokenize('  apa bepa cepa') // => ['  apa ', 'bepa ', 'cepa']
+  tokenize('apa bepa cepa') // => ['apa ', 'bepa ', 'cepa ']
+  tokenize('  apa bepa cepa') // => ['  apa ', 'bepa ', 'cepa ']
   tokenize('  apa bepa cepa  ') // => ['  apa ', 'bepa ', 'cepa  ']
 
 */
 export function tokenize(s: string): string[] {
-  return s.match(/\s*\S+\s*/g) || s.match(/^\s+$/g) || []
+  return (s.match(/\s*\S+\s*/g) || s.match(/^\s+$/g) || []).map(Utils.end_with_space)
 }
 
 /** Tokenizes text on whitespace, prefers to have trailing whitespace

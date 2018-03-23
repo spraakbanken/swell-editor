@@ -16,9 +16,9 @@ export type RichDiff =
 
   const g = G.init('aporna bepa cepa depa', true)
   const gr = G.rearrange(g, 1, 2, 0)
-  G.target_text(gr) // => 'bepa cepa aporna depa'
+  G.target_text(gr) // => 'bepa cepa aporna depa '
   const gm = G.modify(gr, 10, 10, 'h')
-  G.target_text(gm) // => 'bepa cepa haporna depa'
+  G.target_text(gm) // => 'bepa cepa haporna depa '
   const rd = enrichen(gm)
   const expected_rd0 = {
     edit: 'Dragged',

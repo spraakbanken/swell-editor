@@ -100,13 +100,9 @@ export function check_invariant(g: Graph): 'ok' | {violation: string; g: Graph} 
         const t = toks[0]
         t.match(/^\s*\S*\s*$/) || Utils.raise('Bad single token: ' + JSON.stringify(t))
       } else {
-        toks.forEach((t, i) => {
-          if (i != toks.length - 1) {
-            t.match(/^\s*\S+\s+$/) || Utils.raise('Bad text token: ' + JSON.stringify(t))
-          } else {
-            t.match(/^\s*\S+\s*$/) || Utils.raise('Bad last token: ' + JSON.stringify(t))
-          }
-        })
+        toks.forEach(
+          (t, i) => t.match(/^\s*\S+\s+$/) || Utils.raise('Bad text token: ' + JSON.stringify(t))
+        )
       }
     }
     check_tokens(target_texts(g))
@@ -135,14 +131,15 @@ export function check_invariant(g: Graph): 'ok' | {violation: string; g: Graph} 
     // console.error(JSON.stringify(g, undefined, 2))
     return {violation: e, g}
   }
+  R.equals(g, align(g)) || Utils.raise('Graph not automatically aligned')
   return 'ok'
 }
 
 /** Makes spans from an original text by tokenizing it and assumes no changes
 
   const g = init('w1 w2')
-  const source = [{text: 'w1 ', id: 's0'}, {text: 'w2', id: 's1'}]
-  const target = [{text: 'w1 ', id: 't0'}, {text: 'w2', id: 't1'}]
+  const source = [{text: 'w1 ', id: 's0'}, {text: 'w2 ', id: 's1'}]
+  const target = [{text: 'w1 ', id: 't0'}, {text: 'w2 ', id: 't1'}]
   const edges = edge_record([Edge(['s0', 't0'], []), Edge(['s1', 't1'], [])])
   g // => {source, target, edges}
 
@@ -292,16 +289,17 @@ export function source_texts(g: Graph): string[] {
   const show = (g: Graph) => g.target.map(t => t.text)
   const ids = (g: Graph) => g.target.map(t => t.id).join(' ')
   const g = init('test graph hello')
-  show(g) // => ['test ', 'graph ', 'hello']
-  show(proto_modify(g, 0, 0, 'new')) // => ['newtest ', 'graph ', 'hello']
-  show(proto_modify(g, 0, 1, 'new')) // => ['newest ', 'graph ', 'hello']
-  show(proto_modify(g, 0, 5, 'new ')) // => ['new ', 'graph ', 'hello']
-  show(proto_modify(g, 0, 5, 'new')) // => ['newgraph ', 'hello']
-  show(proto_modify(g, 5, 5, ' ')) // => ['test ', ' graph ', 'hello']
-  show(proto_modify(g, 5, 6, ' ')) // => ['test ', ' raph ', 'hello']
-  show(proto_modify(g, 0, 15, '_')) // => ['_o']
-  show(proto_modify(g, 0, 16, '_')) // => ['_']
-  show(proto_modify(g, 16, 16, ' !')) // => ['test ', 'graph ', 'hello ', '!']
+  show(g) // => ['test ', 'graph ', 'hello ']
+  show(proto_modify(g, 0, 0, 'new')) // => ['newtest ', 'graph ', 'hello ']
+  show(proto_modify(g, 0, 1, 'new')) // => ['newest ', 'graph ', 'hello ']
+  show(proto_modify(g, 0, 5, 'new ')) // => ['new ', 'graph ', 'hello ']
+  show(proto_modify(g, 0, 5, 'new')) // => ['newgraph ', 'hello ']
+  show(proto_modify(g, 5, 5, ' ')) // => ['test ', ' graph ', 'hello ']
+  show(proto_modify(g, 5, 6, ' ')) // => ['test ', ' raph ', 'hello ']
+  show(proto_modify(g, 0, 15, '_')) // => ['_o ']
+  show(proto_modify(g, 0, 16, '_')) // => ['_ ']
+  show(proto_modify(g, 0, 17, '_')) // => ['_ ']
+  show(proto_modify(g, 16, 16, ' !')) // => ['test ', 'graph ', 'hello ', '! ']
 
 Indexes are character offsets (use CodeMirror's doc.posFromIndex and doc.indexFromPos to convert) */
 export function proto_modify(g: Graph, from: number, to: number, text: string): Graph {
@@ -322,19 +320,19 @@ export function proto_modify(g: Graph, from: number, to: number, text: string): 
   const show = (g: Graph) => g.target.map(t => t.text)
   const ids = (g: Graph) => g.target.map(t => t.id).join(' ')
   const g = init('test graph hello')
-  show(g) // => ['test ', 'graph ', 'hello']
-  show(proto_modify_tokens(g, 0, 0, 'this '))     // => ['this ', 'test ', 'graph ', 'hello']
-  show(proto_modify_tokens(g, 0, 1, 'this '))     // => ['this ', 'graph ', 'hello']
-  show(proto_modify_tokens(g, 0, 1, '  white '))  // => ['  white ', 'graph ', 'hello']
-  show(proto_modify_tokens(g, 0, 1, 'this'))      // => ['thisgraph ', 'hello']
-  show(proto_modify_tokens(g, 1, 2, 'graph'))     // => ['test ', 'graphhello']
-  show(proto_modify_tokens(g, 1, 2, ' graph '))   // => ['test ', ' graph ', 'hello']
-  show(proto_modify_tokens(g, 0, 1, 'for this ')) // => ['for ', 'this ', 'graph ', 'hello']
-  show(proto_modify_tokens(g, 0, 2, '')) // => ['hello']
-  show(proto_modify_tokens(g, 0, 2, '  ')) // => ['  hello']
+  show(g) // => ['test ', 'graph ', 'hello ']
+  show(proto_modify_tokens(g, 0, 0, 'this '))     // => ['this ', 'test ', 'graph ', 'hello ']
+  show(proto_modify_tokens(g, 0, 1, 'this '))     // => ['this ', 'graph ', 'hello ']
+  show(proto_modify_tokens(g, 0, 1, '  white '))  // => ['  white ', 'graph ', 'hello ']
+  show(proto_modify_tokens(g, 0, 1, 'this'))      // => ['thisgraph ', 'hello ']
+  show(proto_modify_tokens(g, 1, 2, 'graph'))     // => ['test ', 'graphhello ']
+  show(proto_modify_tokens(g, 1, 2, ' graph '))   // => ['test ', ' graph ', 'hello ']
+  show(proto_modify_tokens(g, 0, 1, 'for this ')) // => ['for ', 'this ', 'graph ', 'hello ']
+  show(proto_modify_tokens(g, 0, 2, '')) // => ['hello ']
+  show(proto_modify_tokens(g, 0, 2, '  ')) // => ['  hello ']
   show(proto_modify_tokens(g, 1, 3, '  ')) // => ['test   ']
-  show(proto_modify_tokens(g, 3, 3, ' !')) // => ['test ', 'graph ', 'hello ', '!']
-  show(proto_modify_tokens(init('a'), 0, 1, ' ')) // => [' ']
+  show(proto_modify_tokens(g, 3, 3, ' !')) // => ['test ', 'graph ', 'hello  ', '! ']
+  show(proto_modify_tokens(init('a '), 0, 1, ' ')) // => [' ']
   ids(g) // => 't0 t1 t2'
   ids(proto_modify_tokens(g, 0, 0, 'this '))     // => 't3 t0 t1 t2'
   ids(proto_modify_tokens(g, 0, 1, 'this '))     // => 't3 t1 t2'
@@ -393,7 +391,7 @@ export function proto_modify_tokens(g: Graph, from: number, to: number, text: st
 
 /** Moves a slice of the target tokens and puts it at a new destination.
 
-  target_text(proto_rearrange(init('apa bepa cepa depa'), 1, 2, 0)) // => 'bepa cepa apa depa'
+  target_text(proto_rearrange(init('apa bepa cepa depa'), 1, 2, 0)) // => 'bepa cepa apa depa '
 
 Indexes are token offsets
 */
@@ -401,21 +399,26 @@ export function proto_rearrange(g: Graph, begin: number, end: number, dest: numb
   return {...g, target: Utils.rearrange(g.target, begin, end, dest)}
 }
 
-export const modify = (g: Graph, from: number, to: number, text: string): Graph =>
-  align(proto_modify(g, from, to, text))
-export const modify_tokens = (g: Graph, from: number, to: number, text: string): Graph =>
-  align(proto_modify_tokens(g, from, to, text))
-export const rearrange = (g: Graph, begin: number, end: number, dest: number): Graph =>
-  align(proto_rearrange(g, begin, end, dest))
+export function modify(g: Graph, from: number, to: number, text: string): Graph {
+  return align(proto_modify(g, from, to, text))
+}
+
+export function modify_tokens(g: Graph, from: number, to: number, text: string): Graph {
+  return align(proto_modify_tokens(g, from, to, text))
+}
+
+export function rearrange(g: Graph, begin: number, end: number, dest: number): Graph {
+  return align(proto_rearrange(g, begin, end, dest))
+}
 
 /**
 
-  T.text(set_target(init('apa bepa'), 'aupa bpa').target) // => 'aupa bpa'
-  T.text(set_target(init('fz'), 'bar').target) // => 'bar'
-  T.text(set_target(init('foo'), 'bar').target) // => 'bar'
-  T.text(set_target(init('fooz'), 'bar').target) // => 'bar'
-  T.text(set_target(init('a'), 'a').target) // => 'a'
-  T.text(set_target(init('a'), ' ').target) // => ' '
+  T.text(set_target(init('apa bepa'), 'aupa bpa ').target) // => 'aupa bpa '
+  T.text(set_target(init('fz'), 'bar ').target) // => 'bar '
+  T.text(set_target(init('foo'), 'bar ').target) // => 'bar '
+  T.text(set_target(init('fooz'), 'bar ').target) // => 'bar '
+  T.text(set_target(init('a'), 'a ').target) // => 'a '
+  T.text(set_target(init('a'), '  ').target) // => '  '
 
 */
 export function set_target(g: Graph, text: string): Graph {
@@ -718,7 +721,7 @@ export function split_up_edits(ds: Diff[], audit = (edge_id: string) => true): D
 
 */
 export function diff_to_graph(diff: Diff[], edges: Record<string, Edge>): Graph {
-  return from_raw_diff(split_up_edits(diff) as any, edges)
+  return align(from_raw_diff(split_up_edits(diff) as any, edges))
 }
 
 /** Gets the sentence in the target text around some offset, without thinking about edits */
@@ -739,13 +742,13 @@ export function subspan_merge(ss: Subspan[]) {
 
 /** Gets the sentence in the target text around some offset
 
-  const g = init('apa bepa . Cepa depa . epa', true)
+  const g = init('apa bepa . Cepa depa . epa ', true)
   sentence(g, 0) // => {source: {begin: 0, end: 2}, target: {begin: 0, end: 2}}
   sentence(g, 1) // => {source: {begin: 0, end: 2}, target: {begin: 0, end: 2}}
   sentence(g, 2) // => {source: {begin: 0, end: 2}, target: {begin: 0, end: 2}}
   sentence(g, 3) // => {source: {begin: 3, end: 5}, target: {begin: 3, end: 5}}
   const g2 = modify_tokens(g, 1, 4, 'uff ! Hepp plepp ')
-  target_text(g2) // => 'apa uff ! Hepp plepp depa . epa'
+  target_text(g2) // => 'apa uff ! Hepp plepp depa . epa '
   sentence(g2, 0) // => {source: {begin: 0, end: 5}, target: {begin: 0, end: 6}}
   sentence(g2, 1) // => {source: {begin: 0, end: 5}, target: {begin: 0, end: 6}}
   sentence(g2, 2) // => {source: {begin: 0, end: 5}, target: {begin: 0, end: 6}}
@@ -875,9 +878,13 @@ export function label_store(g: Store<Graph>, edge_id: string): Store<string[]> {
 
 /** Revert at an edge id */
 export function revert(g: Graph, edge_id: string): Graph {
+  return align(proto_revert(g, edge_id))
+}
+
+/** Revert at an edge id */
+export function proto_revert(g: Graph, edge_id: string): Graph {
   if (g.edges[edge_id] === undefined) {
-    console.error('Revert outside range')
-    return g
+    return Utils.raise('Revert outside range: ' + Utils.show({edge_id}))
   } else {
     const diff = calculate_raw_diff(g)
     let supply = Utils.next_id(g.target.map(t => t.id))
@@ -959,16 +966,16 @@ export function disconnect(g: Graph, id: string): Graph {
 
   const g = init('x')
   const ab = {
-    source: [{id: 'a0', text: 'x'}],
-    target: [{id: 'b0', text: 'x'}],
+    source: [{id: 'a0', text: 'x '}],
+    target: [{id: 'b0', text: 'x '}],
     edges: {'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: [], manual: false}}
   }
   normalize(g, 'keep', 'a', 'b') // => ab
 
   const g = init('x')
   const same = {
-    source: [{id: '0', text: 'x'}],
-    target: [{id: '1', text: 'x'}],
+    source: [{id: '0', text: 'x '}],
+    target: [{id: '1', text: 'x '}],
     edges: {'e-0-1': {id: 'e-0-1', ids: ['0', '1'], labels: [], manual: false}}
   }
   normalize(g, 'keep', '', '') // => same
