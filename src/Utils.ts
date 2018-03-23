@@ -10,6 +10,11 @@ export function capitalize_head(s: string) {
   return s.slice(0, 1).toUpperCase() + s.slice(1)
 }
 
+export function debug(): boolean {
+  const env = process.env.NODE_ENV
+  return env === 'production'
+}
+
 export function debugName($debugName: string) {
   const env = process.env.NODE_ENV
   if (env === 'production') {

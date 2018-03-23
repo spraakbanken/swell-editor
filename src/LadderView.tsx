@@ -101,7 +101,10 @@ const LadderStyle = style(
 )
 
 const greyPath = (manual: boolean): React.CSSProperties => ({
-  stroke: manual ? '#6699cc' : '#999', strokeWidth: px(4), fill: 'none'})
+  stroke: manual ? '#6699cc' : '#999',
+  strokeWidth: px(4),
+  fill: 'none',
+})
 const whitePath: React.CSSProperties = {stroke: '#fff', strokeWidth: px(12), fill: 'none'}
 
 function PixelPath(d: string, css: React.CSSProperties) {
@@ -182,9 +185,13 @@ function Column(column: D.Line[], edges: G.Edges, rel: VNode | null | false = nu
       {PixelPerfectSVG(
         <svg height="100%" width="100%" viewBox="0 0 1 1" preserveAspectRatio="none">
           {Key([
-            ...column.filter(line => line.id != endpoint_id).map(line => Line(line, greyPath(!!edges[line.id].manual))),
+            ...column
+              .filter(line => line.id != endpoint_id)
+              .map(line => Line(line, greyPath(!!edges[line.id].manual))),
             ...column.filter(line => line.id == endpoint_id).map(line => Line(line, whitePath)),
-            ...column.filter(line => line.id == endpoint_id).map(line => Line(line, greyPath(!!edges[line.id].manual))),
+            ...column
+              .filter(line => line.id == endpoint_id)
+              .map(line => Line(line, greyPath(!!edges[line.id].manual))),
           ])}
         </svg>,
         {zIndex: -2}
@@ -229,8 +236,11 @@ export function ApplyMove(diff: D.Diff[], {from, to}: {from: number; to: number}
   switch (d.edit) {
     case 'Dropped':
       return Utils.rearrange(
-        diff.map((d, i) => (i == from) ? ({...d, manual: true}) : d)
-      , from, from, to)
+        diff.map((d, i) => (i == from ? {...d, manual: true} : d)),
+        from,
+        from,
+        to
+      )
     case 'Edited':
       if (d.source.length != 1 || d.target.length != 1) {
         console.error('TODO: handle Edited that is not 1-1')

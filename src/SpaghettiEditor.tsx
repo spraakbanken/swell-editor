@@ -27,32 +27,43 @@ import 'dejavu-fonts-ttf/ttf/DejaVuSans.ttf'
 import * as CodeMirror from 'codemirror'
 
 function Wrap(h: HTMLElement, k: () => void) {
-  return <div
-    ref={el => {
-      if (el) {
-      while(el && el.lastChild) {
-        el.removeChild(el.lastChild)
-      }
-      el.appendChild(h)
-      k()
-      }
-    }}/>
+  return (
+    <div
+      ref={el => {
+        if (el) {
+          while (el && el.lastChild) {
+            el.removeChild(el.lastChild)
+          }
+          el.appendChild(h)
+          k()
+        }
+      }}
+    />
+  )
 }
 
-type CMVN = {vn: VNode, cm: CodeMirror.Editor}
+function defaultTabBehaviour(cm: CodeMirror.Editor) {
+  ;(cm.on as any)('keydown', (_: any, e: KeyboardEvent) => {
+    if (e.key == 'Tab') {
+      ;(e as any).codemirrorIgnore = true
+    }
+  })
+}
+
+type CMVN = {vnode: VNode; cm: CodeMirror.Editor}
 
 function CM(opts: CodeMirror.EditorConfiguration): CMVN {
   const div = document.createElement('div')
   const cm = CodeMirror(div, {lineWrapping: true, ...opts})
-  return {vn: Wrap(div, () => cm.refresh()), cm}
+  return {vnode: Wrap(div, () => cm.refresh()), cm}
 }
 
 export interface State {
+  readonly graph: Undo<Graph>
   readonly drag_state: L.DragState
   readonly show_g: boolean
   readonly show_d: boolean
   readonly drop_target: boolean
-  readonly inner: Undo<InnerState>
 }
 
 export interface InnerState {
@@ -61,12 +72,7 @@ export interface InnerState {
 }
 
 export const init: State = {
-  inner: Undo.init({
-    // source: 'preamble apa:Ort bepacepa xu depa flepa:Comp florp^preamble',
-    // target: 'apa bpea cpea dpeaflpae xlbabulr postscriptum^preamble woop^',
-    source: '',
-    target: '',
-  }),
+  graph: Undo.init(G.init('')),
   drag_state: null,
   show_g: false,
   show_d: false,
@@ -189,14 +195,13 @@ const topStyle = style({
   alignItems: 'start',
 
   $nest: {
-
-      '& .CodeMirror':{
-        border: '1px solid #ddd',
-        height: '300px',
-        minWidth: '250px',
-        lineHeight: '1.5em',
-        fontFamily: "'Lato', sans-serif",
-      },
+    '& .CodeMirror': {
+      border: '1px solid #ddd',
+      height: '300px',
+      minWidth: '250px',
+      lineHeight: '1.5em',
+      fontFamily: "'Lato', sans-serif",
+    },
 
     '& > .main': {
       gridColumnStart: 'main',
@@ -238,37 +243,24 @@ const op = (x: side) => (x == 'source' ? 'target' : 'source')
 
 const ws_url = 'https://ws.spraakbanken.gu.se/ws/swell'
 
-export function App(store: Store<State>): () => VNode {
-  const global = window as any
-  global.store = store
-  global.reset = () => store.set(init)
-  global.G = G
-  store.storage_connect('swell-spaghetti-2')
-
-  const graph = store.at('inner').at('now').pick('source', 'target').via(
-    Lens.iso(
-      state => {
-        const s = C.parse(state.source)
-        const t = C.parse(state.target)
-        return C.units_to_graph(s, t)
-      },
-      g => G.with_st(C.graph_to_units(g), us => C.units_to_string(us))
-    )
-  )
+export function GraphEditingCM(store: Store<Undo<Graph>>): VNode {
+  /* Note that we don't show the last character of the graph in the code mirror.
+  It must necessarily be whitespace anyway. */
+  const graph = store.at('now')
 
   function undo() {
-    store.at('inner').modify(Undo.undo)
+    store.modify(Undo.undo)
     console.log('undo')
   }
   function redo() {
-    store.at('inner').modify(Undo.redo)
+    store.modify(Undo.redo)
   }
 
   const extraKeys = {
-    "Ctrl-Z": () => undo(),
-    "Ctrl-Y": () => redo(),
-    "Cmd-Z": () => undo(),
-    "Cmd-Y": () => redo(),
+    'Ctrl-Z': () => undo(),
+    'Ctrl-Y': () => redo(),
+    'Cmd-Z': () => undo(),
+    'Cmd-Y': () => redo(),
     // "Ctrl-X": () => cut(),
     // "Ctrl-V": () => paste(),
     // "Ctrl-R": () => revert(),
@@ -276,45 +268,143 @@ export function App(store: Store<State>): () => VNode {
     // "Ctrl-D": () => disconnect(),
   }
 
-  const cmvn = CM({extraKeys})
-  const cm = cmvn.cm
+  const {cm, vnode} = CM({extraKeys, tabindex: 3})
+  defaultTabBehaviour(cm)
   cm.setValue(G.target_text(graph.get()))
-  graph.ondiff((now, past) =>  {
-    const tnow = G.target_text(now)
-    const tpast = G.target_text(past)
-    if (tnow !== tpast) {
-      cm.setValue(tnow)
+
+  /*
+  cm.on('update', () => {
+    const g = graph.get()
+    const graph_text = G.target_text(g)
+    const editor_text = cm.getDoc().getValue() + ' '
+    if (Utils.debug()) {
+      const inv = G.check_invariant(g)
+      if (inv != 'ok') {
+        console.error(inv)
+      }
+    }
+    //log('update', Utils.show({lhs, rhs}))
+    if (editor_text != graph_text) {
+      // everything deleted! just update view ??
+      cm.getDoc().setValue(graph_text)
+
+    }
+  })
+  */
+
+  cm.on('beforeChange', (_, change) => {
+    if (change.origin == 'undo') {
+      change.cancel()
+      undo()
+    } else if (change.origin == 'redo') {
+      change.cancel()
+      redo()
     }
   })
 
-  return () => View(store, graph, cmvn)
+  cm.on('change', (_, change) => {
+    /* if (change.origin == 'drag') {
+        change.cancel()
+      } else if (change.origin == 'paste') {
+        // drag-and-drop makes this paste (yes!):
+        change.cancel()
+        paste()
+      } */
+    if (change.origin != 'setValue') {
+      store.transaction(() => {
+        const g = graph.get()
+        // coordinates talk about the previous doc so we get it using a undo
+        /*
+        const previous_doc = cm.getDoc().copy(true)
+        previous_doc.undo()
+        const from = previous_doc.indexFromPos(change.from)
+        const to = previous_doc.indexFromPos(change.to)
+        Utils.stdout({
+          prev: previous_doc.getValue(),
+          now: cm.getDoc().getValue(),
+          from, to, removed: change.removed, text: change.text,
+        })
+        */
+        store.modify(Undo.advance)
+        graph.set(G.set_target(g, cm.getDoc().getValue() + ' '))
+      })
+    }
+  })
+
+  function graph_to_cm() {
+    const graph_text = G.target_text(graph.get()).slice(0, -1)
+    const editor_text = cm.getDoc().getValue()
+    if (graph_text !== editor_text) {
+      Utils.stdout(['set value', 'graph_text:', graph_text, 'editor_text:', editor_text])
+      cm.setValue(graph_text)
+    }
+  }
+
+  graph.on(graph_to_cm)
+
+  graph_to_cm()
+
+  return vnode
 }
 
-export function TargetHypothesis(store: Store<Graph>, cmvn: CMVN) {
-  return <div className="main">{cmvn.vn}</div>
+export function App(store: Store<State>): () => VNode {
+  const global = window as any
+  global.store = store
+  global.reset = () => store.set(init)
+  global.G = G
+  global.Utils = Utils
+  store
+    .at('graph')
+    .at('now')
+    .storage_connect('swell-spaghetti-3')
+
+  store
+    .at('graph')
+    .at('now')
+    .ondiff(g => {
+      const inv = G.check_invariant(g)
+      if (inv !== 'ok') {
+        Utils.stderr(inv)
+      }
+    })
+
+  const cm_vnode = GraphEditingCM(store.at('graph'))
+
+  return () => View(store, cm_vnode)
 }
 
-export function View(store: Store<State>, graph: Store<G.Graph>, cmvn: CMVN): VNode {
+export function View(store: Store<State>, cm_vnode: VNode): VNode {
   const state = store.get()
-  const now = store.at('inner').at('now')
-  const inner_state = now.get()
-  const source = now.at('source')
-  const target = now.at('target')
+  const history = store.at('graph')
+  const graph = history.at('now')
+
+  const units: Store<G.ST<string>> = store
+    .at('graph')
+    .at('now')
+    .via(
+      Lens.iso(
+        g => G.with_st(C.graph_to_units(g), us => C.units_to_string(us)),
+        state => {
+          const s = C.parse(state.source)
+          const t = C.parse(state.target)
+          return C.units_to_graph(s, t)
+        }
+      )
+    )
+
+  // Utils.stdout(units.get())
+  Utils.stdout(graph.get().target)
+
+  // const source = now.at('source')
+  // const target = now.at('target')
+
   const g = graph.get()
   const d = RD.enrichen(g, G.calculate_diff(g))
+
   function advance(k: () => void) {
     store.transaction(() => {
-      store.at('inner').modify(Undo.advance)
+      history.modify(Undo.advance)
       k()
-    })
-  }
-  const set_via_graph = (g: G.Graph) => {
-    const us = C.minimize(C.graph_to_units(g))
-    const s = C.units_to_string(us.source)
-    const t = C.units_to_string(us.target)
-    advance(() => {
-      now.at('source').set(s)
-      now.at('target').set(t)
     })
   }
   const onDrop: React.DragEventHandler<HTMLDivElement> = e => {
@@ -342,7 +432,7 @@ export function View(store: Store<State>, graph: Store<G.Graph>, cmvn: CMVN): VN
           Utils.GET(query_url, str => {
             const data = JSON.parse(str)
             log(data, 'from', url)
-            set_via_graph(data.graph)
+            advance(() => graph.set(data.graph))
           })
         }
       })
@@ -365,7 +455,7 @@ export function View(store: Store<State>, graph: Store<G.Graph>, cmvn: CMVN): VN
             const buf = new Buffer(r.result)
             const data = png.onBuffer.get(key, buf)
             log({data})
-            set_via_graph(data.graph)
+            advance(() => graph.set(data.graph))
           } catch (e) {
             log('file not a png with meta data:', file, r.result)
           }
@@ -398,9 +488,6 @@ export function View(store: Store<State>, graph: Store<G.Graph>, cmvn: CMVN): VN
         return false
       }}>
       <div className={topStyle}>
-        <div className="main">
-          {cmvn.vn}
-        </div>
         <div className="main" style={{minHeight: '10em'}}>
           {L.Ladder(
             g,
@@ -409,28 +496,28 @@ export function View(store: Store<State>, graph: Store<G.Graph>, cmvn: CMVN): VN
             (ds: L.DragState) => store.at('drag_state').set(ds),
             (ds: L.DragState) =>
               ds &&
-              store.transaction(() => {
-                set_via_graph(G.diff_to_graph(L.ApplyMove(G.calculate_diff(g), ds), g.edges))
+              advance(() => {
+                graph.set(G.diff_to_graph(L.ApplyMove(G.calculate_diff(g), ds), g.edges))
                 store.at('drag_state').set(null)
               })
           )}
         </div>
         {sides.map((side, i) => (
           <React.Fragment key={i}>
-            {Button('\u2b1a', 'clear', () => advance(() => now.at(side).set('')))}
+            {Button('\u2b1a', 'clear', () => advance(() => units.at(side).set('')))}
             {Button(i ? '\u21e1' : '\u21e3', 'copy to ' + side, () =>
-              advance(() => now.at(op(side)).set(inner_state[side]))
+              advance(() => units.at(op(side)).set(units.get()[side]))
             )}
             <Textarea
-              store={now.at(side)}
+              store={units.at(side)}
               tabIndex={(i + 1) as number}
-              rows={inner_state[side].split('\n').length}
+              rows={units.get()[side].split('\n').length}
               style={{resize: 'vertical'}}
               placeholder={'Enter ' + side + ' text...'}
             />
           </React.Fragment>
         ))}
-        {TargetHypothesis(graph, cmvn)}
+        <div className="main">{cm_vnode}</div>
         <div className="main" style={{opacity: '0.85', justifySelf: 'end'} as any}>
           graph: {checklink(store.at('show_g'))} diff: {checklink(store.at('show_d'))}
         </div>
@@ -443,8 +530,8 @@ export function View(store: Store<State>, graph: Store<G.Graph>, cmvn: CMVN): VN
             encodeURIComponent(s)
               .replace('(', '%28')
               .replace(')', '%29')
-          const s = esc(C.units_to_string(C.parse(inner_state.source), '_'))
-          const t = esc(C.units_to_string(C.parse(inner_state.target), '_'))
+          const s = esc(C.units_to_string(C.parse(units.get().source), '_'))
+          const t = esc(C.units_to_string(C.parse(units.get().target), '_'))
           const st = s + '//' + t
           const url = `${ws_url}/png?${st}`
           const md = `![](${url})`
@@ -459,9 +546,11 @@ export function View(store: Store<State>, graph: Store<G.Graph>, cmvn: CMVN): VN
                 }}>
                 {md}
               </pre>
-              <pre className={'pre-box main '} style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}>
-                {`${C.units_to_string(C.parse(inner_state.source))} // ${C.units_to_string(
-                  C.parse(inner_state.target)
+              <pre
+                className={'pre-box main '}
+                style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}>
+                {`${C.units_to_string(C.parse(units.get().source))} // ${C.units_to_string(
+                  C.parse(units.get().target)
                 )}`}
               </pre>
             </>
@@ -476,13 +565,13 @@ export function View(store: Store<State>, graph: Store<G.Graph>, cmvn: CMVN): VN
             {!e.target ? (
               <div />
             ) : (
-              Button(
-                '\u21eb',
-                'see example analysis',
-                () => (source.set(e.source), target.set(e.target))
+              Button('\u21eb', 'see example analysis', () =>
+                advance(() => units.set({source: e.source, target: e.target}))
               )
             )}
-            {Button('\u21ea', 'load example', () => (source.set(e.source), target.set(e.source)))}
+            {Button('\u21ea', 'load example', () =>
+              advance(() => units.set({source: e.source, target: e.source}))
+            )}
             <span>{e.source}</span>
           </React.Fragment>
         ))}
