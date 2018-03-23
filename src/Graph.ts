@@ -358,7 +358,7 @@ export function proto_modify_tokens(g: Graph, from: number, to: number, text: st
     return proto_modify_tokens(g, from, to + 1, text + g.target[to].text)
   }
 
-  if (from == g.target.length && to === g.target.length) {
+  if (from > 0 && from == g.target.length && to === g.target.length) {
     // we're adding a word at the end but the last token might not end in whitespace:
     // glue them together
 

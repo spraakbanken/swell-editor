@@ -5,6 +5,8 @@ import {style, types, getStyles} from 'typestyle'
 import * as typestyle from 'typestyle'
 import * as csstips from 'csstips'
 
+import {DropZone} from './DropZone'
+
 import * as D from './Diff'
 import {Graph} from './Graph'
 import * as G from './Graph'
@@ -15,48 +17,13 @@ import * as Utils from './Utils'
 
 import * as C from './Compact'
 
-import * as png from './png'
-import {Data, key} from './SpaghettiTypes'
-
 import {VNode} from './LadderView'
+
+import {GraphEditingCM} from './GraphEditingCM'
 
 import 'codemirror/lib/codemirror.css'
 import 'lato-font/css/lato-font.min.css'
 import 'dejavu-fonts-ttf/ttf/DejaVuSans.ttf'
-
-import * as CodeMirror from 'codemirror'
-
-function Wrap(h: HTMLElement, k: () => void) {
-  return (
-    <div
-      ref={el => {
-        if (el) {
-          while (el && el.lastChild) {
-            el.removeChild(el.lastChild)
-          }
-          el.appendChild(h)
-          k()
-        }
-      }}
-    />
-  )
-}
-
-function defaultTabBehaviour(cm: CodeMirror.Editor) {
-  ;(cm.on as any)('keydown', (_: any, e: KeyboardEvent) => {
-    if (e.key == 'Tab') {
-      ;(e as any).codemirrorIgnore = true
-    }
-  })
-}
-
-type CMVN = {vnode: VNode; cm: CodeMirror.Editor}
-
-function CM(opts: CodeMirror.EditorConfiguration): CMVN {
-  const div = document.createElement('div')
-  const cm = CodeMirror(div, {lineWrapping: true, ...opts})
-  return {vnode: Wrap(div, () => cm.refresh()), cm}
-}
 
 export interface State {
   readonly graph: Undo<Graph>
@@ -143,23 +110,6 @@ const Button = (label: string, title: string, on: () => void) => (
     {label}
   </button>
 )
-
-const display_if = (b: boolean) => ({
-  display: b ? 'inherit' : 'none',
-})
-
-const dropTargetClass = (() => {
-  const ambient = style({
-    ...Utils.debugName('ambient'),
-    border: '0.3em dashed #0000',
-    margin: '0.1em',
-  })
-  const dropping = style({
-    ...Utils.debugName('dropping'),
-    borderColor: '#ccc !important',
-  })
-  return (b: boolean) => ambient + ' ' + (b ? dropping : '')
-})()
 
 const topStyle = style({
   ...Utils.debugName('topStyle'),
@@ -260,210 +210,6 @@ const op = (x: side) => (x == 'source' ? 'target' : 'source')
 
 const ws_url = 'https://ws.spraakbanken.gu.se/ws/swell'
 
-export function GraphEditingCM(store: Store<Undo<Graph>>): VNode {
-  /* Note that we don't show the last character of the graph in the code mirror.
-  It must necessarily be whitespace anyway. */
-  const graph = store.at('now')
-
-  function undo() {
-    store.modify(Undo.undo)
-    console.log('undo')
-  }
-  function redo() {
-    store.modify(Undo.redo)
-  }
-
-  const extraKeys = {
-    'Ctrl-Z': () => undo(),
-    'Ctrl-Y': () => redo(),
-    'Cmd-Z': () => undo(),
-    'Cmd-Y': () => redo(),
-    // "Ctrl-X": () => cut(),
-    // "Ctrl-V": () => paste(),
-    // "Ctrl-R": () => revert(),
-    // "Ctrl-C": () => connect(),
-    // "Ctrl-D": () => disconnect(),
-  }
-
-  const {cm, vnode} = CM({extraKeys, tabindex: 3})
-  defaultTabBehaviour(cm)
-  cm.setValue(G.target_text(graph.get()))
-
-  /*
-  cm.on('update', () => {
-    const g = graph.get()
-    const graph_text = G.target_text(g)
-    const editor_text = cm.getDoc().getValue() + ' '
-    if (Utils.debug()) {
-      const inv = G.check_invariant(g)
-      if (inv != 'ok') {
-        console.error(inv)
-      }
-    }
-    //log('update', Utils.show({lhs, rhs}))
-    if (editor_text != graph_text) {
-      // everything deleted! just update view ??
-      cm.getDoc().setValue(graph_text)
-
-    }
-  })
-  */
-
-  cm.on('beforeChange', (_, change) => {
-    if (change.origin == 'undo') {
-      change.cancel()
-      undo()
-    } else if (change.origin == 'redo') {
-      change.cancel()
-      redo()
-    }
-  })
-
-  cm.on('change', (_, change) => {
-    /* if (change.origin == 'drag') {
-        change.cancel()
-      } else if (change.origin == 'paste') {
-        // drag-and-drop makes this paste (yes!):
-        change.cancel()
-        paste()
-      } */
-    if (change.origin != 'setValue') {
-      store.transaction(() => {
-        const g = graph.get()
-        // coordinates talk about the previous doc so we get it using a undo
-        /*
-        const previous_doc = cm.getDoc().copy(true)
-        previous_doc.undo()
-        const from = previous_doc.indexFromPos(change.from)
-        const to = previous_doc.indexFromPos(change.to)
-        Utils.stdout({
-          prev: previous_doc.getValue(),
-          now: cm.getDoc().getValue(),
-          from, to, removed: change.removed, text: change.text,
-        })
-        */
-        store.modify(Undo.advance)
-        graph.set(G.set_target(g, cm.getDoc().getValue() + ' '))
-      })
-    }
-  })
-
-  function graph_to_cm() {
-    const graph_text = G.target_text(graph.get()).slice(0, -1)
-    const editor_text = cm.getDoc().getValue()
-    if (graph_text !== editor_text) {
-      Utils.stdout(['set value', 'graph_text:', graph_text, 'editor_text:', editor_text])
-      cm.setValue(graph_text)
-    }
-  }
-
-  graph.on(graph_to_cm)
-
-  graph_to_cm()
-
-  return vnode
-}
-
-export class DropZone extends React.Component<
-  {
-    onDrop: (g: Graph) => void
-    children: VNode
-  },
-  {drop_target: boolean}
-> {
-  constructor(p: any) {
-    super(p)
-    this.state = {drop_target: false}
-  }
-
-  _onDrop(e: React.DragEvent<HTMLDivElement>) {
-    const log = (...xs: any[]) => false || console.log(...xs)
-    this.setState({drop_target: false})
-    e.preventDefault()
-    e.stopPropagation()
-    const dt = e.dataTransfer
-    log(dt.files)
-    log(dt.items)
-    log(dt.types)
-    const files = Array.from(dt.files)
-    const items = Array.from(dt.items)
-    log('items', dt.items.length)
-    items.forEach((item, ix) => {
-      log(item)
-      item.getAsString(s => {
-        log(item, ix, 'as string:', s)
-        const m_url = s.match(/https?:[A-Za-z0-9%\-._~:\/?#@!$&'*+,;=`.]+/)
-        if (m_url) {
-          const url = m_url[0]
-          log(url, 'looks like an address')
-          const query_url = ws_url + '/metadata.json?' + encodeURIComponent(url)
-          Utils.GET(query_url, str => {
-            const data = JSON.parse(str)
-            log(data, 'from', url)
-            this.props.onDrop(data.graph)
-          })
-        }
-      })
-      try {
-        const file = item.getAsFile()
-        file && files.push(file)
-      } catch (e) {
-        log('item not a file:', item, e)
-      }
-    })
-    log('files', files)
-    files.forEach(file => {
-      log(file, file)
-      const r = new FileReader()
-      r.readAsArrayBuffer(file)
-      r.onload = () => {
-        log('readyState', r.readyState)
-        if (r.readyState === 2) {
-          try {
-            const buf = new Buffer(r.result)
-            const data = png.onBuffer.get(key, buf)
-            log({data})
-            this.props.onDrop(data.graph)
-          } catch (e) {
-            log('file not a png with meta data:', file, r.result)
-          }
-        }
-      }
-    })
-    return false
-  }
-
-  _set_drop_target = Utils.debounce(50, b => {
-    console.log('setting drop target', this.state, b)
-    this.state.drop_target != b && this.setState({drop_target: b})
-  })
-
-  render() {
-    const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault()
-      e.stopPropagation()
-      this.state.drop_target || this.setState({drop_target: true})
-      this._set_drop_target(true)
-      return false
-    }
-    return (
-      <div
-        className={dropTargetClass(this.state.drop_target)}
-        onDrop={e => this._onDrop(e)}
-        onDragLeave={e => {
-          console.log('drag leave')
-          e.preventDefault()
-          this._set_drop_target(false)
-          return false
-        }}
-        onDragOver={onDragOver}
-        onDragEnter={onDragOver}>
-        {this.props.children}
-      </div>
-    )
-  }
-}
-
 export function App(store: Store<State>): () => VNode {
   const global = window as any
   global.store = store
@@ -485,12 +231,12 @@ export function App(store: Store<State>): () => VNode {
       }
     })
 
-  const cm_vnode = GraphEditingCM(store.at('graph'))
+  const cm_node = GraphEditingCM(store.at('graph'))
 
-  return () => View(store, cm_vnode)
+  return () => View(store, cm_node)
 }
 
-export function View(store: Store<State>, cm_vnode: VNode): VNode {
+export function View(store: Store<State>, cm_node: VNode): VNode {
   const state = store.get()
   const history = store.at('graph')
   const graph = history.at('now')
@@ -526,7 +272,7 @@ export function View(store: Store<State>, cm_vnode: VNode): VNode {
   }
 
   return (
-    <DropZone onDrop={g => advance(() => graph.set(g))}>
+    <DropZone webserviceURL={ws_url} onDrop={g => advance(() => graph.set(g))}>
       <div className={topStyle}>
         <div className="main" style={{minHeight: '10em'}}>
           <L.LadderComponent graph={graph.get()} onDrop={g => advance(() => graph.set(g))} />
@@ -546,7 +292,7 @@ export function View(store: Store<State>, cm_vnode: VNode): VNode {
             />
           </React.Fragment>
         ))}
-        <div className="main">{cm_vnode}</div>
+        <div className="main">{cm_node}</div>
         {showhide('graph json', Utils.show(g))}
         {showhide('diff json', Utils.show(d))}
         {links(graph.get())}
