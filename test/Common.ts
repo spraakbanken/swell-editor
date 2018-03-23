@@ -50,11 +50,11 @@ export const graph_with_tokens = (token_text: Gen<string>): Gen<Graph> =>
           const {source, target, proto_edges, sedges, tedges} = R.clone(r)
           source.forEach(s => proto_edges[sedges.pop() as number].ids.push(s.id))
           target.forEach(t => proto_edges[tedges.pop() as number].ids.push(t.id))
-          return {
+          return G.align({
             source,
             target,
-            edges: G.edge_record(proto_edges.map(e => G.Edge(e.ids, e.labels, true))),
-          }
+            edges: G.edge_record(proto_edges.map(e => G.Edge(e.ids, e.labels, e.manual))),
+          })
         })
       )
     )

@@ -464,11 +464,15 @@ export function align(g: Graph): Graph {
 
   const proto_edges = record.filter(g.edges, e => !!e.manual)
 
+  const first = Utils.unique_check<string>()
+
   with_st(g, (tokens, side) =>
     tokens.forEach(token => {
-      let e0 = em(token.id)
-      if (!e0.manual) {
-        record.modify(proto_edges, uf.find(token.id), zero_edge, e => merge_edges(e, e0))
+      let e_repr = em(token.id)
+      if (!e_repr.manual) {
+        const labels = first(e_repr.id) ? e_repr.labels : []
+        const e_token = Edge([token.id], labels, false)
+        record.modify(proto_edges, uf.find(token.id), zero_edge, e => merge_edges(e, e_token))
       }
     })
   )
@@ -726,7 +730,7 @@ export function subspan_merge(ss: Subspan[]) {
 
 /** Gets the sentence in the target text around some offset
 
-  const g = init('apa bepa . Cepa depa . epa')
+  const g = init('apa bepa . Cepa depa . epa', true)
   sentence(g, 0) // => {source: {begin: 0, end: 2}, target: {begin: 0, end: 2}}
   sentence(g, 1) // => {source: {begin: 0, end: 2}, target: {begin: 0, end: 2}}
   sentence(g, 2) // => {source: {begin: 0, end: 2}, target: {begin: 0, end: 2}}
