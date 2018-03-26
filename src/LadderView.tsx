@@ -286,12 +286,28 @@ export function ApplyMove(diff: D.Diff[], {from, to}: {from: number; to: number}
   }
 }
 
+export function HoverStyle(b: boolean) {
+  if (b) {
+    return {background: '#fe5', zIndex: -1}
+  } else {
+    return {}
+  }
+}
+
+export interface OnHover {
+  (id: string | undefined, what?: 'token' | 'edge'): void
+}
+
 export class LadderComponent extends React.Component<
   {
     graph: G.Graph
     onDrop?: (dropped_graph: G.Graph) => void
+    onHover?: OnHover
+    hoverId?: string
   },
-  {drag_state: DragState}
+  {
+    drag_state: DragState
+  }
 > {
   constructor(p: any) {
     super(p)
@@ -310,7 +326,9 @@ export class LadderComponent extends React.Component<
           onDrop(G.diff_to_graph(ApplyMove(G.calculate_diff(graph), drag_state), graph.edges))
         }
         this.setState({drag_state: null})
-      }
+      },
+      this.props.hoverId,
+      this.props.onHover
     )
   }
 }
@@ -320,7 +338,9 @@ export function Ladder(
   rd0: RD.RichDiff[] = RD.enrichen(g),
   drag_state?: DragState,
   onDrag?: (ds: DragState) => void,
-  onDrop?: (ds: DragState) => void
+  onDrop?: (ds: DragState) => void,
+  hover_id?: string,
+  onHover?: OnHover
 ): VNode {
   const rd = drag_state && drag_state.over ? RD.enrichen(g, ApplyMove(rd0, drag_state)) : rd0
   const grids = D.DiffToGrid(rd)
@@ -331,23 +351,36 @@ export function Ladder(
       onMouseLeave={e => onDrag && drag_state && onDrag({...drag_state, over: false})}
       className={`${LadderStyle} ${clean_ul} ${Unselectable} ladder`}>
       {rd.map((d, i) => {
+        function is_hovering(token_id?: string) {
+          return token_id === hover_id || d.id === hover_id
+        }
+        function HoverSpan(token_id: string, v: VNode) {
+          return (
+            <span
+              key={token_id}
+              onMouseEnter={() => onHover && onHover(token_id, 'token')}
+              onMouseLeave={() => onHover && onHover(undefined)}>
+              <span style={HoverStyle(is_hovering(token_id))}>{v}</span>
+            </span>
+          )
+        }
         const [s, t] = Utils.expr((): [VNode, VNode] => {
           switch (d.edit) {
             case 'Edited':
               return [
                 <div style={{position: 'relative'}}>
-                  {Key(d.source_diffs.map(deletes))}
+                  {d.source_diffs.map((ds, i) => HoverSpan(d.source[i].id, deletes(ds)))}
                   {d.source.length > 1 && brows[~~d.manual].under}
                 </div>,
                 <div style={{position: 'relative'}}>
-                  {Key(d.target_diffs.map(inserts))}
+                  {d.target_diffs.map((ds, i) => HoverSpan(d.target[i].id, inserts(ds)))}
                   {d.target.length > 1 && brows[~~d.manual].above}
                 </div>,
               ]
             case 'Dragged':
-              return [deletes(d.source_diff), <React.Fragment />]
+              return [HoverSpan(d.source.id, deletes(d.source_diff)), <React.Fragment />]
             case 'Dropped':
-              return [<React.Fragment />, inserts(d.target_diff)]
+              return [<React.Fragment />, HoverSpan(d.target.id, inserts(d.target_diff))]
           }
         })
         const upper = Column(u[i], g.edges)

@@ -13,6 +13,7 @@ import * as T from './Token'
 import {VNode} from './LadderView'
 
 export const ManualMarkClassName = 'ManualMark'
+export const HoverClassName = 'Hover'
 
 function Wrap(h: HTMLElement, k: () => void) {
   return (
@@ -46,7 +47,10 @@ function defaultTabBehaviour(cm: CodeMirror.Editor) {
   })
 }
 
-export function GraphEditingCM(store: Store<Undo<Graph>>): VNode {
+export function GraphEditingCM(
+  store: Store<Undo<Graph>>,
+  hover_store: Store<string | undefined>
+): VNode {
   /* Note that we don't show the last character of the graph in the code mirror.
   It must necessarily be whitespace anyway. */
   const graph = store.at('now')
@@ -139,12 +143,50 @@ export function GraphEditingCM(store: Store<Undo<Graph>>): VNode {
     const graph_text = G.target_text(graph.get()).slice(0, -1)
     const editor_text = cm.getDoc().getValue()
     if (graph_text !== editor_text) {
-      Utils.stdout(['set value', 'graph_text:', graph_text, 'editor_text:', editor_text])
       cm.setValue(graph_text)
+      set_marks()
     }
   }
 
+  cm.getWrapperElement().addEventListener('mousemove', e => {
+    const coord = cm.coordsChar({left: e.pageX, top: e.pageY})
+    if (!(('outside' in coord) as any)) {
+      const g = graph.get()
+      const {token} = T.token_at(G.target_texts(g), cm.getDoc().indexFromPos(coord))
+      const hover_id = g.target[token].id
+      hover_store.set(hover_id)
+    } else {
+      hover_store.set(undefined)
+    }
+  })
+
+  function set_marks() {
+    cm.operation(() => {
+      const doc = cm.getDoc()
+      doc.getAllMarks().map(m => m.clear())
+      const g = store.get().now
+      const d = G.calculate_raw_diff(g)
+      const em = G.edge_map(g)
+      const hover_id = hover_store.get()
+      let i = 0
+      g.target.forEach(tok => {
+        const n = tok.text.length
+        const e = em.get(tok.id)
+        function mark_me(opts: CodeMirror.TextMarkerOptions) {
+          const from = doc.posFromIndex(i)
+          const to = doc.posFromIndex(i + n - (tok.text.match(/\s$/) || '').length)
+          doc.markText(from, to, opts)
+        }
+        e && e.manual && mark_me({className: ManualMarkClassName})
+        hover_id === tok.id && mark_me({className: HoverClassName})
+        e && hover_id === e.id && mark_me({className: HoverClassName})
+        i += n
+      })
+    })
+  }
+
   graph.on(graph_to_cm)
+  hover_store.on(set_marks)
 
   graph_to_cm()
 

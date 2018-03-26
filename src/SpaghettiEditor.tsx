@@ -27,10 +27,12 @@ import 'dejavu-fonts-ttf/ttf/DejaVuSans.ttf'
 
 export interface State {
   readonly graph: Undo<Graph>
+  readonly hover_id?: string
 }
 
 export const init: State = {
   graph: Undo.init(G.init('')),
+  hover_id: undefined,
 }
 
 export function Textarea({
@@ -137,6 +139,7 @@ const topStyle = style({
       color: '#26a',
       background: '#e6e6e6',
     },
+    [`& .${CM.HoverClassName}`]: L.HoverStyle(true),
     '& > .main': {
       gridColumnStart: 'main',
     },
@@ -238,7 +241,7 @@ export function App(store: Store<State>): () => VNode {
     store.set({graph: Undo.init(G.init('this is an example', true))})
   }
 
-  const cm_node = CM.GraphEditingCM(store.at('graph'))
+  const cm_node = CM.GraphEditingCM(store.at('graph'), store.at('hover_id'))
 
   return () => View(store, cm_node)
 }
@@ -263,7 +266,7 @@ export function View(store: Store<State>, cm_node: VNode): VNode {
     )
 
   // Utils.stdout(units.get())
-  Utils.stdout(graph.get().target)
+  // Utils.stdout(graph.get().target)
 
   // const source = now.at('source')
   // const target = now.at('target')
@@ -282,7 +285,12 @@ export function View(store: Store<State>, cm_node: VNode): VNode {
     <DropZone webserviceURL={ws_url} onDrop={g => advance(() => graph.set(g))}>
       <div className={topStyle}>
         <div className="main" style={{minHeight: '10em'}}>
-          <L.LadderComponent graph={graph.get()} onDrop={g => advance(() => graph.set(g))} />
+          <L.LadderComponent
+            graph={graph.get()}
+            onDrop={g => advance(() => graph.set(g))}
+            hoverId={state.hover_id}
+            onHover={hover_id => store.update({hover_id})}
+          />
         </div>
         {sides.map((side, i) => (
           <React.Fragment key={i}>
