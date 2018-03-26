@@ -158,8 +158,11 @@ export function token_diff(s1: string, s2: string) {
 
 export const invert_token_diff = (ds: TokenDiff) => ds.map(([i, s]) => [-i, s] as [number, string])
 
-// ss must be nonempty and all strings must be nonempty
+// all strings must be nonempty
 export function multi_token_diff(ss: string[], s2: string): TokenDiff[] {
+  if (ss.length === 0) {
+    return []
+  }
   let lengths = ss.map(s => s.length)
   const diff = token_diff(ss.join(''), s2)
   let cur = [] as [number, string][]
