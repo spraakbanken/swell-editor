@@ -323,6 +323,19 @@ export function units_to_string(units: Unit[], sep = ' ' as ' ' | '_') {
 
 type STU = ST<Unit[]>
 
+/**
+
+  ({
+    source: [{text: 'word ', ids: ['s0'], labels: [], links: []}],
+    target: [{text: 'word ', ids: ['t0'], labels: [], links: []}]
+  }) // => proto_graph_to_units(G.init('word'))
+
+  ({
+    source: [{text: 'word ', ids: ['s0'], labels: [], links: [{tag: 'id', id: 's0'}]}],
+    target: [{text: 'word ', ids: ['t0'], labels: [], links: [{tag: 'id', id: 's0'}]}]
+  }) // => proto_graph_to_units(G.init('word', true))
+
+*/
 export function proto_graph_to_units(g: Graph): STU {
   const em = Utils.chain(G.edge_map(g), m => (id: string): G.Edge =>
     m.get(id) || Utils.raise(`Token id ${id} not in edge map`)
@@ -339,7 +352,10 @@ export function proto_graph_to_units(g: Graph): STU {
         if (e.ids.length === 1) {
           return [unlinked]
         }
-        return [idLink(e.ids[0])]
+        // we sort because we want 's0' to be chosen instead of 't0'
+        // in prefer_text_links because linked words always refer
+        // to the source text
+        return [idLink(e.ids.sort()[0])]
       })
       return Unit(token.text, [{ids: [token.id], links, labels}])
     })
@@ -366,7 +382,7 @@ export function proto_graph_to_units(g: Graph): STU {
     source: parse_strict(`a b c`),
     target: parse_strict(`a b c~c`)
   }
-  Utils.stderr(minimize(With)) // => Utils.stderr(Without)
+  minimize(With) // => Without
 
 
 */
