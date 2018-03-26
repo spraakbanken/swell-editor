@@ -228,7 +228,7 @@ const {inserts, deletes} = Utils.expr(() => {
   }
 })
 
-export type DragState = {type: 'move'; from: number; to: number} | null
+export type DragState = {type: 'move'; from: number; to: number; over: boolean} | null
 //  | { request: 'merge', edge_ids: string[] }
 
 export function ApplyMove(diff: D.Diff[], {from, to}: {from: number; to: number}): D.Diff[] {
@@ -314,13 +314,13 @@ export function Ladder(
   onDrag?: (ds: DragState) => void,
   onDrop?: (ds: DragState) => void
 ): VNode {
-  const rd = drag_state ? RD.enrichen(g, ApplyMove(rd0, drag_state)) : rd0
+  const rd = drag_state && drag_state.over ? RD.enrichen(g, ApplyMove(rd0, drag_state)) : rd0
   const grids = D.DiffToGrid(rd)
   const u = grids.upper
   const l = grids.lower
   return (
     <div
-      onMouseLeave={e => onDrag && onDrag(null)}
+      onMouseLeave={e => onDrag && drag_state && onDrag({...drag_state, over: false})}
       className={`${LadderStyle} ${clean_ul} ${Unselectable} ladder`}>
       {rd.map((d, i) => {
         const [s, t] = Utils.expr((): [VNode, VNode] => {
@@ -364,7 +364,7 @@ export function Ladder(
           <ul
             key={d.index}
             onMouseMove={e => {
-              if (drag_state) {
+              if (onDrag && e.buttons === 1 && drag_state) {
                 const hover = drag_state.to
                 const to = i
                 const w = e.currentTarget.clientWidth
@@ -374,7 +374,10 @@ export function Ladder(
                 const yes_left = to < hover - 1 || (to == hover - 1 && left)
                 const yes_right = to > hover + 1 || (to == hover + 1 && !left)
                 const yes = yes_left || yes_right
-                onDrag && yes && onDrag({...drag_state, to})
+                yes && onDrag({...drag_state, to, over: true})
+              }
+              if (onDrag && e.buttons === 0 && drag_state) {
+                onDrag(null)
               }
             }}
             onMouseUp={e => {
@@ -386,7 +389,7 @@ export function Ladder(
             {lower}
             <li
               style={{cursor: 'pointer', background: '#fff0'}}
-              onMouseDown={e => onDrag && onDrag({type: 'move', from: i, to: i})}>
+              onMouseDown={e => onDrag && onDrag({type: 'move', from: i, to: i, over: true})}>
               {t}
             </li>
           </ul>
