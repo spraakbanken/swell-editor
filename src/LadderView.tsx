@@ -430,7 +430,9 @@ export function Ladder(
             {lower}
             <li
               style={{cursor: 'pointer', background: '#fff0'}}
-              onMouseDown={e => onDrag && onDrag({type: 'move', from: i, to: i, over: true})}>
+              onMouseDown={e =>
+                e.buttons === 1 && onDrag && onDrag({type: 'move', from: i, to: i, over: true})
+              }>
               {t}
             </li>
           </ul>

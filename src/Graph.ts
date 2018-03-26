@@ -129,7 +129,7 @@ export function check_invariant(g: Graph): 'ok' | {violation: string; g: Graph} 
   } catch (e) {
     // console.error(e)
     // console.error(JSON.stringify(g, undefined, 2))
-    return {violation: e, g}
+    return {violation: e.toString(), g}
   }
   R.equals(g, align(g)) || Utils.raise('Graph not automatically aligned')
   return 'ok'

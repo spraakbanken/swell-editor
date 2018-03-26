@@ -41,26 +41,31 @@ function CM(opts: CodeMirror.EditorConfiguration): CMVN {
 
 function defaultTabBehaviour(cm: CodeMirror.Editor) {
   ;(cm.on as any)('keydown', (_: any, e: KeyboardEvent) => {
+    console.log(e)
     if (e.key == 'Tab') {
       ;(e as any).codemirrorIgnore = true
     }
   })
 }
 
-export function GraphEditingCM(
-  store: Store<Undo<Graph>>,
-  hover_store: Store<string | undefined>
-): VNode {
+export interface State {
+  readonly graph: Undo<Graph>
+  readonly hover_id?: string
+  readonly label_id?: string
+}
+
+export function GraphEditingCM(store: Store<State>): VNode {
   /* Note that we don't show the last character of the graph in the code mirror.
   It must necessarily be whitespace anyway. */
-  const graph = store.at('now')
+  const history = store.at('graph')
+  const graph = history.at('now')
 
   function undo() {
-    store.modify(Undo.undo)
+    history.modify(Undo.undo)
     console.log('undo')
   }
   function redo() {
-    store.modify(Undo.redo)
+    history.modify(Undo.redo)
   }
 
   const extraKeys = {
@@ -78,6 +83,8 @@ export function GraphEditingCM(
   const {cm, node} = CM({extraKeys, tabindex: 3})
   defaultTabBehaviour(cm)
   cm.setValue(G.target_text(graph.get()))
+
+  const {Index} = PositionUtils(cm, graph)
 
   /*
   cm.on('update', () => {
@@ -132,7 +139,7 @@ export function GraphEditingCM(
           from, to, removed: change.removed, text: change.text,
         })
         */
-        store.modify(Undo.advance)
+        history.modify(Undo.advance)
         graph.set(G.set_target(g, cm.getDoc().getValue() + ' '))
         set_marks()
       })
@@ -149,14 +156,21 @@ export function GraphEditingCM(
   }
 
   cm.getWrapperElement().addEventListener('mousemove', e => {
-    const coord = cm.coordsChar({left: e.pageX, top: e.pageY})
-    if (!(('outside' in coord) as any)) {
-      const g = graph.get()
-      const {token} = T.token_at(G.target_texts(g), cm.getDoc().indexFromPos(coord))
-      const hover_id = g.target[token].id
-      hover_store.set(hover_id)
+    const {token} = Index.fromCoords(e).toToken()
+    if (token) {
+      store.update({hover_id: token.id})
     } else {
-      hover_store.set(undefined)
+      store.update({hover_id: undefined})
+    }
+  })
+
+  cm.getWrapperElement().addEventListener('contextmenu', e => {
+    e.preventDefault()
+    const {edge} = Index.fromCoords(e).toEdge()
+    if (edge) {
+      store.update({hover_id: edge.id, label_id: edge.id})
+    } else {
+      store.update({hover_id: undefined, label_id: undefined})
     }
   })
 
@@ -164,10 +178,10 @@ export function GraphEditingCM(
     cm.operation(() => {
       const doc = cm.getDoc()
       doc.getAllMarks().map(m => m.clear())
-      const g = store.get().now
+      const g = graph.get()
       const d = G.calculate_raw_diff(g)
       const em = G.edge_map(g)
-      const hover_id = hover_store.get()
+      const hover_id = store.get().hover_id
       let i = 0
       g.target.forEach(tok => {
         const n = tok.text.length
@@ -185,10 +199,65 @@ export function GraphEditingCM(
     })
   }
 
-  graph.on(graph_to_cm)
-  hover_store.on(set_marks)
+  store.on(() => {
+    graph_to_cm()
+    set_marks()
+  })
 
   graph_to_cm()
 
   return node
 }
+
+function PositionUtils(cm: CodeMirror.Editor, graph: Store<Graph>) {
+  class Edge {
+    constructor(public readonly edge: G.Edge | null) {}
+  }
+
+  class Token {
+    constructor(public readonly token: T.Token | null) {}
+
+    toEdge() {
+      if (this.token) {
+        const g = graph.get()
+        const em = G.edge_map(g)
+        const edge = em.get(this.token.id)
+        if (edge) {
+          return new Edge(edge)
+        }
+      }
+      return new Edge(null)
+    }
+  }
+
+  class Index {
+    constructor(public readonly index: number | null) {}
+
+    static fromCoords(e: {pageX: number; pageY: number}): Index {
+      const coord = cm.coordsChar({left: e.pageX, top: e.pageY})
+      if (!(('outside' in coord) as any)) {
+        const g = graph.get()
+        return new Index(cm.getDoc().indexFromPos(coord))
+      } else {
+        return new Index(null)
+      }
+    }
+
+    toEdge() {
+      return this.toToken().toEdge()
+    }
+
+    toToken(): Token {
+      if (this.index) {
+        const g = graph.get()
+        const {token} = T.token_at(G.target_texts(g), this.index)
+        if (token in g.target) {
+          return new Token(g.target[token])
+        }
+      }
+      return new Token(null)
+    }
+  }
+  return {Edge, Token, Index}
+}
+

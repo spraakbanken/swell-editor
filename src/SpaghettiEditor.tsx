@@ -28,21 +28,27 @@ import 'dejavu-fonts-ttf/ttf/DejaVuSans.ttf'
 export interface State {
   readonly graph: Undo<Graph>
   readonly hover_id?: string
+  readonly label_id?: string
 }
 
 export const init: State = {
   graph: Undo.init(G.init('')),
   hover_id: undefined,
+  label_id: undefined,
 }
 
 export function Textarea({
   store,
+  onRef,
   ...props
-}: {store: Store<string>} & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+}: {store: Store<string>} & React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
+    onRef?: (e: HTMLTextAreaElement) => void
+  }) {
   return (
     <textarea
       {...props}
       value={store.get()}
+      ref={e => onRef && e && onRef(e)}
       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => store.set(e.target.value)}
     />
   )
@@ -171,6 +177,23 @@ const topStyle = style({
       fontFamily: 'inherit',
       color: 'inherit',
     },
+    '& .Modal': {
+      top: '400px',
+      left: '50%',
+      right: 'auto',
+      bottom: 'auto',
+      marginRight: '-50%',
+      transform: 'translate(-50%, 0)',
+      zIndex: 10,
+      position: 'absolute',
+
+      fontSize: '0.85em',
+      background: 'hsl(0,0%,96%)',
+      borderTop: '2px hsl(220,65%,65%) solid',
+      boxShadow: '2px 2px 3px 0px hsla(0,0%,0%,0.2)',
+      borderRadius: '0px 0px 2px 2px',
+      padding: '0.25em',
+    },
   },
 })
 
@@ -241,7 +264,7 @@ export function App(store: Store<State>): () => VNode {
     store.set({graph: Undo.init(G.init('this is an example', true))})
   }
 
-  const cm_node = CM.GraphEditingCM(store.at('graph'), store.at('hover_id'))
+  const cm_node = CM.GraphEditingCM(store.pick('graph', 'hover_id', 'label_id'))
 
   return () => View(store, cm_node)
 }
@@ -283,7 +306,29 @@ export function View(store: Store<State>, cm_node: VNode): VNode {
 
   return (
     <DropZone webserviceURL={ws_url} onDrop={g => advance(() => graph.set(g))}>
-      <div className={topStyle}>
+      <div className={topStyle} style={{position: 'relative'}}>
+        {state.label_id && (
+          <div className="Modal">
+            <Textarea
+              store={G.label_store(graph, state.label_id).via(
+                Lens.iso(xs => xs.join(' '), s => s.split(/ /g))
+              )}
+              onBlur={e => store.update({label_id: undefined})}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === 'Escape') {
+                  store.update({label_id: undefined})
+                  e.preventDefault()
+                  Array.from(document.querySelectorAll('.CodeMirror textarea')).map((e: any) =>
+                    e.focus()
+                  )
+                }
+              }}
+              onRef={e => e.focus()}
+              rows={1}
+              placeholder="Enter labels..."
+            />
+          </div>
+        )}
         <div className="main" style={{minHeight: '10em'}}>
           <L.LadderComponent
             graph={graph.get()}
