@@ -100,12 +100,42 @@ const LadderStyle = style(
   }
 )
 
+export const ManualPathColour = '#6699cc'
+
 const greyPath = (manual: boolean): React.CSSProperties => ({
-  stroke: manual ? '#6699cc' : '#999',
+  stroke: manual ? ManualPathColour : '#999',
   strokeWidth: px(4),
   fill: 'none',
 })
 const whitePath: React.CSSProperties = {stroke: '#fff', strokeWidth: px(12), fill: 'none'}
+
+const make_brows = (manual: boolean) => {
+  const mustache_side = PixelPath('M 0 0.90 C 0 1.1 1 0.85 1 1.15', greyPath(manual))
+
+  const mustache2x2 = (
+    <React.Fragment>
+      {PixelPath('M 1 1.1 L 1 0.8', whitePath)}
+      {mustache_side}
+      <g transform="translate(2, 0) scale(-1,1)">{mustache_side}</g>
+    </React.Fragment>
+  )
+
+  const under = Absolute(
+    <svg height="200%" width="100%" viewBox="0 0 2 2" preserveAspectRatio="none">
+      {mustache2x2}
+    </svg>,
+    {zIndex: -1, position: 'absolute', top: '10%', left: '0.5px'}
+  )
+  const above = Absolute(
+    <svg height="200%" width="100%" viewBox="0 0 2 2" preserveAspectRatio="none">
+      <g transform="translate(0,2) scale(1,-1)">{mustache2x2}</g>
+    </svg>,
+    {zIndex: -1, position: 'absolute', top: '-100%', left: '0.5px'}
+  )
+  return {under, above}
+}
+
+const brows = [make_brows(false), make_brows(true)]
 
 function PixelPath(d: string, css: React.CSSProperties) {
   return <path d={d} style={css} vectorEffect="non-scaling-stroke" />
@@ -256,28 +286,6 @@ export function ApplyMove(diff: D.Diff[], {from, to}: {from: number; to: number}
   }
 }
 
-const mustache_side = PixelPath('M 0 0.90 C 0 1.1 1 0.85 1 1.15', greyPath(false))
-const mustache2x2 = (
-  <>
-    {PixelPath('M 1 1.1 L 1 0.8', whitePath)}
-    {mustache_side}
-    <g transform="translate(2, 0) scale(-1,1)">{mustache_side}</g>
-  </>
-)
-
-const underbrow = Absolute(
-  <svg height="200%" width="100%" viewBox="0 0 2 2" preserveAspectRatio="none">
-    {mustache2x2}
-  </svg>,
-  {zIndex: -1, position: 'absolute', top: '10%', left: '0.5px'}
-)
-const overbrow = Absolute(
-  <svg height="200%" width="100%" viewBox="0 0 2 2" preserveAspectRatio="none">
-    <g transform="translate(0,2) scale(1,-1)">{mustache2x2}</g>
-  </svg>,
-  {zIndex: -1, position: 'absolute', top: '-80%', left: '0.5px'}
-)
-
 export class LadderComponent extends React.Component<
   {
     graph: G.Graph
@@ -329,11 +337,11 @@ export function Ladder(
               return [
                 <div style={{position: 'relative'}}>
                   {Key(d.source_diffs.map(deletes))}
-                  {d.source.length > 1 && underbrow}
+                  {d.source.length > 1 && brows[~~d.manual].under}
                 </div>,
                 <div style={{position: 'relative'}}>
                   {Key(d.target_diffs.map(inserts))}
-                  {d.target.length > 1 && overbrow}
+                  {d.target.length > 1 && brows[~~d.manual].above}
                 </div>,
               ]
             case 'Dragged':
