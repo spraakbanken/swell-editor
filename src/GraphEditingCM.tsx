@@ -12,6 +12,8 @@ import * as T from './Token'
 
 import {VNode} from './LadderView'
 
+export const ManualMarkClassName = 'ManualMark'
+
 function Wrap(h: HTMLElement, k: () => void) {
   return (
     <div
@@ -128,6 +130,7 @@ export function GraphEditingCM(store: Store<Undo<Graph>>): VNode {
         */
         store.modify(Undo.advance)
         graph.set(G.set_target(g, cm.getDoc().getValue() + ' '))
+        set_marks()
       })
     }
   })

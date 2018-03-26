@@ -19,7 +19,7 @@ import * as C from './Compact'
 
 import {VNode} from './LadderView'
 
-import {GraphEditingCM} from './GraphEditingCM'
+import * as CM from './GraphEditingCM'
 
 import 'codemirror/lib/codemirror.css'
 import 'lato-font/css/lato-font.min.css'
@@ -133,7 +133,10 @@ const topStyle = style({
       lineHeight: '1.5em',
       fontFamily: "'Lato', sans-serif",
     },
-
+    [`& .${CM.ManualMarkClassName}`]: {
+      color: '#26a',
+      background: '#e6e6e6',
+    },
     '& > .main': {
       gridColumnStart: 'main',
     },
@@ -231,7 +234,11 @@ export function App(store: Store<State>): () => VNode {
       }
     })
 
-  const cm_node = GraphEditingCM(store.at('graph'))
+  global.test = () => {
+    store.set({graph: Undo.init(G.init('this is an example', true))})
+  }
+
+  const cm_node = CM.GraphEditingCM(store.at('graph'))
 
   return () => View(store, cm_node)
 }
