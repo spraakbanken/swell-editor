@@ -335,6 +335,7 @@ export function View(store: Store<State>, cm_node: VNode): VNode {
             onDrop={g => advance(() => graph.set(g))}
             hoverId={state.hover_id}
             onHover={hover_id => store.update({hover_id})}
+            onMenu={id => store.update({hover_id: id, label_id: id})}
           />
         </div>
         {sides.map((side, i) => (

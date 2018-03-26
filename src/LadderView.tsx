@@ -298,10 +298,15 @@ export interface OnHover {
   (id: string | undefined, what?: 'token' | 'edge'): void
 }
 
+export interface OnMenu {
+  (id: string): void
+}
+
 export class LadderComponent extends React.Component<
   {
     graph: G.Graph
     onDrop?: (dropped_graph: G.Graph) => void
+    onMenu?: OnMenu
     onHover?: OnHover
     hoverId?: string
   },
@@ -328,7 +333,8 @@ export class LadderComponent extends React.Component<
         this.setState({drag_state: null})
       },
       this.props.hoverId,
-      this.props.onHover
+      this.props.onHover,
+      this.props.onMenu
     )
   }
 }
@@ -340,7 +346,8 @@ export function Ladder(
   onDrag?: (ds: DragState) => void,
   onDrop?: (ds: DragState) => void,
   hover_id?: string,
-  onHover?: OnHover
+  onHover?: OnHover,
+  onMenu?: OnMenu
 ): VNode {
   const rd = drag_state && drag_state.over ? RD.enrichen(g, ApplyMove(rd0, drag_state)) : rd0
   const grids = D.DiffToGrid(rd)
@@ -404,6 +411,7 @@ export function Ladder(
         return (
           <ul
             key={d.index}
+            onContextMenu={e => onMenu && (e.preventDefault(), onMenu(d.id))}
             onMouseMove={e => {
               if (onDrag && e.buttons === 1 && drag_state) {
                 const hover = drag_state.to

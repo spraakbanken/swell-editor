@@ -260,4 +260,3 @@ function PositionUtils(cm: CodeMirror.Editor, graph: Store<Graph>) {
   }
   return {Edge, Token, Index}
 }
-
