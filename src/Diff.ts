@@ -36,6 +36,12 @@ export const {cons, match} = diff
 
 export const dnd_match = dnd.match
 
+export const tokens = match({
+  Edited: d => [...d.source, ...d.target],
+  Dragged: d => [d.source],
+  Dropped: d => [d.target],
+})
+
 export const source = match({
   Edited: d => T.text(d.source),
   Dragged: d => d.source.text,

@@ -13,7 +13,9 @@ export class LadderComponent extends React.Component<
     onDrop?: (dropped_graph: G.Graph) => void
     onMenu?: OnMenu
     onHover?: OnHover
+    onSelect?: OnSelect
     hoverId?: string
+    selectedIds?: string[]
   },
   {
     drag_state: DragState
@@ -31,15 +33,19 @@ export class LadderComponent extends React.Component<
       undefined,
       this.state.drag_state,
       drag_state => this.setState({drag_state}),
-      drag_state => {
-        if (drag_state && onDrop) {
-          onDrop(G.diff_to_graph(ApplyMove(G.calculate_diff(graph), drag_state), graph.edges))
-        }
-        this.setState({drag_state: null})
-      },
+      onDrop
+        ? drag_state => {
+            if (drag_state && onDrop) {
+              onDrop(G.diff_to_graph(ApplyMove(G.calculate_diff(graph), drag_state), graph.edges))
+            }
+            this.setState({drag_state: null})
+          }
+        : undefined,
       this.props.hoverId,
       this.props.onHover,
-      this.props.onMenu
+      this.props.onMenu,
+      this.props.selectedIds,
+      this.props.onSelect
     )
   }
 }
@@ -117,6 +123,9 @@ const LadderStyle = style(
       '& > ul > li:nth-child(3)': {
         height: `${px(24)}`,
       },
+      '& > ul > li:nth-child(5)': {
+        marginTop: `${px(3)}`,
+      },
       '& > ul > li:nth-child(even)': {
         height: `${px(24)}`,
       },
@@ -150,11 +159,11 @@ const LadderStyle = style(
         strokeWidth: px(12),
         fill: 'none',
       },
-    }
+    },
   }
 )
 
-const greyPath = (manual: boolean) => manual ? 'GreyPathManual' : 'GreyPathAuto'
+const greyPath = (manual: boolean) => (manual ? 'GreyPathManual' : 'GreyPathAuto')
 const whitePath = 'WhitePath'
 
 const make_brows = (manual: boolean) => {
@@ -253,31 +262,6 @@ function Absolute(vnode: VNode, css: React.CSSProperties = {}) {
   )
 }
 
-function Column(column: D.Line[], edges: G.Edges, rel: VNode | null | false = null): VNode {
-  const endpoint_id: string | undefined = column
-    .filter(line => !LineIsHorizontal(line))
-    .map(line => line.id)[0]
-  return (
-    <li style={{position: 'relative'}}>
-      {rel}
-      {PixelPerfectSVG(
-        <svg height="100%" width="100%" viewBox="0 0 1 1" preserveAspectRatio="none">
-          {Key([
-            ...column
-              .filter(line => line.id != endpoint_id)
-              .map(line => Line(line, greyPath(!!edges[line.id].manual))),
-            ...column.filter(line => line.id == endpoint_id).map(line => Line(line, whitePath)),
-            ...column
-              .filter(line => line.id == endpoint_id)
-              .map(line => Line(line, greyPath(!!edges[line.id].manual))),
-          ])}
-        </svg>,
-        {zIndex: -2}
-      )}
-    </li>
-  )
-}
-
 const {inserts, deletes} = Utils.expr(() => {
   type Triplet<A> = [A, A, A]
   const diff_to_spans = (rules: Triplet<(s: string) => VNode | null>) => (
@@ -320,6 +304,9 @@ export function ApplyMove(diff: D.Diff[], {from, to}: {from: number; to: number}
         to
       )
     case 'Edited':
+      if (from === to) {
+        return diff
+      }
       if (d.source.length != 1 || d.target.length != 1) {
         console.error('TODO: handle Edited that is not 1-1')
         console.debug(Utils.show(d))
@@ -334,20 +321,23 @@ export function ApplyMove(diff: D.Diff[], {from, to}: {from: number; to: number}
   }
 }
 
-export function HoverStyle(b: boolean) {
-  if (b) {
-    return {background: '#fe5', zIndex: -1}
-  } else {
-    return {}
-  }
-}
-
 export interface OnHover {
   (id: string | undefined, what?: 'token' | 'edge'): void
 }
 
 export interface OnMenu {
   (id: string): void
+}
+
+export interface OnSelect {
+  (ids: string[]): void
+}
+
+export function hoverClass(hover_id: string | undefined, id: string) {
+  if (hover_id !== undefined) {
+    return 'hoverable ' + (id === hover_id ? 'hover' : 'not-hover')
+  }
+  return 'hoverable'
 }
 
 export function Ladder(
@@ -358,8 +348,44 @@ export function Ladder(
   onDrop?: (ds: DragState) => void,
   hover_id?: string,
   onHover?: OnHover,
-  onMenu?: OnMenu
+  onMenu?: OnMenu,
+  selected: string[] = [],
+  onSelect?: OnSelect
 ): VNode {
+  if (selected.length > 0) {
+    hover_id = undefined
+  }
+
+  const edges = g.edges
+
+  function Column(column: D.Line[], rel: VNode | null | false = null): VNode {
+    const endpoint_id: string | undefined = column
+      .filter(line => !LineIsHorizontal(line))
+      .map(line => line.id)[0]
+
+    const top = column.filter(line => line.id == endpoint_id)
+    const below = column.filter(line => line.id != endpoint_id)
+    return (
+      <li style={{position: 'relative'}}>
+        {rel}
+        {PixelPerfectSVG(
+          <svg height="100%" width="100%" viewBox="0 0 1 1" preserveAspectRatio="none">
+            {Key([
+              ...below.map(line =>
+                Line(line, greyPath(!!edges[line.id].manual) + ' ' + hoverClass(hover_id, line.id))
+              ),
+              ...top.map(line => Line(line, whitePath)),
+              ...top.map(line =>
+                Line(line, greyPath(!!edges[line.id].manual) + ' ' + hoverClass(hover_id, line.id))
+              ),
+            ])}
+          </svg>,
+          {zIndex: -2}
+        )}
+      </li>
+    )
+  }
+
   const rd = drag_state && drag_state.over ? RD.enrichen(g, ApplyMove(rd0, drag_state)) : rd0
   const grids = D.DiffToGrid(rd)
   const u = grids.upper
@@ -376,9 +402,14 @@ export function Ladder(
           return (
             <span
               key={token_id}
-              onMouseEnter={() => onHover && onHover(token_id, 'token')}
-              onMouseLeave={() => onHover && onHover(undefined)}>
-              <span style={HoverStyle(is_hovering(token_id))}>{v}</span>
+              className={'Selectable' + (selected.some(id => id === token_id) ? ' Selected' : '')}
+              onClick={e => {
+                if (onSelect) {
+                  e.stopPropagation()
+                  onSelect([token_id])
+                }
+              }}>
+              {v}
             </span>
           )
         }
@@ -396,13 +427,19 @@ export function Ladder(
                 </div>,
               ]
             case 'Dragged':
-              return [HoverSpan(d.source.id, deletes(d.source_diff)), <React.Fragment />]
+              return [
+                <div>{HoverSpan(d.source.id, deletes(d.source_diff))}</div>,
+                <React.Fragment />,
+              ]
             case 'Dropped':
-              return [<React.Fragment />, HoverSpan(d.target.id, inserts(d.target_diff))]
+              return [
+                <React.Fragment />,
+                <div>{HoverSpan(d.target.id, inserts(d.target_diff))}</div>,
+              ]
           }
         })
-        const upper = Column(u[i], g.edges)
-        const lower = Column(l[i], g.edges)
+        const upper = Column(u[i])
+        const lower = Column(l[i])
         const labels = g.edges[d.id].labels.filter(lbl => lbl.length > 0)
         const show_label_now = u[i].some(b => b.y1 == 1) || l[i].some(b => b.y1 == 0)
         const has_line_below_label = show_label_now && l[i].length > 0
@@ -411,7 +448,6 @@ export function Ladder(
           : []
         const mid = Column(
           line_below_label,
-          g.edges,
           labels.length > 0 &&
             show_label_now && (
               <div style={{zIndex: 1}}>
@@ -421,6 +457,13 @@ export function Ladder(
         )
         return (
           <ul
+            onClick={e => {
+              if (onSelect) {
+                onSelect(edges[d.id].ids)
+              }
+            }}
+            onMouseEnter={() => onHover && onHover(d.id, 'token')}
+            onMouseLeave={() => onHover && onHover(undefined)}
             key={d.index}
             onContextMenu={e => onMenu && (e.preventDefault(), onMenu(d.id))}
             onMouseMove={e => {
@@ -443,12 +486,13 @@ export function Ladder(
             onMouseUp={e => {
               onDrop && drag_state && (onDrop(drag_state), e.preventDefault())
             }}>
-            <li>{s}</li>
+            <li className={hoverClass(hover_id, d.id)}>{s}</li>
             {upper}
             {mid}
             {lower}
             <li
-              style={{cursor: 'pointer', background: '#fff0'}}
+              className={hoverClass(hover_id, d.id)}
+              style={{cursor: 'pointer'}}
               onMouseDown={e =>
                 e.buttons === 1 && onDrag && onDrag({type: 'move', from: i, to: i, over: true})
               }>

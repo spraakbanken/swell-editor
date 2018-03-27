@@ -59,7 +59,7 @@ export function Edge(ids: string[], labels: string[], manual = false): Edge {
 export function merge_edges(...es: Edge[]) {
   return Edge(
     Utils.flatMap(es, e => e.ids),
-    Utils.flatMap(es, e => e.labels),
+    Utils.uniq(Utils.flatMap(es, e => e.labels)),
     es.some(e => !!e.manual)
   )
 }
@@ -170,6 +170,27 @@ export function edge_map(g: Graph): Map<string, Edge> {
   return new Map(
     Utils.flatten(record.traverse(g.edges, e => e.ids.map(id => [id, e] as [string, Edge])))
   )
+}
+
+/** The edges from a set of ids
+
+  const g = init('w')
+  token_ids_to_edges(g, ['s0']) // => Object.values(g.edges)
+  token_ids_to_edges(g, ['t0']) // => Object.values(g.edges)
+  token_ids_to_edges(g, ['s0', 't0']) // => Object.values(g.edges)
+
+*/
+export function token_ids_to_edges(g: Graph, ids: string[]): Edge[] {
+  const em = edge_map(g)
+  const out: Edge[] = []
+  const first = Utils.unique_check<string>()
+  ids.forEach(id => {
+    const e = em.get(id)
+    if (e && first(e.id)) {
+      out.push(e)
+    }
+  })
+  return out
 }
 
 /**
@@ -877,81 +898,74 @@ export function label_store(g: Store<Graph>, edge_id: string): Store<string[]> {
 }
 
 /** Revert at an edge id */
-export function revert(g: Graph, edge_id: string): Graph {
-  return align(proto_revert(g, edge_id))
+export function revert(g: Graph, edge_ids: string[]): Graph {
+  return align(proto_revert(g, edge_ids))
 }
 
 /** Revert at an edge id */
-export function proto_revert(g: Graph, edge_id: string): Graph {
-  if (g.edges[edge_id] === undefined) {
-    return Utils.raise('Revert outside range: ' + Utils.show({edge_id}))
-  } else {
-    const diff = calculate_raw_diff(g)
-    let supply = Utils.next_id(g.target.map(t => t.id))
-    const edges = record.filter(g.edges, (_, id) => id != edge_id)
-    const reverted = Utils.flatMap(
-      diff,
-      D.dnd_match({
-        Dragged(d) {
-          if (d.id == edge_id) {
-            const s = d.source
-            const t = {...d.source, id: 't' + supply++}
-            const e = Edge([s.id, t.id], [])
-            edges[e.id] = e
-            return [Dragged(s, e.id, false), Dropped(t, e.id, false)]
-          } else {
-            return [d]
-          }
-        },
-        Dropped(d) {
-          if (d.id == edge_id) {
-            return []
-          } else {
-            return [d]
-          }
-        },
-      })
-    )
-    // console.log(Utils.show({diff, reverted}))
-    return from_raw_diff(reverted, edges)
-  }
+export function proto_revert(g: Graph, edge_ids: string[]): Graph {
+  const edge_set = new Set(edge_ids)
+  const diff = calculate_raw_diff(g)
+  let supply = Utils.next_id(g.target.map(t => t.id))
+  const edges = record.filter(g.edges, (_, id) => !edge_set.has(id))
+  const reverted = Utils.flatMap(
+    diff,
+    D.dnd_match({
+      Dragged(d) {
+        if (edge_set.has(d.id)) {
+          const s = d.source
+          const t = {...d.source, id: 't' + supply++}
+          const e = Edge([s.id, t.id], [])
+          edges[e.id] = e
+          return [Dragged(s, e.id, false), Dropped(t, e.id, false)]
+        } else {
+          return [d]
+        }
+      },
+      Dropped(d) {
+        if (edge_set.has(d.id)) {
+          return []
+        } else {
+          return [d]
+        }
+      },
+    })
+  )
+  // console.log(Utils.show({diff, reverted}))
+  return from_raw_diff(reverted, edges)
 }
 
-/** Connect two edge ids */
-export function connect(g: Graph, edge_id: string, with_edge_id: string): Graph {
-  if (edge_id === with_edge_id) {
-    // these are already connected!
-    return g
-  }
-  const edges = record.filter(g.edges, (_, id) => id != edge_id && id != with_edge_id)
-  const e1 = g.edges[edge_id]
-  const e2 = g.edges[with_edge_id]
-  if (e1 && e2) {
-    const edge = merge_edges(Edge([], [], true), e1, e2)
-    edges[edge.id] = edge
-    return {...g, edges}
-  } else {
-    console.error('Trying to connect edges that do not exist')
-    return g
-  }
+/** Connect edges by ids */
+export function connect(g: Graph, edge_ids: string[]): Graph {
+  const edges = record.filter(g.edges, (e, _) => !edge_ids.some(id => id == e.id))
+  const es = record.traverse(
+    record.filter(g.edges, (e, _) => edge_ids.some(id => id == e.id)),
+    e => e
+  )
+  const edge = merge_edges(...es)
+  edges[edge.id] = edge
+  return align({...g, edges})
 }
 
 /** Disconnect a source or target id */
-export function disconnect(g: Graph, id: string): Graph {
+export function disconnect(g: Graph, ids: string[]): Graph {
+  if (ids.length == 0) {
+    return align(g)
+  }
+  const id = ids[0]
   const em = edge_map(g)
   const edge = em.get(id)
   if (edge) {
     const edge_without = Edge(edge.ids.filter(i => i != id), edge.labels)
-    const edge_with = Edge([id], [])
+    const edge_with = Edge([id], [], true)
     const edges = record.filter(g.edges, (_, id) => id != edge.id)
     edges[edge_with.id] = edge_with
     if (edge_without.ids.length > 0) {
       edges[edge_without.id] = edge_without
     }
-    return {...g, edges}
+    return disconnect({...g, edges}, ids.slice(1))
   } else {
-    console.error('Trying to disconnect unidentifiable object')
-    return g
+    return Utils.raise('Trying to disconnect unidentifiable token')
   }
 }
 

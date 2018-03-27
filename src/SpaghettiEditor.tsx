@@ -14,6 +14,7 @@ import * as L from './LadderView'
 import * as RD from './RichDiff'
 import * as T from './Token'
 import * as Utils from './Utils'
+import * as record from './record'
 
 import * as C from './Compact'
 
@@ -29,12 +30,14 @@ export interface State {
   readonly graph: Undo<Graph>
   readonly hover_id?: string
   readonly label_id?: string
+  readonly selected: Record<string, true>
 }
 
 export const init: State = {
   graph: Undo.init(G.init('')),
   hover_id: undefined,
   label_id: undefined,
+  selected: {},
 }
 
 export function Textarea({
@@ -145,7 +148,6 @@ const topStyle = style({
       color: '#26a',
       background: '#e6e6e6',
     },
-    [`& .${CM.HoverClassName}`]: L.HoverStyle(true),
     '& > .main': {
       gridColumnStart: 'main',
     },
@@ -177,22 +179,61 @@ const topStyle = style({
       fontFamily: 'inherit',
       color: 'inherit',
     },
+    '& .ladder ul': {
+      zIndex: 1,
+    },
+    '& .Selected, & .Selectable': {
+      padding: '3px',
+    },
+    '& .Selected': {
+      background: '#eee',
+      color: '#222',
+      borderRadius: '3px',
+      padding: '2px',
+      border: '1px solid #888',
+    },
+    '& .hoverable, & .hoverable *': {
+      transition: 'opacity 50ms 50ms',
+      opacity: 1.0,
+    },
+    [`& .hover *, & .hover `]: {
+      opacity: 1.0,
+      strokeOpacity: 1.0,
+    },
+    [`& .not-hover *, & .not-hover `]: {
+      opacity: 0.9,
+      strokeOpacity: 0.9,
+      fillOpacity: 0.8,
+    },
     '& .Modal': {
-      top: '400px',
-      left: '50%',
-      right: 'auto',
+      top: '0px',
+      left: '0',
+      height: '100%',
+      width: '100%',
       bottom: 'auto',
-      marginRight: '-50%',
-      transform: 'translate(-50%, 0)',
-      zIndex: 10,
-      position: 'absolute',
+      zIndex: 0,
+      position: 'fixed',
+    },
+    '& .ModalInner': {
+      top: '0px',
+      left: '0',
+      padding: '10px 5px',
+      width: '200px',
+      height: '100%',
 
-      fontSize: '0.85em',
       background: 'hsl(0,0%,96%)',
       borderTop: '2px hsl(220,65%,65%) solid',
       boxShadow: '2px 2px 3px 0px hsla(0,0%,0%,0.2)',
       borderRadius: '0px 0px 2px 2px',
-      padding: '0.25em',
+    },
+    '& .Modal button': {
+      fontSize: '0.85em',
+      width: '90px',
+      marginBottom: '5px',
+      marginRight: '5px',
+    },
+    '& .Modal li button': {
+      width: '30px',
     },
   },
 })
@@ -261,7 +302,7 @@ export function App(store: Store<State>): () => VNode {
     })
 
   global.test = () => {
-    store.set({graph: Undo.init(G.init('this is an example', true))})
+    store.set({graph: Undo.init(G.init('this is an example', true)), selected: {}})
   }
 
   const cm_node = CM.GraphEditingCM(store.pick('graph', 'hover_id', 'label_id'))
@@ -304,55 +345,140 @@ export function View(store: Store<State>, cm_node: VNode): VNode {
     })
   }
 
+  function LabelSidekick() {
+    const selected = Object.keys(state.selected)
+    if (selected.length > 0) {
+      const edges = G.token_ids_to_edges(state.graph.now, selected)
+      const labels = Utils.uniq(Utils.flatMap(edges, e => e.labels))
+      const label_stores = edges.map(e => G.label_store(graph, e.id))
+      // const spacesep = label_store.via(Lens.iso(xs => xs.join(' '), s => s.split(/ /g)))
+      // function blur(e: React.SyntheticEvent<any>) {
+      //   console.log('blur')
+      //   store.update({label_id: undefined})
+      //   e.preventDefault()
+      //   Array.from(document.querySelectorAll('.CodeMirror textarea')).map((e: any) =>
+      //     e.focus()
+      //   )
+      // }
+      function pop(l: string) {
+        advance(() => label_stores.forEach(s => s.modify(ls => ls.filter(x => x !== l))))
+      }
+      function push(l: string) {
+        advance(() => label_stores.forEach(s => Store.arr(s, 'push')(l)))
+      }
+      function auto() {
+        const edge_ids = G.token_ids_to_edges(graph.get(), selected).map(e => e.id)
+        graph.modify(g =>
+          G.align({
+            ...g,
+            edges: record.map(g.edges, e => {
+              if (edge_ids.some(id => id == e.id)) {
+                return G.Edge(e.ids, e.labels, false)
+              } else {
+                return e
+              }
+            }),
+          })
+        )
+      }
+      function revert() {
+        const edge_ids = G.token_ids_to_edges(graph.get(), selected).map(e => e.id)
+        const edges = G.token_ids_to_edges(graph.get(), selected)
+        graph.modify(g => G.revert(g, edge_ids))
+      }
+      function disconnect() {
+        graph.modify(g => G.disconnect(g, selected))
+      }
+      function group() {
+        const edge_ids = G.token_ids_to_edges(graph.get(), selected).map(e => e.id)
+        graph.modify(g => G.connect(g, edge_ids))
+      }
+      return (
+        <div className="Modal" onClick={e => store.update({selected: {}})}>
+          <div className="ModalInner" onClick={e => e.stopPropagation()}>
+            <div>
+              {Button('undo', '', () => history.modify(Undo.undo))}
+              {Button('redo', '', () => history.modify(Undo.redo))}
+              {Button('revert', '', () => advance(revert))}
+              {Button('auto', '', () => advance(auto))}
+              {Button('group', '', () => advance(() => (disconnect(), group())))}
+              {Button('merge', '', () => advance(group))}
+              {Button('disconnect', '', () => advance(disconnect))}
+              {Button('deselect', '', () => store.update({selected: {}}))}
+            </div>
+            <hr />
+            <input
+              ref={e => e && e.focus()}
+              placeholder="Enter label..."
+              onKeyDown={e => {
+                console.log(e.key)
+                const t = e.target as HTMLInputElement
+                if (e.key === 'Enter' || e.key === ' ') {
+                  push(t.value)
+                  t.value = ''
+                }
+                if (e.key === 'Backspace' && t.value == '' && labels.length > 0) {
+                  pop(labels[0])
+                }
+                e.key === 'Escape' && store.update({selected: {}})
+              }}
+            />
+            <ul>
+              {labels.map(lbl => (
+                <li>
+                  {Button('x', '', () => pop(lbl))} {lbl}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )
+    }
+  }
+
   return (
     <DropZone webserviceURL={ws_url} onDrop={g => advance(() => graph.set(g))}>
       <div className={topStyle} style={{position: 'relative'}}>
-        {state.label_id && (
-          <div className="Modal">
-            <Textarea
-              store={G.label_store(graph, state.label_id).via(
-                Lens.iso(xs => xs.join(' '), s => s.split(/ /g))
-              )}
-              onBlur={e => store.update({label_id: undefined})}
-              onKeyDown={e => {
-                if (e.key === 'Enter' || e.key === 'Escape') {
-                  store.update({label_id: undefined})
-                  e.preventDefault()
-                  Array.from(document.querySelectorAll('.CodeMirror textarea')).map((e: any) =>
-                    e.focus()
-                  )
-                }
-              }}
-              onRef={e => e.focus()}
-              rows={1}
-              placeholder="Enter labels..."
-            />
-          </div>
-        )}
+        {LabelSidekick()}
         <div className="main" style={{minHeight: '10em'}}>
           <L.LadderComponent
             graph={graph.get()}
-            onDrop={g => advance(() => graph.set(g))}
+            onDrop={undefined && (g => advance(() => graph.set(g)))}
             hoverId={state.hover_id}
             onHover={hover_id => store.update({hover_id})}
             onMenu={id => store.update({hover_id: id, label_id: id})}
+            selectedIds={Object.keys(state.selected)}
+            onSelect={ids => {
+              const selected = store.get().selected
+              const b = ids.every(id => selected[id]) ? undefined : true
+              console.log(ids, b)
+              advance(() =>
+                ids.forEach(id =>
+                  store
+                    .at('selected')
+                    .via(Lens.key(id))
+                    .set(b)
+                )
+              )
+            }}
           />
         </div>
-        {sides.map((side, i) => (
-          <React.Fragment key={i}>
-            {Button('\u2b1a', 'clear', () => advance(() => units.at(side).set('')))}
-            {Button(i ? '\u21e1' : '\u21e3', 'copy to ' + side, () =>
-              advance(() => units.at(op(side)).set(units.get()[side]))
-            )}
-            <Textarea
-              store={units.at(side)}
-              tabIndex={(i + 1) as number}
-              rows={units.get()[side].split('\n').length}
-              style={{resize: 'vertical'}}
-              placeholder={'Enter ' + side + ' text...'}
-            />
-          </React.Fragment>
-        ))}
+        {false &&
+          sides.map((side, i) => (
+            <React.Fragment key={i}>
+              {Button('\u2b1a', 'clear', () => advance(() => units.at(side).set('')))}
+              {Button(i ? '\u21e1' : '\u21e3', 'copy to ' + side, () =>
+                advance(() => units.at(op(side)).set(units.get()[side]))
+              )}
+              <Textarea
+                store={units.at(side)}
+                tabIndex={(i + 1) as number}
+                rows={units.get()[side].split('\n').length}
+                style={{resize: 'vertical'}}
+                placeholder={'Enter ' + side + ' text...'}
+              />
+            </React.Fragment>
+          ))}
         <div className="main">{cm_node}</div>
         {showhide('graph json', Utils.show(g))}
         {showhide('diff json', Utils.show(d))}

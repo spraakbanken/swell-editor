@@ -155,10 +155,12 @@ export function GraphEditingCM(store: Store<State>): VNode {
     }
   }
 
+  cm.on('cursorActivity', _ => store.get().hover_id && store.update({hover_id: undefined}))
+
   cm.getWrapperElement().addEventListener('mousemove', e => {
-    const {token} = Index.fromCoords(e).toToken()
-    if (token) {
-      store.update({hover_id: token.id})
+    const {edge} = Index.fromCoords(e).toEdge()
+    if (edge) {
+      store.update({hover_id: edge.id})
     } else {
       store.update({hover_id: undefined})
     }
@@ -192,8 +194,9 @@ export function GraphEditingCM(store: Store<State>): VNode {
           doc.markText(from, to, opts)
         }
         e && e.manual && mark_me({className: ManualMarkClassName})
-        hover_id === tok.id && mark_me({className: HoverClassName})
-        e && hover_id === e.id && mark_me({className: HoverClassName})
+        if (e) {
+          mark_me({className: L.hoverClass(hover_id, e.id)})
+        }
         i += n
       })
     })
