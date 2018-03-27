@@ -7,6 +7,43 @@ import * as Utils from './Utils'
 import * as record from './record'
 import * as D from './Diff'
 
+export class LadderComponent extends React.Component<
+  {
+    graph: G.Graph
+    onDrop?: (dropped_graph: G.Graph) => void
+    onMenu?: OnMenu
+    onHover?: OnHover
+    hoverId?: string
+  },
+  {
+    drag_state: DragState
+  }
+> {
+  constructor(p: any) {
+    super(p)
+    console.log('creating a new LadderComponent')
+    this.state = {drag_state: null}
+  }
+  render() {
+    const {graph, onDrop} = this.props
+    return Ladder(
+      graph,
+      undefined,
+      this.state.drag_state,
+      drag_state => this.setState({drag_state}),
+      drag_state => {
+        if (drag_state && onDrop) {
+          onDrop(G.diff_to_graph(ApplyMove(G.calculate_diff(graph), drag_state), graph.edges))
+        }
+        this.setState({drag_state: null})
+      },
+      this.props.hoverId,
+      this.props.onHover,
+      this.props.onMenu
+    )
+  }
+}
+
 export type VNode = React.ReactElement<{}>
 
 export const clean_ul = style(Utils.debugName('clean_ul'), {
@@ -51,6 +88,8 @@ const BorderCell = style(
   }
 )
 
+export const ManualPathColour = '#6699cc'
+
 const LadderStyle = style(
   Utils.debugName('LadderStyle'),
   csstips.wrap,
@@ -81,7 +120,7 @@ const LadderStyle = style(
       '& > ul > li:nth-child(even)': {
         height: `${px(24)}`,
       },
-      '& *': {
+      '& div': {
         color: '#222',
       },
       '& ins': {
@@ -96,25 +135,34 @@ const LadderStyle = style(
         boxShadow: `0 ${px(2)} 0 0 #777`,
         zIndex: 2,
       },
-    },
+      '& .GreyPathAuto': {
+        stroke: '#999',
+        strokeWidth: px(4),
+        fill: 'none',
+      },
+      '& .GreyPathManual': {
+        stroke: ManualPathColour,
+        strokeWidth: px(4),
+        fill: 'none',
+      },
+      '& .WhitePath': {
+        stroke: '#fff',
+        strokeWidth: px(12),
+        fill: 'none',
+      },
+    }
   }
 )
 
-export const ManualPathColour = '#6699cc'
-
-const greyPath = (manual: boolean): React.CSSProperties => ({
-  stroke: manual ? ManualPathColour : '#999',
-  strokeWidth: px(4),
-  fill: 'none',
-})
-const whitePath: React.CSSProperties = {stroke: '#fff', strokeWidth: px(12), fill: 'none'}
+const greyPath = (manual: boolean) => manual ? 'GreyPathManual' : 'GreyPathAuto'
+const whitePath = 'WhitePath'
 
 const make_brows = (manual: boolean) => {
   const mustache_side = PixelPath('M 0 0.90 C 0 1.1 1 0.85 1 1.15', greyPath(manual))
 
   const mustache2x2 = (
     <React.Fragment>
-      {PixelPath('M 1 1.1 L 1 0.8', whitePath)}
+      {PixelPath('M 1 1.1 L 1 0.8', 'WhitePath')}
       {mustache_side}
       <g transform="translate(2, 0) scale(-1,1)">{mustache_side}</g>
     </React.Fragment>
@@ -137,8 +185,8 @@ const make_brows = (manual: boolean) => {
 
 const brows = [make_brows(false), make_brows(true)]
 
-function PixelPath(d: string, css: React.CSSProperties) {
-  return <path d={d} style={css} vectorEffect="non-scaling-stroke" />
+function PixelPath(d: string, className: string) {
+  return <path d={d} className={className} vectorEffect="non-scaling-stroke" />
 }
 
 export function Key(nodes: VNode[], s: string | number = '') {
@@ -149,12 +197,12 @@ export function Key(nodes: VNode[], s: string | number = '') {
   )
 }
 
-function Line({x0, y0, x1, y1, id}: D.Line, css: React.CSSProperties) {
+function Line({x0, y0, x1, y1, id}: D.Line, className: string) {
   const ff = x1 != 0.5
   const yi = ff ? y1 : y0
   const xi = ff ? x0 : x1
   const d = `M ${x0} ${y0} C ${xi} ${yi} ${xi} ${yi} ${x1} ${y1}`
-  return PixelPath(d, css)
+  return PixelPath(d, className)
 }
 
 function LineIsHorizontal({y0, y1}: D.Line) {
@@ -300,43 +348,6 @@ export interface OnHover {
 
 export interface OnMenu {
   (id: string): void
-}
-
-export class LadderComponent extends React.Component<
-  {
-    graph: G.Graph
-    onDrop?: (dropped_graph: G.Graph) => void
-    onMenu?: OnMenu
-    onHover?: OnHover
-    hoverId?: string
-  },
-  {
-    drag_state: DragState
-  }
-> {
-  constructor(p: any) {
-    super(p)
-    console.log('creating a new LadderComponent')
-    this.state = {drag_state: null}
-  }
-  render() {
-    const {graph, onDrop} = this.props
-    return Ladder(
-      graph,
-      undefined,
-      this.state.drag_state,
-      drag_state => this.setState({drag_state}),
-      drag_state => {
-        if (drag_state && onDrop) {
-          onDrop(G.diff_to_graph(ApplyMove(G.calculate_diff(graph), drag_state), graph.edges))
-        }
-        this.setState({drag_state: null})
-      },
-      this.props.hoverId,
-      this.props.onHover,
-      this.props.onMenu
-    )
-  }
 }
 
 export function Ladder(
