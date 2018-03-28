@@ -559,13 +559,34 @@ export function throws(m: () => any): boolean {
 
 */
 export function unique_check<S>(): (s: S) => boolean {
-  const seen = new Set<S>()
-  return s => {
-    if (seen.has(s)) {
-      return false
-    }
-    seen.add(s)
-    return true
+  const c = count<S>()
+  return s => c.inc(s) === 1
+}
+
+/**
+
+  const u = count()
+  u.inc(1) // => 1
+  u.inc(1) // => 2
+  u.inc(1) // => 3
+  u.inc(2) // => 1
+  u.inc(3) // => 1
+  u.inc(2) // => 2
+  u.get(1) // => 3
+  u.get(2) // => 2
+  u.get(3) // => 1
+
+*/
+export function count<S>() {
+  const m = new Map<S, number>()
+  return {
+    get(s: S) {
+      return m.get(s) || 0
+    },
+    inc(s: S) {
+      m.set(s, this.get(s) + 1)
+      return this.get(s)
+    },
   }
 }
 

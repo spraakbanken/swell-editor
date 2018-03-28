@@ -52,6 +52,9 @@ describe('modify_tokens', () => {
   })
 })
 
+describe('invert', () =>
+  qc('is not involutive', graph, (g, p) => p.equals(G.invert(G.invert(g)), g), QC.expectFailure))
+
 interface Modify {
   g: Graph
   from: number
@@ -267,51 +270,22 @@ describe('diff', () => {
     QC.choose(Object.values(g.edges)).map(edge => ({g, edge}))
   )
 
+  qc('revert preserves invariant', graph_and_edge, ({g, edge}, p) => {
+    const reverted = G.revert(g, [edge.id])
+    return p.equals(G.check_invariant(reverted), 'ok')
+  })
+
   qc('revert preservers source text', graph_and_edge, ({g, edge}, p) => {
-    const reverted = G.revert(g, edge.id)
+    const reverted = G.revert(g, [edge.id])
     const rsource = G.source_texts(reverted)
     const source = G.source_texts(g)
     return p.equals(rsource, source)
   })
 
-  qc('revert preserves invariant', graph_and_edge, ({g, edge}, p) => {
-    const reverted = G.revert(g, edge.id)
-    return p.equals(G.check_invariant(reverted), 'ok')
-  })
-
-  /*
-  // It's a bit difficult to specify reverting at every target token
-  // because neither indicies nor identifiers are not stable between reverts
-
-  qc(
-    'revert everything target not reverting correctly',
-    graph,
-    (g, p) => {
-      const reverted = g.target.reduce<Graph>((g, token) =>
-        G.revert(g, (G.edge_map(g).get((token).id) || Utils.raise<G.Edge>('Edge vanished!' + Utils.show({g, token}))).id), g
-      )
-      const rtarget = G.target_text(reverted)
-      const source = G.source_text(g)
-      return Utils.str_map(rtarget, c => c).every(c => -1 != source.indexOf(c))
-    },
+  qc('revert everything', graph, (g, p) =>
+    G.equal(
+      p.tap(G.init_from(G.source_texts(g)), 'init'),
+      p.tap(G.revert(g, Object.keys(g.edges)), 'reverted')
+    )
   )
-  */
-
-  function known_bug() {
-    const e0 = G.Edge('s0 t1 t2'.split(' '), [], true)
-    const e1 = G.Edge('s1 t0'.split(' '), [], true)
-    const g = {
-      source: [{text: 'a ', id: 's0'}, {text: 'b ', id: 's1'}],
-      target: [{text: 'x ', id: 't0'}, {text: 'y ', id: 't1'}, {text: 'z ', id: 't2'}],
-      edges: {
-        [e0.id]: e0,
-        [e1.id]: e1,
-      },
-    }
-    const reverted = Object.keys(g.edges).reduce(G.revert, g)
-    const rtarget = G.target_texts(reverted)
-    const rsource = G.source_texts(reverted)
-    const source = G.source_texts(g)
-    // console.log(Utils.show({g, reverted, rtarget, rsource, source}))
-  }
 }

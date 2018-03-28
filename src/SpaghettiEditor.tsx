@@ -1,6 +1,6 @@
 import * as R from 'ramda'
 import * as React from 'react'
-import {Store, Lens, Undo} from 'reactive-lens'
+import {Store, Lens, Undo, Stack} from 'reactive-lens'
 import {style, types, getStyles} from 'typestyle'
 import * as typestyle from 'typestyle'
 import * as csstips from 'csstips'
@@ -301,16 +301,22 @@ export function App(store: Store<State>): () => VNode {
       }
     })
 
+  const inv = G.check_invariant(store.get().graph.now)
+  console.log(inv)
+  if (inv !== 'ok') {
+    Utils.stderr(inv)
+    store.set(init)
+  }
+
   global.test = () => {
     store.set({graph: Undo.init(G.init('this is an example', true)), selected: {}})
   }
 
-  const cm_node = CM.GraphEditingCM(store.pick('graph', 'hover_id', 'label_id'))
-
-  return () => View(store, cm_node)
+  const cm_target = CM.GraphEditingCM(store.pick('graph', 'hover_id', 'label_id'))
+  return () => View(store, cm_target)
 }
 
-export function View(store: Store<State>, cm_node: VNode): VNode {
+export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
   const state = store.get()
   const history = store.at('graph')
   const graph = history.at('now')
@@ -331,6 +337,7 @@ export function View(store: Store<State>, cm_node: VNode): VNode {
 
   // Utils.stdout(units.get())
   // Utils.stdout(graph.get().target)
+  // Utils.stdout(graph.get())
 
   // const source = now.at('source')
   // const target = now.at('target')
@@ -349,8 +356,8 @@ export function View(store: Store<State>, cm_node: VNode): VNode {
     const selected = Object.keys(state.selected)
     if (selected.length > 0) {
       const edges = G.token_ids_to_edges(state.graph.now, selected)
+      const edge_ids = edges.map(e => e.id)
       const labels = Utils.uniq(Utils.flatMap(edges, e => e.labels))
-      const label_stores = edges.map(e => G.label_store(graph, e.id))
       // const spacesep = label_store.via(Lens.iso(xs => xs.join(' '), s => s.split(/ /g)))
       // function blur(e: React.SyntheticEvent<any>) {
       //   console.log('blur')
@@ -361,10 +368,16 @@ export function View(store: Store<State>, cm_node: VNode): VNode {
       //   )
       // }
       function pop(l: string) {
-        advance(() => label_stores.forEach(s => s.modify(ls => ls.filter(x => x !== l))))
+        advance(() =>
+          edge_ids.forEach(id =>
+            graph.modify(g => G.modify_labels(g, id, ls => ls.filter(x => x !== l)))
+          )
+        )
       }
       function push(l: string) {
-        advance(() => label_stores.forEach(s => Store.arr(s, 'push')(l)))
+        advance(() =>
+          edge_ids.forEach(id => graph.modify(g => G.modify_labels(g, id, ls => [l, ...ls])))
+        )
       }
       function auto() {
         const edge_ids = G.token_ids_to_edges(graph.get(), selected).map(e => e.id)
@@ -417,10 +430,13 @@ export function View(store: Store<State>, cm_node: VNode): VNode {
                   push(t.value)
                   t.value = ''
                 }
+                if (e.key === 'Escape') {
+                  store.update({selected: {}})
+                  cm_target.cm.focus()
+                }
                 if (e.key === 'Backspace' && t.value == '' && labels.length > 0) {
                   pop(labels[0])
                 }
-                e.key === 'Escape' && store.update({selected: {}})
               }}
             />
             <ul>
@@ -440,13 +456,27 @@ export function View(store: Store<State>, cm_node: VNode): VNode {
     <DropZone webserviceURL={ws_url} onDrop={g => advance(() => graph.set(g))}>
       <div className={topStyle} style={{position: 'relative'}}>
         {LabelSidekick()}
+        {showhide(
+          'set source text',
+          <input
+            className="main"
+            onKeyDown={e =>
+              e.key === 'Enter' &&
+              advance(() => {
+                const t = e.target as HTMLInputElement
+                graph.modify(g => G.invert(G.set_target(G.invert(g), t.value)))
+              })
+            }
+            placeholder="Input source text.."
+            defaultValue={G.source_text(graph.get())}
+          />
+        )}
         <div className="main" style={{minHeight: '10em'}}>
           <L.LadderComponent
             graph={graph.get()}
             onDrop={undefined && (g => advance(() => graph.set(g)))}
             hoverId={state.hover_id}
             onHover={hover_id => store.update({hover_id})}
-            onMenu={id => store.update({hover_id: id, label_id: id})}
             selectedIds={Object.keys(state.selected)}
             onSelect={ids => {
               const selected = store.get().selected
@@ -463,23 +493,32 @@ export function View(store: Store<State>, cm_node: VNode): VNode {
             }}
           />
         </div>
-        {false &&
-          sides.map((side, i) => (
-            <React.Fragment key={i}>
-              {Button('\u2b1a', 'clear', () => advance(() => units.at(side).set('')))}
-              {Button(i ? '\u21e1' : '\u21e3', 'copy to ' + side, () =>
-                advance(() => units.at(op(side)).set(units.get()[side]))
-              )}
-              <Textarea
-                store={units.at(side)}
-                tabIndex={(i + 1) as number}
-                rows={units.get()[side].split('\n').length}
-                style={{resize: 'vertical'}}
-                placeholder={'Enter ' + side + ' text...'}
-              />
-            </React.Fragment>
-          ))}
-        <div className="main">{cm_node}</div>
+        <div className="main">{cm_target.node}</div>
+        {showhide(
+          'compact representation',
+          <React.Fragment>
+            {sides.map((side, i) => (
+              <React.Fragment key={i}>
+                {Button('\u2b1a', 'clear', () => advance(() => units.at(side).set('')))}
+                {Button(i ? '\u21e1' : '\u21e3', 'copy to ' + side, () =>
+                  advance(() => units.at(op(side)).set(units.get()[side]))
+                )}
+                <input
+                  defaultValue={units.at(side).get()}
+                  onKeyDown={e =>
+                    e.key === 'Enter' &&
+                    advance(() => {
+                      const t = e.target as HTMLInputElement
+                      units.at(side).set(t.value)
+                    })
+                  }
+                  tabIndex={(i + 1) as number}
+                  placeholder={'Enter ' + side + ' text...'}
+                />
+              </React.Fragment>
+            ))}
+          </React.Fragment>
+        )}
         {showhide('graph json', Utils.show(g))}
         {showhide('diff json', Utils.show(d))}
         {links(graph.get())}

@@ -23,7 +23,7 @@ export type RichDiff =
   const expected_rd0 = {
     edit: 'Dragged',
     source: {text: 'aporna ', id: 's0'},
-    id: 'e-t4-s0',
+    id: 'e-s0-t4',
     source_diff: [[1, 'h'], [0, 'aporna ']],
     index: 0,
     manual: true

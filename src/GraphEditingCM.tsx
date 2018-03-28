@@ -31,7 +31,10 @@ function Wrap(h: HTMLElement, k: () => void) {
   )
 }
 
-type CMVN = {node: VNode; cm: CodeMirror.Editor}
+export interface CMVN {
+  node: VNode
+  cm: CodeMirror.Editor
+}
 
 function CM(opts: CodeMirror.EditorConfiguration): CMVN {
   const div = document.createElement('div')
@@ -41,7 +44,6 @@ function CM(opts: CodeMirror.EditorConfiguration): CMVN {
 
 function defaultTabBehaviour(cm: CodeMirror.Editor) {
   ;(cm.on as any)('keydown', (_: any, e: KeyboardEvent) => {
-    console.log(e)
     if (e.key == 'Tab') {
       ;(e as any).codemirrorIgnore = true
     }
@@ -51,10 +53,9 @@ function defaultTabBehaviour(cm: CodeMirror.Editor) {
 export interface State {
   readonly graph: Undo<Graph>
   readonly hover_id?: string
-  readonly label_id?: string
 }
 
-export function GraphEditingCM(store: Store<State>): VNode {
+export function GraphEditingCM(store: Store<State>): CMVN {
   /* Note that we don't show the last character of the graph in the code mirror.
   It must necessarily be whitespace anyway. */
   const history = store.at('graph')
@@ -127,18 +128,6 @@ export function GraphEditingCM(store: Store<State>): VNode {
     if (change.origin != 'setValue') {
       store.transaction(() => {
         const g = graph.get()
-        // coordinates talk about the previous doc so we get it using a undo
-        /*
-        const previous_doc = cm.getDoc().copy(true)
-        previous_doc.undo()
-        const from = previous_doc.indexFromPos(change.from)
-        const to = previous_doc.indexFromPos(change.to)
-        Utils.stdout({
-          prev: previous_doc.getValue(),
-          now: cm.getDoc().getValue(),
-          from, to, removed: change.removed, text: change.text,
-        })
-        */
         history.modify(Undo.advance)
         graph.set(G.set_target(g, cm.getDoc().getValue() + ' '))
         set_marks()
@@ -151,6 +140,7 @@ export function GraphEditingCM(store: Store<State>): VNode {
     const editor_text = cm.getDoc().getValue()
     if (graph_text !== editor_text) {
       cm.setValue(graph_text)
+      // TODO: set the cursor to the end of the change, maybe G.set_target can tell us
       set_marks()
     }
   }
@@ -163,16 +153,6 @@ export function GraphEditingCM(store: Store<State>): VNode {
       store.update({hover_id: edge.id})
     } else {
       store.update({hover_id: undefined})
-    }
-  })
-
-  cm.getWrapperElement().addEventListener('contextmenu', e => {
-    e.preventDefault()
-    const {edge} = Index.fromCoords(e).toEdge()
-    if (edge) {
-      store.update({hover_id: edge.id, label_id: edge.id})
-    } else {
-      store.update({hover_id: undefined, label_id: undefined})
     }
   })
 
@@ -209,7 +189,7 @@ export function GraphEditingCM(store: Store<State>): VNode {
 
   graph_to_cm()
 
-  return node
+  return {node, cm}
 }
 
 function PositionUtils(cm: CodeMirror.Editor, graph: Store<Graph>) {

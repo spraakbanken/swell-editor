@@ -11,7 +11,6 @@ export class LadderComponent extends React.Component<
   {
     graph: G.Graph
     onDrop?: (dropped_graph: G.Graph) => void
-    onMenu?: OnMenu
     onHover?: OnHover
     onSelect?: OnSelect
     hoverId?: string
@@ -43,7 +42,6 @@ export class LadderComponent extends React.Component<
         : undefined,
       this.props.hoverId,
       this.props.onHover,
-      this.props.onMenu,
       this.props.selectedIds,
       this.props.onSelect
     )
@@ -348,7 +346,6 @@ export function Ladder(
   onDrop?: (ds: DragState) => void,
   hover_id?: string,
   onHover?: OnHover,
-  onMenu?: OnMenu,
   selected: string[] = [],
   onSelect?: OnSelect
 ): VNode {
@@ -465,7 +462,6 @@ export function Ladder(
             onMouseEnter={() => onHover && onHover(d.id, 'token')}
             onMouseLeave={() => onHover && onHover(undefined)}
             key={d.index}
-            onContextMenu={e => onMenu && (e.preventDefault(), onMenu(d.id))}
             onMouseMove={e => {
               if (onDrag && e.buttons === 1 && drag_state) {
                 const hover = drag_state.to

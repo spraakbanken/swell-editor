@@ -14,7 +14,7 @@ import * as C from '../src/Compact'
 import * as assert from 'assert'
 
 qc('roundtrip units<->graph', graph, (g, p) => {
-  const stu = C.graph_to_units(g)
+  const stu = p.tap(C.graph_to_units(g))
   const g2 = C.units_to_graph(stu.source, stu.target)
   return p.equals(g, g2)
 })

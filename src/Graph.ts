@@ -1,13 +1,5 @@
 /** Parallel corpus as a graph
 
-Missing functions:
-
-    auto_insert      // split prefix or suffixes token if they are the only change
-    auto_revert      // split up edges into smaller pieces if there is no diff anymore
-    invert           // swap source and target
-    trail_whitespace // makes all whitespace be trailing whitesapec
-
-
 Idea: make a variant type describing different kinds of positions:
 
   - for source and target:
@@ -53,13 +45,15 @@ export interface Edge {
 }
 
 export function Edge(ids: string[], labels: string[], manual = false): Edge {
-  return {id: 'e-' + ids.join('-'), ids, labels, manual}
+  const ids_sorted = ids.sort()
+  const labels_nub = Utils.uniq(labels)
+  return {id: 'e-' + ids_sorted.join('-'), ids: ids_sorted, labels: labels_nub, manual}
 }
 
 export function merge_edges(...es: Edge[]) {
   return Edge(
     Utils.flatMap(es, e => e.ids),
-    Utils.uniq(Utils.flatMap(es, e => e.labels)),
+    Utils.flatMap(es, e => e.labels),
     es.some(e => !!e.manual)
   )
 }
@@ -107,25 +101,36 @@ export function check_invariant(g: Graph): 'ok' | {violation: string; g: Graph} 
     }
     check_tokens(target_texts(g))
     check_tokens(source_texts(g))
-    const token_ids = new Set(tokens.map(t => t.id))
-    {
-      const unique_id = Utils.unique_check<string>()
-      record.forEach(g.edges, e =>
-        e.ids.forEach(id => {
-          unique_id(id) || Utils.raise('Duplicate id in edge id list: ' + id)
-          token_ids.has(id) || Utils.raise('Edge talks about unknown token id: ' + id)
-        })
-      )
-      record.forEach(
-        g.edges,
-        (e, id) =>
-          e.id === id || Utils.raise(`Edge key and id do not match: ${id} and ${Utils.show(e)}`)
-      )
-    }
     record.forEach(
       g.edges,
-      e => e.ids.length > 0 || Utils.raise('Edge without any associated identifiers')
+      (e, id) =>
+        e.id === id || Utils.raise(`Edge key and id do not match: ${id} and ${Utils.show(e)}`)
     )
+    record.forEach(
+      g.edges,
+      e =>
+        e.ids.length > 0 || Utils.raise(`Edge without any associated identifiers ${Utils.show(e)}`)
+    )
+    record.forEach(
+      g.edges,
+      e => R.equals(e, merge_edges(e)) || Utils.raise(`Edge not in normal form: ${Utils.show(e)}`)
+    )
+    {
+      const token_ids = new Set(tokens.map(t => t.id))
+      record.forEach(g.edges, e =>
+        e.ids.forEach(id => {
+          token_ids.has(id) || Utils.raise(`Edge ${Utils.show(e)} refers to unknown token ${id}`)
+        })
+      )
+    }
+    {
+      const token_count = Utils.count<string>()
+      record.forEach(g.edges, e => e.ids.forEach(id => token_count.inc(id)))
+      tokens.forEach(tok => {
+        const n = token_count.get(tok.id)
+        n == 1 || Utils.raise('Token not appearing exactly once in edge lists: ' + tok.id)
+      })
+    }
   } catch (e) {
     // console.error(e)
     // console.error(JSON.stringify(g, undefined, 2))
@@ -386,7 +391,7 @@ export function proto_modify_tokens(g: Graph, from: number, to: number, text: st
     return proto_modify_tokens(g, from - 1, to, g.target[from - 1].text + text)
   }
 
-  const id_offset = Utils.next_id(g.target.map(t => t.id))
+  const id_offset = next_id(g)
   const tokens = T.tokenize(text).map((t, i) => Token(t, 't' + (id_offset + i)))
   const [target, removed] = Utils.splice(g.target, from, to - from, ...tokens)
   const ids_removed = new Set(removed.map(t => t.id))
@@ -408,6 +413,10 @@ export function proto_modify_tokens(g: Graph, from: number, to: number, text: st
     edges[e.id] = e
   }
   return {source: g.source, target, edges}
+}
+
+export function next_id(g: Graph): number {
+  return Utils.next_id([...g.target.map(t => t.id), ...g.source.map(t => t.id)])
 }
 
 /** Moves a slice of the target tokens and puts it at a new destination.
@@ -515,7 +524,10 @@ export function align(g: Graph): Graph {
   return {...g, edges}
 }
 
-type ScoreDDL = {score: number; diff: DDL}
+interface ScoreDDL {
+  score: number
+  diff: DDL
+}
 
 type DDL = Utils.SnocList<Dragged | Dropped>
 
@@ -566,7 +578,6 @@ export function calculate_raw_diff(g: Graph): (Dragged | Dropped)[] {
   })
 
   const {score, diff} = align(g.source.length - 1, g.target.length - 1)
-
   return Utils.snocsToArray(diff)
 }
 
@@ -667,7 +678,7 @@ function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
         {text: 'depa ', id: 't3'},
         {text: 'epa ', id: 't4'}
       ],
-      id: "e-t3-t4-s1",
+      id: "e-s1-t3-t4",
       manual: true
     },
     {
@@ -884,17 +895,16 @@ export function subgraph(g: Graph, s: Subspan): Graph {
 */
 export function modify_labels(g: Graph, edge_id: string, k: (labels: string[]) => string[]): Graph {
   const store = Store.init(g)
-  const labels = label_store(store, edge_id)
-  labels.modify(k)
+  const edge = edge_store(store, edge_id)
+  edge.modify(e => Edge(e.ids, k(e.labels), e.manual))
   return store.get()
 }
 
-export function label_store(g: Store<Graph>, edge_id: string): Store<string[]> {
+export function edge_store(g: Store<Graph>, edge_id: string): Store<Edge> {
   return g
     .at('edges')
     .via(Lens.key(edge_id))
     .via(Lens.def(Edge([], [])))
-    .at('labels')
 }
 
 /** Revert at an edge id */
@@ -906,7 +916,7 @@ export function revert(g: Graph, edge_ids: string[]): Graph {
 export function proto_revert(g: Graph, edge_ids: string[]): Graph {
   const edge_set = new Set(edge_ids)
   const diff = calculate_raw_diff(g)
-  let supply = Utils.next_id(g.target.map(t => t.id))
+  let supply = next_id(g)
   const edges = record.filter(g.edges, (_, id) => !edge_set.has(id))
   const reverted = Utils.flatMap(
     diff,
@@ -931,7 +941,6 @@ export function proto_revert(g: Graph, edge_ids: string[]): Graph {
       },
     })
   )
-  // console.log(Utils.show({diff, reverted}))
   return from_raw_diff(reverted, edges)
 }
 
@@ -1025,12 +1034,22 @@ export function normalize(
   return {source, target, edges}
 }
 
-export function equal(g1: Graph, g2: Graph): boolean {
-  return R.equals(normalize(g1), normalize(g2))
+export function equal(g1: Graph, g2: Graph, set_manual_to: boolean | 'keep' = true): boolean {
+  return R.equals(normalize(g1, set_manual_to), normalize(g2, set_manual_to))
 }
 
 /** Make all trailing whitespace of a specific form */
 export function normalize_whitespace(g: Graph, ws = ' '): Graph {
   const on_tok = (s: Token) => Token((s.text.match(/\S+/) || [''])[0] + ws, s.id)
   return {...g, source: g.source.map(on_tok), target: g.target.map(on_tok)}
+}
+
+/** Invert the graph: swap source and target.
+
+Note that this is not stable, ie not involutive since texts get automatically
+realigned. This can make labels get transferred between groups.
+*/
+export function invert(g: Graph): Graph {
+  const {source, target, edges} = g
+  return align({source: target, target: source, edges})
 }
