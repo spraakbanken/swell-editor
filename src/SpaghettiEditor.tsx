@@ -63,8 +63,6 @@ function advanceFactory(store: Store<State>) {
       if (!G.equal(g0, g1)) {
         now.set(g0)
         graph.modify(Undo.advance_to(g1))
-      } else {
-        console.log('no change')
       }
     })
 }
@@ -325,6 +323,7 @@ const topStyle = style({
     },
     '& .ladder ul': {
       zIndex: 1,
+      cursor: 'pointer',
     },
     '& .Selected, & .Selectable': {
       padding: '3px',
@@ -518,7 +517,6 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
         <div className="main" style={{minHeight: '10em'}}>
           <L.LadderComponent
             graph={cursor_subgraph(graph.get(), store.get().cursor)}
-            onDrop={undefined && (g => advance(() => graph.set(g)))}
             hoverId={state.hover_id}
             onHover={hover_id => store.update({hover_id})}
             selectedIds={Object.keys(state.selected)}

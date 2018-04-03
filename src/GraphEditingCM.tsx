@@ -79,11 +79,6 @@ export function GraphEditingCM(store: Store<State>): CMVN {
     'Ctrl-Y': () => redo(),
     'Cmd-Z': () => undo(),
     'Cmd-Y': () => redo(),
-    // "Ctrl-X": () => cut(),
-    // "Ctrl-V": () => paste(),
-    // "Ctrl-R": () => revert(),
-    // "Ctrl-C": () => connect(),
-    // "Ctrl-D": () => disconnect(),
   }
 
   const {cm, node} = CM({extraKeys, tabindex: 3})

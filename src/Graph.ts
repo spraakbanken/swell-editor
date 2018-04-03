@@ -986,6 +986,7 @@ export function disconnect(g: Graph, ids: string[]): Graph {
     }
     return disconnect({...g, edges}, ids.slice(1))
   } else {
+    Utils.stderr({id, ids, g})
     return Utils.raise('Trying to disconnect unidentifiable token')
   }
 }

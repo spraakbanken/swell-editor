@@ -7,45 +7,21 @@ import * as Utils from './Utils'
 import * as record from './record'
 import * as D from './Diff'
 
-export class LadderComponent extends React.Component<
-  {
-    graph: G.Graph
-    onDrop?: (dropped_graph: G.Graph) => void
-    onHover?: OnHover
-    onSelect?: OnSelect
-    hoverId?: string
-    selectedIds?: string[]
-  },
-  {
-    drag_state: DragState
-  }
-> {
-  constructor(p: any) {
-    super(p)
-    console.log('creating a new LadderComponent')
-    this.state = {drag_state: null}
-  }
-  render() {
-    const {graph, onDrop} = this.props
-    return Ladder(
-      graph,
-      undefined,
-      this.state.drag_state,
-      drag_state => this.setState({drag_state}),
-      onDrop
-        ? drag_state => {
-            if (drag_state && onDrop) {
-              onDrop(G.diff_to_graph(ApplyMove(G.calculate_diff(graph), drag_state), graph.edges))
-            }
-            this.setState({drag_state: null})
-          }
-        : undefined,
-      this.props.hoverId,
-      this.props.onHover,
-      this.props.selectedIds,
-      this.props.onSelect
-    )
-  }
+export function LadderComponent(props: {
+  graph: G.Graph
+  onHover?: OnHover
+  onSelect?: OnSelect
+  hoverId?: string
+  selectedIds?: string[]
+}) {
+  return Ladder(
+    props.graph,
+    undefined,
+    props.hoverId,
+    props.onHover,
+    props.selectedIds,
+    props.onSelect
+  )
 }
 
 export type VNode = React.ReactElement<{}>
@@ -340,10 +316,7 @@ export function hoverClass(hover_id: string | undefined, id: string) {
 
 export function Ladder(
   g: G.Graph,
-  rd0: RD.RichDiff[] = RD.enrichen(g),
-  drag_state?: DragState,
-  onDrag?: (ds: DragState) => void,
-  onDrop?: (ds: DragState) => void,
+  rd: RD.RichDiff[] = RD.enrichen(g),
   hover_id?: string,
   onHover?: OnHover,
   selected: string[] = [],
@@ -383,14 +356,11 @@ export function Ladder(
     )
   }
 
-  const rd = drag_state && drag_state.over ? RD.enrichen(g, ApplyMove(rd0, drag_state)) : rd0
   const grids = D.DiffToGrid(rd)
   const u = grids.upper
   const l = grids.lower
   return (
-    <div
-      onMouseLeave={e => onDrag && drag_state && onDrag({...drag_state, over: false})}
-      className={`${LadderStyle} ${clean_ul} ${Unselectable} ladder`}>
+    <div className={`${LadderStyle} ${clean_ul} ${Unselectable} ladder`}>
       {rd.map((d, i) => {
         function is_hovering(token_id?: string) {
           return token_id === hover_id || d.id === hover_id
@@ -400,7 +370,7 @@ export function Ladder(
             <span
               key={token_id}
               className={'Selectable' + (selected.some(id => id === token_id) ? ' Selected' : '')}
-              onClick={e => {
+              onMouseDown={e => {
                 if (onSelect) {
                   e.stopPropagation()
                   onSelect([token_id])
@@ -455,44 +425,20 @@ export function Ladder(
         const on_hover: OnHover = id => onHover && hover_id !== id && onHover(id)
         return (
           <ul
-            onClick={e => {
+            onMouseDown={e => {
               if (onSelect) {
                 onSelect(edges[d.id].ids)
               }
+              e.stopPropagation()
             }}
             onMouseEnter={() => on_hover(d.id)}
             onMouseLeave={() => on_hover(undefined)}
-            key={d.index + d.id}
-            onMouseMove={e => {
-              if (onDrag && e.buttons === 1 && drag_state) {
-                const hover = drag_state.to
-                const to = i
-                const w = e.currentTarget.clientWidth
-                const x0 = e.currentTarget.offsetLeft
-                const x = e.pageX
-                const left = x - x0 < w / 2
-                const yes_left = to < hover - 1 || (to == hover - 1 && left)
-                const yes_right = to > hover + 1 || (to == hover + 1 && !left)
-                const yes = yes_left || yes_right
-                yes && onDrag({...drag_state, to, over: true})
-              }
-              if (onDrag && e.buttons === 0 && drag_state) {
-                onDrag(null)
-              }
-            }}
-            onMouseUp={e => {
-              onDrop && drag_state && (onDrop(drag_state), e.preventDefault())
-            }}>
+            key={d.index + d.id}>
             <li className={hoverClass(hover_id, d.id)}>{s}</li>
             {upper}
             {mid}
             {lower}
-            <li
-              className={hoverClass(hover_id, d.id)}
-              style={{cursor: 'pointer'}}
-              onMouseDown={e =>
-                e.buttons === 1 && onDrag && onDrag({type: 'move', from: i, to: i, over: true})
-              }>
+            <li className={hoverClass(hover_id, d.id)}>
               {t}
             </li>
           </ul>
