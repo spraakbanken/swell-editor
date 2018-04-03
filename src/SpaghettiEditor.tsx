@@ -42,6 +42,16 @@ export const init: State = {
   cursor: undefined,
 }
 
+function only_select_existing_words(graph: Graph, selected0: Record<string, true>) {
+  const em = G.edge_map(graph)
+  const present = (s: string) => em.has(s)
+  const selected = record.filter(selected0, (_, id) => present(id))
+  const n_keys = (o: Object) => Object.keys(o).length
+  if (n_keys(selected) < n_keys(selected0)) {
+    return {selected}
+  }
+}
+
 function advanceFactory(store: Store<State>) {
   const graph = store.at('graph')
   const now = graph.at('now')
@@ -445,6 +455,11 @@ export function App(store: Store<State>): () => VNode {
   global.test = () => {
     store.set({graph: Undo.init(G.init('this is an example', true)), selected: {}})
   }
+
+  store.ondiff(state => {
+    const restricted = only_select_existing_words(state.graph.now, state.selected)
+    restricted && store.update(restricted)
+  })
 
   const cm_target = CM.GraphEditingCM(store.pick('graph', 'hover_id', 'cursor'))
   return () => View(store, cm_target)
