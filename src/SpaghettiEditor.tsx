@@ -209,16 +209,16 @@ const topStyle = style({
       padding: '2px',
       border: '1px solid #888',
     },
-    '& .hoverable, & .hoverable *': {
-      transition: 'opacity 50ms 50ms',
+    '& .hoverable, & .hoverable': {
+      transition: 'opacity 50ms 0ms',
       opacity: 1.0,
     },
-    [`& .hover *, & .hover `]: {
+    [`& .hover, & .hover `]: {
       opacity: 1.0,
       strokeOpacity: 1.0,
     },
-    [`& .not-hover *, & .not-hover `]: {
-      opacity: 0.8,
+    [`& .not-hover, & .not-hover `]: {
+      opacity: 0.6,
       strokeOpacity: 0.8,
       fillOpacity: 0.8,
     },

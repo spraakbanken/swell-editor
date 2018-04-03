@@ -462,7 +462,7 @@ export function Ladder(
             }}
             onMouseEnter={() => on_hover(d.id)}
             onMouseLeave={() => on_hover(undefined)}
-            key={d.index}
+            key={d.index + d.id}
             onMouseMove={e => {
               if (onDrag && e.buttons === 1 && drag_state) {
                 const hover = drag_state.to
