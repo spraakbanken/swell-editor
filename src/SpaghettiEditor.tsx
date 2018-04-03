@@ -445,7 +445,6 @@ export function App(store: Store<State>): () => VNode {
     })
 
   const inv = G.check_invariant(store.get().graph.now)
-  console.log(inv)
   if (inv !== 'ok') {
     Utils.stderr(inv)
     store.set(init)

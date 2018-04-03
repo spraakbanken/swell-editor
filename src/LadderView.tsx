@@ -438,9 +438,7 @@ export function Ladder(
             {upper}
             {mid}
             {lower}
-            <li className={hoverClass(hover_id, d.id)}>
-              {t}
-            </li>
+            <li className={hoverClass(hover_id, d.id)}>{t}</li>
           </ul>
         )
       })}
