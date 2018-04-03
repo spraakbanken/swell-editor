@@ -531,7 +531,15 @@ interface ScoreDDL {
 
 type DDL = Utils.SnocList<Dragged | Dropped>
 
-/** Calculate the ladder diff without merging contiguous edits */
+/** Calculate the ladder diff without merging contiguous edits
+
+What we do here is try to find a diff using dragged and dropped looking only
+at the edge ids. This is different from finding a normal diff edit script
+over an alphabet because the edge ids may be used at several discontinuous
+locations that all should be close to each other. This was done using
+the diff algorithm before but the results were subpar, see #32
+
+*/
 export function calculate_raw_diff(g: Graph): (Dragged | Dropped)[] {
   const m = edge_map(g)
   const lookup = (tok: Token) => m.get(tok.id) as Edge
