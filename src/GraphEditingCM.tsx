@@ -53,6 +53,7 @@ function defaultTabBehaviour(cm: CodeMirror.Editor) {
 export interface State {
   readonly graph: Undo<Graph>
   readonly hover_id?: string
+  readonly cursor_index?: number
 }
 
 export function GraphEditingCM(store: Store<State>): CMVN {
@@ -117,6 +118,28 @@ export function GraphEditingCM(store: Store<State>): CMVN {
     }
   })
 
+  const ci = store.at('cursor_index')
+  function update_cursor_index() {
+    const g = graph.get()
+    const text = G.target_text(g)
+    const cursor = cm.getDoc().getCursor()
+    const character_offset = cm.getDoc().indexFromPos(cursor)
+    try {
+      const i = T.token_at(G.target_texts(g), character_offset).token
+      if (ci.get() != i) {
+        ci.set(i)
+      }
+    } catch (e) {
+      console.error(e)
+      ci.set(undefined)
+    }
+  }
+
+  cm.on('cursorActivity', _ => store.transaction(() => {
+    update_cursor_index()
+    store.get().hover_id && store.update({hover_id: undefined})
+  }))
+
   cm.on('change', (_, change) => {
     /* if (change.origin == 'drag') {
         change.cancel()
@@ -131,6 +154,7 @@ export function GraphEditingCM(store: Store<State>): CMVN {
         history.modify(Undo.advance)
         graph.set(G.set_target(g, cm.getDoc().getValue() + ' '))
         set_marks()
+        update_cursor_index()
       })
     }
   })
@@ -142,17 +166,17 @@ export function GraphEditingCM(store: Store<State>): CMVN {
       cm.setValue(graph_text)
       // TODO: set the cursor to the end of the change, maybe G.set_target can tell us
       set_marks()
+      update_cursor_index()
     }
   }
 
-  cm.on('cursorActivity', _ => store.get().hover_id && store.update({hover_id: undefined}))
-
   cm.getWrapperElement().addEventListener('mousemove', e => {
     const {edge} = Index.fromCoords(e).toEdge()
+    const {hover_id} = store.get()
     if (edge) {
-      store.update({hover_id: edge.id})
+      edge.id === hover_id || store.update({hover_id: edge.id})
     } else {
-      store.update({hover_id: undefined})
+      undefined === hover_id || store.update({hover_id: undefined})
     }
   })
 

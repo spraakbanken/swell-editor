@@ -320,7 +320,7 @@ export function ApplyMove(diff: D.Diff[], {from, to}: {from: number; to: number}
 }
 
 export interface OnHover {
-  (id: string | undefined, what?: 'token' | 'edge'): void
+  (id: string | undefined): void
 }
 
 export interface OnMenu {
@@ -452,6 +452,7 @@ export function Ladder(
               </div>
             )
         )
+        const on_hover: OnHover = id => onHover && hover_id !== id && onHover(id)
         return (
           <ul
             onClick={e => {
@@ -459,8 +460,8 @@ export function Ladder(
                 onSelect(edges[d.id].ids)
               }
             }}
-            onMouseEnter={() => onHover && onHover(d.id, 'token')}
-            onMouseLeave={() => onHover && onHover(undefined)}
+            onMouseEnter={() => on_hover(d.id)}
+            onMouseLeave={() => on_hover(undefined)}
             key={d.index}
             onMouseMove={e => {
               if (onDrag && e.buttons === 1 && drag_state) {

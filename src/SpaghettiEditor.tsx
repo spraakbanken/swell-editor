@@ -31,6 +31,7 @@ export interface State {
   readonly hover_id?: string
   readonly label_id?: string
   readonly selected: Record<string, true>
+  readonly cursor_index?: number
 }
 
 export const init: State = {
@@ -38,6 +39,7 @@ export const init: State = {
   hover_id: undefined,
   label_id: undefined,
   selected: {},
+  cursor_index: undefined
 }
 
 export function Textarea({
@@ -201,8 +203,8 @@ const topStyle = style({
       strokeOpacity: 1.0,
     },
     [`& .not-hover *, & .not-hover `]: {
-      opacity: 0.9,
-      strokeOpacity: 0.9,
+      opacity: 0.8,
+      strokeOpacity: 0.8,
       fillOpacity: 0.8,
     },
     '& .Modal': {
@@ -312,7 +314,7 @@ export function App(store: Store<State>): () => VNode {
     store.set({graph: Undo.init(G.init('this is an example', true)), selected: {}})
   }
 
-  const cm_target = CM.GraphEditingCM(store.pick('graph', 'hover_id', 'label_id'))
+  const cm_target = CM.GraphEditingCM(store.pick('graph', 'hover_id', 'cursor_index'))
   return () => View(store, cm_target)
 }
 
@@ -350,6 +352,18 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
       history.modify(Undo.advance)
       k()
     })
+  }
+
+  function current_subgraph() {
+    const ci = store.get().cursor_index
+    const g = graph.get()
+    if (ci) {
+      const s0 = G.sentence(g, ci)
+      const s1 = G.sentence(g, ci+1)
+      return G.subgraph(g, G.subspan_merge([s0, s1]))
+    } else {
+      return g
+    }
   }
 
   function LabelSidekick() {
@@ -440,8 +454,8 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
               }}
             />
             <ul>
-              {labels.map(lbl => (
-                <li>
+              {labels.map((lbl, i) => (
+                <li key={i}>
                   {Button('x', '', () => pop(lbl))} {lbl}
                 </li>
               ))}
@@ -473,7 +487,7 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
         )}
         <div className="main" style={{minHeight: '10em'}}>
           <L.LadderComponent
-            graph={graph.get()}
+            graph={current_subgraph()}
             onDrop={undefined && (g => advance(() => graph.set(g)))}
             hoverId={state.hover_id}
             onHover={hover_id => store.update({hover_id})}
