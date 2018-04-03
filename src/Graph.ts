@@ -198,6 +198,10 @@ export function token_ids_to_edges(g: Graph, ids: string[]): Edge[] {
   return out
 }
 
+export function token_ids_to_edge_ids(g: Graph, ids: string[]): string[] {
+  return token_ids_to_edges(g, ids).map(e => e.id)
+}
+
 /**
 
   const g = init('a b c')
@@ -959,7 +963,7 @@ export function connect(g: Graph, edge_ids: string[]): Graph {
     record.filter(g.edges, (e, _) => edge_ids.some(id => id == e.id)),
     e => e
   )
-  const edge = merge_edges(...es)
+  const edge = merge_edges(...es, Edge([], [], true))
   edges[edge.id] = edge
   return align({...g, edges})
 }

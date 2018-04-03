@@ -42,6 +42,23 @@ export const init: State = {
   cursor: undefined,
 }
 
+function advanceFactory(store: Store<State>) {
+  const graph = store.at('graph')
+  const now = graph.at('now')
+  return (k: () => void) =>
+    store.transaction(() => {
+      const g0 = now.get()
+      k()
+      const g1 = now.get()
+      if (!G.equal(g0, g1)) {
+        now.set(g0)
+        graph.modify(Undo.advance_to(g1))
+      } else {
+        console.log('no change')
+      }
+    })
+}
+
 function position_sentence(g: Graph, character_offset: number): G.Subspan {
   return G.sentence(g, T.token_at(G.target_texts(g), character_offset).token)
 }
@@ -55,6 +72,106 @@ function cursor_subgraph(g: Graph, cursor?: CM.Cursor) {
   } else {
     return g
   }
+}
+
+type ActionOnSelected = 'revert' | 'auto' | 'disconnect' | 'merge' | 'group'
+
+const onSelectedActions: ActionOnSelected[] = ['revert', 'auto', 'disconnect', 'merge', 'group']
+
+const act_on_selected: {[K in ActionOnSelected]: (graph: Graph, selected: string[]) => Graph} = {
+  revert(graph, selected) {
+    const edge_ids = G.token_ids_to_edge_ids(graph, selected)
+    const edges = G.token_ids_to_edges(graph, selected)
+    return G.revert(graph, edge_ids)
+  },
+  auto(graph, selected) {
+    const edge_ids = G.token_ids_to_edge_ids(graph, selected)
+    return G.align({
+      ...graph,
+      edges: record.map(graph.edges, e => {
+        if (edge_ids.some(id => id == e.id)) {
+          return G.Edge(e.ids, e.labels, false)
+        } else {
+          return e
+        }
+      }),
+    })
+  },
+  disconnect: G.disconnect,
+  merge(graph, selected) {
+    return G.connect(graph, G.token_ids_to_edge_ids(graph, selected))
+  },
+  group(graph, selected) {
+    return this.merge(this.disconnect(graph, selected), selected)
+  },
+}
+
+function ActOnSelected(action: ActionOnSelected, g: Graph, s: string[]): Graph {
+  return act_on_selected[action](g, s)
+}
+
+function LabelSidekick({store, onBlur}: {store: Store<State>; onBlur: () => void}) {
+  const advance = advanceFactory(store)
+  const graph = store.at('graph').at('now')
+  const selected = Object.keys(store.get().selected)
+  if (selected.length > 0) {
+    const edges = G.token_ids_to_edges(graph.get(), selected)
+    const edge_ids = edges.map(e => e.id)
+    const labels = Utils.uniq(Utils.flatMap(edges, e => e.labels))
+    function pop(l: string) {
+      advance(() =>
+        edge_ids.forEach(id =>
+          graph.modify(g => G.modify_labels(g, id, ls => ls.filter(x => x !== l)))
+        )
+      )
+    }
+    function push(l: string) {
+      advance(() =>
+        edge_ids.forEach(id => graph.modify(g => G.modify_labels(g, id, ls => [l, ...ls])))
+      )
+    }
+    return (
+      <div className="Modal" onClick={e => store.update({selected: {}})}>
+        <div className="ModalInner" onClick={e => e.stopPropagation()}>
+          <div>
+            {onSelectedActions.map(action =>
+              Button(action, '', () =>
+                advance(() => graph.modify(g => ActOnSelected(action, g, selected)))
+              )
+            )}
+            {Button('deselect', '', () => store.update({selected: {}}))}
+          </div>
+          <hr />
+          <input
+            ref={e => e && e.focus()}
+            placeholder="Enter label..."
+            onKeyDown={e => {
+              const t = e.target as HTMLInputElement
+              if (e.key === 'Enter' || e.key === ' ') {
+                push(t.value)
+                t.value = ''
+              }
+              if (e.key === 'Escape') {
+                store.update({selected: {}})
+                onBlur()
+              }
+              if (e.key === 'Backspace' && t.value == '' && labels.length > 0) {
+                pop(labels[0])
+              }
+            }}
+          />
+          <ul>
+            {labels.map((lbl, i) => (
+              <li key={i}>
+                {Button('x', '', () => pop(lbl))} {lbl}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    )
+  }
+  return null
 }
 
 export function Textarea({
@@ -133,8 +250,8 @@ challenges and discovered strategies to overcome the challenges .
   .split(/\n\n+/gm)
   .map(line => ex.apply({}, line.split('//').map(side => side.trim())))
 
-const Button = (label: string, title: string, on: () => void) => (
-  <button title={title} onClick={on} style={{cursor: 'pointer'}}>
+const Button = (label: string, title: string, on: () => void, enabled = true) => (
+  <button title={title} onClick={on} style={{cursor: 'pointer'}} disabled={!enabled}>
     {label}
   </button>
 )
@@ -362,117 +479,12 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
   const g = graph.get()
   const d = RD.enrichen(g, G.calculate_diff(g))
 
-  function advance(k: () => void) {
-    store.transaction(() => {
-      history.modify(Undo.advance)
-      k()
-    })
-  }
-
-  function LabelSidekick() {
-    const selected = Object.keys(state.selected)
-    if (selected.length > 0) {
-      const edges = G.token_ids_to_edges(state.graph.now, selected)
-      const edge_ids = edges.map(e => e.id)
-      const labels = Utils.uniq(Utils.flatMap(edges, e => e.labels))
-      // const spacesep = label_store.via(Lens.iso(xs => xs.join(' '), s => s.split(/ /g)))
-      // function blur(e: React.SyntheticEvent<any>) {
-      //   console.log('blur')
-      //   store.update({label_id: undefined})
-      //   e.preventDefault()
-      //   Array.from(document.querySelectorAll('.CodeMirror textarea')).map((e: any) =>
-      //     e.focus()
-      //   )
-      // }
-      function pop(l: string) {
-        advance(() =>
-          edge_ids.forEach(id =>
-            graph.modify(g => G.modify_labels(g, id, ls => ls.filter(x => x !== l)))
-          )
-        )
-      }
-      function push(l: string) {
-        advance(() =>
-          edge_ids.forEach(id => graph.modify(g => G.modify_labels(g, id, ls => [l, ...ls])))
-        )
-      }
-      function auto() {
-        const edge_ids = G.token_ids_to_edges(graph.get(), selected).map(e => e.id)
-        graph.modify(g =>
-          G.align({
-            ...g,
-            edges: record.map(g.edges, e => {
-              if (edge_ids.some(id => id == e.id)) {
-                return G.Edge(e.ids, e.labels, false)
-              } else {
-                return e
-              }
-            }),
-          })
-        )
-      }
-      function revert() {
-        const edge_ids = G.token_ids_to_edges(graph.get(), selected).map(e => e.id)
-        const edges = G.token_ids_to_edges(graph.get(), selected)
-        graph.modify(g => G.revert(g, edge_ids))
-      }
-      function disconnect() {
-        graph.modify(g => G.disconnect(g, selected))
-      }
-      function group() {
-        const edge_ids = G.token_ids_to_edges(graph.get(), selected).map(e => e.id)
-        graph.modify(g => G.connect(g, edge_ids))
-      }
-      return (
-        <div className="Modal" onClick={e => store.update({selected: {}})}>
-          <div className="ModalInner" onClick={e => e.stopPropagation()}>
-            <div>
-              {Button('undo', '', () => history.modify(Undo.undo))}
-              {Button('redo', '', () => history.modify(Undo.redo))}
-              {Button('revert', '', () => advance(revert))}
-              {Button('auto', '', () => advance(auto))}
-              {Button('group', '', () => advance(() => (disconnect(), group())))}
-              {Button('merge', '', () => advance(group))}
-              {Button('disconnect', '', () => advance(disconnect))}
-              {Button('deselect', '', () => store.update({selected: {}}))}
-            </div>
-            <hr />
-            <input
-              ref={e => e && e.focus()}
-              placeholder="Enter label..."
-              onKeyDown={e => {
-                console.log(e.key)
-                const t = e.target as HTMLInputElement
-                if (e.key === 'Enter' || e.key === ' ') {
-                  push(t.value)
-                  t.value = ''
-                }
-                if (e.key === 'Escape') {
-                  store.update({selected: {}})
-                  cm_target.cm.focus()
-                }
-                if (e.key === 'Backspace' && t.value == '' && labels.length > 0) {
-                  pop(labels[0])
-                }
-              }}
-            />
-            <ul>
-              {labels.map((lbl, i) => (
-                <li key={i}>
-                  {Button('x', '', () => pop(lbl))} {lbl}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )
-    }
-  }
+  const advance = advanceFactory(store)
 
   return (
     <DropZone webserviceURL={ws_url} onDrop={g => advance(() => graph.set(g))}>
       <div className={topStyle} style={{position: 'relative'}}>
-        {LabelSidekick()}
+        <LabelSidekick store={store} onBlur={() => cm_target.cm.focus()} />
         {showhide(
           'set source text',
           <input
@@ -498,7 +510,6 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
             onSelect={ids => {
               const selected = store.get().selected
               const b = ids.every(id => selected[id]) ? undefined : true
-              console.log(ids, b)
               advance(() =>
                 ids.forEach(id =>
                   store
@@ -511,6 +522,10 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
           />
         </div>
         <div className="main">{cm_target.node}</div>
+        <div className="main" style={{zIndex: 5}}>
+          {Button('undo', '', () => history.modify(Undo.undo), Undo.can_undo(history.get()))}
+          {Button('redo', '', () => history.modify(Undo.redo), Undo.can_redo(history.get()))}
+        </div>
         {showhide(
           'compact representation',
           <React.Fragment>

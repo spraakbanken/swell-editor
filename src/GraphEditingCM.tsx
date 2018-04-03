@@ -69,7 +69,6 @@ export function GraphEditingCM(store: Store<State>): CMVN {
 
   function undo() {
     history.modify(Undo.undo)
-    console.log('undo')
   }
   function redo() {
     history.modify(Undo.redo)
@@ -92,26 +91,6 @@ export function GraphEditingCM(store: Store<State>): CMVN {
   cm.setValue(G.target_text(graph.get()))
 
   const {Index} = PositionUtils(cm, graph)
-
-  /*
-  cm.on('update', () => {
-    const g = graph.get()
-    const graph_text = G.target_text(g)
-    const editor_text = cm.getDoc().getValue() + ' '
-    if (Utils.debug()) {
-      const inv = G.check_invariant(g)
-      if (inv != 'ok') {
-        console.error(inv)
-      }
-    }
-    //log('update', Utils.show({lhs, rhs}))
-    if (editor_text != graph_text) {
-      // everything deleted! just update view ??
-      cm.getDoc().setValue(graph_text)
-
-    }
-  })
-  */
 
   cm.on('beforeChange', (_, change) => {
     if (change.origin == 'undo') {
