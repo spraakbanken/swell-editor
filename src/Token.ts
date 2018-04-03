@@ -85,7 +85,10 @@ export function next_punc(tokens: string[], i: number): number {
   return -1
 }
 
-export type Span = {begin: number; end: number}
+export interface Span {
+  begin: number
+  end: number
+}
 
 /** Merge two spans: makes a span that contains both spans
 
