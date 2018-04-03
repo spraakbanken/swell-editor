@@ -118,12 +118,12 @@ const LadderStyle = style(
         boxShadow: `0 ${px(2)} 0 0 #777`,
         zIndex: 2,
       },
-      '& .GreyPathAuto': {
+      '& .GreyPath': {
         stroke: '#999',
         strokeWidth: px(4),
         fill: 'none',
       },
-      '& .GreyPathManual': {
+      '& .GreyPath.Manual': {
         stroke: ManualPathColour,
         strokeWidth: px(4),
         fill: 'none',
@@ -137,7 +137,7 @@ const LadderStyle = style(
   }
 )
 
-const greyPath = (manual: boolean) => (manual ? 'GreyPathManual' : 'GreyPathAuto')
+const greyPath = (manual: boolean) => 'GreyPath ' + (manual ? 'Manual' : 'Auto')
 const whitePath = 'WhitePath'
 
 const make_brows = (manual: boolean) => {

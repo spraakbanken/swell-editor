@@ -1066,3 +1066,16 @@ export function invert(g: Graph): Graph {
   const {source, target, edges} = g
   return align({source: target, target: source, edges})
 }
+
+export function from_unaligned(st: ST<{text: string; labels: string[]}[]>): Graph {
+  const edges: Record<string, Edge> = {}
+  const g = with_st(st, (toks, side) =>
+    toks.map((tok, i) => {
+      const id = side[0] + i
+      const e = Edge([id], tok.labels, false)
+      edges[id] = e
+      return T.Token(tok.text, id)
+    })
+  )
+  return align({...g, edges})
+}

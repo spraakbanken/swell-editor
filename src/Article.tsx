@@ -1,3 +1,5 @@
+import * as record from './record'
+
 import * as R from 'ramda'
 import * as React from 'react'
 import {Store} from 'reactive-lens'
@@ -34,7 +36,7 @@ const ArticleStyle = style(Utils.debugName('ArticleStyle'), {
   padding: '45px',
   color: '#24292e',
   fontFamily:
-    'Open Sans, Lato, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"',
+    'Lato, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"',
   lineHeight: 1.5,
   wordWrap: 'break-word',
   $nest: {
@@ -83,45 +85,38 @@ const ArticleStyle = style(Utils.debugName('ArticleStyle'), {
     '& table tr th :last-child, table tr td :last-child': {
       marginBottom: '0',
     },
+    '& .NoManualBlue .GreyPath.Manual': {
+      stroke: '#999',
+    },
   },
 })
 
 export function alignment(): VNode {
-  const s = 'Examples high light lotsof futures always'
-  const t = 'Examples always highlight lots of features'
+  function go(s: string, t: string) {
+    const g0 = G.init(s)
+    const g = G.set_target(g0, t)
 
-  const s_u = C.parse(s)
-  const t_u = C.parse(t)
+    const st = {source: s, target: t}
+    const punctuated = G.with_st(st, (s, side) =>
+      Utils.flatMap(T.tokenize(s), (text, i) =>
+        Utils.str_map(text, c => ({text: c, labels: [side[0] + i]}))
+      )
+    )
 
-  function go(zap?: string) {
-    const filter = <A extends Record<string, any> & {text: string}>(us: A[]) =>
-      us.filter(x => x.text != zap)
-
-    const simple = C.assign_ids_and_manual_alignments(s_u, t_u)
-
-    const s_punc = C.punctuate(filter(simple.source))
-    const t_punc = C.punctuate(filter(simple.target))
-
-    const fixup_punc = (u: C.Simple) =>
-      C.Unit(u.text === ' ' ? ';' : u.text, [{labels: u.id === C.space_id ? [] : [u.id]}])
-
-    const s_label = s_punc.map(fixup_punc)
-    const t_label = t_punc.map(fixup_punc)
-
-    const s_unlab = s_label.map(u => C.Unit(u.text, []))
-    const t_unlab = t_label.map(u => C.Unit(u.text, []))
-
-    const g0 = C.units_to_graph(filter(s_u), filter(s_u))
-    const g = C.units_to_graph(filter(s_u), filter(t_u))
-
-    const g_label = C.units_to_graph(s_label, t_label)
-    const g_unlab = C.units_to_graph(s_unlab, t_unlab)
+    const g_label = G.from_unaligned(punctuated)
+    const g_unlab = {
+      ...g_label,
+      edges: record.map(g_label.edges, ({labels, ...e}) => ({...e, labels: []})),
+    }
 
     return {g0, g, g_label, g_unlab}
   }
 
-  const full = go()
-  const wo_always = go('always')
+  const s = 'Examples high light lotsof futures always'
+  const t = 'Examples always highlight lots of features'
+
+  const full = go(s, t)
+  const wo_always = go(s.replace(' always', ''), t.replace(' always', ''))
 
   return md`
 
@@ -134,16 +129,18 @@ export function alignment(): VNode {
     We want to edit the target text like it were in an input text box without
     considering that the tokens in the text is part of a linked structure.
 
-    If we just edit it by changing it we get:
+    If we just edit it by changing it we get
 
     ${L.Ladder(full.g)}
 
     Most of it is correct. How has this happened?
-    Start with a standard diff on the _character-level_:
+    Start with a standard diff edit script on the _character-level_:
 
     ${L.Ladder(full.g_unlab)}
 
-    Here semicolon represents space. How do we now reflect this to the token level?
+    We calculate this using Myers' diff algorithm provided by the
+    [diff-match-patch](https://github.com/google/diff-match-patch) library.
+    How do we now reflect this to the token level?
     By identifying each character with the token it originated from. We name them
     _s0_, _s1_, ... for the source tokens and _t0_, _t1_, ... for the target tokens.
     We don't identify the spaces with anything. The diff with each character link
@@ -166,15 +163,19 @@ export function alignment(): VNode {
 
     ### Manual alignment
 
-    The user corrects incorrect aligments in one of two ways:
+    The user could conceivable correct aligments in many ways, including:
 
-    * _preemptively_ by manually moving the word by drag and drop in the graph (or similar techniques)
-    * _as a fix-up stage_ by adding a link by merging the two links by using the mouse in the graph
+    1. _preemptively_ by manually moving the word by drag and drop in the graph (or similar techniques)
+    2. _as a fix-up stage_ by adding a link by merging the two links by using the mouse in the graph
 
-    Regardless of method in the running example will now be in a stage where part of the parallell sentences have
-    one manual alignment regarding the word _always_.
+    In our editor only the second alternative is implemented since doing many operations of drag and drop
+    is tiring. So the user selects the two always and indicates to the editor that these should be manually
+    aligned. We are now in a stage where part of the parallell sentences have
+    one manual alignment regarding the word _always_. The plan is to do the same procedure as before
+    but without the manually aligned _always_: we will first _remove_ them, align the rest of the text
+    automatically, and then _insert_ them in the correct position.
 
-    We proceed by removing that word and aligning the rest of the text automatically:
+    We thus proceed by removing that word and aligning the rest of the text automatically to get this:
 
     ${L.Ladder(wo_always.g_unlab)}
 
@@ -195,6 +196,10 @@ export function alignment(): VNode {
       'Examples always~always highlight lots of features'
     )}
 
+    The editor indicates that this is a edge is manual colouring it blue.
+    These edges interact with other edges differently from the automatically aligned
+    grey edges, how is explained in the next section.
+
     ### Editing in the presence of manual and automatic alignments
 
     The tokens that have been manually aligned are remembered. While the
@@ -203,12 +208,14 @@ export function alignment(): VNode {
     editing across these boundaries the manual segment is contagious and
     extends as much as it need be.
 
-    Thus if we select _always highlight_ and replace it with _alwayXighligt_ the states before and after are these:
+    Thus if we select _always highlight_ and replace it with _alwayXighligt_ the state before is:
 
     ${Align(
       'Examples high light lotsof futures always',
       'Examples always~always highlight lots of features'
     )}
+
+    and after:
 
     ${Align(
       'Examples high light lotsof futures always',
@@ -225,9 +232,8 @@ export function alignment(): VNode {
     Here the edit was not contagious: the automatic alignment decided to
     not make a big component, instead it chose to split to align the words independently.
 
-    An editor with such information about what is manually aligned and automatic aligned need
-    a way to untag something as manually aligned to make it fall back to the automatic aligner
-    in case it has absorbed too much.
+    In our editor there is a way to untag something as manually aligned to make
+    it fall back to the automatic aligner in case it has absorbed too much.
     `
 }
 
@@ -248,16 +254,24 @@ export function View(store: Store<State>): VNode {
 
     Here is a hypothetical example of such an alignment:
 
-    ${Align(
-      'Examples high light lotsof futures always',
-      'Examples always~always highlight lots of features'
+    ${(
+      <div className="NoManualBlue">
+        {Align(
+          'Examples high light lotsof futures always',
+          'Examples always~always highlight lots of features'
+        )}
+      </div>
     )}
 
     A natural place to put annotations is on the edges of these:
 
-    ${Align(
-      "Examples high light:undercompound lotsof:overcompound futures:'ortography||word choice' always:'word order'",
-      'Examples always~always highlight lots~lotsof of~lotsof features'
+    ${(
+      <div className="NoManualBlue">
+        {Align(
+          "Examples high light:undercompound lotsof:overcompound futures:'ortography||word choice' always:'word order'",
+          'Examples always~always highlight lots~lotsof of~lotsof features'
+        )}
+      </div>
     )}
 
     We will not focus more about such labels in this text but simply highlight
@@ -307,7 +321,11 @@ export function View(store: Store<State>): VNode {
     ` a@1 a~@1 v a~@1 w a~@1 a~@1 // a~@1 a~@1 v a~@1 w a~@1 a~@1        `,
   ]
     .map(L.align)
-    .map(x => <div style={{display: 'inline-table', marginRight: '40px'}}>{x}</div>)
+    .map(x => (
+      <div className="NoManualBlue" style={{display: 'inline-table', marginRight: '40px'}}>
+        {x}
+      </div>
+    ))
 
   return (
     <div className={ArticleStyle}>
