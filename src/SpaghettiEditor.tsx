@@ -31,7 +31,7 @@ export interface State {
   readonly hover_id?: string
   readonly label_id?: string
   readonly selected: Record<string, true>
-  readonly cursor_index?: number
+  readonly cursor?: CM.Cursor
 }
 
 export const init: State = {
@@ -39,7 +39,22 @@ export const init: State = {
   hover_id: undefined,
   label_id: undefined,
   selected: {},
-  cursor_index: undefined
+  cursor: undefined,
+}
+
+function position_sentence(g: Graph, character_offset: number): G.Subspan {
+  return G.sentence(g, T.token_at(G.target_texts(g), character_offset).token)
+}
+
+function cursor_subgraph(g: Graph, cursor?: CM.Cursor) {
+  if (cursor) {
+    const subspans = Utils.flatMap([cursor.anchor, cursor.head], i => [i - 1, i, i + 1]).map(i =>
+      position_sentence(g, i)
+    )
+    return G.subgraph(g, G.subspan_merge(subspans))
+  } else {
+    return g
+  }
 }
 
 export function Textarea({
@@ -314,7 +329,7 @@ export function App(store: Store<State>): () => VNode {
     store.set({graph: Undo.init(G.init('this is an example', true)), selected: {}})
   }
 
-  const cm_target = CM.GraphEditingCM(store.pick('graph', 'hover_id', 'cursor_index'))
+  const cm_target = CM.GraphEditingCM(store.pick('graph', 'hover_id', 'cursor'))
   return () => View(store, cm_target)
 }
 
@@ -352,18 +367,6 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
       history.modify(Undo.advance)
       k()
     })
-  }
-
-  function current_subgraph() {
-    const ci = store.get().cursor_index
-    const g = graph.get()
-    if (ci) {
-      const s0 = G.sentence(g, ci)
-      const s1 = G.sentence(g, ci+1)
-      return G.subgraph(g, G.subspan_merge([s0, s1]))
-    } else {
-      return g
-    }
   }
 
   function LabelSidekick() {
@@ -487,7 +490,7 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
         )}
         <div className="main" style={{minHeight: '10em'}}>
           <L.LadderComponent
-            graph={current_subgraph()}
+            graph={cursor_subgraph(graph.get(), store.get().cursor)}
             onDrop={undefined && (g => advance(() => graph.set(g)))}
             hoverId={state.hover_id}
             onHover={hover_id => store.update({hover_id})}

@@ -50,10 +50,15 @@ function defaultTabBehaviour(cm: CodeMirror.Editor) {
   })
 }
 
+export interface Cursor {
+  head: number
+  anchor: number
+}
+
 export interface State {
   readonly graph: Undo<Graph>
   readonly hover_id?: string
-  readonly cursor_index?: number
+  readonly cursor?: Cursor
 }
 
 export function GraphEditingCM(store: Store<State>): CMVN {
@@ -118,27 +123,22 @@ export function GraphEditingCM(store: Store<State>): CMVN {
     }
   })
 
-  const ci = store.at('cursor_index')
-  function update_cursor_index() {
+  const ci = store.at('cursor')
+  function update_cursor() {
     const g = graph.get()
     const text = G.target_text(g)
-    const cursor = cm.getDoc().getCursor()
-    const character_offset = cm.getDoc().indexFromPos(cursor)
-    try {
-      const i = T.token_at(G.target_texts(g), character_offset).token
-      if (ci.get() != i) {
-        ci.set(i)
-      }
-    } catch (e) {
-      console.error(e)
-      ci.set(undefined)
-    }
+    const doc = cm.getDoc()
+    const head = doc.indexFromPos(doc.getCursor('head'))
+    const anchor = doc.indexFromPos(doc.getCursor('anchor'))
+    ci.set({head, anchor})
   }
 
-  cm.on('cursorActivity', _ => store.transaction(() => {
-    update_cursor_index()
-    store.get().hover_id && store.update({hover_id: undefined})
-  }))
+  cm.on('cursorActivity', _ =>
+    store.transaction(() => {
+      update_cursor()
+      store.get().hover_id && store.update({hover_id: undefined})
+    })
+  )
 
   cm.on('change', (_, change) => {
     /* if (change.origin == 'drag') {
@@ -154,7 +154,7 @@ export function GraphEditingCM(store: Store<State>): CMVN {
         history.modify(Undo.advance)
         graph.set(G.set_target(g, cm.getDoc().getValue() + ' '))
         set_marks()
-        update_cursor_index()
+        update_cursor()
       })
     }
   })
@@ -166,7 +166,7 @@ export function GraphEditingCM(store: Store<State>): CMVN {
       cm.setValue(graph_text)
       // TODO: set the cursor to the end of the change, maybe G.set_target can tell us
       set_marks()
-      update_cursor_index()
+      update_cursor()
     }
   }
 
