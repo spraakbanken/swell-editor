@@ -264,37 +264,6 @@ const {inserts, deletes} = Utils.expr(() => {
   }
 })
 
-export type DragState = {type: 'move'; from: number; to: number; over: boolean} | null
-//  | { request: 'merge', edge_ids: string[] }
-
-export function ApplyMove(diff: D.Diff[], {from, to}: {from: number; to: number}): D.Diff[] {
-  const d = diff[from]
-  switch (d.edit) {
-    case 'Dropped':
-      return Utils.rearrange(
-        diff.map((d, i) => (i == from ? {...d, manual: true} : d)),
-        from,
-        from,
-        to
-      )
-    case 'Edited':
-      if (from === to) {
-        return diff
-      }
-      if (d.source.length != 1 || d.target.length != 1) {
-        console.error('TODO: handle Edited that is not 1-1')
-        console.debug(Utils.show(d))
-        return diff
-      }
-      const dragged = D.Dragged(d.source[0], d.id, true)
-      const dropped = D.Dropped(d.target[0], d.id, true)
-      const [pre, [e], post] = Utils.splitAt3(diff, from, from + 1)
-      return ApplyMove([...pre, dropped, dragged, ...post], {from, to})
-    default:
-      return diff
-  }
-}
-
 export interface OnHover {
   (id: string | undefined): void
 }
