@@ -72,7 +72,7 @@ export function edge_record(es: Edge[]): Record<string, Edge> {
 
   const g0 = init('apa')
   const g = {...g0, edges: {'oops': g0.edges['e-s0-t0']}}
-  'violation' in check_invariant(g) // => true
+  check_invariant(g) !== 'ok' // => true
 
 It's ok for edges to be connected with only tokens from one side,
 but should it be?

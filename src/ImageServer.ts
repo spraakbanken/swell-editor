@@ -80,10 +80,7 @@ export async function metadata_from_url<Data>(image: Image<Data>, url: string): 
   return png.onBuffer.get(image.key, buf)
 }
 
-export async function ImageServer<Data>(
-  image: Image<Data>,
-  port = parseInt(process.argv[2], 10) || 3000
-) {
+export async function ImageServer<Data>(image: Image<Data>, port = 3000) {
   const throttle_options = {burst: 32, period: '10s'}
   const app = express()
   app.use(compression())

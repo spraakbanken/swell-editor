@@ -5,6 +5,7 @@ import * as G from './Graph'
 import * as RD from './RichDiff'
 import * as T from './Token'
 import * as Utils from './Utils'
+import * as record from './record'
 
 import {Store, Lens, Undo, Requests} from 'reactive-lens'
 
@@ -94,10 +95,10 @@ export type GraphSegments = ({subspan: G.Subspan} & Metadata & RichGraph)[]
 
 export function GraphSegments(text: string): GraphSegments {
   const graphs = ByText[text]
-  const groups = G.sentence_groups(Utils.record_map(graphs, rg => rg.graph))
+  const groups = G.sentence_groups(record.map(graphs, rg => rg.graph))
   return Utils.flatten(
     groups.map(group =>
-      Utils.record_traverse(group, (subspan, annotator) => {
+      record.traverse(group, (subspan, annotator) => {
         const graph = G.subgraph(graphs[annotator].graph, subspan)
         return {subspan, annotator, text, graph, rich_diff: RD.enrichen(graph)}
       })
@@ -106,7 +107,7 @@ export function GraphSegments(text: string): GraphSegments {
 }
 
 function pluck(...keys: string[]): (x: Record<string, any>) => Record<string, any> {
-  return x => Utils.record_filter(x, (_, k) => keys.some(o => k == o))
+  return x => record.filter(x, (_, k) => keys.some(o => k == o))
 }
 // const mats = GraphSegments('text6')[17].rich_diff
 // const plucked = mats.map(pluck('edit', 'id', 'source', 'target'))
