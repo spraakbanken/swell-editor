@@ -91,7 +91,7 @@ const ArticleStyle = style(Utils.debugName('ArticleStyle'), {
 })
 
 export function alignment(): VNode {
-  function go(s: string, t: string) {
+  function make_example(s: string, t: string) {
     const g0 = G.init(s)
     const g = G.set_target(g0, t)
 
@@ -114,8 +114,8 @@ export function alignment(): VNode {
   const s = 'Examples high light lotsof futures always'
   const t = 'Examples always highlight lots of features'
 
-  const full = go(s, t)
-  const wo_always = go(s.replace(' always', ''), t.replace(' always', ''))
+  const full = make_example(s, t)
+  const wo_always = make_example(s.replace(' always', ''), t.replace(' always', ''))
 
   return md`
 
@@ -132,18 +132,20 @@ export function alignment(): VNode {
 
     ${L.Ladder(full.g)}
 
-    Most of it (the alignments?) is (already?) correct. How has this happened?
+    These alignments are all correct except for the word order movement.
+    How was this calculated?
     Start with a standard diff edit script on the _character-level_:
 
     ${L.Ladder(full.g_unlab)}
 
     We calculate this using Myers' diff algorithm provided by the
     [diff-match-patch](https://github.com/google/diff-match-patch) library.
-    But how do we now reflect this to the token level?
-    By identifying each character with the token it originated from. We name the source tokens
-    _s0_, _s1_, ... and the target tokens _t0_, _t1_, ... .
-    We don't identify the spaces with anything?? We link spaces to empty strings?. The diff where each character link is
-    associated with the identifiers it is related to looks like this:
+    By identifying each character with the token it originated from
+    we now reflect these character level alignments to the token level.
+    Name the source tokens _s0_, _s1_, ... and the target tokens _t0_, _t1_, ... .
+    We will not identify the spaces with anything and not consider them candidates for linking.
+    The diff where each character link is associated with the identifiers
+    it is related to looks like this:
 
     ${L.Ladder(full.g_label)}
 
@@ -160,7 +162,7 @@ export function alignment(): VNode {
 
     Writing parallell corpora this way is sometimes called standoff and is used in tools like Falco.
 
-    ### Manual alignment
+    ### Manual alignment: for word order changes or when the automatic alignment makes mistakes
 
     The user could conceivable correct aligments in many ways, including:
 
@@ -168,14 +170,16 @@ export function alignment(): VNode {
     2. _as a fix-up stage_ adding a link by merging two links, using the mouse in the graph
 
     In our editor only the second alternative is implemented since doing many operations of drag and drop
-    is tiring (for the user? or the programmer? or the computor?). So the user selects the two always and indicates to the editor that these should be manually
+    is tiring for the user (and also from a testing perspective for the editor developer).
+    So the user selects the two always and indicates to the editor that these should be manually
     aligned. We are now in a stage where part of the parallell sentences have
-    one manual alignment regarding the word _always_. No other words are yet aligned (but why?).
+    one manual alignment regarding the word _always_. Other words are not yet considered aligned since
+    each alignment round starts from scratch (again, excluding the manually assigned links).
     To get the remaining alignments, the plan is to do the same procedure as before
-    but excluding the manually aligned _always_: we will first _remove_ them (remove who? words without alignments?),
-    then align the rest of the text
-    automatically, and then _insert_ them in the correct position (correct? what is correct?).
- 
+    but excluding the manually aligned _always_: we will first _remove_ manually aligned words,
+    then align the rest of the text automatically, and then _insert_ the manually aligned words again in their correct position.
+    Here the correct position is where they where removed from from the respective texts.
+
     We thus proceed by removing that word and aligning the rest of the text automatically to get this:
 
     ${L.Ladder(wo_always.g_unlab)}
@@ -201,7 +205,7 @@ export function alignment(): VNode {
     These edges interact with other edges differently from the automatically aligned
     grey edges, exactly how this works is explained in the next section.
 
-    ### Editing in the presence of manual and automatic alignments
+    ## Editing in the presence of manual and automatic alignments
 
     The tokens that have been manually aligned are remembered (by the editor?). The user may now go on editing
     the target hypothesis. For the editor, things are straight-forward as long as the
@@ -233,7 +237,7 @@ export function alignment(): VNode {
     Here the edit was not contagious: the automatic alignment decided to
     not make a big component, instead it chose to split to align the words independently.
 
-    In case the manual aligner has absorbed too much, our editor provides a way to 
+    In case the manual aligner has absorbed too much, our editor provides a way to
     untag the manually aligned, to make
     it fall back to the automatic aligner.
     `
@@ -246,15 +250,16 @@ export function View(store: Store<State>): VNode {
     _Dan Rosén dan.rosen@svenska.gu.se 2018_
 
     An error-corrected learner text can be seen as a parallel corpus from
-    the source text written by the learner to target hypothesis text. We
-    would like precise word alignments between these two texts and (therefore?) develop
-    an editor which aligns these automatically and lets the user manually
+    the source text written by the learner to the target hypothesis text.
+    We would like precise word alignments between these two texts and motivated
+    by this develop an editor which aligns these automatically and lets the user manually
     link the (unevitable) mistakes from the automatic alignment. We note
-    that the situation is not exclusive to learner corpora but could be
+    that the situation is not exclusive to learner corpora and could be
     viable between other language pairs given that they are similar enough,
-    for example the Scandinavian languages.
+    for example the Scandinavian languages but for the purposes of this
+    article we focus on learner corpora.
 
-    Here is a hypothetical example of such an alignment:
+    Here is a hypothetical sentence from such a word aligned parallel learner corpus:
 
     ${(
       <div className="NoManualBlue">
@@ -264,6 +269,44 @@ export function View(store: Store<State>): VNode {
         )}
       </div>
     )}
+
+    This example also illustrates the features of our representation
+    of aligned sentences. Directly we see that the misspelled or wrongly chosen
+    word _futures_ is linked with the hypothesis target word _features_.
+    Moreover, we can represent many-to-one alignments, useful for undercompounding, in the
+    example of _high light_ to _highlight_.
+    Conversely, one-to-many alignments in the case of overcompounding are expressible
+    and is used to represent the link from _lotsof_ to _lots of_.
+    Finally, word movement are tracked as in the case of the moved word _always_ from the end of the sentence towards the beginning.
+
+    We want to point out that it is the presence of these operations such as
+    over- and undercompounding and word movement that make traditional
+    token-based annotations such as stand-off unsuitable for learner corpora.
+    This approach was taken in eg MERLIN (Boyd et al) using the editors FALKO (check this ?).
+
+    An alternative approach was taken in ASK (Tenfjord et al) where segments from the learner texts
+    were noted and replaced with one single xml tag. Nested xml tags are supported.
+    We see two drawbacks of this approach:
+    1. long word movements require all intermediate tokens to be annotated, which is an over-approximation
+    2. editing an xml text directly is unnatural
+
+    The work closest to this is the Czech learner corporus CzeSL (Hana, Rosen, et al)
+    and its parallel corpora editor feat.
+    The main difference is that our editor suggests edge alignments automatically.
+    In feat all edges are placed manually (I think?) and
+    there is also more freedom in how to put edges in this editor (I think?).
+    It supports several layers of hypothesis and the corpora utilizes the first
+    layer to provide a lexically correct hypothesis while the last layer also
+    corrects morphological agreements and word order rearrangements. There is
+    also a possibility to use secondary edges to indicate agreement dependencies.
+    These two extensions remain further work for our editor.
+
+    In our editor the user instead edits the target hypothesis and it is aligned
+    automatically to the learner text using standard diff edit script calculations.
+    Only word-movements need to be explicitly marked and in the (relatively rare, we anticipate)
+    cases where the automatic aligned incorrectly links words.
+
+    ### Annotations
 
     A natural place to put annotations is on the edges of these:
 
@@ -286,10 +329,11 @@ export function View(store: Store<State>): VNode {
     Automatic alignment could be based on something else than character-level diffs. A
     token-based diff could be used, where the distance between tokens are
     calculated between word embeddings in a shared embedding space for the
-    two languages. Hmmm, what will this be used for? How will it look?
+    two languages. Producing word aligned parallel corpora could then also
+    become _mostly automatic_.
 
-    As for the visualisation, the picture may be rotated 90 degrees to facilitate work with sentence-aligned
-    parallell corpora.
+    As for the visualisation, the pictures may be rotated 90 degrees to
+    facilitate work with sentence-aligned parallell corpora.
 
     ## Gallery
   `

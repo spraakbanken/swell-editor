@@ -501,6 +501,8 @@ export function align(g: Graph): Graph {
 
     char_diff.forEach(c => {
       if (c.change == 0) {
+        // these undefined makes the alignment skip spaces.
+        // they originate from punctuate
         if (c.a.id !== undefined && c.b.id !== undefined) {
           uf.union(c.a.id, c.b.id)
         }
