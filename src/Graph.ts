@@ -1081,3 +1081,20 @@ export function from_unaligned(st: ST<{text: string; labels: string[]}[]>): Grap
   )
   return align({...g, edges})
 }
+
+function position_sentence(g: Graph, character_offset: number): Subspan {
+  return sentence(g, T.token_at(target_texts(g), character_offset).token)
+}
+
+export function sentence_subspans_around_positions(
+  g: Graph,
+  positions: number[]
+): Subspan | undefined {
+  const N = target_text(g).length
+  const nearby = Utils.flatMap(positions, i => [i - 1, i, i + 1])
+  const subspans = nearby.filter(i => i >= 0 && i < N).map(i => position_sentence(g, i))
+  if (subspans.length > 0) {
+    return subspan_merge(subspans)
+  }
+  return undefined
+}

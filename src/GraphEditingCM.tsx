@@ -58,7 +58,7 @@ export interface Cursor {
 export interface State {
   readonly graph: Undo<Graph>
   readonly hover_id?: string
-  readonly cursor?: Cursor
+  readonly subspan?: G.Subspan
 }
 
 export function GraphEditingCM(store: Store<State>): CMVN {
@@ -97,20 +97,22 @@ export function GraphEditingCM(store: Store<State>): CMVN {
     }
   })
 
-  const ci = store.at('cursor')
   function update_cursor() {
     const g = graph.get()
     const text = G.target_text(g)
     const doc = cm.getDoc()
     const head = doc.indexFromPos(doc.getCursor('head'))
     const anchor = doc.indexFromPos(doc.getCursor('anchor'))
-    ci.set({head, anchor})
+    Utils.setIfChanged(
+      store.at('subspan'),
+      G.sentence_subspans_around_positions(graph.get(), [head, anchor])
+    )
   }
 
   cm.on('cursorActivity', _ =>
     store.transaction(() => {
       update_cursor()
-      store.get().hover_id && store.update({hover_id: undefined})
+      Utils.setIfChanged(store.at('hover_id'), undefined)
     })
   )
 
@@ -145,13 +147,11 @@ export function GraphEditingCM(store: Store<State>): CMVN {
   }
 
   cm.getWrapperElement().addEventListener('mousemove', e => {
-    const {edge} = Index.fromCoords(e).toEdge()
-    const {hover_id} = store.get()
-    if (edge) {
-      edge.id === hover_id || store.update({hover_id: edge.id})
-    } else {
-      undefined === hover_id || store.update({hover_id: undefined})
-    }
+    const i = Index.fromCoords(e)
+    const {edge} = i.toEdge()
+    store.transaction(() => {
+      Utils.setIfChanged(store.at('hover_id'), edge ? edge.id : undefined)
+    })
   })
 
   function set_marks() {
@@ -159,7 +159,6 @@ export function GraphEditingCM(store: Store<State>): CMVN {
       const doc = cm.getDoc()
       doc.getAllMarks().map(m => m.clear())
       const g = graph.get()
-      const d = G.calculate_raw_diff(g)
       const em = G.edge_map(g)
       const hover_id = store.get().hover_id
       let i = 0

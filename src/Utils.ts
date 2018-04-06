@@ -1015,3 +1015,10 @@ function adt<TagName extends string, Ty, Cons extends Record<string, {con: any; 
     },
   }
 }
+
+export function setIfChanged<A>(store: Store<A>, value: A) {
+  const now = store.get()
+  if (!R.equals(now, value)) {
+    store.set(value)
+  }
+}

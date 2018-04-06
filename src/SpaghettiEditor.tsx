@@ -31,7 +31,7 @@ export interface State {
   readonly hover_id?: string
   readonly label_id?: string
   readonly selected: Record<string, true>
-  readonly cursor?: CM.Cursor
+  readonly subspan?: G.Subspan
   readonly side_restriction?: L.RestrictToSide
 }
 
@@ -40,16 +40,14 @@ export const init: State = {
   hover_id: undefined,
   label_id: undefined,
   selected: {},
-  cursor: undefined,
+  subspan: undefined,
   side_restriction: undefined,
 }
 
 function RestrictionButtons(store: Store<L.RestrictToSide | undefined>) {
   const options: (L.RestrictToSide | undefined)[] = [undefined, 'source', 'target']
-  const name = (k?: string) => k === undefined ? 'both sides' : k + ' only'
-  return options.map(k =>
-    Button(name(k), '', () => store.set(k), store.get() !== k)
-  )
+  const name = (k?: string) => (k === undefined ? 'both sides' : k + ' only')
+  return options.map(k => Button(name(k), '', () => store.set(k), store.get() !== k))
 }
 
 function only_select_existing_words(graph: Graph, selected0: Record<string, true>) {
@@ -75,22 +73,6 @@ function advanceFactory(store: Store<State>) {
         graph.modify(Undo.advance_to(g1))
       }
     })
-}
-
-function position_sentence(g: Graph, character_offset: number): G.Subspan {
-  return G.sentence(g, T.token_at(G.target_texts(g), character_offset).token)
-}
-
-function cursor_subgraph(g: Graph, cursor?: CM.Cursor) {
-  if (cursor) {
-    const N = G.target_text(g).length
-    const nearby = Utils.flatMap([cursor.anchor, cursor.head], i => [i - 1, i, i + 1])
-    const subspans = nearby.filter(i => i >= 0 && i < N).map(i => position_sentence(g, i) )
-    if (subspans.length > 0) {
-      return G.subgraph(g, G.subspan_merge(subspans))
-    }
-  }
-  return g
 }
 
 type ActionOnSelected = 'revert' | 'auto' | 'disconnect' | 'merge' | 'group'
@@ -418,21 +400,25 @@ export class If extends React.Component<
   }
 }
 
-function showhide(what: string, show: string | VNode, init = false) {
+function showhide(what: string, show: () => string | VNode, init = false) {
   return (
     <If init={init}>
-      {(b, flip) => (
-        <React.Fragment>
-          <a
-            style={{opacity: '0.85', justifySelf: 'end'} as any}
-            className="main"
-            href=""
-            onClick={e => (e.preventDefault(), flip())}>
-            {b ? 'hide' : 'show'} {what}
-          </a>
-          {b && (typeof show === 'string' ? <pre className="pre-box main">{show}</pre> : show)}
-        </React.Fragment>
-      )}
+      {(b, flip) => {
+        let v
+        return (
+          <React.Fragment>
+            <a
+              style={{opacity: '0.85', justifySelf: 'end'} as any}
+              className="main"
+              href=""
+              onClick={e => (e.preventDefault(), flip())}>
+              {b ? 'hide' : 'show'} {what}
+            </a>
+            {b &&
+              ((v = show()), typeof v === 'string' ? <pre className="pre-box main">{v}</pre> : v)}
+          </React.Fragment>
+        )
+      }}
     </If>
   )
 }
@@ -479,7 +465,7 @@ export function App(store: Store<State>): () => VNode {
     restricted && store.update(restricted)
   })
 
-  const cm_target = CM.GraphEditingCM(store.pick('graph', 'hover_id', 'cursor'))
+  const cm_target = CM.GraphEditingCM(store.pick('graph', 'hover_id', 'subspan'))
   return () => View(store, cm_target)
 }
 
@@ -510,7 +496,6 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
   // const target = now.at('target')
 
   const g = graph.get()
-  const d = RD.enrichen(g, G.calculate_diff(g))
 
   const advance = advanceFactory(store)
 
@@ -518,38 +503,40 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
     <DropZone webserviceURL={ws_url} onDrop={g => advance(() => graph.set(g))}>
       <div className={topStyle} style={{position: 'relative'}}>
         <LabelSidekick store={store} onBlur={() => cm_target.cm.focus()} />
-        {showhide(
-          'set source text',
+        {showhide('set source text', () => (
           <div className="main">
             <div>
-            <textarea
-              style={{width: '100%'}}
-              rows={5}
-              className="main"
-              onChange={e =>
-                advance(() => {
-                  const t = e.target as HTMLTextAreaElement
-                  graph.modify(g => G.invert(G.set_target(G.invert(g), t.value + ' ')))
-                })
-              }
-              placeholder="Input source text..."
-              value={G.source_text(graph.get()).slice(0, -1)}
-            />
+              <textarea
+                style={{width: '100%'}}
+                rows={5}
+                className="main"
+                onChange={e =>
+                  advance(() => {
+                    const t = e.target as HTMLTextAreaElement
+                    graph.modify(g => G.invert(G.set_target(G.invert(g), t.value + ' ')))
+                  })
+                }
+                placeholder="Input source text..."
+                value={G.source_text(graph.get()).slice(0, -1)}
+              />
             </div>
             <div>
-            {Button('copy to target', '', () => advance(() => graph.modify(g => G.init_from(G.source_texts(g)))))}
+              {Button('copy to target', '', () =>
+                advance(() => graph.modify(g => G.init_from(G.source_texts(g))))
+              )}
             </div>
           </div>
-        )}
+        ))}
         <div className="main buttonSep" style={{zIndex: 5}}>
           {Button('undo', '', () => history.modify(Undo.undo), Undo.can_undo(history.get()))}
           {Button('redo', '', () => history.modify(Undo.redo), Undo.can_redo(history.get()))}
           {RestrictionButtons(store.at('side_restriction'))}
         </div>
+        <div className="main">{cm_target.node}</div>
         <div className="main" style={{minHeight: '10em'}}>
           <L.LadderComponent
             side={state.side_restriction}
-            graph={cursor_subgraph(graph.get(), store.get().cursor)}
+            graph={state.subspan ? G.subgraph(graph.get(), state.subspan) : g}
             hoverId={state.hover_id}
             onHover={hover_id => store.update({hover_id})}
             selectedIds={Object.keys(state.selected)}
@@ -567,9 +554,7 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
             }}
           />
         </div>
-        <div className="main">{cm_target.node}</div>
-        {showhide(
-          'compact representation',
+        {showhide('compact representation', () => (
           <React.Fragment>
             {sides.map((side, i) => (
               <React.Fragment key={i}>
@@ -592,9 +577,9 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
               </React.Fragment>
             ))}
           </React.Fragment>
-        )}
-        {showhide('graph json', Utils.show(g))}
-        {showhide('diff json', Utils.show(d))}
+        ))}
+        {showhide('graph json', () => Utils.show(g))}
+        {showhide('diff json', () => Utils.show(RD.enrichen(g)))}
         {links(graph.get())}
         <div className="main TopPad">
           <em>Examples:</em>
@@ -631,23 +616,24 @@ function links(g: Graph) {
   const md = `![](${url})`
   return (
     <>
-      {showhide(
-        'compact form',
+      {showhide('compact form', () => (
         <pre className={'pre-box main '} style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}>
           {`${C.units_to_string(stu.source)} // ${C.units_to_string(stu.target)}`}
         </pre>
-      )}
+      ))}
       {showhide(
         'copy link',
-        <pre
-          className={'pre-box main ' + L.Unselectable}
-          style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}
-          draggable={true}
-          onDragStart={e => {
-            e.dataTransfer.setData('text/plain', md)
-          }}>
-          {md}
-        </pre>,
+        () => (
+          <pre
+            className={'pre-box main ' + L.Unselectable}
+            style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}
+            draggable={true}
+            onDragStart={e => {
+              e.dataTransfer.setData('text/plain', md)
+            }}>
+            {md}
+          </pre>
+        ),
         true
       )}
     </>

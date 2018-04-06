@@ -422,12 +422,12 @@ export function Ladder(
             }}
             onMouseEnter={() => on_hover(d.id)}
             onMouseLeave={() => on_hover(undefined)}
-            key={d.index + d.id}>
-            <li className={"top " + hoverClass(hover_id, d.id)}>{s}</li>
+            key={d.index}>
+            <li className={'top ' + hoverClass(hover_id, d.id)}>{s}</li>
             <li className="upper">{upper}</li>
             <li className="mid">{mid}</li>
             <li className="lower">{lower}</li>
-            <li className={"bottom " + hoverClass(hover_id, d.id)}>{t}</li>
+            <li className={'bottom ' + hoverClass(hover_id, d.id)}>{t}</li>
           </ul>
         )
       })}
