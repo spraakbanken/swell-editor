@@ -79,7 +79,7 @@
     "png-io": "ts-node src/png-io.ts",
     "iosaas": "ts-node src/iosaas.ts --serve",
     "serve": "parcel $(ts-node src/generate_index.ts ${App:-SpaghettiEditor})",
-    "build": "parcel build --public-url ./ $(ts-node src/generate_index.ts ${App:-SpaghettiEditor})",
+    "build": "rm dist/*; parcel build --public-url ./ $(ts-node src/generate_index.ts ${App:-SpaghettiEditor})",
     "doctest:generate": "doctest-ts src/*ts* --mocha",
     "pretest": "yarn run doctest:clean && yarn run doctest:generate",
     "test": "mocha --require ts-node/register */*test.ts",
