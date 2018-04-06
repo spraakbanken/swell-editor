@@ -436,7 +436,7 @@ export function App(store: Store<State>): () => VNode {
   store
     .at('graph')
     .at('now')
-    .storage_connect('swell-spaghetti-3')
+    .storage_connect('swell-spaghetti-4')
 
   store
     .at('graph')
