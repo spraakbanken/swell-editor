@@ -7,12 +7,25 @@ import * as Utils from './Utils'
 import * as record from './record'
 import * as D from './Diff'
 
+export type RestrictToSide = 'source' | 'target'
+
+function RestrictToSide(rd: RD.RichDiff[], side?: RestrictToSide): RD.RichDiff[] {
+  if (side === 'source') {
+    return rd.filter(d => d.edit != 'Dropped').map(d => d.edit == 'Edited' ? {...d, target: [], target_diffs: []} : d)
+  } else if (side === 'target') {
+    return rd.filter(d => d.edit != 'Dragged').map(d => d.edit == 'Edited' ? {...d, source: [], source_diffs: []} : d)
+  } else {
+    return rd
+  }
+}
+
 export function LadderComponent(props: {
   graph: G.Graph
   onHover?: OnHover
   onSelect?: OnSelect
   hoverId?: string
   selectedIds?: string[]
+  side?: RestrictToSide
 }) {
   return Ladder(
     props.graph,
@@ -20,7 +33,8 @@ export function LadderComponent(props: {
     props.hoverId,
     props.onHover,
     props.selectedIds,
-    props.onSelect
+    props.onSelect,
+    props.side
   )
 }
 
@@ -289,11 +303,12 @@ export function hoverClass(hover_id: string | undefined, id: string) {
 
 export function Ladder(
   g: G.Graph,
-  rd: RD.RichDiff[] = RD.enrichen(g),
+  rd0: RD.RichDiff[] = RD.enrichen(g),
   hover_id?: string,
   onHover?: OnHover,
   selected: string[] = [],
-  onSelect?: OnSelect
+  onSelect?: OnSelect,
+  side?: RestrictToSide
 ): VNode {
   if (selected.length > 0) {
     hover_id = undefined
@@ -329,6 +344,7 @@ export function Ladder(
     )
   }
 
+  const rd = RestrictToSide(rd0, side)
   const grids = D.DiffToGrid(rd)
   const u = grids.upper
   const l = grids.lower
