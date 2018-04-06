@@ -326,11 +326,11 @@ const topStyle = style({
       padding: '3px',
     },
     '& .Selected': {
-      background: '#eee',
+      background: '#8883',
       color: '#222',
       borderRadius: '3px',
       padding: '2px',
-      border: '1px solid #888',
+      border: '1px solid #8886',
     },
     '& .hoverable, & .hoverable': {
       transition: 'opacity 50ms 0ms',

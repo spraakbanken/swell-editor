@@ -122,6 +122,12 @@ const LadderStyle = style(
       '& > ul > .bottom': {
         marginTop: `${px(3)}`,
       },
+      '& > ul > .source.mid': {
+        marginTop: `${px(5)}`,
+      },
+      '& > ul > .target.mid': {
+        marginBottom: `-${px(3)}`,
+      },
       '& > ul > .upper, & > ul > .lower, & > ul > .mid': {
         height: `${px(24)}`,
       },
@@ -373,17 +379,19 @@ export function Ladder(
             </span>
           )
         }
+        const labels = g.edges[d.id].labels.filter(lbl => lbl.length > 0)
+        const brow_threshold = side ? (labels.length > 0 ? 0 : 1) : 1
         const [s, t] = Utils.expr((): [VNode, VNode] => {
           switch (d.edit) {
             case 'Edited':
               return [
                 <div style={{position: 'relative'}}>
                   {d.source_diffs.map((ds, i) => HoverSpan(d.source[i].id, deletes(ds)))}
-                  {d.source.length > 1 && brows[~~d.manual].under}
+                  {d.source.length > brow_threshold && brows[~~d.manual].under}
                 </div>,
                 <div style={{position: 'relative'}}>
                   {d.target_diffs.map((ds, i) => HoverSpan(d.target[i].id, inserts(ds)))}
-                  {d.target.length > 1 && brows[~~d.manual].above}
+                  {d.target.length > brow_threshold && brows[~~d.manual].above}
                 </div>,
               ]
             case 'Dragged':
@@ -398,14 +406,10 @@ export function Ladder(
               ]
           }
         })
-        const upper = Column(u[i])
-        const lower = Column(l[i])
-        const labels = g.edges[d.id].labels.filter(lbl => lbl.length > 0)
         const show_label_now = u[i].some(b => b.y1 == 1) || l[i].some(b => b.y1 == 0)
         const has_line_below_label = show_label_now && l[i].length > 0
-        const line_below_label = has_line_below_label
-          ? [{x0: 0.5, y0: 0, x1: 0.5, y1: 1, id: d.id}]
-          : []
+        const line_below_label =
+          has_line_below_label && !side ? [{x0: 0.5, y0: 0, x1: 0.5, y1: 1, id: d.id}] : []
         const mid = Column(
           line_below_label,
           labels.length > 0 &&
@@ -427,11 +431,11 @@ export function Ladder(
             onMouseEnter={() => on_hover(d.id)}
             onMouseLeave={() => on_hover(undefined)}
             key={d.index}>
-            <li className={'top ' + hoverClass(hover_id, d.id)}>{s}</li>
-            <li className="upper">{upper}</li>
-            <li className="mid">{mid}</li>
-            <li className="lower">{lower}</li>
-            <li className={'bottom ' + hoverClass(hover_id, d.id)}>{t}</li>
+            {side === 'target' || <li className={'top ' + hoverClass(hover_id, d.id)}>{s}</li>}
+            {!side && <li className="upper">{Column(u[i])}</li>}
+            <li className={(side || '') + ' mid'}>{mid}</li>
+            {!side && <li className="lower">{Column(l[i])}</li>}
+            {side === 'source' || <li className={'bottom ' + hoverClass(hover_id, d.id)}>{t}</li>}
           </ul>
         )
       })}
