@@ -506,18 +506,26 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
         <LabelSidekick store={store} onBlur={() => cm_target.cm.focus()} />
         {showhide(
           'set source text',
-          <input
-            className="main"
-            onKeyDown={e =>
-              e.key === 'Enter' &&
-              advance(() => {
-                const t = e.target as HTMLInputElement
-                graph.modify(g => G.invert(G.set_target(G.invert(g), t.value)))
-              })
-            }
-            placeholder="Input source text.."
-            defaultValue={G.source_text(graph.get())}
-          />
+          <div className="main">
+            <div>
+            <textarea
+              style={{width: '100%'}}
+              rows={5}
+              className="main"
+              onChange={e =>
+                advance(() => {
+                  const t = e.target as HTMLTextAreaElement
+                  graph.modify(g => G.invert(G.set_target(G.invert(g), t.value + ' ')))
+                })
+              }
+              placeholder="Input source text..."
+              value={G.source_text(graph.get()).slice(0, -1)}
+            />
+            </div>
+            <div>
+            {Button('copy to target', '', () => advance(() => graph.modify(g => G.init_from(G.source_texts(g)))))}
+            </div>
+          </div>
         )}
         <div className="main" style={{minHeight: '10em'}}>
           <L.LadderComponent
