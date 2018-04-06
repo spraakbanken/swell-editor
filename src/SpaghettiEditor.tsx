@@ -136,9 +136,7 @@ function LabelSidekick({store, onBlur}: {store: Store<State>; onBlur: () => void
       )
     }
     return (
-      <div className="Modal" onClick={() =>
-        Deselect(store)
-      }>
+      <div className="Modal" onClick={() => Deselect(store)}>
         <div className="ModalInner" onClick={e => e.stopPropagation()}>
           <div>
             {onSelectedActions.map(action =>
@@ -163,7 +161,7 @@ function LabelSidekick({store, onBlur}: {store: Store<State>; onBlur: () => void
                 onBlur()
               }
               if (e.key === 'Backspace' && t.value == '' && labels.length > 0) {
-                pop(labels[labels.length-1])
+                pop(labels[labels.length - 1])
               }
             }}
           />
@@ -379,7 +377,7 @@ const topStyle = style({
     },
     '& button': {
       marginRight: '5px',
-    }
+    },
   },
 })
 
