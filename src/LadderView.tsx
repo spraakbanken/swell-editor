@@ -51,16 +51,23 @@ export const Unselectable = style(Utils.debugName('Unselectable'), {
 
 const BorderCell = style(
   Utils.debugName('BorderCell'),
-  csstips.border(`${px(intended_font_size / 13)} #777 solid`),
-  // csstips.border(`${px(1)} #777 solid`),
-  {borderRadius: `${px(2)}`},
-  {fontSize: `${px(13)}`},
-  {background: 'white'},
-  csstips.padding(px(5), px(3), px(1), px(3)),
+  csstips.horizontal,
   csstips.centerJustified,
   {
+    zIndex: 1,
+  },
+  {
     $nest: {
-      '& > span:not(:last-child)': {
+      '& > div': {
+        ...csstips.border(`${px(intended_font_size / 13)} #777 solid`),
+        // csstips.border(`${px(1)} #777 solid`),
+        borderRadius: `${px(2)}`,
+        fontSize: `${px(13)}`,
+        background: 'white',
+        ...csstips.padding(px(5), px(3), px(1), px(3)),
+        ...csstips.centerJustified,
+      },
+      '& > div> span:not(:last-child)': {
         paddingRight: `${px(4)}`,
         marginRight: `${px(4)}`,
       },
@@ -94,13 +101,10 @@ const LadderStyle = style(
         ...csstips.centerJustified,
       },
       // note: li indexes starts from 1
-      '& > ul > li:nth-child(3)': {
-        height: `${px(24)}`,
-      },
-      '& > ul > li:nth-child(5)': {
+      '& > ul > .bottom': {
         marginTop: `${px(3)}`,
       },
-      '& > ul > li:nth-child(even)': {
+      '& > ul > .upper, & > ul > .lower, & > ul > .mid': {
         height: `${px(24)}`,
       },
       '& div': {
@@ -305,7 +309,7 @@ export function Ladder(
     const top = column.filter(line => line.id == endpoint_id)
     const below = column.filter(line => line.id != endpoint_id)
     return (
-      <li style={{position: 'relative'}}>
+      <div style={{position: 'relative', width: '100%', height: '100%'}}>
         {rel}
         {PixelPerfectSVG(
           <svg height="100%" width="100%" viewBox="0 0 1 1" preserveAspectRatio="none">
@@ -321,7 +325,7 @@ export function Ladder(
           </svg>,
           {zIndex: -2}
         )}
-      </li>
+      </div>
     )
   }
 
@@ -386,8 +390,8 @@ export function Ladder(
           line_below_label,
           labels.length > 0 &&
             show_label_now && (
-              <div style={{zIndex: 1}}>
-                <div className={BorderCell}>{labels.map((l, i) => <span key={i}>{l}</span>)}</div>
+              <div className={BorderCell}>
+                <div>{labels.map((l, i) => <span key={i}>{l}</span>)}</div>
               </div>
             )
         )
@@ -403,11 +407,11 @@ export function Ladder(
             onMouseEnter={() => on_hover(d.id)}
             onMouseLeave={() => on_hover(undefined)}
             key={d.index + d.id}>
-            <li className={hoverClass(hover_id, d.id)}>{s}</li>
-            {upper}
-            {mid}
-            {lower}
-            <li className={hoverClass(hover_id, d.id)}>{t}</li>
+            <li className={"top " + hoverClass(hover_id, d.id)}>{s}</li>
+            <li className="upper">{upper}</li>
+            <li className="mid">{mid}</li>
+            <li className="lower">{lower}</li>
+            <li className={"bottom " + hoverClass(hover_id, d.id)}>{t}</li>
           </ul>
         )
       })}
