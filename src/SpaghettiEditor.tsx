@@ -118,6 +118,10 @@ function ActOnSelected(action: ActionOnSelected, g: Graph, s: string[]): Graph {
   return act_on_selected[action](g, s)
 }
 
+function Deselect(store: Store<State>) {
+  store.update({selected: {}, hover_id: undefined})
+}
+
 function LabelSidekick({store, onBlur}: {store: Store<State>; onBlur: () => void}) {
   const advance = advanceFactory(store)
   const graph = store.at('graph').at('now')
@@ -135,11 +139,13 @@ function LabelSidekick({store, onBlur}: {store: Store<State>; onBlur: () => void
     }
     function push(l: string) {
       advance(() =>
-        edge_ids.forEach(id => graph.modify(g => G.modify_labels(g, id, ls => [l, ...ls])))
+        edge_ids.forEach(id => graph.modify(g => G.modify_labels(g, id, ls => [...ls, l])))
       )
     }
     return (
-      <div className="Modal" onClick={e => store.update({selected: {}})}>
+      <div className="Modal" onClick={() =>
+        Deselect(store)
+      }>
         <div className="ModalInner" onClick={e => e.stopPropagation()}>
           <div>
             {onSelectedActions.map(action =>
@@ -147,7 +153,7 @@ function LabelSidekick({store, onBlur}: {store: Store<State>; onBlur: () => void
                 advance(() => graph.modify(g => ActOnSelected(action, g, selected)))
               )
             )}
-            {Button('deselect', '', () => store.update({selected: {}}))}
+            {Button('deselect', '', () => Deselect(store))}
           </div>
           <hr />
           <input
@@ -160,11 +166,11 @@ function LabelSidekick({store, onBlur}: {store: Store<State>; onBlur: () => void
                 t.value = ''
               }
               if (e.key === 'Escape') {
-                store.update({selected: {}})
+                Deselect(store)
                 onBlur()
               }
               if (e.key === 'Backspace' && t.value == '' && labels.length > 0) {
-                pop(labels[0])
+                pop(labels[labels.length-1])
               }
             }}
           />
