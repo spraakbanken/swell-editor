@@ -155,11 +155,11 @@ export function init(s: string, manual = false): Graph {
 
 /** Makes a graph from tokens */
 export function init_from(tokens: string[], manual = false): Graph {
-  return {
+  return align({
     source: T.identify(tokens, 's'),
     target: T.identify(tokens, 't'),
     edges: edge_record(tokens.map((_, i) => Edge(['s' + i, 't' + i], [], manual))),
-  }
+  })
 }
 
 /** Map from token ids to edges

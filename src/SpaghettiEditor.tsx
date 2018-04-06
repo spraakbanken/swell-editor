@@ -73,13 +73,14 @@ function position_sentence(g: Graph, character_offset: number): G.Subspan {
 
 function cursor_subgraph(g: Graph, cursor?: CM.Cursor) {
   if (cursor) {
-    const subspans = Utils.flatMap([cursor.anchor, cursor.head], i => [i - 1, i, i + 1]).map(i =>
-      position_sentence(g, i)
-    )
-    return G.subgraph(g, G.subspan_merge(subspans))
-  } else {
-    return g
+    const N = G.target_text(g).length
+    const nearby = Utils.flatMap([cursor.anchor, cursor.head], i => [i - 1, i, i + 1])
+    const subspans = nearby.filter(i => i >= 0 && i < N).map(i => position_sentence(g, i) )
+    if (subspans.length > 0) {
+      return G.subgraph(g, G.subspan_merge(subspans))
+    }
   }
+  return g
 }
 
 type ActionOnSelected = 'revert' | 'auto' | 'disconnect' | 'merge' | 'group'
