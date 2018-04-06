@@ -339,7 +339,7 @@ const topStyle = style({
       color: 'inherit',
     },
     '& .ladder ul': {
-      zIndex: 1,
+      zIndex: 10,
       cursor: 'pointer',
     },
     '& .Selected, & .Selectable': {
@@ -371,7 +371,7 @@ const topStyle = style({
       height: '100%',
       width: '100%',
       bottom: 'auto',
-      zIndex: 0,
+      zIndex: 5,
       position: 'fixed',
     },
     '& .ModalInner': {

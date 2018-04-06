@@ -68,7 +68,7 @@ const BorderCell = style(
   csstips.horizontal,
   csstips.centerJustified,
   {
-    zIndex: 1,
+    zIndex: 10,
   },
   {
     $nest: {
@@ -134,7 +134,7 @@ const LadderStyle = style(
       },
       '& .EditedTop': {
         boxShadow: `0 ${px(2)} 0 0 #777`,
-        zIndex: 2,
+        zIndex: 11,
       },
       '& .GreyPath': {
         stroke: '#999',
