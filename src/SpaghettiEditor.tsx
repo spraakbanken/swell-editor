@@ -32,6 +32,7 @@ export interface State {
   readonly label_id?: string
   readonly selected: Record<string, true>
   readonly cursor?: CM.Cursor
+  readonly side_restriction?: L.RestrictToSide
 }
 
 export const init: State = {
@@ -40,6 +41,15 @@ export const init: State = {
   label_id: undefined,
   selected: {},
   cursor: undefined,
+  side_restriction: undefined,
+}
+
+function RestrictionButtons(store: Store<L.RestrictToSide | undefined>) {
+  const options: (L.RestrictToSide | undefined)[] = [undefined, 'source', 'target']
+  const name = (k?: string) => k === undefined ? 'both sides' : k + ' only'
+  return options.map(k =>
+    Button(name(k), '', () => store.set(k), store.get() !== k)
+  )
 }
 
 function only_select_existing_words(graph: Graph, selected0: Record<string, true>) {
@@ -385,6 +395,9 @@ const topStyle = style({
     '& .Modal li button': {
       width: '30px',
     },
+    '& button': {
+      marginRight: '5px',
+    }
   },
 })
 
@@ -528,8 +541,14 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
             </div>
           </div>
         )}
+        <div className="main buttonSep" style={{zIndex: 5}}>
+          {Button('undo', '', () => history.modify(Undo.undo), Undo.can_undo(history.get()))}
+          {Button('redo', '', () => history.modify(Undo.redo), Undo.can_redo(history.get()))}
+          {RestrictionButtons(store.at('side_restriction'))}
+        </div>
         <div className="main" style={{minHeight: '10em'}}>
           <L.LadderComponent
+            side={state.side_restriction}
             graph={cursor_subgraph(graph.get(), store.get().cursor)}
             hoverId={state.hover_id}
             onHover={hover_id => store.update({hover_id})}
@@ -549,10 +568,6 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
           />
         </div>
         <div className="main">{cm_target.node}</div>
-        <div className="main" style={{zIndex: 5}}>
-          {Button('undo', '', () => history.modify(Undo.undo), Undo.can_undo(history.get()))}
-          {Button('redo', '', () => history.modify(Undo.redo), Undo.can_redo(history.get()))}
-        </div>
         {showhide(
           'compact representation',
           <React.Fragment>
