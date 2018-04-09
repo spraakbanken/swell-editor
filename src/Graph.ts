@@ -162,6 +162,31 @@ export function init_from(tokens: string[], manual = false): Graph {
   })
 }
 
+/** Initialize a graph from unaligned tokens
+
+  from_unaligned({
+    source: [{text: 'apa ', labels: []}],
+    target: [{text: 'apa ', labels: []}]
+  }) // => init('apa')
+  equal(from_unaligned({
+    source: [{text: 'apa ', labels: []}],
+    target: [{text: 'bepa ', labels: []}]
+  }), set_target(init('apa'), 'bepa ')) // => true
+
+*/
+export function from_unaligned(st: ST<{text: string; labels: string[]}[]>): Graph {
+  const edges: Record<string, Edge> = {}
+  const g = with_st(st, (toks, side) =>
+    toks.map((tok, i) => {
+      const id = side[0] + i
+      const e = Edge([id], tok.labels, false)
+      edges[id] = e
+      return T.Token(tok.text, id)
+    })
+  )
+  return align({...g, edges})
+}
+
 /** Map from token ids to edges
 
   const g = init('w')
@@ -314,34 +339,43 @@ export function source_texts(g: Graph): string[] {
   return T.texts(g.source)
 }
 
+/** The next free unique id
+
+  next_id(init('apa')) // => 1
+
+*/
+export function next_id(g: Graph): number {
+  return Utils.next_id([...g.target.map(t => t.id), ...g.source.map(t => t.id)])
+}
+
 /** Replace the text at some position, merging the spans it touches upon.
 
   const show = (g: Graph) => g.target.map(t => t.text)
   const ids = (g: Graph) => g.target.map(t => t.id).join(' ')
   const g = init('test graph hello')
   show(g) // => ['test ', 'graph ', 'hello ']
-  show(proto_modify(g, 0, 0, 'new')) // => ['newtest ', 'graph ', 'hello ']
-  show(proto_modify(g, 0, 1, 'new')) // => ['newest ', 'graph ', 'hello ']
-  show(proto_modify(g, 0, 5, 'new ')) // => ['new ', 'graph ', 'hello ']
-  show(proto_modify(g, 0, 5, 'new')) // => ['newgraph ', 'hello ']
-  show(proto_modify(g, 5, 5, ' ')) // => ['test ', ' graph ', 'hello ']
-  show(proto_modify(g, 5, 6, ' ')) // => ['test ', ' raph ', 'hello ']
-  show(proto_modify(g, 0, 15, '_')) // => ['_o ']
-  show(proto_modify(g, 0, 16, '_')) // => ['_ ']
-  show(proto_modify(g, 0, 17, '_')) // => ['_ ']
-  show(proto_modify(g, 16, 16, ' !')) // => ['test ', 'graph ', 'hello ', '! ']
+  show(unaligned_modify(g, 0, 0, 'new')) // => ['newtest ', 'graph ', 'hello ']
+  show(unaligned_modify(g, 0, 1, 'new')) // => ['newest ', 'graph ', 'hello ']
+  show(unaligned_modify(g, 0, 5, 'new ')) // => ['new ', 'graph ', 'hello ']
+  show(unaligned_modify(g, 0, 5, 'new')) // => ['newgraph ', 'hello ']
+  show(unaligned_modify(g, 5, 5, ' ')) // => ['test ', ' graph ', 'hello ']
+  show(unaligned_modify(g, 5, 6, ' ')) // => ['test ', ' raph ', 'hello ']
+  show(unaligned_modify(g, 0, 15, '_')) // => ['_o ']
+  show(unaligned_modify(g, 0, 16, '_')) // => ['_ ']
+  show(unaligned_modify(g, 0, 17, '_')) // => ['_ ']
+  show(unaligned_modify(g, 16, 16, ' !')) // => ['test ', 'graph ', 'hello ', '! ']
 
 Indexes are character offsets (use CodeMirror's doc.posFromIndex and doc.indexFromPos to convert) */
-export function proto_modify(g: Graph, from: number, to: number, text: string): Graph {
+export function unaligned_modify(g: Graph, from: number, to: number, text: string): Graph {
   const tokens = target_texts(g)
   const {token: from_token, offset: from_ix} = T.token_at(tokens, from)
   const pre = (tokens[from_token] || '').slice(0, from_ix)
   if (to === target_text(g).length) {
-    return proto_modify_tokens(g, from_token, g.target.length, pre + text)
+    return unaligned_modify_tokens(g, from_token, g.target.length, pre + text)
   } else {
     const {token: to_token, offset: to_ix} = T.token_at(tokens, to)
     const post = (tokens[to_token] || '').slice(to_ix)
-    return proto_modify_tokens(g, from_token, to_token + 1, pre + text + post)
+    return unaligned_modify_tokens(g, from_token, to_token + 1, pre + text + post)
   }
 }
 
@@ -351,48 +385,48 @@ export function proto_modify(g: Graph, from: number, to: number, text: string): 
   const ids = (g: Graph) => g.target.map(t => t.id).join(' ')
   const g = init('test graph hello')
   show(g) // => ['test ', 'graph ', 'hello ']
-  show(proto_modify_tokens(g, 0, 0, 'this '))     // => ['this ', 'test ', 'graph ', 'hello ']
-  show(proto_modify_tokens(g, 0, 1, 'this '))     // => ['this ', 'graph ', 'hello ']
-  show(proto_modify_tokens(g, 0, 1, '  white '))  // => ['  white ', 'graph ', 'hello ']
-  show(proto_modify_tokens(g, 0, 1, 'this'))      // => ['thisgraph ', 'hello ']
-  show(proto_modify_tokens(g, 1, 2, 'graph'))     // => ['test ', 'graphhello ']
-  show(proto_modify_tokens(g, 1, 2, ' graph '))   // => ['test ', ' graph ', 'hello ']
-  show(proto_modify_tokens(g, 0, 1, 'for this ')) // => ['for ', 'this ', 'graph ', 'hello ']
-  show(proto_modify_tokens(g, 0, 2, '')) // => ['hello ']
-  show(proto_modify_tokens(g, 0, 2, '  ')) // => ['  hello ']
-  show(proto_modify_tokens(g, 1, 3, '  ')) // => ['test   ']
-  show(proto_modify_tokens(g, 3, 3, ' !')) // => ['test ', 'graph ', 'hello  ', '! ']
-  show(proto_modify_tokens(init('a '), 0, 1, ' ')) // => [' ']
+  show(unaligned_modify_tokens(g, 0, 0, 'this '))     // => ['this ', 'test ', 'graph ', 'hello ']
+  show(unaligned_modify_tokens(g, 0, 1, 'this '))     // => ['this ', 'graph ', 'hello ']
+  show(unaligned_modify_tokens(g, 0, 1, '  white '))  // => ['  white ', 'graph ', 'hello ']
+  show(unaligned_modify_tokens(g, 0, 1, 'this'))      // => ['thisgraph ', 'hello ']
+  show(unaligned_modify_tokens(g, 1, 2, 'graph'))     // => ['test ', 'graphhello ']
+  show(unaligned_modify_tokens(g, 1, 2, ' graph '))   // => ['test ', ' graph ', 'hello ']
+  show(unaligned_modify_tokens(g, 0, 1, 'for this ')) // => ['for ', 'this ', 'graph ', 'hello ']
+  show(unaligned_modify_tokens(g, 0, 2, '')) // => ['hello ']
+  show(unaligned_modify_tokens(g, 0, 2, '  ')) // => ['  hello ']
+  show(unaligned_modify_tokens(g, 1, 3, '  ')) // => ['test   ']
+  show(unaligned_modify_tokens(g, 3, 3, ' !')) // => ['test ', 'graph ', 'hello  ', '! ']
+  show(unaligned_modify_tokens(init('a '), 0, 1, ' ')) // => [' ']
   ids(g) // => 't0 t1 t2'
-  ids(proto_modify_tokens(g, 0, 0, 'this '))     // => 't3 t0 t1 t2'
-  ids(proto_modify_tokens(g, 0, 1, 'this '))     // => 't3 t1 t2'
-  ids(proto_modify_tokens(g, 0, 1, 'this'))      // => 't3 t2'
+  ids(unaligned_modify_tokens(g, 0, 0, 'this '))     // => 't3 t0 t1 t2'
+  ids(unaligned_modify_tokens(g, 0, 1, 'this '))     // => 't3 t1 t2'
+  ids(unaligned_modify_tokens(g, 0, 1, 'this'))      // => 't3 t2'
 
 Indexes are token offsets */
-export function proto_modify_tokens(g: Graph, from: number, to: number, text: string): Graph {
+export function unaligned_modify_tokens(g: Graph, from: number, to: number, text: string): Graph {
   if (from < 0 || to < 0 || from > g.target.length || to > g.target.length || from > to) {
     throw new Error('Invalid coordinates ' + Utils.show({g, from, to, text}))
   }
   if (text.match(/^\s+$/)) {
     // replacement text is only whitespace: need to find some token to put it on
     if (from > 0) {
-      return proto_modify_tokens(g, from - 1, to, g.target[from - 1].text + text)
+      return unaligned_modify_tokens(g, from - 1, to, g.target[from - 1].text + text)
     } else if (to < g.target.length) {
-      return proto_modify_tokens(g, from, to + 1, text + g.target[to].text)
+      return unaligned_modify_tokens(g, from, to + 1, text + g.target[to].text)
     } else {
       // console.warn('Introducing whitespace into empty graph')
     }
   }
   if (text.match(/\S$/) && to < g.target.length) {
     // if replacement text does not end with whitespace, grab the next word as well
-    return proto_modify_tokens(g, from, to + 1, text + g.target[to].text)
+    return unaligned_modify_tokens(g, from, to + 1, text + g.target[to].text)
   }
 
   if (from > 0 && from == g.target.length && to === g.target.length) {
     // we're adding a word at the end but the last token might not end in whitespace:
     // glue them together
 
-    return proto_modify_tokens(g, from - 1, to, g.target[from - 1].text + text)
+    return unaligned_modify_tokens(g, from - 1, to, g.target[from - 1].text + text)
   }
 
   const id_offset = next_id(g)
@@ -419,30 +453,37 @@ export function proto_modify_tokens(g: Graph, from: number, to: number, text: st
   return {source: g.source, target, edges}
 }
 
-export function next_id(g: Graph): number {
-  return Utils.next_id([...g.target.map(t => t.id), ...g.source.map(t => t.id)])
+export function modify(g: Graph, from: number, to: number, text: string): Graph {
+  return align(unaligned_modify(g, from, to, text))
+}
+
+export function modify_tokens(g: Graph, from: number, to: number, text: string): Graph {
+  return align(unaligned_modify_tokens(g, from, to, text))
 }
 
 /** Moves a slice of the target tokens and puts it at a new destination.
 
-  target_text(proto_rearrange(init('apa bepa cepa depa'), 1, 2, 0)) // => 'bepa cepa apa depa '
+  target_text(unaligned_rearrange(init('apa bepa cepa depa'), 1, 2, 0)) // => 'bepa cepa apa depa '
 
 Indexes are token offsets
 */
-export function proto_rearrange(g: Graph, begin: number, end: number, dest: number): Graph {
+export function unaligned_rearrange(g: Graph, begin: number, end: number, dest: number): Graph {
   return {...g, target: Utils.rearrange(g.target, begin, end, dest)}
 }
 
-export function modify(g: Graph, from: number, to: number, text: string): Graph {
-  return align(proto_modify(g, from, to, text))
-}
-
-export function modify_tokens(g: Graph, from: number, to: number, text: string): Graph {
-  return align(proto_modify_tokens(g, from, to, text))
-}
-
 export function rearrange(g: Graph, begin: number, end: number, dest: number): Graph {
-  return align(proto_rearrange(g, begin, end, dest))
+  return align(unaligned_rearrange(g, begin, end, dest))
+}
+
+export function unaligned_set_target(g: Graph, text: string): Graph {
+  const patches = Utils.token_diff(T.text(g.target), text)
+  const pre = R.takeWhile<[number, string]>(i => i[0] == 0, patches)
+  const post = R.takeLastWhile<[number, string]>(i => i[0] == 0, R.drop(pre.length, patches))
+  const from = pre.map(i => i[1]).join('').length
+  const postlen = post.map(i => i[1]).join('').length
+  const to = T.text(g.target).length - postlen
+  const new_text = text.slice(from, text.length - postlen)
+  return unaligned_modify(g, from, to, new_text)
 }
 
 /**
@@ -456,15 +497,94 @@ export function rearrange(g: Graph, begin: number, end: number, dest: number): G
 
 */
 export function set_target(g: Graph, text: string): Graph {
-  const patches = Utils.token_diff(T.text(g.target), text)
-  const pre = R.takeWhile<[number, string]>(i => i[0] == 0, patches)
-  const post = R.takeLastWhile<[number, string]>(i => i[0] == 0, R.drop(pre.length, patches))
-  const from = pre.map(i => i[1]).join('').length
-  const postlen = post.map(i => i[1]).join('').length
-  const to = T.text(g.target).length - postlen
-  const new_text = text.slice(from, text.length - postlen)
-  const g2 = modify(g, from, to, new_text)
-  return g2
+  return align(unaligned_set_target(g, text))
+}
+
+/** Invert the graph: swap source and target, without aligning */
+export function unaligned_invert(g: Graph): Graph {
+  const {source, target, edges} = g
+  return {source: target, target: source, edges}
+}
+
+/** Invert the graph: swap source and target.
+
+Note that this is not stable, ie not involutive since texts get automatically
+realigned. This can make labels get transferred between groups.
+*/
+export function invert(g: Graph): Graph {
+  return align(unaligned_invert(g))
+}
+
+/** Revert at an edge id */
+export function unaligned_revert(g: Graph, edge_ids: string[]): Graph {
+  const edge_set = new Set(edge_ids)
+  const diff = calculate_raw_diff(g)
+  let supply = next_id(g)
+  const edges = record.filter(g.edges, (_, id) => !edge_set.has(id))
+  const reverted = Utils.flatMap(
+    diff,
+    D.dnd_match({
+      Dragged(d) {
+        if (edge_set.has(d.id)) {
+          const s = d.source
+          const t = {...d.source, id: 't' + supply++}
+          const e = Edge([s.id, t.id], [])
+          edges[e.id] = e
+          return [Dragged(s, e.id, false), Dropped(t, e.id, false)]
+        } else {
+          return [d]
+        }
+      },
+      Dropped(d) {
+        if (edge_set.has(d.id)) {
+          return []
+        } else {
+          return [d]
+        }
+      },
+    })
+  )
+  return from_raw_diff(reverted, edges)
+}
+
+/** Revert at an edge id */
+export function revert(g: Graph, edge_ids: string[]): Graph {
+  return align(unaligned_revert(g, edge_ids))
+}
+
+/** Connect edges by ids */
+export function connect(g: Graph, edge_ids: string[]): Graph {
+  const edges = record.filter(g.edges, (e, _) => !edge_ids.some(id => id == e.id))
+  const es = record.traverse(
+    record.filter(g.edges, (e, _) => edge_ids.some(id => id == e.id)),
+    e => e
+  )
+  const edge = merge_edges(...es, Edge([], [], true))
+  edges[edge.id] = edge
+  return align({...g, edges})
+}
+
+/** Disconnect a source or target id */
+export function disconnect(g: Graph, ids: string[]): Graph {
+  if (ids.length == 0) {
+    return align(g)
+  }
+  const id = ids[0]
+  const em = edge_map(g)
+  const edge = em.get(id)
+  if (edge) {
+    const edge_without = Edge(edge.ids.filter(i => i != id), edge.labels)
+    const edge_with = Edge([id], [], true)
+    const edges = record.filter(g.edges, (_, id) => id != edge.id)
+    edges[edge_with.id] = edge_with
+    if (edge_without.ids.length > 0) {
+      edges[edge_without.id] = edge_without
+    }
+    return disconnect({...g, edges}, ids.slice(1))
+  } else {
+    Utils.stderr({id, ids, g})
+    return Utils.raise('Trying to disconnect unidentifiable token')
+  }
 }
 
 interface CharId {
@@ -611,7 +731,7 @@ export function from_raw_diff(diff: (Dragged | Dropped)[], edges0: Record<string
   return {source, target, edges}
 }
 
-/** Merging contiguous edits */
+/** Merging contiguous edits of Dragged...Dropped to Edited */
 function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
   const rev = new Map<string, number[]>()
   diff.forEach((d, i) => {
@@ -833,13 +953,6 @@ export function sentences(g: Graph, begin: number = 0): Subspan[] {
   }
 }
 
-/** Given many graphs on the same source text, find the overlapping sentence groups
-
-Uses merge_series which is very inefficient */
-export function sentence_groups<K extends string>(gs: Record<K, Graph>): Record<K, Subspan>[] {
-  return Utils.merge_series(record.map(gs, g => sentences(g)), subspan_merge, R.eqProps('source'))
-}
-
 export function proto_sentence(g: Graph, i: number): Subspan {
   const init = {
     source: {begin: g.source.length - 1, end: 0},
@@ -899,6 +1012,31 @@ export function subgraph(g: Graph, s: Subspan): Graph {
   return {source, target, edges}
 }
 
+function position_sentence(g: Graph, character_offset: number): Subspan {
+  return sentence(g, T.token_at(target_texts(g), character_offset).token)
+}
+
+export function sentence_subspans_around_positions(
+  g: Graph,
+  positions: number[]
+): Subspan | undefined {
+  const N = target_text(g).length
+  const nearby = Utils.flatMap(positions, i => [i - 1, i, i + 1])
+  const subspans = nearby.filter(i => i >= 0 && i < N).map(i => position_sentence(g, i))
+  if (subspans.length > 0) {
+    return subspan_merge(subspans)
+  }
+  return undefined
+}
+
+/** Given many graphs on the same source text, find the overlapping sentence groups
+
+Uses merge_series which is very inefficient
+*/
+export function sentence_groups<K extends string>(gs: Record<K, Graph>): Record<K, Subspan>[] {
+  return Utils.merge_series(record.map(gs, g => sentences(g)), subspan_merge, R.eqProps('source'))
+}
+
 /** Modify the labels at an identifier
 
   const g = init('word')
@@ -919,78 +1057,6 @@ export function edge_store(g: Store<Graph>, edge_id: string): Store<Edge> {
     .at('edges')
     .via(Lens.key(edge_id))
     .via(Lens.def(Edge([], [])))
-}
-
-/** Revert at an edge id */
-export function revert(g: Graph, edge_ids: string[]): Graph {
-  return align(proto_revert(g, edge_ids))
-}
-
-/** Revert at an edge id */
-export function proto_revert(g: Graph, edge_ids: string[]): Graph {
-  const edge_set = new Set(edge_ids)
-  const diff = calculate_raw_diff(g)
-  let supply = next_id(g)
-  const edges = record.filter(g.edges, (_, id) => !edge_set.has(id))
-  const reverted = Utils.flatMap(
-    diff,
-    D.dnd_match({
-      Dragged(d) {
-        if (edge_set.has(d.id)) {
-          const s = d.source
-          const t = {...d.source, id: 't' + supply++}
-          const e = Edge([s.id, t.id], [])
-          edges[e.id] = e
-          return [Dragged(s, e.id, false), Dropped(t, e.id, false)]
-        } else {
-          return [d]
-        }
-      },
-      Dropped(d) {
-        if (edge_set.has(d.id)) {
-          return []
-        } else {
-          return [d]
-        }
-      },
-    })
-  )
-  return from_raw_diff(reverted, edges)
-}
-
-/** Connect edges by ids */
-export function connect(g: Graph, edge_ids: string[]): Graph {
-  const edges = record.filter(g.edges, (e, _) => !edge_ids.some(id => id == e.id))
-  const es = record.traverse(
-    record.filter(g.edges, (e, _) => edge_ids.some(id => id == e.id)),
-    e => e
-  )
-  const edge = merge_edges(...es, Edge([], [], true))
-  edges[edge.id] = edge
-  return align({...g, edges})
-}
-
-/** Disconnect a source or target id */
-export function disconnect(g: Graph, ids: string[]): Graph {
-  if (ids.length == 0) {
-    return align(g)
-  }
-  const id = ids[0]
-  const em = edge_map(g)
-  const edge = em.get(id)
-  if (edge) {
-    const edge_without = Edge(edge.ids.filter(i => i != id), edge.labels)
-    const edge_with = Edge([id], [], true)
-    const edges = record.filter(g.edges, (_, id) => id != edge.id)
-    edges[edge_with.id] = edge_with
-    if (edge_without.ids.length > 0) {
-      edges[edge_without.id] = edge_without
-    }
-    return disconnect({...g, edges}, ids.slice(1))
-  } else {
-    Utils.stderr({id, ids, g})
-    return Utils.raise('Trying to disconnect unidentifiable token')
-  }
 }
 
 /** Normalize the unique identifiers in this graph. Use before comparing deep equality.
@@ -1057,44 +1123,4 @@ export function equal(g1: Graph, g2: Graph, set_manual_to: boolean | 'keep' = tr
 export function normalize_whitespace(g: Graph, ws = ' '): Graph {
   const on_tok = (s: Token) => Token((s.text.match(/\S+/) || [''])[0] + ws, s.id)
   return {...g, source: g.source.map(on_tok), target: g.target.map(on_tok)}
-}
-
-/** Invert the graph: swap source and target.
-
-Note that this is not stable, ie not involutive since texts get automatically
-realigned. This can make labels get transferred between groups.
-*/
-export function invert(g: Graph): Graph {
-  const {source, target, edges} = g
-  return align({source: target, target: source, edges})
-}
-
-export function from_unaligned(st: ST<{text: string; labels: string[]}[]>): Graph {
-  const edges: Record<string, Edge> = {}
-  const g = with_st(st, (toks, side) =>
-    toks.map((tok, i) => {
-      const id = side[0] + i
-      const e = Edge([id], tok.labels, false)
-      edges[id] = e
-      return T.Token(tok.text, id)
-    })
-  )
-  return align({...g, edges})
-}
-
-function position_sentence(g: Graph, character_offset: number): Subspan {
-  return sentence(g, T.token_at(target_texts(g), character_offset).token)
-}
-
-export function sentence_subspans_around_positions(
-  g: Graph,
-  positions: number[]
-): Subspan | undefined {
-  const N = target_text(g).length
-  const nearby = Utils.flatMap(positions, i => [i - 1, i, i + 1])
-  const subspans = nearby.filter(i => i >= 0 && i < N).map(i => position_sentence(g, i))
-  if (subspans.length > 0) {
-    return subspan_merge(subspans)
-  }
-  return undefined
 }
