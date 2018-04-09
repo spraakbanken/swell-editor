@@ -1022,3 +1022,23 @@ export function setIfChanged<A>(store: Store<A>, value: A) {
     store.set(value)
   }
 }
+
+/**
+
+  edit_range('0123456789', '0189') // => {from: 2, to: 8}
+  edit_range('0123456789', '01') // => {from: 2, to: 10}
+  edit_range('0123456789', '89') // => {from: 0, to: 8}
+  edit_range('0123456789', '') // => {from: 0, to: 10}
+
+  edit_range('', '01') // => {from: 0, to: 0}
+
+*/
+export function edit_range(s0: string, s: string): {from: number; to: number} {
+  const patches = token_diff(s0, s)
+  const pre = R.takeWhile<[number, string]>(i => i[0] == 0, patches)
+  const post = R.takeLastWhile<[number, string]>(i => i[0] == 0, R.drop(pre.length, patches))
+  const from = pre.map(i => i[1]).join('').length
+  const postlen = post.map(i => i[1]).join('').length
+  const to = s0.length - postlen
+  return {from, to}
+}

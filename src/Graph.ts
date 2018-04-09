@@ -482,13 +482,9 @@ export function rearrange(g: Graph, begin: number, end: number, dest: number): G
 }
 
 export function unaligned_set_target(g: Graph, text: string): Graph {
-  const patches = Utils.token_diff(T.text(g.target), text)
-  const pre = R.takeWhile<[number, string]>(i => i[0] == 0, patches)
-  const post = R.takeLastWhile<[number, string]>(i => i[0] == 0, R.drop(pre.length, patches))
-  const from = pre.map(i => i[1]).join('').length
-  const postlen = post.map(i => i[1]).join('').length
-  const to = T.text(g.target).length - postlen
-  const new_text = text.slice(from, text.length - postlen)
+  const text0 = target_text(g)
+  const {from, to} = Utils.edit_range(text0, text)
+  const new_text = text.slice(from, text.length - (text0.length - to))
   return unaligned_modify(g, from, to, new_text)
 }
 
