@@ -716,7 +716,13 @@ export function calculate_raw_diff(
       while (same(i, --jj));
       const edge = lookup(g.source[i])
       const {score, diff} = align(ii, jj)
-      const factor = edge.labels.some(order_changing_label) ? 0.001 : 1
+      let factor = 1
+      if (edge.manual) {
+        factor *= 0.01
+      }
+      if (edge.labels.some(order_changing_label)) {
+        factor *= 0.0001
+      }
       cands.push({
         score: score + factor * (i - ii + (j - jj)),
         diff:

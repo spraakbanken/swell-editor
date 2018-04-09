@@ -339,10 +339,12 @@ export function View(store: Store<State>): VNode {
   `
 
   const gallery = [
-    ` a b       // b c               `,
-    ` b c       // a b~b             `,
+    ` aa bb      // bb cc            `,
+    ` bb cc      // aa bb            `,
     ` a b       // b a~a             `,
+    ` a b       // b~b a             `,
     ` b a       // a b~b             `,
+    ` b a       // a~a b             `,
     ` a bc      // b c a~a           `,
     ` b c a     // a~a bc            `,
     ` abbc      // ab bc             `,
