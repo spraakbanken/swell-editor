@@ -463,8 +463,10 @@ export function App(store: Store<State>): () => VNode {
     restricted && store.update(restricted)
   })
 
-  const cm_target = CM.GraphEditingCM(store.pick('graph', 'hover_id', 'subspan'))
-  return () => View(store, cm_target)
+  const cms = record.create(G.sides, side =>
+    CM.GraphEditingCM(store.pick('graph', 'hover_id', 'subspan'), side)
+  )
+  return () => View(store, cms)
 }
 
 export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
@@ -500,24 +502,10 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
   return (
     <DropZone webserviceURL={ws_url} onDrop={g => advance(() => graph.set(g))}>
       <div className={topStyle} style={{position: 'relative'}}>
-        <LabelSidekick store={store} onBlur={() => cm_target.cm.focus()} />
+        <LabelSidekick store={store} onBlur={() => cms.target.cm.focus()} />
         {showhide('set source text', () => (
           <div className="main">
-            <div>
-              <textarea
-                style={{width: '100%'}}
-                rows={5}
-                className="main"
-                onChange={e =>
-                  advance(() => {
-                    const t = e.target as HTMLTextAreaElement
-                    graph.modify(g => G.invert(G.set_target(G.invert(g), t.value + ' ')))
-                  })
-                }
-                placeholder="Input source text..."
-                value={G.source_text(graph.get()).slice(0, -1)}
-              />
-            </div>
+            {cms.source.node}
             <div>
               {Button('copy to target', '', () =>
                 advance(() => graph.modify(g => G.init_from(G.source_texts(g))))
@@ -530,7 +518,7 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
           {Button('redo', '', () => history.modify(Undo.redo), Undo.can_redo(history.get()))}
           {RestrictionButtons(store.at('side_restriction'))}
         </div>
-        <div className="main">{cm_target.node}</div>
+        <div className="main">{cms.target.node}</div>
         <div className="main" style={{minHeight: '10em'}}>
           <L.LadderComponent
             side={state.side_restriction}

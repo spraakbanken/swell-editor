@@ -16,19 +16,34 @@ qc('invariant', graph, (g, p) => p.equals(G.check_invariant(g), 'ok'))
 import 'mocha'
 import * as chai from 'chai'
 
-describe('set_target', () => {
-  qc(
-    'from init',
-    QC.char('ab ')
-      .nestring()
-      .map(Utils.end_with_space)
-      .two(),
-    ([a, b]) => G.target_text(G.set_target(G.init(a), b)) === b
-  )
+const end_with_space = QC.char('ab ')
+  .nestring()
+  .map(Utils.end_with_space)
 
-  qc('preserves invariant', QC.record({graph, text: QC.char('ab ').nestring()}), (r, p) =>
-    p.equals('ok', G.check_invariant(p.tap(G.set_target(r.graph, r.text))))
-  )
+G.sides.forEach(side => {
+  describe('set side ' + side, () => {
+    qc(
+      'from init',
+      end_with_space.two(),
+      ([a, b]) => G.get_side_text(G.set_side(G.init(a), side, b), side) === b
+    )
+
+    const gen = QC.record({graph, s: end_with_space})
+
+    qc('sets', gen, ({graph, s}) => G.get_side_text(G.set_side(graph, side, s), side) === s)
+
+    qc(
+      'preserves opposite',
+      gen,
+      ({graph, s}) =>
+        G.get_side_text(G.set_side(graph, side, s), G.opposite(side)) ===
+        G.get_side_text(graph, G.opposite(side))
+    )
+
+    qc('preserves invariant', gen, ({graph, s}, p) =>
+      p.equals('ok', G.check_invariant(p.tap(G.set_side(graph, side, s))))
+    )
+  })
 })
 
 describe('modify_tokens', () => {
@@ -54,6 +69,9 @@ describe('modify_tokens', () => {
 
 describe('invert', () =>
   qc('is not involutive', graph, (g, p) => p.equals(G.invert(G.invert(g)), g), QC.expectFailure))
+
+describe('unaligned_invert', () =>
+  qc('is involutive', graph, (g, p) => p.equals(G.unaligned_invert(G.unaligned_invert(g)), g)))
 
 interface Modify {
   g: Graph

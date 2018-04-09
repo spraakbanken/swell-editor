@@ -61,7 +61,14 @@ export interface State {
   readonly subspan?: G.Subspan
 }
 
-export function GraphEditingCM(store: Store<State>): CMVN {
+export interface Actions {
+  undo(): void
+  redo(): void
+  set(s: string): void
+  onUpdate(k: (s: string) => void): void
+}
+
+export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
   /* Note that we don't show the last character of the graph in the code mirror.
   It must necessarily be whitespace anyway. */
   const history = store.at('graph')
@@ -83,9 +90,9 @@ export function GraphEditingCM(store: Store<State>): CMVN {
 
   const {cm, node} = CM({extraKeys, tabindex: 3})
   defaultTabBehaviour(cm)
-  cm.setValue(G.target_text(graph.get()))
+  cm.setValue(G.get_side_text(graph.get(), side))
 
-  const {Index} = PositionUtils(cm, graph)
+  const {Index} = PositionUtils(cm, graph, side)
 
   cm.on('beforeChange', (_, change) => {
     if (change.origin == 'undo') {
@@ -99,7 +106,7 @@ export function GraphEditingCM(store: Store<State>): CMVN {
 
   function update_cursor() {
     const g = graph.get()
-    const text = G.target_text(g)
+    const text = G.get_side_text(graph.get(), side)
     const doc = cm.getDoc()
     const head = doc.indexFromPos(doc.getCursor('head'))
     const anchor = doc.indexFromPos(doc.getCursor('anchor'))
@@ -128,7 +135,7 @@ export function GraphEditingCM(store: Store<State>): CMVN {
       store.transaction(() => {
         const g = graph.get()
         history.modify(Undo.advance)
-        graph.set(G.set_target(g, cm.getDoc().getValue() + ' '))
+        graph.set(G.set_side(g, side, cm.getDoc().getValue() + ' '))
         set_marks()
         update_cursor()
       })
@@ -136,7 +143,7 @@ export function GraphEditingCM(store: Store<State>): CMVN {
   })
 
   function graph_to_cm() {
-    const graph_text = G.target_text(graph.get()).slice(0, -1)
+    const graph_text = T.text(graph.get()[side]).slice(0, -1)
     const editor_text = cm.getDoc().getValue()
     if (graph_text !== editor_text) {
       cm.setValue(graph_text)
@@ -162,7 +169,7 @@ export function GraphEditingCM(store: Store<State>): CMVN {
       const em = G.edge_map(g)
       const hover_id = store.get().hover_id
       let i = 0
-      g.target.forEach(tok => {
+      g[side].forEach(tok => {
         const n = tok.text.length
         const e = em.get(tok.id)
         function mark_me(opts: CodeMirror.TextMarkerOptions) {
@@ -189,7 +196,7 @@ export function GraphEditingCM(store: Store<State>): CMVN {
   return {node, cm}
 }
 
-function PositionUtils(cm: CodeMirror.Editor, graph: Store<Graph>) {
+function PositionUtils(cm: CodeMirror.Editor, graph: Store<Graph>, side: G.Side) {
   class Edge {
     constructor(public readonly edge: G.Edge | null) {}
   }
@@ -230,9 +237,9 @@ function PositionUtils(cm: CodeMirror.Editor, graph: Store<Graph>) {
     toToken(): Token {
       if (this.index) {
         const g = graph.get()
-        const {token} = T.token_at(G.target_texts(g), this.index)
-        if (token in g.target) {
-          return new Token(g.target[token])
+        const {token} = T.token_at(G.get_side_texts(g, side), this.index)
+        if (token in g[side]) {
+          return new Token(g[side][token])
         }
       }
       return new Token(null)

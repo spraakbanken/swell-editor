@@ -22,7 +22,13 @@ import {Token, Span} from './Token'
 import * as T from './Token'
 import {Lens, Store} from 'reactive-lens'
 
-export function with_st<A, B>(g: ST<A>, f: (a: A, side: 'source' | 'target') => B): ST<B> {
+export type Side = 'source' | 'target'
+
+export const opposite = (s: Side): Side => (s === 'source' ? 'target' : 'source')
+
+export const sides = ['source', 'target'] as Side[]
+
+export function with_st<A, B>(g: ST<A>, f: (a: A, side: Side) => B): ST<B> {
   return {source: f(g.source, 'source'), target: f(g.target, 'target')}
 }
 
@@ -488,16 +494,32 @@ export function unaligned_set_target(g: Graph, text: string): Graph {
 
 /**
 
-  T.text(set_target(init('apa bepa'), 'aupa bpa ').target) // => 'aupa bpa '
-  T.text(set_target(init('fz'), 'bar ').target) // => 'bar '
-  T.text(set_target(init('foo'), 'bar ').target) // => 'bar '
-  T.text(set_target(init('fooz'), 'bar ').target) // => 'bar '
-  T.text(set_target(init('a'), 'a ').target) // => 'a '
-  T.text(set_target(init('a'), '  ').target) // => '  '
+  target_text(set_target(init('apa bepa'), 'aupa bpa ')) // => 'aupa bpa '
+  target_text(set_target(init('fz'), 'bar ')) // => 'bar '
+  target_text(set_target(init('foo'), 'bar ')) // => 'bar '
+  target_text(set_target(init('fooz'), 'bar ')) // => 'bar '
+  target_text(set_target(init('a'), 'a ')) // => 'a '
+  target_text(set_target(init('a'), '  ')) // => '  '
 
 */
 export function set_target(g: Graph, text: string): Graph {
   return align(unaligned_set_target(g, text))
+}
+
+export function set_source(g: Graph, text: string): Graph {
+  return align(unaligned_invert(unaligned_set_target(unaligned_invert(g), text)))
+}
+
+export function set_side(g: Graph, side: Side, text: string): Graph {
+  return (side === 'source' ? set_source : set_target)(g, text)
+}
+
+export function get_side_text(g: Graph, side: Side): string {
+  return T.text(g[side])
+}
+
+export function get_side_texts(g: Graph, side: Side): string[] {
+  return T.texts(g[side])
 }
 
 /** Invert the graph: swap source and target, without aligning */
