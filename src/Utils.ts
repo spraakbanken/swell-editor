@@ -1042,3 +1042,7 @@ export function edit_range(s0: string, s: string): {from: number; to: number} {
   const to = s0.length - postlen
   return {from, to}
 }
+
+export function within(lo: number, x: number, hi: number) {
+  return lo <= x && x < hi
+}

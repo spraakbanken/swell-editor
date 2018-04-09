@@ -82,15 +82,46 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
   }
 
   const extraKeys = {
-    'Ctrl-Z': () => undo(),
-    'Ctrl-Y': () => redo(),
-    'Cmd-Z': () => undo(),
-    'Cmd-Y': () => redo(),
+    'Ctrl-Z': undo,
+    'Ctrl-Y': redo,
+    'Cmd-Z': undo,
+    'Cmd-Y': redo,
+    'Alt-N': transpose(1),
+    'Alt-P': transpose(-1),
   }
 
   const {cm, node} = CM({extraKeys, tabindex: 3})
   defaultTabBehaviour(cm)
   cm.setValue(G.get_side_text(graph.get(), side))
+
+  function transpose(d: number) {
+    return () => {
+      if (side === 'source') {
+        // rearrange always operates on the target text
+        return
+      }
+      const doc = cm.getDoc()
+      const h = Index.cursor('head').toToken().index
+      const a = Index.cursor('anchor').toToken().index
+      Utils.stdout({h, a})
+      if (h != null && a != null) {
+        const [begin, end] = Utils.numsort([h, a])
+        const g = graph.get()
+        const N = g[side].length
+        console.log({begin, end, d, N})
+        if (Utils.within(0, begin + d, N) && Utils.within(0, end + d, N)) {
+          history.modify(Undo.advance_to(G.rearrange(g, begin, end, d > 0 ? end + d : begin + d)))
+          // update CM text now to set the selection at the moved word(s)
+          graph_to_cm()
+          const g2 = graph.get()
+          const from = G.get_side_texts(g2, side).slice(0, begin + d).join('').length
+          const to = G.get_side_texts(g2, side).slice(0, end + d + 1).join('').length - 1
+          const doc = cm.getDoc()
+          doc.setSelection(doc.posFromIndex(from), doc.posFromIndex(to))
+        }
+      }
+    }
+  }
 
   const {Index} = PositionUtils(cm, graph, side)
 
@@ -108,9 +139,9 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
     const g = graph.get()
     const text = G.get_side_text(graph.get(), side)
     const doc = cm.getDoc()
-    const head = doc.indexFromPos(doc.getCursor('head'))
-    const anchor = doc.indexFromPos(doc.getCursor('anchor'))
-    Utils.setIfChanged(
+    const head = Index.cursor('head').index
+    const anchor = Index.cursor('anchor').index
+    head && anchor && Utils.setIfChanged(
       store.at('subspan'),
       G.sentence_subspans_around_positions(graph.get(), [head, anchor])
     )
@@ -204,7 +235,10 @@ function PositionUtils(cm: CodeMirror.Editor, graph: Store<Graph>, side: G.Side)
   }
 
   class Token {
-    constructor(public readonly token: T.Token | null) {}
+    constructor(
+      public readonly index: number | null,
+      public readonly token: T.Token | null
+    ) {}
 
     toEdge() {
       if (this.token) {
@@ -222,6 +256,12 @@ function PositionUtils(cm: CodeMirror.Editor, graph: Store<Graph>, side: G.Side)
   class Index {
     constructor(public readonly index: number | null) {}
 
+    static cursor(end: 'head' | 'anchor' = 'head'): Index {
+      const doc = cm.getDoc()
+      const sels = cm.getDoc().listSelections()
+      return new Index(sels ? doc.indexFromPos(sels[0][end]) : null)
+    }
+
     static fromCoords(e: {pageX: number; pageY: number}): Index {
       const coord = cm.coordsChar({left: e.pageX, top: e.pageY})
       if (!(('outside' in coord) as any)) {
@@ -237,14 +277,14 @@ function PositionUtils(cm: CodeMirror.Editor, graph: Store<Graph>, side: G.Side)
     }
 
     toToken(): Token {
-      if (this.index) {
+      if (this.index != null) {
         const g = graph.get()
         const {token} = T.token_at(G.get_side_texts(g, side), this.index)
         if (token in g[side]) {
-          return new Token(g[side][token])
+          return new Token(token, g[side][token])
         }
       }
-      return new Token(null)
+      return new Token(null, null)
     }
   }
   return {Edge, Token, Index}
