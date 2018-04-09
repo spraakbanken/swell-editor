@@ -674,6 +674,7 @@ export function align(g: Graph): Graph {
 
 interface ScoreDDL {
   score: number
+  // A reversed list of the way back (Instead of constructing it from back links)
   diff: DDL
 }
 
@@ -688,7 +689,10 @@ locations that all should be close to each other. This was done using
 the diff algorithm before but the results were subpar, see #32
 
 */
-export function calculate_raw_diff(g: Graph): (Dragged | Dropped)[] {
+export function calculate_raw_diff(
+  g: Graph,
+  order_changing_label: (s: string) => boolean = () => false
+): (Dragged | Dropped)[] {
   const m = edge_map(g)
   const lookup = (tok: Token) => m.get(tok.id) as Edge
 
@@ -706,8 +710,9 @@ export function calculate_raw_diff(g: Graph): (Dragged | Dropped)[] {
       while (same(i, --jj));
       const edge = lookup(g.source[i])
       const {score, diff} = align(ii, jj)
+      const factor = edge.labels.some(order_changing_label) ? 0.001 : 1
       cands.push({
-        score: score + (i - ii) + (j - jj),
+        score: score + factor * (i - ii + (j - jj)),
         diff:
           // snoc(diff, D.Edited(g.source.slice(ii,i),g.target.slice(jj,j), edge_id(g.source[i])))
           Utils.snocs(diff, [
@@ -849,8 +854,11 @@ function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
   g // => expect
 
 */
-export function calculate_diff(g: Graph): Diff[] {
-  return merge_diff(calculate_raw_diff(g))
+export function calculate_diff(
+  g: Graph,
+  order_changing_label: (s: string) => boolean = () => false
+): Diff[] {
+  return merge_diff(calculate_raw_diff(g, order_changing_label))
 }
 
 /**

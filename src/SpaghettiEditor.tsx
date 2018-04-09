@@ -26,6 +26,15 @@ import 'codemirror/lib/codemirror.css'
 import 'lato-font/css/lato-font.min.css'
 import 'dejavu-fonts-ttf/ttf/DejaVuSans.ttf'
 
+const order_changing_labels: Record<string, true> = {
+  O: true,
+  WO: true,
+  INV: true,
+  OINV: true,
+}
+
+export const config = {order_changing_labels}
+
 export interface State {
   readonly graph: Undo<Graph>
   readonly hover_id?: string
@@ -221,7 +230,7 @@ Blue birds have blue and pink feathers . // Bluebirds have blue and pink feather
 
 I don't know his lives . // I don't know where he~his lives .
 
-He get to cleaned his son . // He got his~his son~his~son to clean the~ room~ .
+He get to cleaned his son . // He got his~his son~son to:O clean:O the~ room~ .
 
 We wrote down the number . // We wrote the number down~down .
 
@@ -522,6 +531,7 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
         <div className="main" style={{minHeight: '10em'}}>
           <L.LadderComponent
             side={state.side_restriction}
+            orderChangingLabel={s => config.order_changing_labels[s]}
             graph={state.subspan ? G.subgraph(graph.get(), state.subspan) : g}
             hoverId={state.hover_id}
             onHover={hover_id => store.update({hover_id})}

@@ -31,7 +31,11 @@ export type RichDiff =
   rd[0] // => expected_rd0
 
 */
-export function enrichen(g: Graph, diff: Diff[] = G.calculate_diff(g)): RichDiff[] {
+export function enrichen(
+  g: Graph,
+  order_changing_label: (s: string) => boolean = () => false
+): RichDiff[] {
+  const diff = G.calculate_diff(g, order_changing_label)
   const partition = G.partition_ids(g)
   return D.Index(diff).map((d: D.IndexedDiff) => {
     switch (d.edit) {

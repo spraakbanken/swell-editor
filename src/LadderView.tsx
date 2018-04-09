@@ -25,6 +25,7 @@ function RestrictToSide(rd: RD.RichDiff[], side?: RestrictToSide): RD.RichDiff[]
 
 export function LadderComponent(props: {
   graph: G.Graph
+  orderChangingLabel?: (label: string) => boolean
   onHover?: OnHover
   onSelect?: OnSelect
   hoverId?: string
@@ -33,7 +34,7 @@ export function LadderComponent(props: {
 }) {
   return Ladder(
     props.graph,
-    undefined,
+    props.orderChangingLabel,
     props.hoverId,
     props.onHover,
     props.selectedIds,
@@ -313,7 +314,7 @@ export function hoverClass(hover_id: string | undefined, id: string) {
 
 export function Ladder(
   g: G.Graph,
-  rd0: RD.RichDiff[] = RD.enrichen(g),
+  order_changing_label?: (label: string) => boolean,
   hover_id?: string,
   onHover?: OnHover,
   selected: string[] = [],
@@ -354,6 +355,7 @@ export function Ladder(
     )
   }
 
+  const rd0 = RD.enrichen(g, order_changing_label)
   const rd = RestrictToSide(rd0, side)
   const grids = D.DiffToGrid(rd)
   const u = grids.upper
