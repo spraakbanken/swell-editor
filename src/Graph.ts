@@ -475,7 +475,9 @@ Indexes are token offsets
 */
 export function unaligned_rearrange(g: Graph, begin: number, end: number, dest: number): Graph {
   const em = edge_map(g)
-  const edge_ids_to_update = new Set(g.target.slice(begin, end + 1).map(t => (em.get(t.id) as Edge).id))
+  const edge_ids_to_update = new Set(
+    g.target.slice(begin, end + 1).map(t => (em.get(t.id) as Edge).id)
+  )
   const new_edges = {} as Record<string, Edge>
   edge_ids_to_update.forEach(id => {
     new_edges[id] = merge_edges(g.edges[id], Edge([], [], true))
@@ -483,7 +485,7 @@ export function unaligned_rearrange(g: Graph, begin: number, end: number, dest: 
   return {
     source: g.source,
     target: Utils.rearrange(g.target, begin, end, dest),
-    edges: {...g.edges, ...new_edges}
+    edges: {...g.edges, ...new_edges},
   }
 }
 

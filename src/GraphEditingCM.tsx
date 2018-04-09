@@ -114,8 +114,13 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
           // update CM text now to set the selection at the moved word(s)
           graph_to_cm()
           const g2 = graph.get()
-          const from = G.get_side_texts(g2, side).slice(0, begin + d).join('').length
-          const to = G.get_side_texts(g2, side).slice(0, end + d + 1).join('').length - 1
+          const from = G.get_side_texts(g2, side)
+            .slice(0, begin + d)
+            .join('').length
+          const to =
+            G.get_side_texts(g2, side)
+              .slice(0, end + d + 1)
+              .join('').length - 1
           const doc = cm.getDoc()
           doc.setSelection(doc.posFromIndex(from), doc.posFromIndex(to))
         }
@@ -141,10 +146,12 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
     const doc = cm.getDoc()
     const head = Index.cursor('head').index
     const anchor = Index.cursor('anchor').index
-    head && anchor && Utils.setIfChanged(
-      store.at('subspan'),
-      G.sentence_subspans_around_positions(graph.get(), [head, anchor])
-    )
+    head &&
+      anchor &&
+      Utils.setIfChanged(
+        store.at('subspan'),
+        G.sentence_subspans_around_positions(graph.get(), [head, anchor])
+      )
   }
 
   cm.on('cursorActivity', _ =>
@@ -235,10 +242,7 @@ function PositionUtils(cm: CodeMirror.Editor, graph: Store<Graph>, side: G.Side)
   }
 
   class Token {
-    constructor(
-      public readonly index: number | null,
-      public readonly token: T.Token | null
-    ) {}
+    constructor(public readonly index: number | null, public readonly token: T.Token | null) {}
 
     toEdge() {
       if (this.token) {
