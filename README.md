@@ -10,11 +10,14 @@ This tool is in active development, and described further here:
 
 * [Development version](https://spraakbanken.gu.se/swell/dev)
 * [Tool description](https://spraakbanken.gu.se/swell/article) Dan Rosén
-* [Towards Transformation-based Annotation of Norm Deviations in an Infrastructure for Research on Swedish as a Second Language](http://demo.spraakdata.gu.se/dan/swell-editor/swell-lrec2018.pdf) Dan Rosén, Mats Wirén, Elena Volodina, submitted to LREC 2018.
-* [Slides from CLT retreat 2017](http://demo.spraakdata.gu.se/dan/swell-clt-2017) change slides with up and down arrows
-* [Slides from L2 Clarin workshop 2017](http://demo.spraakdata.gu.se/dan/swell-clarin-2017) change slides with up and down arrows
-* [En förhandstitt på verktyget för normalisering av andraspråkstexter](https://github.com/spraakbanken/swell-editor/blob/c13475d2e14a53a3e86e5b0f0861f9dbf5411af3/talk/hws/hws-talk.pdf) slides (in Swedish)
-* [Representation av avvikelseannotationer](http://demo.spraakdata.gu.se/dan/representation/) (in Swedish)
+* [Towards Transformation-based Annotation of Norm Deviations in an Infrastructure for Research on Swedish as a Second Language](https://spraakbanken.gu.se/swell/docs/swell-lrec2018.pdf) Dan Rosén, Mats Wirén, Elena Volodina, submitted to LREC 2018.
+* [Representation av avvikelseannotationer](https://spraakbanken.gu.se/swell/representation-2017/) (in Swedish)
+
+Slides, change slides with up and down arrows:
+* [SweLL meeting January 2018](https://spraakbanken.gu.se/swell/jan2018) (in Swedish)
+* [CLT retreat 2017](https://spraakbanken.gu.se/swell/clt-2017)
+* [L2 Clarin workshop 2017](https://spraakbanken.gu.se/swell/clarin-2017)
+* [En förhandstitt på verktyget för normalisering av andraspråkstexter](https://github.com/spraakbanken/swell-editor/blob/c13475d2e14a53a3e86e5b0f0861f9dbf5411af3/talk/hws/hws-talk.pdf) (pdf, in Swedish)
 
 ### Running the tool
 
