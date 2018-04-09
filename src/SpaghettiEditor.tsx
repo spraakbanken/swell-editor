@@ -442,6 +442,7 @@ export function App(store: Store<State>): () => VNode {
   global.reset = () => store.set(init)
   global.G = G
   global.Utils = Utils
+  global.stress = () => stress(store)
   store
     .at('graph')
     .at('now')
@@ -598,6 +599,25 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
       </div>
     </DropZone>
   )
+}
+
+function stress(store: Store<State>) {
+  const source = Utils.range(100).join(' ')
+  store.set({
+    ...init,
+    graph: Undo.init(G.init(source, false)),
+  })
+  function go(i: number) {
+    if (i === 0) {
+      return
+    }
+    window.setTimeout(() => {
+      const g = G.modify(store.get().graph.now, 10, 10, i + ' ' + i + ' ')
+      store.at('graph').modify(Undo.advance_to(g))
+      go(i-1)
+    }, 1)
+  }
+  go(10)
 }
 
 function links(g: Graph) {

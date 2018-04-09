@@ -123,6 +123,7 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
               .join('').length - 1
           const doc = cm.getDoc()
           doc.setSelection(doc.posFromIndex(from), doc.posFromIndex(to))
+          update_cursor()
         }
       }
     }
@@ -162,19 +163,11 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
   )
 
   cm.on('change', (_, change) => {
-    /* if (change.origin == 'drag') {
-        change.cancel()
-      } else if (change.origin == 'paste') {
-        // drag-and-drop makes this paste (yes!):
-        change.cancel()
-        paste()
-      } */
     if (change.origin != 'setValue') {
       store.transaction(() => {
         const g = graph.get()
         history.modify(Undo.advance)
         graph.set(G.set_side(g, side, cm.getDoc().getValue() + ' '))
-        set_marks()
         update_cursor()
       })
     }
@@ -188,7 +181,6 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
       const {from, to} = Utils.edit_range(graph_text, editor_text)
       const doc = cm.getDoc()
       doc.setSelection(doc.posFromIndex(from), doc.posFromIndex(to))
-      set_marks()
       update_cursor()
     }
   }
@@ -203,6 +195,7 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
 
   function set_marks() {
     cm.operation(() => {
+      console.log('Set marks', side)
       const doc = cm.getDoc()
       doc.getAllMarks().map(m => m.clear())
       const g = graph.get()
