@@ -41,7 +41,7 @@ export interface State {
   readonly label_id?: string
   readonly selected: Record<string, true>
   readonly subspan?: G.Subspan
-  readonly side_restriction?: L.RestrictToSide
+  readonly side_restriction?: G.Side
 }
 
 export const init: State = {
@@ -53,8 +53,8 @@ export const init: State = {
   side_restriction: undefined,
 }
 
-function RestrictionButtons(store: Store<L.RestrictToSide | undefined>) {
-  const options: (L.RestrictToSide | undefined)[] = [undefined, 'source', 'target']
+function RestrictionButtons(store: Store<G.Side | undefined>) {
+  const options = [undefined, ...G.sides]
   const name = (k?: string) => (k === undefined ? 'both sides' : k + ' only')
   return options.map(k => Button(name(k), '', () => store.set(k), store.get() !== k))
 }
