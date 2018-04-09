@@ -150,7 +150,6 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
       const {from, to} = Utils.edit_range(graph_text, editor_text)
       const doc = cm.getDoc()
       doc.setSelection(doc.posFromIndex(from), doc.posFromIndex(to))
-      // TODO: set the cursor to the end of the change, maybe G.set_target can tell us
       set_marks()
       update_cursor()
     }
