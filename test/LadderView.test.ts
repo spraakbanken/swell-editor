@@ -8,24 +8,25 @@ import * as L from '../src/LadderView'
 import * as Utils from '../src/Utils'
 import * as record from '../src/record'
 
-qc(
-  'Ladder text sanity',
-  graph,
-  (g, p) => {
-    const dom = enzyme.shallow(L.Ladder(g))
+qc('Ladder text sanity', graph.small(), (g, p) => {
+  const dom = enzyme.shallow(L.Ladder(g))
 
-    function text_somewhere(s: string) {
-      if (dom.findWhere(w => w.text() == s).length === 0) {
-        p.fail(`Could not find DOM with text ${Utils.show(s)}`)
+  function text_somewhere(s: string) {
+    function go(node: enzyme.ShallowWrapper): boolean {
+      if (node.is(L.Thunk)) {
+        return go(node.dive())
       }
+      return node.children().someWhere(w => node.text() == s || go(w))
     }
-    g.source.forEach(tok => text_somewhere(tok.text))
-    g.target.forEach(tok => text_somewhere(tok.text))
-    record.forEach(g.edges, e => e.labels.forEach(label => text_somewhere(label)))
-    return true
-  },
-  {tests: 25}
-)
+    if (!go(dom)) {
+      p.fail(`Could not find DOM with text ${Utils.show(s)}`)
+    }
+  }
+  g.source.forEach(tok => text_somewhere(tok.text))
+  g.target.forEach(tok => text_somewhere(tok.text))
+  record.forEach(g.edges, e => e.labels.forEach(label => text_somewhere(label)))
+  return true
+})
 
 /*
 import * as R from 'ramda'

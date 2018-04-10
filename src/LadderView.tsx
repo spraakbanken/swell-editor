@@ -42,9 +42,9 @@ export function LadderComponent(props: {
   )
 }
 
-type ThunkProps<D> = {dep: D; children: () => VNode}
+export type ThunkProps<D> = {dep: D; children: () => VNode}
 
-class Thunk<D> extends React.Component<ThunkProps<D>> {
+export class Thunk<D> extends React.Component<ThunkProps<D>> {
   constructor(props: ThunkProps<D>) {
     super(props)
   }
@@ -61,8 +61,12 @@ class Thunk<D> extends React.Component<ThunkProps<D>> {
   }
 }
 
-function thunk<D>(dep: D, child: () => VNode) {
-  return <Thunk dep={dep}>{child}</Thunk>
+export function thunk<D>(dep: D, key: string | number | undefined, child: () => VNode) {
+  return (
+    <Thunk dep={dep} key={key}>
+      {child}
+    </Thunk>
+  )
 }
 
 export type VNode = React.ReactElement<{}>
@@ -385,7 +389,7 @@ export function Ladder(
   return (
     <div className={`${LadderStyle} ${clean_ul} ${Unselectable} ladder`}>
       {rd.map((d, i) =>
-        thunk({d, u: u[i], l: l[i], h: d.id === hover_id, hanywhere: !!hover_id}, () => {
+        thunk({d, u: u[i], l: l[i], h: d.id === hover_id, hanywhere: !!hover_id}, d.id, () => {
           function HoverSpan(token_id: string, v: VNode) {
             return (
               <span
@@ -451,8 +455,7 @@ export function Ladder(
                 e.stopPropagation()
               }}
               onMouseEnter={() => on_hover(d.id)}
-              onMouseLeave={() => on_hover(undefined)}
-              key={d.index}>
+              onMouseLeave={() => on_hover(undefined)}>
               {side === 'target' || <li className={'top ' + hoverClass(hover_id, d.id)}>{s}</li>}
               {!side && <li className="upper">{Column(u[i])}</li>}
               <li className={(side || '') + ' mid'}>{mid}</li>
