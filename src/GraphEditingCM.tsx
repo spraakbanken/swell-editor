@@ -141,17 +141,19 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
   })
 
   function update_cursor() {
-    const g = graph.get()
-    const text = G.get_side_text(graph.get(), side)
-    const doc = cm.getDoc()
-    const head = Index.cursor('head').index
-    const anchor = Index.cursor('anchor').index
-    head &&
-      anchor &&
-      Utils.setIfChanged(
-        store.at('subspan'),
-        G.sentence_subspans_around_positions(graph.get(), [head, anchor])
-      )
+    Utils.timeit('update_cursor', () => {
+      const g = graph.get()
+      const text = G.get_side_text(graph.get(), side)
+      const doc = cm.getDoc()
+      const head = Index.cursor('head').index
+      const anchor = Index.cursor('anchor').index
+      head &&
+        anchor &&
+        Utils.setIfChanged(
+          store.at('subspan'),
+          G.sentence_subspans_around_positions(graph.get(), [head, anchor])
+        )
+    })
   }
 
   cm.on('cursorActivity', _ =>
@@ -185,7 +187,6 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
     const t = texts_differ()
     if (t) {
       const {from, to, insert} = Utils.edit_range(t.editor_text, t.graph_text)
-      Utils.stdout({...t, from, to, insert})
       const doc = cm.getDoc()
       cm.operation(() => {
         doc.setSelection(doc.posFromIndex(from), doc.posFromIndex(to))
@@ -203,27 +204,29 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
   })
 
   function set_marks() {
-    cm.operation(() => {
-      console.log('Set marks', side)
-      const doc = cm.getDoc()
-      doc.getAllMarks().map(m => m.clear())
-      const g = graph.get()
-      const em = G.edge_map(g)
-      const hover_id = store.get().hover_id
-      let i = 0
-      g[side].forEach(tok => {
-        const n = tok.text.length
-        const e = em.get(tok.id)
-        function mark_me(opts: CodeMirror.TextMarkerOptions) {
-          const from = doc.posFromIndex(i)
-          const to = doc.posFromIndex(i + n - (tok.text.match(/\s$/) || '').length)
-          doc.markText(from, to, opts)
-        }
-        e && e.manual && mark_me({className: ManualMarkClassName})
-        if (e) {
-          mark_me({className: L.hoverClass(hover_id, e.id)})
-        }
-        i += n
+    Utils.timeit('set_marks', () => {
+      cm.operation(() => {
+        console.log('Set marks', side)
+        const doc = cm.getDoc()
+        doc.getAllMarks().map(m => m.clear())
+        const g = graph.get()
+        const em = G.edge_map(g)
+        const hover_id = store.get().hover_id
+        let i = 0
+        g[side].forEach(tok => {
+          const n = tok.text.length
+          const e = em.get(tok.id)
+          function mark_me(opts: CodeMirror.TextMarkerOptions) {
+            const from = doc.posFromIndex(i)
+            const to = doc.posFromIndex(i + n - (tok.text.match(/\s$/) || '').length)
+            doc.markText(from, to, opts)
+          }
+          e && e.manual && mark_me({className: ManualMarkClassName})
+          if (e) {
+            mark_me({className: L.hoverClass(hover_id, e.id)})
+          }
+          i += n
+        })
       })
     })
   }

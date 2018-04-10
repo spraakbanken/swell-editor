@@ -984,3 +984,11 @@ export function findLastIndex<A>(xs: A[], f: (v: A, i: number) => boolean): numb
   const op = (rindex: number) => xs.length - rindex - 1
   return op(xs.findIndex((_, rindex) => f(xs[op(rindex)], op(rindex))))
 }
+
+export function timeit<A>(label: string, doit: () => A): A {
+  const yes = false
+  yes && console.time(label)
+  const a = doit()
+  yes && console.timeEnd(label)
+  return a
+}
