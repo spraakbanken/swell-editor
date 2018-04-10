@@ -341,15 +341,22 @@ const topStyle = style({
       padding: '2px',
       border: '1px solid #8886',
     },
-    '& .hoverable, & .hoverable': {
-      transition: 'opacity 50ms 0ms',
-      opacity: 1.0,
+    // '& .hoverable, & .hoverable': {
+    //   transition: 'opacity 50ms 0ms',
+    //   opacity: 1.0,
+    // },
+    '& .cm-hovering span.hover': {
+      color: '#222f',
     },
-    [`& .hover, & .hover `]: {
+    '& .cm-hovering span': {
+      color: '#2228',
+    },
+    '& .hovering .hover span, & .hovering path.hover': {
       opacity: 1.0,
       strokeOpacity: 1.0,
+      fillOpacity: 1.0,
     },
-    [`& .not-hover, & .not-hover `]: {
+    '& .hovering span, & .hovering path': {
       opacity: 0.6,
       strokeOpacity: 0.8,
       fillOpacity: 0.8,
@@ -515,7 +522,7 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
         <LabelSidekick store={store} onBlur={() => cms.target.cm.focus()} />
         {showhide('set source text', () => (
           <div className="main">
-            {cms.source.node}
+            <div className={state.hover_id ? 'cm-hovering' : ''}>{cms.source.node}</div>
             <div>
               {Button('copy to target', '', () =>
                 advance(() => graph.modify(g => G.init_from(G.source_texts(g))))
@@ -528,8 +535,10 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
           {Button('redo', '', () => history.modify(Undo.redo), Undo.can_redo(history.get()))}
           {RestrictionButtons(store.at('side_restriction'))}
         </div>
-        <div className="main">{cms.target.node}</div>
-        <div className="main" style={{minHeight: '10em'}}>
+        <div className="main">
+          <div className={state.hover_id ? 'cm-hovering' : ''}>{cms.target.node}</div>
+        </div>
+        <div className={'main' + (state.hover_id ? ' hovering' : '')} style={{minHeight: '10em'}}>
           <L.LadderComponent
             side={state.side_restriction}
             orderChangingLabel={s => config.order_changing_labels[s]}

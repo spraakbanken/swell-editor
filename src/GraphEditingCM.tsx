@@ -223,7 +223,8 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
           }
           e && e.manual && mark_me({className: ManualMarkClassName})
           if (e) {
-            mark_me({className: L.hoverClass(hover_id, e.id)})
+            const className = L.hoverClass(hover_id, e.id)
+            className && mark_me({className})
           }
           i += n
         })

@@ -333,9 +333,9 @@ export interface OnSelect {
 
 export function hoverClass(hover_id: string | undefined, id: string) {
   if (hover_id !== undefined) {
-    return 'hoverable ' + (id === hover_id ? 'hover' : 'not-hover')
+    return id === hover_id ? 'hover' : ''
   }
-  return 'hoverable'
+  return ''
 }
 
 export function Ladder(
@@ -391,7 +391,7 @@ export function Ladder(
     <div className={`${LadderStyle} ${clean_ul} ${Unselectable} ladder`}>
       {rd.map((d, i) =>
         thunk(
-          {...d, index: undefined, u: u[i], l: l[i], h: d.id === hover_id, hanywhere: !!hover_id},
+          {...d, index: undefined, u: u[i], l: l[i], h: d.id === hover_id},
           d.id + '#' + c.inc(d.id),
           () => {
             function HoverSpan(token_id: string, v: VNode) {
