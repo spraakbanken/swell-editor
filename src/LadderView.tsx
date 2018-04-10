@@ -399,7 +399,15 @@ export function Ladder(
     <div className={`${LadderStyle} ${clean_ul} ${Unselectable} ladder`}>
       {rd.map((d, i) =>
         thunk(
-          {...d, index: undefined, u: u[i], l: l[i], h: d.id === hover_id, e: edges[d.id]},
+          {
+            ...d,
+            index: undefined,
+            u: u[i],
+            l: l[i],
+            hover_status: d.id === hover_id,
+            e: edges[d.id],
+            selected_status: edges[d.id].ids.map(x => selected.some(id => id === x)),
+          },
           d.id + '#' + c.inc(d.id),
           () => {
             function HoverSpan(token_id: string, v: VNode) {

@@ -516,13 +516,15 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
 
   const advance = advanceFactory(store)
 
+  const hovering = state.hover_id !== undefined && Object.keys(state.selected).length == 0
+
   return (
     <DropZone webserviceURL={ws_url} onDrop={g => advance(() => graph.set(g))}>
       <div className={topStyle} style={{position: 'relative'}}>
         <LabelSidekick store={store} onBlur={() => cms.target.cm.focus()} />
         {showhide('set source text', () => (
           <div className="main">
-            <div className={state.hover_id ? 'cm-hovering' : ''}>{cms.source.node}</div>
+            <div className={hovering ? 'cm-hovering' : ''}>{cms.source.node}</div>
             <div>
               {Button('copy to target', '', () =>
                 advance(() => graph.modify(g => G.init_from(G.source_texts(g))))
@@ -536,9 +538,9 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
           {RestrictionButtons(store.at('side_restriction'))}
         </div>
         <div className="main">
-          <div className={state.hover_id ? 'cm-hovering' : ''}>{cms.target.node}</div>
+          <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
         </div>
-        <div className={'main' + (state.hover_id ? ' hovering' : '')} style={{minHeight: '10em'}}>
+        <div className={'main' + (hovering ? ' hovering' : '')} style={{minHeight: '10em'}}>
           <L.LadderComponent
             side={state.side_restriction}
             orderChangingLabel={s => config.order_changing_labels[s]}
