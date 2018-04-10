@@ -235,7 +235,7 @@ export function Key(nodes: VNode[], s: string | number = '') {
   )
 }
 
-function Line({x0, y0, x1, y1, id}: D.Line, className: string) {
+function Line<M>({x0, y0, x1, y1}: D.Line<M>, className: string) {
   const ff = x1 != 0.5
   const yi = ff ? y1 : y0
   const xi = ff ? x0 : x1
@@ -243,7 +243,7 @@ function Line({x0, y0, x1, y1, id}: D.Line, className: string) {
   return PixelPath(d, className)
 }
 
-function LineIsHorizontal({y0, y1}: D.Line) {
+function LineIsHorizontal<M>({y0, y1}: D.Line<M>) {
   return y0 == y1
 }
 
@@ -338,6 +338,40 @@ export function hoverClass(hover_id: string | undefined, id: string) {
   return ''
 }
 
+export interface LineMeta {
+  id: string
+  manual: boolean
+  hover: boolean
+}
+
+function Column(column: D.Line<LineMeta>[], rel: VNode | null | false = null): VNode {
+  const endpoint_id: string | undefined = column
+    .filter(line => !LineIsHorizontal(line))
+    .map(line => line.meta.id)[0]
+
+  const top = column.filter(line => line.meta.id == endpoint_id)
+  const below = column.filter(line => line.meta.id != endpoint_id)
+  return (
+    <div style={{position: 'relative', width: '100%', height: '100%'}}>
+      {rel}
+      {PixelPerfectSVG(
+        <svg height="100%" width="100%" viewBox="0 0 1 1" preserveAspectRatio="none">
+          {Key([
+            ...below.map(line =>
+              Line(line, greyPath(line.meta.manual) + ' ' + (line.meta.hover ? ' hover ' : ''))
+            ),
+            ...top.map(line => Line(line, whitePath)),
+            ...top.map(line =>
+              Line(line, greyPath(line.meta.manual) + ' ' + (line.meta.hover ? ' hover ' : ''))
+            ),
+          ])}
+        </svg>,
+        {zIndex: -2}
+      )}
+    </div>
+  )
+}
+
 export function Ladder(
   g: G.Graph,
   order_changing_label?: (label: string) => boolean,
@@ -350,40 +384,14 @@ export function Ladder(
   if (selected.length > 0) {
     hover_id = undefined
   }
-
   const edges = g.edges
-
-  function Column(column: D.Line[], rel: VNode | null | false = null): VNode {
-    const endpoint_id: string | undefined = column
-      .filter(line => !LineIsHorizontal(line))
-      .map(line => line.id)[0]
-
-    const top = column.filter(line => line.id == endpoint_id)
-    const below = column.filter(line => line.id != endpoint_id)
-    return (
-      <div style={{position: 'relative', width: '100%', height: '100%'}}>
-        {rel}
-        {PixelPerfectSVG(
-          <svg height="100%" width="100%" viewBox="0 0 1 1" preserveAspectRatio="none">
-            {Key([
-              ...below.map(line =>
-                Line(line, greyPath(!!edges[line.id].manual) + ' ' + hoverClass(hover_id, line.id))
-              ),
-              ...top.map(line => Line(line, whitePath)),
-              ...top.map(line =>
-                Line(line, greyPath(!!edges[line.id].manual) + ' ' + hoverClass(hover_id, line.id))
-              ),
-            ])}
-          </svg>,
-          {zIndex: -2}
-        )}
-      </div>
-    )
-  }
-
   const rd0 = RD.enrichen(g, order_changing_label)
   const rd = RestrictToSide(rd0, side)
-  const grids = D.DiffToGrid(rd)
+  const grids = D.mapGrids(D.DiffToGrid(rd), ({id}) => ({
+    id,
+    manual: g.edges[id].manual === true,
+    hover: hover_id === id,
+  }))
   const u = grids.upper
   const l = grids.lower
   const c = Utils.count<string>()
@@ -391,7 +399,7 @@ export function Ladder(
     <div className={`${LadderStyle} ${clean_ul} ${Unselectable} ladder`}>
       {rd.map((d, i) =>
         thunk(
-          {...d, index: undefined, u: u[i], l: l[i], h: d.id === hover_id},
+          {...d, index: undefined, u: u[i], l: l[i], h: d.id === hover_id, e: edges[d.id]},
           d.id + '#' + c.inc(d.id),
           () => {
             function HoverSpan(token_id: string, v: VNode) {
@@ -441,7 +449,17 @@ export function Ladder(
             const show_label_now = u[i].some(b => b.y1 == 1) || l[i].some(b => b.y1 == 0)
             const has_line_below_label = show_label_now && l[i].length > 0
             const line_below_label =
-              has_line_below_label && !side ? [{x0: 0.5, y0: 0, x1: 0.5, y1: 1, id: d.id}] : []
+              has_line_below_label && !side
+                ? [
+                    {
+                      x0: 0.5,
+                      y0: 0,
+                      x1: 0.5,
+                      y1: 1,
+                      meta: {id: d.id, manual: d.manual, hover: d.id === hover_id},
+                    },
+                  ]
+                : []
             const mid = Column(
               line_below_label,
               labels.length > 0 &&

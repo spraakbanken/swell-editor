@@ -156,9 +156,25 @@ export function Index(ds: Diff[]): IndexedDiff[] {
   return ds.map((d, index) => ({...d, index}))
 }
 
-export type Grid = Line[][]
+export type Grid<M> = Line<M>[][]
 
-export function DiffToGrid(diff: Diff[]): {upper: Grid; lower: Grid} {
+export function mapGrid<M, N>(grid: Grid<M>, f: (m: M) => N): Grid<N> {
+  return grid.map(col => col.map(line => mapLine(line, f)))
+}
+
+export function mapGrids<M, N>(
+  grids: {upper: Grid<M>; lower: Grid<M>},
+  f: (m: M) => N
+): {upper: Grid<N>; lower: Grid<N>} {
+  return {
+    upper: mapGrid(grids.upper, f),
+    lower: mapGrid(grids.lower, f),
+  }
+}
+
+export type IdGrid = Grid<{id: string}>
+
+export function DiffToGrid(diff: Diff[]): {upper: IdGrid; lower: IdGrid} {
   return {
     upper: Grid(ProtoLines(diff, 'Dragged'), diff.length),
     lower: VFlip(Grid(ProtoLines(diff, 'Dropped'), diff.length)),
@@ -202,18 +218,23 @@ export function ProtoLines(diff: Diff[], keep: 'Dragged' | 'Dropped'): ProtoLine
   )
 }
 
-export interface Line {
+export interface Line<Meta> {
   x0: number
   x1: number
   y0: number
   y1: number
-  /** Edge id */
-  id: string
+  meta: Meta
 }
 
-export function Grid(proto_lines: ProtoLines, width: number): Grid {
+export function mapLine<M, N>(l: Line<M>, f: (m: M) => N): Line<N> {
+  return {...l, meta: f(l.meta)}
+}
+
+export type IdLine = Line<{id: string}>
+
+export function Grid(proto_lines: ProtoLines, width: number): IdGrid {
   const heights: number[] = new Array(width).fill(0)
-  const out_lines: Line[][] = heights.map(_ => [] as Line[])
+  const out_lines: IdLine[][] = heights.map(_ => [] as IdLine[])
   const postponed: ((final_height: number) => void)[] = []
   proto_lines.forEach(({id, lines}) => {
     if (lines.length == 0) {
@@ -234,7 +255,7 @@ export function Grid(proto_lines: ProtoLines, width: number): Grid {
             y0: 0,
             x1: 0.5,
             y1: 1,
-            id,
+            meta: {id},
           })
         } else {
           const dir = line.to > line.from ? 'right' : 'left'
@@ -246,7 +267,7 @@ export function Grid(proto_lines: ProtoLines, width: number): Grid {
             y0: 0,
             x1,
             y1: y,
-            id,
+            meta: {id},
           })
           const dx = dir == 'left' ? -1 : 1
           let x = line.from + dx
@@ -256,7 +277,7 @@ export function Grid(proto_lines: ProtoLines, width: number): Grid {
               y0: y,
               x1,
               y1: y,
-              id,
+              meta: {id},
             })
             x += dx
           }
@@ -265,7 +286,7 @@ export function Grid(proto_lines: ProtoLines, width: number): Grid {
             y0: y,
             x1: 0.5,
             y1: 1,
-            id,
+            meta: {id},
           })
         }
       })
@@ -276,7 +297,7 @@ export function Grid(proto_lines: ProtoLines, width: number): Grid {
   return out_lines
 }
 
-export function VFlip(grid: Line[][]): Line[][] {
+export function VFlip<M>(grid: Line<M>[][]): Line<M>[][] {
   return grid.map(column =>
     column.map(line => ({
       ...line,
