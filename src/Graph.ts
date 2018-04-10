@@ -722,55 +722,67 @@ export function calculate_raw_diff(
   const m = edge_map(g)
   const lookup = (tok: Token) => m.get(tok.id) as Edge
 
-  const align = Utils.memo2<number, number, ScoreDDL>((i, j) => {
+  const I = g.source.length
+  const J = g.target.length
+
+  const OPT = new Array(I + 1).fill({}).map(i => new Array(J + 1).fill({score: 0, diff: null}))
+
+  function opt(i: number, j: number) {
     if (i < 0 && j < 0) {
       return {score: 0, diff: null}
+    } else {
+      return OPT[i + 1][j + 1]
     }
-    const cands: ScoreDDL[] = []
-    const same = (ii: number, jj: number) =>
-      ii >= 0 && jj >= 0 && lookup(g.source[ii]).id === lookup(g.target[jj]).id
-    if (i >= 0 && j >= 0 && same(i, j)) {
-      let ii = i
-      let jj = j
-      while (same(--ii, j));
-      while (same(i, --jj));
-      const edge = lookup(g.source[i])
-      const {score, diff} = align(ii, jj)
-      let factor = 1
-      if (edge.manual) {
-        factor *= 0.01
-      }
-      if (edge.labels.some(order_changing_label)) {
-        factor *= 0.0001
-      }
-      cands.push({
-        score: score + factor * (i - ii + (j - jj)),
-        diff:
-          // snoc(diff, D.Edited(g.source.slice(ii,i),g.target.slice(jj,j), edge_id(g.source[i])))
-          Utils.snocs(diff, [
-            ...g.source
-              .slice(ii + 1, i + 1)
-              .map(tok => D.Dragged(tok, edge.id, !!edge.manual) as Dragged | Dropped),
-            ...g.target
-              .slice(jj + 1, j + 1)
-              .map(tok => D.Dropped(tok, edge.id, !!edge.manual) as Dragged | Dropped),
-          ]),
-      })
-    }
-    if (j >= 0) {
-      const {score, diff} = align(i, j - 1)
-      const edge = lookup(g.target[j])
-      cands.push({score, diff: Utils.snoc(diff, D.Dropped(g.target[j], edge.id, !!edge.manual))})
-    }
-    if (i >= 0) {
-      const {score, diff} = align(i - 1, j)
-      const edge = lookup(g.source[i])
-      cands.push({score, diff: Utils.snoc(diff, D.Dragged(g.source[i], edge.id, !!edge.manual))})
-    }
-    return R.sortBy(x => -x.score, cands)[0]
-  })
+  }
 
-  const {score, diff} = align(g.source.length - 1, g.target.length - 1)
+  for (let i = -1; i < I; ++i) {
+    for (let j = -1; j < J; ++j) {
+      const cands: ScoreDDL[] = []
+      const same = (ii: number, jj: number) =>
+        ii >= 0 && jj >= 0 && lookup(g.source[ii]).id === lookup(g.target[jj]).id
+      if (i >= 0 && j >= 0 && same(i, j)) {
+        let ii = i
+        let jj = j
+        while (same(--ii, j));
+        while (same(i, --jj));
+        const edge = lookup(g.source[i])
+        const {score, diff} = opt(ii, jj)
+        let factor = 1
+        if (edge.manual) {
+          factor *= 0.01
+        }
+        if (edge.labels.some(order_changing_label)) {
+          factor *= 0.0001
+        }
+        cands.push({
+          score: score + factor * (i - ii + (j - jj)),
+          diff:
+            // snoc(diff, D.Edited(g.source.slice(ii,i),g.target.slice(jj,j), edge_id(g.source[i])))
+            Utils.snocs(diff, [
+              ...g.source
+                .slice(ii + 1, i + 1)
+                .map(tok => D.Dragged(tok, edge.id, !!edge.manual) as Dragged | Dropped),
+              ...g.target
+                .slice(jj + 1, j + 1)
+                .map(tok => D.Dropped(tok, edge.id, !!edge.manual) as Dragged | Dropped),
+            ]),
+        })
+      }
+      if (j >= 0) {
+        const {score, diff} = opt(i, j - 1)
+        const edge = lookup(g.target[j])
+        cands.push({score, diff: Utils.snoc(diff, D.Dropped(g.target[j], edge.id, !!edge.manual))})
+      }
+      if (i >= 0) {
+        const {score, diff} = opt(i - 1, j)
+        const edge = lookup(g.source[i])
+        cands.push({score, diff: Utils.snoc(diff, D.Dragged(g.source[i], edge.id, !!edge.manual))})
+      }
+      OPT[i + 1][j + 1] = R.sortBy(x => -x.score, cands)[0]
+    }
+  }
+
+  const {score, diff} = opt(I - 1, J - 1)
   return Utils.snocsToArray(diff)
 }
 
