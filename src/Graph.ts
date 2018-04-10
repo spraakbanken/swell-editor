@@ -704,7 +704,7 @@ interface ScoreDDL {
   diff: DDL
 }
 
-type DDL = Utils.SnocList<Dragged | Dropped>
+type DDL = Utils.LazySnocList<Dragged | Dropped>
 
 /** Calculate the ladder diff without merging contiguous edits
 
@@ -725,7 +725,9 @@ export function calculate_raw_diff(
   const I = g.source.length
   const J = g.target.length
 
-  const OPT = new Array(I + 1).fill({}).map(i => new Array(J + 1).fill({score: 0, diff: null}))
+  const OPT: ScoreDDL[][] = new Array(I + 1)
+    .fill({})
+    .map(i => new Array(J + 1).fill({score: 0, diff: null}))
 
   function opt(i: number, j: number) {
     if (i < 0 && j < 0) {
@@ -783,7 +785,8 @@ export function calculate_raw_diff(
   }
 
   const {score, diff} = opt(I - 1, J - 1)
-  return Utils.snocsToArray(diff)
+  const arr = Utils.snocsToArray(diff)
+  return arr
 }
 
 export function from_raw_diff(diff: (Dragged | Dropped)[], edges0: Record<string, Edge>): Graph {

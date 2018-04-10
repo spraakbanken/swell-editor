@@ -898,24 +898,25 @@ export function KV<K, V>(s: (k: K) => string = JSON.stringify): KV<K, V> {
   return api
 }
 
-export type SnocList<A> = Snoc<A> | null
+export type LazySnocList<A> = (() => Snoc<A>) | null
 export interface Snoc<A> {
-  0: SnocList<A>
+  0: LazySnocList<A>
   1: A
 }
-export function snoc<A>(xs: SnocList<A>, x: A): SnocList<A> {
-  return [xs, x]
+export function snoc<A>(xs: LazySnocList<A>, x: A): LazySnocList<A> {
+  return () => [xs, x]
 }
 
-export function snocs<A>(xs: SnocList<A>, ys: A[]): SnocList<A> {
+export function snocs<A>(xs: LazySnocList<A>, ys: A[]): LazySnocList<A> {
   return ys.reduce((xs, y) => snoc(xs, y), xs)
 }
 
-export function snocsToArray<A>(xs: SnocList<A>): A[] {
+export function snocsToArray<A>(xs: LazySnocList<A>): A[] {
   const out: A[] = []
   while (xs !== null) {
-    out.push(xs[1])
-    xs = xs[0]
+    const cell = xs()
+    out.push(cell[1])
+    xs = cell[0]
   }
   return out.reverse()
 }
