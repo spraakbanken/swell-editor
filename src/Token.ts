@@ -100,6 +100,24 @@ export function span_merge(s1: Span, s2: Span): Span {
   return {begin: Math.min(s1.begin, s2.begin), end: Math.max(s1.end, s2.end)}
 }
 
+/**
+
+  merge_spans([{begin: 1, end: 2}, {begin: 3, end: 4}, {begin: 0, end: 2}]) // => {begin: 0, end: 4}
+  merge_spans([{begin: 1, end: 2}, {begin: 3, end: 4}]) // => {begin: 1, end: 4}
+  merge_spans([{begin: 1, end: 2}]) // => {begin: 1, end: 2}
+  merge_spans([]) // => undefined
+
+*/
+export function merge_spans(ss: Span[]): Span {
+  const ws = ss.slice()
+  let s = ss[0]
+  while (ws.length > 1) {
+    const s_last = ws.pop() as Span
+    s = span_merge(s, s_last)
+  }
+  return s
+}
+
 /** Is this index within the span?
 
   span_within(0, {begin: 1, end: 2}) // => false
@@ -110,6 +128,36 @@ export function span_merge(s1: Span, s2: Span): Span {
 */
 export function span_within(i: number, s: Span): boolean {
   return s.begin <= i && i <= s.end
+}
+
+export function sentence_starts(tokens: string[]): number[] {
+  const out: number[] = []
+  let begin = 0
+  for (let i = 0; i < tokens.length; ++i) {
+    out.push(begin)
+    if (punc(tokens[i])) {
+      begin = i + 1
+    }
+  }
+  return out
+}
+
+export function sentence_ends(tokens: string[]): number[] {
+  const out: number[] = []
+  let end = tokens.length - 1
+  for (let i = tokens.length - 1; i >= 0; --i) {
+    if (punc(tokens[i])) {
+      end = i
+    }
+    out.push(end)
+  }
+  return out.reverse()
+}
+
+export function sentence_bounds(tokens: string[]): Span[] {
+  const begins = sentence_starts(tokens)
+  const ends = sentence_ends(tokens)
+  return begins.map((begin, i) => ({begin, end: ends[i]}))
 }
 
 /** Gets the sentence around some offset in a string of tokens
@@ -125,12 +173,7 @@ export function span_within(i: number, s: Span): boolean {
 
 */
 export function sentence(tokens: string[], i: number): Span {
-  const begin = prev_punc(tokens, i - 1) + 1
-  let end = next_punc(tokens, i)
-  if (end == -1) {
-    end = tokens.length - 1
-  }
-  return {begin, end}
+  return sentence_bounds(tokens)[i]
 }
 
 /** Tokenizes text on whitespace, prefers to have trailing whitespace

@@ -262,6 +262,24 @@ export function partition_ids(g: Graph): (edge: Edge) => {source: Token[]; targe
   }
 }
 
+export type SidedIndex = {side: Side; index: number}
+
+/** Map from token identifiers to sided offsets
+
+  const g = init('a b c')
+  const m = token_map(g)
+  m.get('s0') // => {side: 'source', index: 0}
+  m.get('s1') // => {side: 'source', index: 1}
+  m.get('t0') // => {side: 'target', index: 0}
+
+*/
+export function token_map(g: Graph): Map<string, SidedIndex> {
+  const m = with_st(g, (tokens, side) =>
+    tokens.map((token, index) => [token.id, {side, index}] as [string, SidedIndex])
+  )
+  return new Map([...m.source, ...m.target])
+}
+
 /** Map from source identifiers to offsets
 
   const g = init('a b c')
@@ -950,100 +968,108 @@ export function subspan_merge(ss: Subspan[]) {
   return {source, target}
 }
 
-/** Gets the sentence in the target text around some offset
+/** Gets the sentence in the target text around some offset(s)
 
   const g = init('apa bepa . Cepa depa . epa ', true)
-  sentence(g, 0) // => {source: {begin: 0, end: 2}, target: {begin: 0, end: 2}}
-  sentence(g, 1) // => {source: {begin: 0, end: 2}, target: {begin: 0, end: 2}}
-  sentence(g, 2) // => {source: {begin: 0, end: 2}, target: {begin: 0, end: 2}}
-  sentence(g, 3) // => {source: {begin: 3, end: 5}, target: {begin: 3, end: 5}}
+  sentences(g, 0) // => {source: {begin: 0, end: 2}, target: {begin: 0, end: 2}}
+  sentences(g, 1) // => {source: {begin: 0, end: 2}, target: {begin: 0, end: 2}}
+  sentences(g, 2) // => {source: {begin: 0, end: 2}, target: {begin: 0, end: 2}}
+  sentences(g, 3) // => {source: {begin: 3, end: 5}, target: {begin: 3, end: 5}}
   const g2 = modify_tokens(g, 1, 4, 'uff ! Hepp plepp ')
   target_text(g2) // => 'apa uff ! Hepp plepp depa . epa '
-  sentence(g2, 0) // => {source: {begin: 0, end: 5}, target: {begin: 0, end: 6}}
-  sentence(g2, 1) // => {source: {begin: 0, end: 5}, target: {begin: 0, end: 6}}
-  sentence(g2, 2) // => {source: {begin: 0, end: 5}, target: {begin: 0, end: 6}}
-  sentence(g2, 3) // => {source: {begin: 0, end: 5}, target: {begin: 0, end: 6}}
+  sentences(g2, 0) // => {source: {begin: 0, end: 5}, target: {begin: 0, end: 6}}
+  sentences(g2, 1) // => {source: {begin: 0, end: 5}, target: {begin: 0, end: 6}}
+  sentences(g2, 2) // => {source: {begin: 0, end: 5}, target: {begin: 0, end: 6}}
+  sentences(g2, 3) // => {source: {begin: 0, end: 5}, target: {begin: 0, end: 6}}
   const g3 = modify_tokens(g, 6, 7, '')
   target_text(g3) // => 'apa bepa . Cepa depa . '
-  sentence(g3, 4) // => {source: {begin: 3, end: 6}, target: {begin: 3, end: 5}}
-  sentence(g3, 5) // => {source: {begin: 3, end: 6}, target: {begin: 3, end: 5}}
+  sentences(g3, 4) // => {source: {begin: 3, end: 6}, target: {begin: 3, end: 5}}
+  sentences(g3, 5) // => {source: {begin: 3, end: 6}, target: {begin: 3, end: 5}}
 
 */
-export function sentence(g: Graph, i: number): Subspan {
-  let {source, target} = proto_sentence(g, i)
-  if (target.begin > 0) {
-    const prev = proto_sentence(g, target.begin - 1)
-    source = T.span_merge(source, {begin: prev.source.end + 1, end: source.end})
-  } else {
-    source = T.span_merge(source, {begin: 0, end: source.end})
-  }
-  const N = target_texts(g).length
-  if (target.end < N - 1) {
-    const next = proto_sentence(g, target.end + 1)
-    source = T.span_merge(source, {begin: source.begin, end: next.source.begin - 1})
-  } else {
-    source = T.span_merge(source, {begin: source.begin, end: source_texts(g).length - 1})
-  }
-  return {source, target}
+export function sentences(g: Graph, target_index: number): Subspan {
+  return sentences_around(g, [{side: 'target', index: target_index}])
+}
+
+/** Gets the sentences around some indicies */
+export function sentences_around(g: Graph, indicies: SidedIndex[]): Subspan {
+  const starts = Utils.PolyUnionFind<SidedIndex>()
+  const bounds = with_st(g, (tokens, side) => {
+    const bs = T.sentence_starts(T.texts(tokens))
+    bs.forEach((start, index) => {
+      starts.union({side, index}, {side, index: start})
+    })
+    return bs
+  })
+  const m = token_map(g)
+  record.forEach(g.edges, e => {
+    const ids = e.ids.map(id => m.get(id) as SidedIndex)
+    starts.unions(ids)
+  })
+  starts.unions(indicies)
+
+  const main = indicies[0]
+
+  // grr-ish: we want to get the "minimal" representative now, but have to loop over
+  // all positions to check. well at least it will be correct
+  // loop for (begin+end) over all indicies in (source+target) and
+  // update min resp max if it was found in the indicies stash
+  // this will be correct
+  const em = edge_map(g)
+  const main_repr = starts.repr(main)
+  return with_st(g, (tokens, side) => {
+    // If sentence starts or ends with only removed tokens we slurp these straggler tokens:
+    function pad_missing(d: number, index: number): number {
+      if (index < 0) {
+        return 0
+      }
+      if (index >= tokens.length) {
+        return tokens.length - 1
+      }
+      const adjacent = tokens[index + d]
+      if (!adjacent) {
+        return index
+      }
+      const edge = em.get(adjacent.id)
+      if (!edge) {
+        return index
+      }
+      const all_on_this_side = edge.ids.every(id => {
+        const token = m.get(id)
+        return token ? token.side == side : false
+      })
+      if (!all_on_this_side) {
+        return index
+      }
+      return pad_missing(d, index + d)
+    }
+    return {
+      begin: pad_missing(
+        -1,
+        tokens.findIndex((_, index) => starts.repr({side, index}) == main_repr)
+      ),
+      end: pad_missing(
+        1,
+        Utils.findLastIndex(tokens, (_, index) => starts.repr({side, index}) == main_repr)
+      ),
+    }
+  })
 }
 
 /** All sentences in a text starting from an offset in the target text. */
-export function sentences(g: Graph, begin: number = 0): Subspan[] {
+export function all_sentences(g: Graph, begin: number = 0): Subspan[] {
   if (begin >= g.target.length) {
     return []
   } else {
-    const s = sentence(g, begin)
-    return [s].concat(sentences(g, s.target.end + 1))
+    const s = sentences(g, begin)
+    return [s].concat(all_sentences(g, s.target.end + 1))
   }
-}
-
-export function proto_sentence(g: Graph, i: number): Subspan {
-  const init = {
-    source: {begin: g.source.length - 1, end: 0},
-    target: target_sentence(g, i),
-  }
-  const em = edge_map(g)
-  const sm = source_map(g)
-  const tm = target_map(g)
-  const unseen = Utils.unique_check()
-  return Utils.fix(init, ({source, target}) => {
-    const visit = (id0: string) => {
-      const edge = em.get(id0)
-      if (edge && unseen(edge.id)) {
-        for (let id of edge.ids) {
-          let i = tm.get(id)
-          if (i !== undefined) {
-            target = T.span_merge(target, target_sentence(g, i))
-          }
-          let j = sm.get(id)
-          if (j !== undefined) {
-            source = T.span_merge(source, {begin: j, end: j})
-          }
-        }
-      }
-    }
-    for (let i = target.begin; i <= target.end; ++i) {
-      const tid = g.target[i].id
-      if (tid && unseen(tid)) {
-        visit(tid)
-      }
-    }
-    if (source.begin >= 0) {
-      for (let i = source.begin; i <= source.end; ++i) {
-        const sid = g.source[i].id
-        if (sid && unseen(sid)) {
-          visit(sid)
-        }
-      }
-    }
-    return {source, target}
-  })
 }
 
 /** The subgraph from a subspan
 
   const g = init('apa bepa . cepa depa . epa')
-  target_text(subgraph(g, sentence(g, 3))) // => 'cepa depa . '
+  target_text(subgraph(g, sentences(g, 3))) // => 'cepa depa . '
 
 */
 export function subgraph(g: Graph, s: Subspan): Graph {
@@ -1056,19 +1082,19 @@ export function subgraph(g: Graph, s: Subspan): Graph {
   return {source, target, edges}
 }
 
-function position_sentence(g: Graph, character_offset: number): Subspan {
-  return sentence(g, T.token_at(target_texts(g), character_offset).token)
-}
-
 export function sentence_subspans_around_positions(
   g: Graph,
   positions: number[]
 ): Subspan | undefined {
   const N = target_text(g).length
   const nearby = Utils.flatMap(positions, i => [i - 1, i, i + 1])
-  const subspans = nearby.filter(i => i >= 0 && i < N).map(i => position_sentence(g, i))
-  if (subspans.length > 0) {
-    return subspan_merge(subspans)
+  const in_bounds = nearby.filter(i => Utils.within(0, i, N))
+  const indicies = in_bounds.map(i => ({
+    side: 'target' as 'target',
+    index: T.token_at(target_texts(g), i).token,
+  }))
+  if (indicies.length > 0) {
+    return sentences_around(g, indicies)
   }
   return undefined
 }
@@ -1078,7 +1104,11 @@ export function sentence_subspans_around_positions(
 Uses merge_series which is very inefficient
 */
 export function sentence_groups<K extends string>(gs: Record<K, Graph>): Record<K, Subspan>[] {
-  return Utils.merge_series(record.map(gs, g => sentences(g)), subspan_merge, R.eqProps('source'))
+  return Utils.merge_series(
+    record.map(gs, g => all_sentences(g)),
+    subspan_merge,
+    R.eqProps('source')
+  )
 }
 
 /** Modify the labels at an identifier

@@ -1046,3 +1046,17 @@ export function edit_range(s0: string, s: string): {from: number; to: number} {
 export function within(lo: number, x: number, hi: number) {
   return lo <= x && x < hi
 }
+
+/**
+
+  findLastIndex(range(10), x => x % 2 == 0) // => 8
+  findLastIndex(range(10), x => x % 2 == 1) // => 9
+
+  // returns xs.length if not found:
+  findLastIndex(range(10), x => x > 100) // => 10
+
+*/
+export function findLastIndex<A>(xs: A[], f: (v: A, i: number) => boolean): number {
+  const op = (rindex: number) => xs.length - rindex - 1
+  return op(xs.findIndex((_, rindex) => f(xs[op(rindex)], op(rindex))))
+}

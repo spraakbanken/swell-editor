@@ -278,8 +278,8 @@ describe('diff', () => {
 {
   const sentence = graph.chain(g => QC.between(0, g.target.length).map(i => ({g, i})))
 
-  qc('sentence subgraph invariant', sentence, ({g, i}, p) =>
-    p.equals(G.check_invariant(G.subgraph(g, G.sentence(g, i))), 'ok')
+  qc('sentences subgraph invariant', sentence, ({g, i}, p) =>
+    p.equals(G.check_invariant(G.subgraph(g, p.tap(G.sentences(g, i)))), 'ok')
   )
 }
 

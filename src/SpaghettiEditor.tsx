@@ -614,7 +614,7 @@ function stress(store: Store<State>) {
     window.setTimeout(() => {
       const g = G.modify(store.get().graph.now, 10, 10, i + ' ' + i + ' ')
       store.at('graph').modify(Undo.advance_to(g))
-      go(i-1)
+      go(i - 1)
     }, 1)
   }
   go(10)
