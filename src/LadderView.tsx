@@ -64,7 +64,7 @@ export class Thunk<D> extends React.Component<ThunkProps<D>> {
 export function thunk<D>(dep: D, key: string | number | undefined, child: () => VNode) {
   return (
     <Thunk dep={dep} key={key}>
-      {child}
+      {() => child()}
     </Thunk>
   )
 }
@@ -386,84 +386,93 @@ export function Ladder(
   const grids = D.DiffToGrid(rd)
   const u = grids.upper
   const l = grids.lower
+  const c = Utils.count<string>()
   return (
     <div className={`${LadderStyle} ${clean_ul} ${Unselectable} ladder`}>
       {rd.map((d, i) =>
-        thunk({d, u: u[i], l: l[i], h: d.id === hover_id, hanywhere: !!hover_id}, d.id, () => {
-          function HoverSpan(token_id: string, v: VNode) {
+        thunk(
+          {...d, index: undefined, u: u[i], l: l[i], h: d.id === hover_id, hanywhere: !!hover_id},
+          d.id + '#' + c.inc(d.id),
+          () => {
+            function HoverSpan(token_id: string, v: VNode) {
+              return (
+                <span
+                  key={token_id}
+                  className={
+                    'Selectable' + (selected.some(id => id === token_id) ? ' Selected' : '')
+                  }
+                  onMouseDown={e => {
+                    if (onSelect) {
+                      e.stopPropagation()
+                      onSelect([token_id])
+                    }
+                  }}>
+                  {v}
+                </span>
+              )
+            }
+            const labels = g.edges[d.id].labels.filter(lbl => lbl.length > 0)
+            const brow_threshold = side ? (labels.length > 0 ? 0 : 1) : 1
+            const [s, t] = Utils.expr((): [VNode, VNode] => {
+              switch (d.edit) {
+                case 'Edited':
+                  return [
+                    <div style={{position: 'relative'}}>
+                      {d.source_diffs.map((ds, i) => HoverSpan(d.source[i].id, deletes(ds)))}
+                      {d.source.length > brow_threshold && brows[~~d.manual].under}
+                    </div>,
+                    <div style={{position: 'relative'}}>
+                      {d.target_diffs.map((ds, i) => HoverSpan(d.target[i].id, inserts(ds)))}
+                      {d.target.length > brow_threshold && brows[~~d.manual].above}
+                    </div>,
+                  ]
+                case 'Dragged':
+                  return [
+                    <div>{HoverSpan(d.source.id, deletes(d.source_diff))}</div>,
+                    <React.Fragment />,
+                  ]
+                case 'Dropped':
+                  return [
+                    <React.Fragment />,
+                    <div>{HoverSpan(d.target.id, inserts(d.target_diff))}</div>,
+                  ]
+              }
+            })
+            const show_label_now = u[i].some(b => b.y1 == 1) || l[i].some(b => b.y1 == 0)
+            const has_line_below_label = show_label_now && l[i].length > 0
+            const line_below_label =
+              has_line_below_label && !side ? [{x0: 0.5, y0: 0, x1: 0.5, y1: 1, id: d.id}] : []
+            const mid = Column(
+              line_below_label,
+              labels.length > 0 &&
+                show_label_now && (
+                  <div className={BorderCell}>
+                    <div>{labels.map((l, i) => <span key={i}>{l}</span>)}</div>
+                  </div>
+                )
+            )
+            const on_hover: OnHover = id => onHover && hover_id !== id && onHover(id)
             return (
-              <span
-                key={token_id}
-                className={'Selectable' + (selected.some(id => id === token_id) ? ' Selected' : '')}
+              <ul
                 onMouseDown={e => {
                   if (onSelect) {
-                    e.stopPropagation()
-                    onSelect([token_id])
+                    onSelect(edges[d.id].ids)
                   }
-                }}>
-                {v}
-              </span>
+                  e.stopPropagation()
+                }}
+                onMouseEnter={() => on_hover(d.id)}
+                onMouseLeave={() => on_hover(undefined)}>
+                {side === 'target' || <li className={'top ' + hoverClass(hover_id, d.id)}>{s}</li>}
+                {!side && <li className="upper">{Column(u[i])}</li>}
+                <li className={(side || '') + ' mid'}>{mid}</li>
+                {!side && <li className="lower">{Column(l[i])}</li>}
+                {side === 'source' || (
+                  <li className={'bottom ' + hoverClass(hover_id, d.id)}>{t}</li>
+                )}
+              </ul>
             )
           }
-          const labels = g.edges[d.id].labels.filter(lbl => lbl.length > 0)
-          const brow_threshold = side ? (labels.length > 0 ? 0 : 1) : 1
-          const [s, t] = Utils.expr((): [VNode, VNode] => {
-            switch (d.edit) {
-              case 'Edited':
-                return [
-                  <div style={{position: 'relative'}}>
-                    {d.source_diffs.map((ds, i) => HoverSpan(d.source[i].id, deletes(ds)))}
-                    {d.source.length > brow_threshold && brows[~~d.manual].under}
-                  </div>,
-                  <div style={{position: 'relative'}}>
-                    {d.target_diffs.map((ds, i) => HoverSpan(d.target[i].id, inserts(ds)))}
-                    {d.target.length > brow_threshold && brows[~~d.manual].above}
-                  </div>,
-                ]
-              case 'Dragged':
-                return [
-                  <div>{HoverSpan(d.source.id, deletes(d.source_diff))}</div>,
-                  <React.Fragment />,
-                ]
-              case 'Dropped':
-                return [
-                  <React.Fragment />,
-                  <div>{HoverSpan(d.target.id, inserts(d.target_diff))}</div>,
-                ]
-            }
-          })
-          const show_label_now = u[i].some(b => b.y1 == 1) || l[i].some(b => b.y1 == 0)
-          const has_line_below_label = show_label_now && l[i].length > 0
-          const line_below_label =
-            has_line_below_label && !side ? [{x0: 0.5, y0: 0, x1: 0.5, y1: 1, id: d.id}] : []
-          const mid = Column(
-            line_below_label,
-            labels.length > 0 &&
-              show_label_now && (
-                <div className={BorderCell}>
-                  <div>{labels.map((l, i) => <span key={i}>{l}</span>)}</div>
-                </div>
-              )
-          )
-          const on_hover: OnHover = id => onHover && hover_id !== id && onHover(id)
-          return (
-            <ul
-              onMouseDown={e => {
-                if (onSelect) {
-                  onSelect(edges[d.id].ids)
-                }
-                e.stopPropagation()
-              }}
-              onMouseEnter={() => on_hover(d.id)}
-              onMouseLeave={() => on_hover(undefined)}>
-              {side === 'target' || <li className={'top ' + hoverClass(hover_id, d.id)}>{s}</li>}
-              {!side && <li className="upper">{Column(u[i])}</li>}
-              <li className={(side || '') + ' mid'}>{mid}</li>
-              {!side && <li className="lower">{Column(l[i])}</li>}
-              {side === 'source' || <li className={'bottom ' + hoverClass(hover_id, d.id)}>{t}</li>}
-            </ul>
-          )
-        })
+        )
       )}
     </div>
   )
