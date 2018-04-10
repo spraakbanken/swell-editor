@@ -603,6 +603,7 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
 
 function stress(store: Store<State>) {
   const source = Utils.range(100).join(' ')
+  // const source = Utils.range(100).map(() => Utils.range(25).join(' ')).join('.\n')
   store.set({
     ...init,
     graph: Undo.init(G.init(source, false)),
@@ -612,7 +613,7 @@ function stress(store: Store<State>) {
       return
     }
     window.setTimeout(() => {
-      const g = G.modify(store.get().graph.now, 10, 10, '' + i)
+      const g = G.modify(store.get().graph.now, 10, 10, i + '')
       store.at('graph').modify(Undo.advance_to(g))
       go(i - 1)
     }, 1)
