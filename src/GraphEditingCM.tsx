@@ -103,7 +103,6 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
       const doc = cm.getDoc()
       const h = Index.cursor('head').toToken().index
       const a = Index.cursor('anchor').toToken().index
-      Utils.stdout({h, a})
       if (h != null && a != null) {
         const [begin, end] = Utils.numsort([h, a])
         const g = graph.get()
@@ -162,26 +161,36 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
     })
   )
 
+  function texts_differ(): undefined | {graph_text: string; editor_text: string} {
+    const graph_text = T.text(graph.get()[side]).slice(0, -1)
+    const editor_text = cm.getDoc().getValue()
+    if (graph_text !== editor_text) {
+      return {graph_text, editor_text}
+    } else {
+      return undefined
+    }
+  }
+
   cm.on('change', (_, change) => {
-    if (change.origin != 'setValue') {
+    if (texts_differ()) {
       store.transaction(() => {
         const g = graph.get()
         history.modify(Undo.advance)
         graph.set(G.set_side(g, side, cm.getDoc().getValue() + ' '))
-        update_cursor()
       })
     }
   })
 
   function graph_to_cm() {
-    const graph_text = T.text(graph.get()[side]).slice(0, -1)
-    const editor_text = cm.getDoc().getValue()
-    if (graph_text !== editor_text) {
-      cm.setValue(graph_text)
-      const {from, to} = Utils.edit_range(graph_text, editor_text)
+    const t = texts_differ()
+    if (t) {
+      const {from, to, insert} = Utils.edit_range(t.editor_text, t.graph_text)
+      Utils.stdout({...t, from, to, insert})
       const doc = cm.getDoc()
-      doc.setSelection(doc.posFromIndex(from), doc.posFromIndex(to))
-      update_cursor()
+      cm.operation(() => {
+        doc.setSelection(doc.posFromIndex(from), doc.posFromIndex(to))
+        doc.replaceSelection(insert)
+      })
     }
   }
 

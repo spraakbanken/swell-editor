@@ -943,22 +943,28 @@ export function setIfChanged<A>(store: Store<A>, value: A) {
 
 /**
 
-  edit_range('0123456789', '0189') // => {from: 2, to: 8}
-  edit_range('0123456789', '01') // => {from: 2, to: 10}
-  edit_range('0123456789', '89') // => {from: 0, to: 8}
-  edit_range('0123456789', '') // => {from: 0, to: 10}
+  edit_range('0123456789', '0189') // => {from: 2, to: 8, insert: ''}
+  edit_range('0123456789', '01') // => {from: 2, to: 10, insert: ''}
+  edit_range('0123456789', '89') // => {from: 0, to: 8, insert: ''}
+  edit_range('0123456789', '') // => {from: 0, to: 10, insert: ''}
 
-  edit_range('', '01') // => {from: 0, to: 0}
+  edit_range('0123456789', '01xyz89') // => {from: 2, to: 8, insert: 'xyz'}
+  edit_range('0123456789', '01xyz') // => {from: 2, to: 10, insert: 'xyz'}
+  edit_range('0123456789', 'xyz89') // => {from: 0, to: 8, insert: 'xyz'}
+  edit_range('0123456789', 'xyz') // => {from: 0, to: 10, insert: 'xyz'}
+
+  edit_range('', '01') // => {from: 0, to: 0, insert: '01'}
 
 */
-export function edit_range(s0: string, s: string): {from: number; to: number} {
+export function edit_range(s0: string, s: string): {from: number; to: number; insert: string} {
   const patches = token_diff(s0, s)
   const pre = R.takeWhile<[number, string]>(i => i[0] == 0, patches)
   const post = R.takeLastWhile<[number, string]>(i => i[0] == 0, R.drop(pre.length, patches))
   const from = pre.map(i => i[1]).join('').length
   const postlen = post.map(i => i[1]).join('').length
   const to = s0.length - postlen
-  return {from, to}
+  const insert = s.slice(from, s.length - (s0.length - to))
+  return {from, to, insert}
 }
 
 export function within(lo: number, x: number, hi: number) {
