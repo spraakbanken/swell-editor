@@ -10,31 +10,78 @@ import * as T from './Token'
 import {KV} from './Utils'
 import * as record from './record'
 
-const dnd = Utils.ADT('edit')
-  .alt('Dropped')<{target: Token; id: string; manual: boolean}>()
-  .alt('Dragged')<{source: Token; id: string; manual: boolean}>()
-const diff = dnd.alt('Edited')<{source: Token[]; target: Token[]; id: string; manual: boolean}>()
+export interface Dropped {
+  edit: 'Dropped'
+  target: Token
+  id: string
+  manual: boolean
+}
 
-export type Dropped = typeof diff.Cons.Dropped
+export const Dropped = (target: Token, id: string, manual: boolean): Dropped => ({
+  edit: 'Dropped',
+  target,
+  id,
+  manual,
+})
 
-export const Dropped = (target: Token, id: string, manual: boolean) =>
-  diff.cons.Dropped({target, id, manual})
+export interface Dragged {
+  edit: 'Dragged'
+  source: Token
+  id: string
+  manual: boolean
+}
 
-export type Dragged = typeof diff.Cons.Dragged
+export const Dragged = (source: Token, id: string, manual: boolean): Dragged => ({
+  edit: 'Dragged',
+  source,
+  id,
+  manual,
+})
 
-export const Dragged = (source: Token, id: string, manual: boolean): Dragged =>
-  diff.cons.Dragged({source, id, manual})
+export interface Edited {
+  edit: 'Edited'
+  source: Token[]
+  target: Token[]
+  id: string
+  manual: boolean
+}
 
-export type Edited = typeof diff.Cons.Edited
+export const Edited = (source: Token[], target: Token[], id: string, manual: boolean): Edited => ({
+  edit: 'Edited',
+  source,
+  target,
+  id,
+  manual,
+})
 
-export const Edited = (source: Token[], target: Token[], id: string, manual: boolean): Edited =>
-  diff.cons.Edited({source, target, id, manual})
+export type Diff = Dropped | Dragged | Edited
 
-export type Diff = typeof diff.Ty
+export interface DiffCases {
+  Dropped: Dropped
+  Dragged: Dragged
+  Edited: Edited
+}
 
-export const {cons, match} = diff
+export interface DndCases {
+  Dropped: Dropped
+  Dragged: Dragged
+}
 
-export const dnd_match = dnd.match
+export function match<R>(
+  cases:
+    | {[K in keyof DiffCases]: (a: DiffCases[K]) => R}
+    | {[K in keyof DiffCases]?: (a: DiffCases[K]) => R} & {default: (d: Diff) => R}
+): (d: Diff) => R {
+  return d => ((cases as any)[d.edit] || (cases as any).default)(d)
+}
+
+export function dnd_match<R>(
+  cases:
+    | {[K in keyof DndCases]: (a: DndCases[K]) => R}
+    | {[K in keyof DndCases]?: (a: DndCases[K]) => R} & {default: (d: Diff) => R}
+): (d: Diff) => R {
+  return d => ((cases as any)[d.edit] || (cases as any).default)(d)
+}
 
 export const tokens = match({
   Edited: d => [...d.source, ...d.target],
