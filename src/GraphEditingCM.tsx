@@ -107,7 +107,6 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
         const [begin, end] = Utils.numsort([h, a])
         const g = graph.get()
         const N = g[side].length
-        console.log({begin, end, d, N})
         if (Utils.within(0, begin + d, N) && Utils.within(0, end + d, N)) {
           history.modify(Undo.advance_to(G.rearrange(g, begin, end, d > 0 ? end + d : begin + d)))
           // update CM text now to set the selection at the moved word(s)
@@ -206,7 +205,6 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
   function set_marks() {
     Utils.timeit('set_marks', () => {
       cm.operation(() => {
-        console.log('Set marks', side)
         const doc = cm.getDoc()
         doc.getAllMarks().map(m => m.clear())
         const g = graph.get()
