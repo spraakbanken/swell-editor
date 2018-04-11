@@ -36,6 +36,8 @@ export interface State {
   readonly selected: Record<string, true>
   readonly subspan?: G.Subspan
   readonly side_restriction?: G.Side
+  /** for hot module reloading, bumped at each reload and used to make sure thunked components get updated */
+  readonly generation: number
 }
 
 export const init: State = {
@@ -45,6 +47,7 @@ export const init: State = {
   selected: {},
   subspan: undefined,
   side_restriction: undefined,
+  generation: 0,
 }
 
 function RestrictionButtons(store: Store<G.Side | undefined>) {
@@ -318,10 +321,11 @@ export function App(store: Store<State>): () => VNode {
   global.G = G
   global.Utils = Utils
   global.stress = () => stress(store)
+  store.at('generation').modify(i => i + 1)
   store
     .at('graph')
     .at('now')
-    .storage_connect('swell-spaghetti-4')
+    .storage_connect('swell-spaghetti-5')
 
   store
     .at('graph')
@@ -412,6 +416,7 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
             hoverId={state.hover_id}
             onHover={hover_id => store.update({hover_id})}
             selectedIds={Object.keys(state.selected)}
+            generation={state.generation}
             onSelect={ids => {
               const selected = store.get().selected
               const b = ids.every(id => selected[id]) ? undefined : true

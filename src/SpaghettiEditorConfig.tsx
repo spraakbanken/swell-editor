@@ -1,4 +1,3 @@
-
 export interface Example {
   source: string
   target: string
@@ -57,4 +56,3 @@ const order_changing_labels: Record<string, true> = {
 }
 
 export const config = {order_changing_labels, examples}
-

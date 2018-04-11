@@ -291,10 +291,21 @@ export interface LadderProps {
   hoverId?: string
   selectedIds?: string[]
   side?: G.Side
+  /** for hot module reloading, bumped at each reload and used to make sure thunked components get updated */
+  generation?: number
 }
 
 export function Ladder(props: LadderProps): React.ReactElement<LadderProps> {
-  const {graph, orderChangingLabel, onHover, onSelect, hoverId, selectedIds, side} = props
+  const {
+    graph,
+    orderChangingLabel,
+    onHover,
+    onSelect,
+    hoverId,
+    selectedIds,
+    side,
+    generation,
+  } = props
   const selected_ids = selectedIds || []
   const edges = graph.edges
   const rd0 = RD.enrichen(graph, orderChangingLabel)
@@ -319,6 +330,7 @@ export function Ladder(props: LadderProps): React.ReactElement<LadderProps> {
             hover_status: d.id === hoverId,
             e: edges[d.id],
             selected_status: edges[d.id].ids.map(x => selected_ids.some(id => id === x)),
+            generation,
           },
           d.id + '#' + c.inc(d.id),
           () => {
