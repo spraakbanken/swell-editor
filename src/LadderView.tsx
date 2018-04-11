@@ -8,20 +8,6 @@ import * as Utils from './Utils'
 import * as record from './record'
 import * as D from './Diff'
 
-function RestrictToSide(rd: RD.RichDiff[], side?: G.Side): RD.RichDiff[] {
-  if (side === 'source') {
-    return rd
-      .filter(d => d.edit != 'Dropped')
-      .map(d => (d.edit == 'Edited' ? {...d, target: [], target_diffs: []} : d))
-  } else if (side === 'target') {
-    return rd
-      .filter(d => d.edit != 'Dragged')
-      .map(d => (d.edit == 'Edited' ? {...d, source: [], source_diffs: []} : d))
-  } else {
-    return rd
-  }
-}
-
 export type ThunkProps<D> = {dep: D; children: () => VNode}
 
 export class Thunk<D> extends React.Component<ThunkProps<D>> {
@@ -367,7 +353,7 @@ export function Ladder(props: LadderProps): React.ReactElement<LadderProps> {
   const selected_ids = selectedIds || []
   const edges = graph.edges
   const rd0 = RD.enrichen(graph, orderChangingLabel)
-  const rd = RestrictToSide(rd0, side)
+  const rd = RD.restrict_to_side(rd0, side)
   const grids = D.mapGrids(D.DiffToGrid(rd), ({id}) => ({
     id,
     manual: graph.edges[id].manual === true,

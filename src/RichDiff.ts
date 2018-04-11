@@ -72,3 +72,17 @@ export function enrichen(
     }
   })
 }
+
+export function restrict_to_side(rd: RichDiff[], side?: G.Side): RichDiff[] {
+  if (side === 'source') {
+    return rd
+      .filter(d => d.edit != 'Dropped')
+      .map(d => (d.edit == 'Edited' ? {...d, target: [], target_diffs: []} : d))
+  } else if (side === 'target') {
+    return rd
+      .filter(d => d.edit != 'Dragged')
+      .map(d => (d.edit == 'Edited' ? {...d, source: [], source_diffs: []} : d))
+  } else {
+    return rd
+  }
+}
