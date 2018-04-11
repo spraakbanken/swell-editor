@@ -38,14 +38,12 @@ export function md(snippets: TemplateStringsArray, ...vnodes: VNode[]): VNode {
 
 export interface State {
   readonly slide: number
-  readonly source: string
-  readonly target: string
+  readonly print_mode: boolean
 }
 
 export const init: State = {
   slide: 0,
-  source: 'preamble apa:Ort bepacepa xu depa flepa:Comp florp^preamble',
-  target: 'apa bpea cpea dpeaflpae xlbabulr postscriptum^preamble woop^',
+  print_mode: false
 }
 
 function html_rem_aspect_ratio(ratio: number = 16 / 10) {
@@ -63,10 +61,7 @@ export function App(store: Store<State>): () => VNode {
   global.store = store
   global.reset = () => store.set(init)
   global.G = G
-  store.storage_connect('swell-slides')
-  store.at('source').modify(s => s || '')
-  store.at('target').modify(s => s || '')
-
+  store.storage_connect('swell-slides2')
   window.addEventListener('resize', () => html_rem_aspect_ratio(), true)
   html_rem_aspect_ratio()
   window.setTimeout(() => html_rem_aspect_ratio(), 1)
@@ -82,12 +77,14 @@ const SlideStyle = style(
     height: '20rem',
     margin: 'auto',
     padding: '0 1rem',
-    //borderBottom: '0.1em brown dotted',
     boxSizing: 'border-box',
     position: 'relative',
   },
   {
     $nest: {
+      '&.print_mode': {
+        borderBottom: '0.1em #aaa dotted',
+      },
       '& *, & *:after, & *:before': {
         boxSizing: 'border-box',
       },
@@ -170,6 +167,8 @@ export const Input = (store: Store<string>) => (
 
 export function View(store: Store<State>): VNode {
   const state = store.get()
+  const html = document.getElementsByTagName('html')[0]
+  html.style.overflow = state.print_mode ? null : 'hidden'
   const slides = [] as VNode[]
   const slide = (v: VNode) => slides.push(v)
   slide(md`
@@ -235,7 +234,6 @@ export function View(store: Store<State>): VNode {
     * Mats normaliserade först och fixade sen med länkarna
       * Konceptuellt ett nytt steg att länka ihop källtexten med hypotesen
     * Kan leda till en förenklad annoteringsprocess:
-
       * baserat på detta samt pga fåtalet komplicerade förflyttningar
   `)
   slide(md`
@@ -370,19 +368,24 @@ export function View(store: Store<State>): VNode {
 
       * där statistik kan fås fram (tex korp samt något för IAA)
   `)
-  return (
-    <div
-      className={SlideStyle}
+  function Slide(slide_node: VNode, key = 0) {
+    return <div
+      className={SlideStyle + (state.print_mode ? ' print_mode' : '')}
       onKeyDown={e => {
         if (e.key == 'ArrowDown' || e.key == ' ') {
           store.at('slide').modify(x => Math.min(x + 1, slides.length - 1))
         } else if (e.key == 'ArrowUp' || e.key == 'Enter') {
           store.at('slide').modify(x => Math.max(x - 1, 0))
+        } else if (e.key.toLowerCase() == 'p') {
+          store.at('print_mode').modify(b => !b)
         }
       }}
+      key={key}
       ref={e => e && e.focus()}
       tabIndex={-1}>
-      {slides[state.slide]}
+      {slide_node}
     </div>
-  )
+  }
+  return  state.print_mode? <div>{slides.map(Slide)}</div> : Slide(slides[state.slide])
+
 }
