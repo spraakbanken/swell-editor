@@ -43,7 +43,7 @@ export interface State {
 
 export const init: State = {
   slide: 0,
-  print_mode: false
+  print_mode: false,
 }
 
 function html_rem_aspect_ratio(ratio: number = 16 / 10) {
@@ -234,6 +234,7 @@ export function View(store: Store<State>): VNode {
     * Mats normaliserade först och fixade sen med länkarna
       * Konceptuellt ett nytt steg att länka ihop källtexten med hypotesen
     * Kan leda till en förenklad annoteringsprocess:
+
       * baserat på detta samt pga fåtalet komplicerade förflyttningar
   `)
   slide(md`
@@ -369,23 +370,24 @@ export function View(store: Store<State>): VNode {
       * där statistik kan fås fram (tex korp samt något för IAA)
   `)
   function Slide(slide_node: VNode, key = 0) {
-    return <div
-      className={SlideStyle + (state.print_mode ? ' print_mode' : '')}
-      onKeyDown={e => {
-        if (e.key == 'ArrowDown' || e.key == ' ') {
-          store.at('slide').modify(x => Math.min(x + 1, slides.length - 1))
-        } else if (e.key == 'ArrowUp' || e.key == 'Enter') {
-          store.at('slide').modify(x => Math.max(x - 1, 0))
-        } else if (e.key.toLowerCase() == 'p') {
-          store.at('print_mode').modify(b => !b)
-        }
-      }}
-      key={key}
-      ref={e => e && e.focus()}
-      tabIndex={-1}>
-      {slide_node}
-    </div>
+    return (
+      <div
+        className={SlideStyle + (state.print_mode ? ' print_mode' : '')}
+        onKeyDown={e => {
+          if (e.key == 'ArrowDown' || e.key == ' ') {
+            store.at('slide').modify(x => Math.min(x + 1, slides.length - 1))
+          } else if (e.key == 'ArrowUp' || e.key == 'Enter') {
+            store.at('slide').modify(x => Math.max(x - 1, 0))
+          } else if (e.key.toLowerCase() == 'p') {
+            store.at('print_mode').modify(b => !b)
+          }
+        }}
+        key={key}
+        ref={e => e && e.focus()}
+        tabIndex={-1}>
+        {slide_node}
+      </div>
+    )
   }
-  return  state.print_mode? <div>{slides.map(Slide)}</div> : Slide(slides[state.slide])
-
+  return state.print_mode ? <div>{slides.map(Slide)}</div> : Slide(slides[state.slide])
 }
