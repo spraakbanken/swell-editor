@@ -397,7 +397,7 @@ export function Ladder(props: LadderProps): React.ReactElement<LadderProps> {
               line_below_label,
               labels.length > 0 &&
                 show_label_now && (
-                  <div className={BorderCell}>
+                  <div className={BorderCell + ' ' + hoverClass(hoverId, d.id)}>
                     <div>{labels.map((l, i) => <span key={i}>{l}</span>)}</div>
                   </div>
                 )
