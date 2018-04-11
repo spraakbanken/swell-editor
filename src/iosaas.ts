@@ -32,7 +32,7 @@ function string_to_data(query_string: string): Data {
 }
 
 function data_to_react(data: Data): React.ReactElement<{}> {
-  return L.Ladder(data.graph)
+  return L.ladder(data.graph)
 }
 
 export const image: Image<Data> = {

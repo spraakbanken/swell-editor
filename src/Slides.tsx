@@ -17,7 +17,7 @@ declare var require: any
 const Remarkable = require('remarkable')
 const remarkable = new Remarkable({linkify: true, typographer: true, html: true})
 
-export function md(snippets: TemplateStringsArray, ...vnodes: VNode[]): VNode {
+export function md(snippets: TemplateStringsArray, ...vnodes: L.VNode[]): VNode {
   const init_spaces = (snippets[0].match(/^[^\n\S]*(?=\S)/m) || [''])[0]
   const drop = (s: string) =>
     s
@@ -107,7 +107,7 @@ const SlideStyle = style(
 
 function secedge() {
   const graph = G.modify_tokens(G.init('en äpple'), 0, 1, 'ett ')
-  const apple = L.Ladder(graph)
+  const apple = L.ladder(graph)
   const side_by_side: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'row',

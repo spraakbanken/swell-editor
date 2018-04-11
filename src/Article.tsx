@@ -8,7 +8,6 @@ import * as csstips from 'csstips'
 import * as D from './Diff'
 import * as G from './Graph'
 import * as L from './LadderView'
-import {Align, align} from './LadderView'
 import * as C from './Compact'
 
 import * as RD from './RichDiff'
@@ -123,20 +122,20 @@ export function alignment(): VNode {
 
     Initially we start with the target being equal to the source:
 
-    ${L.Ladder(full.g0)}
+    ${L.ladder(full.g0)}
 
     We want to edit the target text as if it were in an input text box, without
     considering that the tokens in the text is part of a linked structure.
 
     If we edit the target text, by manually insterting and deleting characters, the program? gives us
 
-    ${L.Ladder(full.g)}
+    ${L.ladder(full.g)}
 
     These alignments are all correct except for the word order movement.
     How was this calculated?
     Start with a standard diff edit script on the _character-level_:
 
-    ${L.Ladder(full.g_unlab)}
+    ${L.ladder(full.g_unlab)}
 
     We calculate this using Myers' diff algorithm provided by the
     [diff-match-patch](https://github.com/google/diff-match-patch) library.
@@ -147,7 +146,7 @@ export function alignment(): VNode {
     The diff where each character link is associated with the identifiers
     it is related to looks like this:
 
-    ${L.Ladder(full.g_label)}
+    ${L.ladder(full.g_label)}
 
     We can now read off from this which tokens should be aligned, namely these six groups:
 
@@ -182,16 +181,16 @@ export function alignment(): VNode {
 
     We thus proceed by removing that word and aligning the rest of the text automatically to get this:
 
-    ${L.Ladder(wo_always.g_unlab)}
+    ${L.ladder(wo_always.g_unlab)}
 
     When we now look at the identifiers, we see that the identifiers _t1_ and _s5_ for _always_
     are skipped (because we already know how to connect these):
 
-    ${L.Ladder(wo_always.g_label)}
+    ${L.ladder(wo_always.g_label)}
 
     We now read off the aligments to get:
 
-    ${L.Ladder(wo_always.g)}
+    ${L.ladder(wo_always.g)}
 
     We can now insert the missing words into their correct places based on position in the respective sentences
     to get the desired alignment:
@@ -367,13 +366,11 @@ export function View(store: Store<State>): VNode {
     ` a@1  a~@1 a~@1 a~@1 b@2 b~@2 b~@2 b~@2 // b~@2 b~@2 a~@1 a~@1 a~@1 `,
     ` a@1  a~@1 a~@1 b@2 b~@2 b~@2 b~@2 // b~@2 b~@2 a~@1 a~@1 a~@1      `,
     ` a@1 a~@1 v a~@1 w a~@1 a~@1 // a~@1 a~@1 v a~@1 w a~@1 a~@1        `,
-  ]
-    .map(L.align)
-    .map(x => (
-      <div className="NoManualBlue" style={{display: 'inline-table', marginRight: '40px'}}>
-        {x}
-      </div>
-    ))
+  ].map(s => (
+    <div className="NoManualBlue" style={{display: 'inline-table', marginRight: '40px'}}>
+      {align(s)}
+    </div>
+  ))
 
   return (
     <div className={ArticleStyle}>
@@ -383,4 +380,17 @@ export function View(store: Store<State>): VNode {
       <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap'}}>{gallery}</div>
     </div>
   )
+}
+
+export function Align(source: string, target: string) {
+  const s = C.parse(source)
+  const t = C.parse(target)
+  return L.ladder(C.units_to_graph(s, t))
+}
+
+export function align(x: string) {
+  const [source, target] = x.split('//')
+  const s = C.parse(source)
+  const t = C.parse(target)
+  return L.ladder(C.units_to_graph(s, t))
 }

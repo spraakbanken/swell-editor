@@ -9,7 +9,7 @@ import * as Utils from '../src/Utils'
 import * as record from '../src/record'
 
 qc('Ladder text sanity', graph.small(), (g, p) => {
-  const dom = enzyme.shallow(L.Ladder(g))
+  const dom = enzyme.shallow(L.ladder(g))
 
   function text_somewhere(s: string) {
     function go(node: enzyme.ShallowWrapper): boolean {

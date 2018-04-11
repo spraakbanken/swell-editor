@@ -22,26 +22,6 @@ function RestrictToSide(rd: RD.RichDiff[], side?: G.Side): RD.RichDiff[] {
   }
 }
 
-export function LadderComponent(props: {
-  graph: G.Graph
-  orderChangingLabel?: (label: string) => boolean
-  onHover?: OnHover
-  onSelect?: OnSelect
-  hoverId?: string
-  selectedIds?: string[]
-  side?: G.Side
-}) {
-  return Ladder(
-    props.graph,
-    props.orderChangingLabel,
-    props.hoverId,
-    props.onHover,
-    props.selectedIds,
-    props.onSelect,
-    props.side
-  )
-}
-
 export type ThunkProps<D> = {dep: D; children: () => VNode}
 
 export class Thunk<D> extends React.Component<ThunkProps<D>> {
@@ -372,25 +352,26 @@ function Column(column: D.Line<LineMeta>[], rel: VNode | null | false = null): V
   )
 }
 
-export function Ladder(
-  g: G.Graph,
-  order_changing_label?: (label: string) => boolean,
-  hover_id?: string,
-  onHover?: OnHover,
-  selected: string[] = [],
-  onSelect?: OnSelect,
+export interface LadderProps {
+  graph: G.Graph
+  orderChangingLabel?: (label: string) => boolean
+  onHover?: OnHover
+  onSelect?: OnSelect
+  hoverId?: string
+  selectedIds?: string[]
   side?: G.Side
-): VNode {
-  if (selected.length > 0) {
-    hover_id = undefined
-  }
-  const edges = g.edges
-  const rd0 = RD.enrichen(g, order_changing_label)
+}
+
+export function Ladder(props: LadderProps): React.ReactElement<LadderProps> {
+  const {graph, orderChangingLabel, onHover, onSelect, hoverId, selectedIds, side} = props
+  const selected_ids = selectedIds || []
+  const edges = graph.edges
+  const rd0 = RD.enrichen(graph, orderChangingLabel)
   const rd = RestrictToSide(rd0, side)
   const grids = D.mapGrids(D.DiffToGrid(rd), ({id}) => ({
     id,
-    manual: g.edges[id].manual === true,
-    hover: hover_id === id,
+    manual: graph.edges[id].manual === true,
+    hover: hoverId === id,
   }))
   const u = grids.upper
   const l = grids.lower
@@ -404,9 +385,9 @@ export function Ladder(
             index: undefined,
             u: u[i],
             l: l[i],
-            hover_status: d.id === hover_id,
+            hover_status: d.id === hoverId,
             e: edges[d.id],
-            selected_status: edges[d.id].ids.map(x => selected.some(id => id === x)),
+            selected_status: edges[d.id].ids.map(x => selected_ids.some(id => id === x)),
           },
           d.id + '#' + c.inc(d.id),
           () => {
@@ -415,7 +396,7 @@ export function Ladder(
                 <span
                   key={token_id}
                   className={
-                    'Selectable' + (selected.some(id => id === token_id) ? ' Selected' : '')
+                    'Selectable' + (selected_ids.some(id => id === token_id) ? ' Selected' : '')
                   }
                   onMouseDown={e => {
                     if (onSelect) {
@@ -427,7 +408,7 @@ export function Ladder(
                 </span>
               )
             }
-            const labels = g.edges[d.id].labels.filter(lbl => lbl.length > 0)
+            const labels = graph.edges[d.id].labels.filter(lbl => lbl.length > 0)
             const brow_threshold = side ? (labels.length > 0 ? 0 : 1) : 1
             const [s, t] = Utils.expr((): [VNode, VNode] => {
               switch (d.edit) {
@@ -464,7 +445,7 @@ export function Ladder(
                       y0: 0,
                       x1: 0.5,
                       y1: 1,
-                      meta: {id: d.id, manual: d.manual, hover: d.id === hover_id},
+                      meta: {id: d.id, manual: d.manual, hover: d.id === hoverId},
                     },
                   ]
                 : []
@@ -477,7 +458,7 @@ export function Ladder(
                   </div>
                 )
             )
-            const on_hover: OnHover = id => onHover && hover_id !== id && onHover(id)
+            const on_hover: OnHover = id => onHover && hoverId !== id && onHover(id)
             return (
               <ul
                 onMouseDown={e => {
@@ -488,12 +469,12 @@ export function Ladder(
                 }}
                 onMouseEnter={() => on_hover(d.id)}
                 onMouseLeave={() => on_hover(undefined)}>
-                {side === 'target' || <li className={'top ' + hoverClass(hover_id, d.id)}>{s}</li>}
+                {side === 'target' || <li className={'top ' + hoverClass(hoverId, d.id)}>{s}</li>}
                 {!side && <li className="upper">{Column(u[i])}</li>}
                 <li className={(side || '') + ' mid'}>{mid}</li>
                 {!side && <li className="lower">{Column(l[i])}</li>}
                 {side === 'source' || (
-                  <li className={'bottom ' + hoverClass(hover_id, d.id)}>{t}</li>
+                  <li className={'bottom ' + hoverClass(hoverId, d.id)}>{t}</li>
                 )}
               </ul>
             )
@@ -504,17 +485,6 @@ export function Ladder(
   )
 }
 
-import * as C from './Compact'
-
-export function Align(source: string, target: string) {
-  const s = C.parse(source)
-  const t = C.parse(target)
-  return Ladder(C.units_to_graph(s, t))
-}
-
-export function align(x: string) {
-  const [source, target] = x.split('//')
-  const s = C.parse(source)
-  const t = C.parse(target)
-  return Ladder(C.units_to_graph(s, t))
+export function ladder(graph: G.Graph): VNode {
+  return <Ladder graph={graph} />
 }

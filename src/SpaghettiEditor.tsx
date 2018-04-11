@@ -471,10 +471,6 @@ export function App(store: Store<State>): () => VNode {
     store.set(init)
   }
 
-  global.test = () => {
-    store.set({graph: Undo.init(G.init('this is an example', true)), selected: {}})
-  }
-
   store.ondiff(state => {
     const restricted = only_select_existing_words(state.graph.now, state.selected)
     restricted && store.update(restricted)
@@ -541,7 +537,7 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
           <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
         </div>
         <div className={'main' + (hovering ? ' hovering' : '')} style={{minHeight: '10em'}}>
-          <L.LadderComponent
+          <L.Ladder
             side={state.side_restriction}
             orderChangingLabel={s => config.order_changing_labels[s]}
             graph={state.subspan ? G.subgraph(graph.get(), state.subspan) : g}

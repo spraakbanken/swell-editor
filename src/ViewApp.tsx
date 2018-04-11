@@ -94,7 +94,7 @@ export function View(store: Store<State>): VNode {
                 marginBottom: '1.875em',
               }}>
               <li style={{flex: 1}}>{Utils.capitalize_head(m.annotator)}</li>
-              <li style={{flex: 6}}>{L.Ladder(m.graph, m.rich_diff)}</li>
+              <li style={{flex: 6}}>{L.ladder(m.graph)}</li>
             </ul>
           </React.Fragment>
         )
