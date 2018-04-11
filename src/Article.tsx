@@ -14,7 +14,7 @@ import * as RD from './RichDiff'
 import * as T from './Token'
 import * as Utils from './Utils'
 
-import {VNode} from './LadderView'
+import {VNode} from './ReactUtils'
 
 import {md} from './Slides'
 

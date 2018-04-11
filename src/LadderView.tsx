@@ -1,64 +1,17 @@
-import * as R from 'ramda'
 import * as React from 'react'
 import * as G from './Graph'
 import * as RD from './RichDiff'
-import {style, types} from 'typestyle'
+import {style} from 'typestyle'
 import * as csstips from 'csstips'
 import * as Utils from './Utils'
 import * as record from './record'
 import * as D from './Diff'
 
-export type ThunkProps<D> = {dep: D; children: () => VNode}
-
-export class Thunk<D> extends React.Component<ThunkProps<D>> {
-  constructor(props: ThunkProps<D>) {
-    super(props)
-  }
-
-  shouldComponentUpdate(nextProps: ThunkProps<D>) {
-    const same = R.equals(this.props.dep, nextProps.dep)
-    // same || Utils.stdout({dep: this.props.dep, next_dep: nextProps.dep, same})
-    return !same
-  }
-
-  render() {
-    // console.log('rendering ', this.props.dep)
-    return this.props.children()
-  }
-}
-
-export function thunk<D>(dep: D, key: string | number | undefined, child: () => VNode) {
-  return (
-    <Thunk dep={dep} key={key}>
-      {() => child()}
-    </Thunk>
-  )
-}
-
-export type VNode = React.ReactElement<{}>
-
-export const clean_ul = style(Utils.debugName('clean_ul'), {
-  $nest: {
-    '& ul, & ol': {
-      padding: '0px',
-    },
-    '& li': {
-      listStyle: 'none',
-    },
-  },
-})
+import {VNode} from './ReactUtils'
+import * as ReactUtils from './ReactUtils'
 
 const intended_font_size = 16
 const px = (i: number) => `${i / intended_font_size}em`
-
-export const Unselectable = style(Utils.debugName('Unselectable'), {
-  '-moz-user-select': 'none',
-  '-webkit-touch-callout': 'none',
-  '-webkit-user-select': 'none',
-  '-ms-user-select': 'none',
-  userSelect: 'none',
-  cursor: 'default',
-})
 
 const BorderCell = style(
   Utils.debugName('BorderCell'),
@@ -193,14 +146,6 @@ function PixelPath(d: string, className: string) {
   return <path d={d} className={className} vectorEffect="non-scaling-stroke" />
 }
 
-export function Key(nodes: VNode[], s: string | number = '') {
-  return (
-    <React.Fragment key={s}>
-      {nodes.map((n, i) => <React.Fragment key={i}>{n}</React.Fragment>)}
-    </React.Fragment>
-  )
-}
-
 function Line<M>({x0, y0, x1, y1}: D.Line<M>, className: string) {
   const ff = x1 != 0.5
   const yi = ff ? y1 : y0
@@ -262,7 +207,7 @@ const {inserts, deletes} = Utils.expr(() => {
   const diff_to_spans = (rules: Triplet<(s: string) => VNode | null>) => (
     token_diff: [number, string][]
   ) =>
-    Key(
+    ReactUtils.Key(
       Utils.expr(() => {
         const out = [] as VNode[]
         token_diff.map(([type, text]) => {
@@ -322,7 +267,7 @@ function Column(column: D.Line<LineMeta>[], rel: VNode | null | false = null): V
       {rel}
       {PixelPerfectSVG(
         <svg height="100%" width="100%" viewBox="0 0 1 1" preserveAspectRatio="none">
-          {Key([
+          {ReactUtils.Key([
             ...below.map(line =>
               Line(line, greyPath(line.meta.manual) + ' ' + (line.meta.hover ? ' hover ' : ''))
             ),
@@ -363,9 +308,9 @@ export function Ladder(props: LadderProps): React.ReactElement<LadderProps> {
   const l = grids.lower
   const c = Utils.count<string>()
   return (
-    <div className={`${LadderStyle} ${clean_ul} ${Unselectable} ladder`}>
+    <div className={`${LadderStyle} ${ReactUtils.clean_ul} ${ReactUtils.Unselectable} ladder`}>
       {rd.map((d, i) =>
-        thunk(
+        ReactUtils.thunk(
           {
             ...d,
             index: undefined,

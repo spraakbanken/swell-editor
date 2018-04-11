@@ -10,7 +10,7 @@ import * as L from './LadderView'
 import * as RD from './RichDiff'
 import * as T from './Token'
 
-import {VNode} from './LadderView'
+import {VNode} from './ReactUtils'
 
 export const ManualMarkClassName = 'ManualMark'
 export const HoverClassName = 'Hover'

@@ -11,7 +11,9 @@ import * as Utils from './Utils'
 import {GraphSegments} from './PilotData'
 import * as D from './Diff'
 import * as L from './LadderView'
-import {VNode} from './LadderView'
+
+import {VNode} from './ReactUtils'
+import * as ReactUtils from './ReactUtils'
 
 export interface State {
   readonly graph_segments: GraphSegments
@@ -50,7 +52,7 @@ export function View(store: Store<State>): VNode {
   const state = store.get()
   return (
     <div
-      className={L.clean_ul}
+      className={ReactUtils.clean_ul}
       style={{maxWidth: '50em', margin: 'auto', padding: '0 0.625em', fontSize: '16px'}}>
       <div style={{margin: '1.25em 0'}}>
         {Object.keys(Pilot.ByText)

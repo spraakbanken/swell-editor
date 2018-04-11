@@ -1,8 +1,7 @@
 import * as R from 'ramda'
 import * as React from 'react'
-import {Store, Lens, Undo, Stack} from 'reactive-lens'
-import {style, types, getStyles} from 'typestyle'
-import * as typestyle from 'typestyle'
+import {Store, Lens, Undo} from 'reactive-lens'
+import {style} from 'typestyle'
 import * as csstips from 'csstips'
 
 import {DropZone} from './DropZone'
@@ -18,7 +17,9 @@ import * as record from './record'
 
 import * as C from './Compact'
 
-import {VNode} from './LadderView'
+import {VNode} from './ReactUtils'
+import * as ReactUtils from './ReactUtils'
+import {Button, showhide} from './ReactUtils'
 
 import * as CM from './GraphEditingCM'
 
@@ -188,33 +189,6 @@ function LabelSidekick({store, onBlur}: {store: Store<State>; onBlur: () => void
   return null
 }
 
-export function Textarea({
-  store,
-  onRef,
-  ...props
-}: {store: Store<string>} & React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
-    onRef?: (e: HTMLTextAreaElement) => void
-  }) {
-  return (
-    <textarea
-      {...props}
-      value={store.get()}
-      ref={e => onRef && e && onRef(e)}
-      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => store.set(e.target.value)}
-    />
-  )
-}
-
-export function Input(store: Store<string>, tabIndex?: number) {
-  return (
-    <input
-      value={store.get()}
-      tabIndex={tabIndex}
-      onChange={(e: React.ChangeEvent<HTMLInputElement>) => store.set(e.target.value)}
-    />
-  )
-}
-
 interface ex {
   source: string
   target: string
@@ -263,12 +237,6 @@ challenges and discovered strategies to overcome the challenges .
   .trim()
   .split(/\n\n+/gm)
   .map(line => ex.apply({}, line.split('//').map(side => side.trim())))
-
-const Button = (label: string, title: string, on: () => void, enabled = true) => (
-  <button title={title} key={label} onClick={on} style={{cursor: 'pointer'}} disabled={!enabled}>
-    {label}
-  </button>
-)
 
 const topStyle = style({
   ...Utils.debugName('topStyle'),
@@ -397,50 +365,6 @@ const topStyle = style({
   },
 })
 
-export class If extends React.Component<
-  {
-    children: (b: boolean, set: (b?: any) => void) => React.ReactNode
-    init?: boolean
-  },
-  {b: boolean}
-> {
-  constructor(p: any) {
-    super(p)
-    this.state = {b: p.init === undefined ? false : p.init}
-  }
-  render() {
-    const b = this.state.b
-    return this.props.children(b, next => this.setState({b: typeof next === 'boolean' ? next : !b}))
-  }
-}
-
-function showhide(what: string, show: () => string | VNode, init = false) {
-  return (
-    <If init={init}>
-      {(b, flip) => {
-        let v
-        return (
-          <React.Fragment>
-            <a
-              style={{opacity: '0.85', justifySelf: 'end'} as any}
-              className="main"
-              href=""
-              onClick={e => (e.preventDefault(), flip())}>
-              {b ? 'hide' : 'show'} {what}
-            </a>
-            {b &&
-              ((v = show()), typeof v === 'string' ? <pre className="pre-box main">{v}</pre> : v)}
-          </React.Fragment>
-        )
-      }}
-    </If>
-  )
-}
-
-type side = 'source' | 'target'
-const sides = ['source' as side, 'target' as side]
-const op = (x: side) => (x == 'source' ? 'target' : 'source')
-
 const ws_url = 'https://ws.spraakbanken.gu.se/ws/swell'
 
 export function App(store: Store<State>): () => VNode {
@@ -560,11 +484,11 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
         </div>
         {showhide('compact representation', () => (
           <React.Fragment>
-            {sides.map((side, i) => (
+            {G.sides.map((side, i) => (
               <React.Fragment key={i}>
                 {Button('\u2b1a', 'clear', () => advance(() => units.at(side).set('')))}
                 {Button(i ? '\u21e1' : '\u21e3', 'copy to ' + side, () =>
-                  advance(() => units.at(op(side)).set(units.get()[side]))
+                  advance(() => units.at(G.opposite(side)).set(units.get()[side]))
                 )}
                 <input
                   defaultValue={units.at(side).get()}
@@ -649,7 +573,7 @@ function links(g: Graph) {
         'copy link',
         () => (
           <pre
-            className={'pre-box main ' + L.Unselectable}
+            className={'pre-box main ' + ReactUtils.Unselectable}
             style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}
             draggable={true}
             onDragStart={e => {

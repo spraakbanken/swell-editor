@@ -11,13 +11,13 @@ import * as RD from './RichDiff'
 import * as T from './Token'
 import * as Utils from './Utils'
 
-import {VNode} from './LadderView'
+import {VNode} from './ReactUtils'
 
 declare var require: any
 const Remarkable = require('remarkable')
 const remarkable = new Remarkable({linkify: true, typographer: true, html: true})
 
-export function md(snippets: TemplateStringsArray, ...vnodes: L.VNode[]): VNode {
+export function md(snippets: TemplateStringsArray, ...vnodes: VNode[]): VNode {
   const init_spaces = (snippets[0].match(/^[^\n\S]*(?=\S)/m) || [''])[0]
   const drop = (s: string) =>
     s

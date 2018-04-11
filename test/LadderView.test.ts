@@ -7,13 +7,14 @@ import {enzyme} from './Common'
 import * as L from '../src/LadderView'
 import * as Utils from '../src/Utils'
 import * as record from '../src/record'
+import * as ReactUtils from '../src/ReactUtils'
 
 qc('Ladder text sanity', graph.small(), (g, p) => {
   const dom = enzyme.shallow(L.ladder(g))
 
   function text_somewhere(s: string) {
     function go(node: enzyme.ShallowWrapper): boolean {
-      if (node.is(L.Thunk)) {
+      if (node.is(ReactUtils.Thunk)) {
         return go(node.dive())
       }
       return node.children().someWhere(w => node.text() == s || go(w))
