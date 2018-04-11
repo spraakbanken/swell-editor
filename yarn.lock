@@ -23,6 +23,12 @@
     "@types/express" "*"
     "@types/node" "*"
 
+"@types/bowser@^1.1.1":
+  version "1.1.1"
+  resolved "https://registry.npmjs.org/@types/bowser/-/bowser-1.1.1.tgz#9bbe3c93fef1c787f565d252ce51326ada506611"
+  dependencies:
+    bowser "*"
+
 "@types/chai@^4.1.2":
   version "4.1.2"
   resolved "https://registry.npmjs.org/@types/chai/-/chai-4.1.2.tgz#f1af664769cfb50af805431c407425ed619daa21"
@@ -943,6 +949,10 @@ boom@2.x.x:
   resolved "https://registry.npmjs.org/boom/-/boom-2.10.1.tgz#39c8918ceff5799f83f9492a848f625add0c766f"
   dependencies:
     hoek "2.x.x"
+
+bowser@*, bowser@^1.9.3:
+  version "1.9.3"
+  resolved "https://registry.npmjs.org/bowser/-/bowser-1.9.3.tgz#6643ae4d783f31683f6d23156976b74183862162"
 
 brace-expansion@^1.1.7:
   version "1.1.11"

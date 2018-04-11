@@ -29,6 +29,8 @@ import 'dejavu-fonts-ttf/ttf/DejaVuSans.ttf'
 
 import {config} from './SpaghettiEditorConfig'
 
+import * as bowser from 'bowser'
+
 export interface State {
   readonly graph: Undo<Graph>
   readonly hover_id?: string
@@ -38,6 +40,8 @@ export interface State {
   readonly side_restriction?: G.Side
   /** for hot module reloading, bumped at each reload and used to make sure thunked components get updated */
   readonly generation: number
+  /** error messages */
+  readonly errors: Record<string, true>
 }
 
 export const init: State = {
@@ -48,6 +52,7 @@ export const init: State = {
   subspan: undefined,
   side_restriction: undefined,
   generation: 0,
+  errors: {},
 }
 
 function RestrictionButtons(store: Store<G.Side | undefined>) {
@@ -309,13 +314,74 @@ const topStyle = style({
     '& button': {
       marginRight: '5px',
     },
+    '& .error': {
+      whiteSpace: 'pre-wrap',
+      backgroundColor: '#f2dede',
+      borderColor: '#ebccd1',
+      color: '#a94442',
+      padding: '15px',
+      marginBottom: '20px',
+      border: '1px solid transparent',
+      borderRadius: '4px',
+    },
+    '& .close': {
+      float: 'right',
+      textDecoration: 'none',
+      opacity: 0.4,
+    },
+    '& .close:hover': {
+      opacity: 0.8,
+    },
   },
 })
 
+function ShowErrors(store: Store<Record<string, true>>) {
+  return record.traverse(store.get(), (_, msg) => (
+    <div className="main error">
+      <a
+        className="close"
+        href="#"
+        title="dismiss"
+        onClick={e => {
+          store.via(Lens.key(msg)).set(undefined)
+          e.preventDefault()
+        }}>
+        ×
+      </a>
+      {msg}
+    </div>
+  ))
+}
+
 const ws_url = 'https://ws.spraakbanken.gu.se/ws/swell'
+
+function check_invariant(store: Store<State>): (g: Graph) => void {
+  return g => {
+    const inv = G.check_invariant(g)
+    if (inv !== 'ok') {
+      Utils.stderr(inv)
+      const msg = [
+        `Internal invariant violated:`,
+        inv.violation,
+        '',
+        `Please report this as a bug, describe what you did and include the current graph:`,
+        Utils.show(inv.g),
+      ].join('\n')
+      store.at('errors').update({[msg]: true})
+      store.at('graph').set(Undo.init(G.init('x')))
+    }
+  }
+}
 
 export function App(store: Store<State>): () => VNode {
   const global = window as any
+
+  if (bowser.name != 'Chrome') {
+    store.at('errors').update({
+      [`You are using an unsupported browser (${bowser.name}), only Chrome is supported.`]: true,
+    })
+  }
+
   global.store = store
   global.reset = () => store.set(init)
   global.G = G
@@ -325,22 +391,21 @@ export function App(store: Store<State>): () => VNode {
   store
     .at('graph')
     .at('now')
-    .storage_connect('swell-spaghetti-5')
+    .storage_connect('swell-spaghetti-6')
 
   store
     .at('graph')
     .at('now')
-    .ondiff(g => {
-      const inv = G.check_invariant(g)
-      if (inv !== 'ok') {
-        Utils.stderr(inv)
-      }
-    })
+    .ondiff(check_invariant(store))
 
-  const inv = G.check_invariant(store.get().graph.now)
-  if (inv !== 'ok') {
-    Utils.stderr(inv)
-    store.set(init)
+  check_invariant(store)(store.get().graph.now)
+
+  function trigger_invariant_error() {
+    window.setTimeout(() => {
+      const g0 = G.init('apa')
+      const g = {...g0, edges: {oops: g0.edges['e-s0-t0']}}
+      store.update({graph: Undo.init(g)})
+    }, 1000)
   }
 
   store.ondiff(state => {
@@ -354,7 +419,11 @@ export function App(store: Store<State>): () => VNode {
   return () => View(store, cms)
 }
 
-export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
+export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
+  // console.timeEnd('draw')
+  // console.log('redraw')
+  // console.time('draw')
+
   const state = store.get()
   const history = store.at('graph')
   const graph = history.at('now')
@@ -373,13 +442,6 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
       )
     )
 
-  // Utils.stdout(units.get())
-  // Utils.stdout(graph.get().target)
-  // Utils.stdout(graph.get())
-
-  // const source = now.at('source')
-  // const target = now.at('target')
-
   const g = graph.get()
 
   const advance = advanceFactory(store)
@@ -389,6 +451,7 @@ export function View(store: Store<State>, cm_target: CM.CMVN): VNode {
   return (
     <DropZone webserviceURL={ws_url} onDrop={g => advance(() => graph.set(g))}>
       <div className={topStyle} style={{position: 'relative'}}>
+        {ShowErrors(store.at('errors'))}
         <LabelSidekick store={store} onBlur={() => cms.target.cm.focus()} />
         {showhide('set source text', () => (
           <div className="main">
