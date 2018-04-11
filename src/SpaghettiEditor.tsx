@@ -247,7 +247,7 @@ ESOL 40 with other language people .
 //
 
 Sometimes , I recognized about why I’m here and studying with this crazy
-language that I couldn’t be good at all ​ .
+language that I couldn’t be good at all .
 //
 
 In contrast I faced with my beliefs and challenges that helped me to focus
