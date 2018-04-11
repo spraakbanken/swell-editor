@@ -331,6 +331,7 @@ export function Ladder(props: LadderProps): React.ReactElement<LadderProps> {
             e: edges[d.id],
             selected_status: edges[d.id].ids.map(x => selected_ids.some(id => id === x)),
             generation,
+            side,
           },
           d.id + '#' + c.inc(d.id),
           () => {
