@@ -14,7 +14,7 @@ This tool is in active development, and described further here:
 * [Representation av avvikelseannotationer](https://spraakbanken.gu.se/swell/representation-2017/) (in Swedish)
 
 Slides, change slides with up and down arrows:
-* [SweLL meeting January 2018](https://spraakbanken.gu.se/swell/jan2018) (in Swedish)
+* [SweLL meeting January 2018](https://spraakbanken.gu.se/swell/jan2018) (in Swedish, "print mode" on p)
 * [CLT retreat 2017](https://spraakbanken.gu.se/swell/clt-2017)
 * [L2 Clarin workshop 2017](https://spraakbanken.gu.se/swell/clarin-2017)
 * [En förhandstitt på verktyget för normalisering av andraspråkstexter](https://github.com/spraakbanken/swell-editor/blob/c13475d2e14a53a3e86e5b0f0861f9dbf5411af3/talk/hws/hws-talk.pdf) (pdf, in Swedish)
