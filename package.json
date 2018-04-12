@@ -6,6 +6,7 @@
   "description": "Editor for normalising second-language learner texts",
   "dependencies": {
     "bowser": "^1.9.3",
+    "cm-resize": "^0.2.2",
     "codemirror": "^5.36.0",
     "compression": "^1.7.2",
     "csstips": "^0.2.3",

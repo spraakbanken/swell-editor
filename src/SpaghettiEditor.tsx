@@ -212,6 +212,17 @@ const topStyle = style({
       lineHeight: '1.5em',
       fontFamily: "'Lato', sans-serif",
     },
+    '& .CodeMirror .cm-resize-handle': {
+      display: 'block',
+      position: 'absolute',
+      bottom: '0',
+      right: '0',
+      zIndex: '99',
+      width: '18px',
+      height: '18px',
+      boxShadow: 'inset -1px -1px 0 0 silver',
+      cursor: 'nwse-resize',
+    },
     [`& .${CM.ManualMarkClassName}`]: {
       color: '#26a',
       background: '#e6e6e6',

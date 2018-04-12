@@ -12,6 +12,12 @@ import * as T from './Token'
 
 import {VNode} from './ReactUtils'
 
+interface cmResize {
+  (cm: CodeMirror.Editor, opts?: any): CodeMirror.Editor
+}
+
+const cmResize: cmResize = require('cm-resize').default
+
 export const ManualMarkClassName = 'ManualMark'
 export const HoverClassName = 'Hover'
 
@@ -39,6 +45,7 @@ export interface CMVN {
 function CM(opts: CodeMirror.EditorConfiguration): CMVN {
   const div = document.createElement('div')
   const cm = CodeMirror(div, {lineWrapping: true, ...opts})
+  cmResize(cm, {resizableWidth: false, minHeight: 32, cssClass: 'cm-resize-handle'})
   return {node: Wrap(div, () => cm.refresh()), cm}
 }
 
