@@ -15,7 +15,7 @@ import * as http from 'http'
 import * as fs from 'fs'
 import * as Utils from '../src/Utils'
 
-describe('png .graph metadata', async () => {
+describe('png metadata via webserver', async () => {
   const port = 3001
   const server = `http://localhost:${port}`
   const png_url = (d: iosaas.Data) =>
