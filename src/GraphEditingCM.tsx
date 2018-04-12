@@ -11,6 +11,7 @@ import * as RD from './RichDiff'
 import * as T from './Token'
 
 import {VNode} from './ReactUtils'
+import * as ReactUtils from './ReactUtils'
 
 interface cmResize {
   (cm: CodeMirror.Editor, opts?: any): CodeMirror.Editor
@@ -21,22 +22,6 @@ const cmResize: cmResize = require('cm-resize').default
 export const ManualMarkClassName = 'ManualMark'
 export const HoverClassName = 'Hover'
 
-function Wrap(h: HTMLElement, k: () => void) {
-  return (
-    <div
-      ref={el => {
-        if (el) {
-          while (el && el.lastChild) {
-            el.removeChild(el.lastChild)
-          }
-          el.appendChild(h)
-          k()
-        }
-      }}
-    />
-  )
-}
-
 export interface CMVN {
   node: VNode
   cm: CodeMirror.Editor
@@ -46,7 +31,7 @@ function CM(opts: CodeMirror.EditorConfiguration): CMVN {
   const div = document.createElement('div')
   const cm = CodeMirror(div, {lineWrapping: true, ...opts})
   cmResize(cm, {resizableWidth: false, minHeight: 32, cssClass: 'cm-resize-handle'})
-  return {node: Wrap(div, () => cm.refresh()), cm}
+  return {node: ReactUtils.Wrap(div, () => cm.refresh()), cm}
 }
 
 function defaultTabBehaviour(cm: CodeMirror.Editor) {

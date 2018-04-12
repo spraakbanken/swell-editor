@@ -134,3 +134,19 @@ export const Button = (label: string, title: string, on: () => void, enabled = t
     {label}
   </button>
 )
+
+export function Wrap(h: HTMLElement, k: () => void) {
+  return (
+    <div
+      ref={el => {
+        if (el) {
+          while (el && el.lastChild) {
+            el.removeChild(el.lastChild)
+          }
+          el.appendChild(h)
+          k()
+        }
+      }}
+    />
+  )
+}
