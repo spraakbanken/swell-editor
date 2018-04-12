@@ -142,7 +142,7 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
         anchor &&
         Utils.setIfChanged(
           store.at('subspan'),
-          G.sentence_subspans_around_positions(graph.get(), [head, anchor])
+          G.sentence_subspans_around_positions(graph.get(), side, [head, anchor])
         )
     })
   }

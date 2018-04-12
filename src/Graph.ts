@@ -1099,14 +1099,15 @@ export function subgraph(g: Graph, s: Subspan): Graph {
 
 export function sentence_subspans_around_positions(
   g: Graph,
+  side: Side,
   positions: number[]
 ): Subspan | undefined {
   const N = target_text(g).length
   const nearby = Utils.flatMap(positions, i => [i - 1, i, i + 1])
   const in_bounds = nearby.filter(i => Utils.within(0, i, N))
   const indicies = in_bounds.map(i => ({
-    side: 'target' as 'target',
-    index: T.token_at(target_texts(g), i).token,
+    side: side,
+    index: T.token_at(get_side_texts(g, side), i).token,
   }))
   if (indicies.length > 0) {
     return sentences_around(g, indicies)
