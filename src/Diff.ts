@@ -113,39 +113,6 @@ export function partition(diff: (Dropped | Dragged)[]) {
   return {dropped, dragged}
 }
 
-// should these take an edge id instead ?
-export function next(diff: Diff[], i: number): number | null {
-  if (i >= diff.length) {
-    return null
-  }
-  const visit = Utils.unique_check<string>()
-  for (let j = 0; j <= i; j++) {
-    visit(diff[j].id)
-  }
-  for (; i < diff.length; i++) {
-    if (visit(diff[i].id)) {
-      return i
-    }
-  }
-  return null
-}
-
-export function prev(diff: Diff[], i: number): number | null {
-  if (i <= 0) {
-    return null
-  }
-  const visit = Utils.unique_check<string>()
-  for (let j = diff.length - 1; j >= i; j--) {
-    visit(diff[j].id)
-  }
-  for (; i >= 0; i--) {
-    if (visit(diff[i].id)) {
-      return i
-    }
-  }
-  return null
-}
-
 export interface ProtoLine {
   from: number
   to: number
