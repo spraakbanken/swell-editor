@@ -13,13 +13,13 @@
 
 Backendkommunikation:
 - https://spraakbanken.gu.se/swell-editor/edit?task=EssayID_string_or_similar
-  > frågar backenden om state0 via `task` (och antagligen användarnamn på något sätt)
-    > state0 kan innehålla en bild (för transkribering)
-    > state0 kan vara uninitialized (så initierar frontenden statet med tokenisering)
-    > innehåller också metadata om vi är i anonymiseringsläge eller annoteringsläge
-  > vid uppdatering av state skickar (föregående och nya) till backenden
-    > om mismatch så editeras det någon annanstans också: visa varningsmeddelande
-    > annars bara spara på backenden, som kan göra en git trackning
+  - frågar backenden om state0 via `task` (och antagligen användarnamn på något sätt)
+    - state0 kan innehålla en bild (för transkribering)
+    - state0 kan vara uninitialized (så initierar frontenden statet med tokenisering)
+    - innehåller också metadata om vi är i anonymiseringsläge eller annoteringsläge
+  - vid uppdatering av state skickar (föregående och nya) till backenden
+    - om mismatch så editeras det någon annanstans också: visa varningsmeddelande
+    - annars bara spara på backenden, som kan göra en git trackning
 
 - Widget v, >
 
