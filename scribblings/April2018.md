@@ -1,4 +1,4 @@
--;w Anonymisering: Vy för anonymisering som visar par av etiketter och source tokens
+- Anonymisering: Vy för anonymisering som visar par av etiketter och source tokens
 - Anonymisering: Byta ut target med edge labels
 - Config för tagset
 - Dropdown för tagset
