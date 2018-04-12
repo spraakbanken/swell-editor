@@ -992,3 +992,7 @@ export function timeit<A>(label: string, doit: () => A): A {
   yes && console.timeEnd(label)
   return a
 }
+
+export function getUnsafe<K, V>(m: Map<K, V>, k: K): V {
+  return m.get(k) || raise(`Key missing: ${k}`)
+}

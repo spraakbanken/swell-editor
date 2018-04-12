@@ -405,6 +405,7 @@ export function Ladder(props: LadderProps): React.ReactElement<LadderProps> {
             const on_hover: OnHover = id => onHover && hoverId !== id && onHover(id)
             return (
               <ul
+                onClick={e => e.stopPropagation()}
                 onMouseDown={e => {
                   if (onSelect) {
                     onSelect(edges[d.id].ids)

@@ -147,43 +147,40 @@ function LabelSidekick({store, onBlur}: {store: Store<State>; onBlur: () => void
       )
     }
     return (
-      <div className="Modal" onClick={() => Deselect(store)}>
-        <div className="ModalInner" onClick={e => e.stopPropagation()}>
-          <div>
-            {onSelectedActions.map(action =>
-              Button(action, '', () =>
-                advance(() => graph.modify(g => ActOnSelected(action, g, selected)))
-              )
-            )}
-            {Button('deselect', '', () => Deselect(store))}
-          </div>
-          <hr />
-          <input
-            ref={e => e && e.focus()}
-            placeholder="Enter label..."
-            onKeyDown={e => {
-              const t = e.target as HTMLInputElement
-              if (e.key === 'Enter' || e.key === ' ') {
-                push(t.value)
-                t.value = ''
-              }
-              if (e.key === 'Escape') {
-                Deselect(store)
-                onBlur()
-              }
-              if (e.key === 'Backspace' && t.value == '' && labels.length > 0) {
-                pop(labels[labels.length - 1])
-              }
-            }}
-          />
-          <ul>
-            {labels.map((lbl, i) => (
-              <li key={i}>
-                {Button('x', '', () => pop(lbl))} {lbl}
-              </li>
-            ))}
-          </ul>
+      <div className="left tall sidekick" onClick={e => console.log('stop') || e.stopPropagation()}>
+        <div>
+          {onSelectedActions.map(action =>
+            Button(action, '', () =>
+              advance(() => graph.modify(g => ActOnSelected(action, g, selected)))
+            )
+          )}
+          {Button('deselect', '', () => Deselect(store))}
         </div>
+        <input
+          ref={e => e && e.focus()}
+          placeholder="Enter label..."
+          onKeyDown={e => {
+            const t = e.target as HTMLInputElement
+            if (e.key === 'Enter' || e.key === ' ') {
+              push(t.value)
+              t.value = ''
+            }
+            if (e.key === 'Escape') {
+              Deselect(store)
+              onBlur()
+            }
+            if (e.key === 'Backspace' && t.value == '' && labels.length > 0) {
+              pop(labels[labels.length - 1])
+            }
+          }}
+        />
+        <ul>
+          {labels.map((lbl, i) => (
+            <li key={i}>
+              {Button('x', '', () => pop(lbl))} {lbl}
+            </li>
+          ))}
+        </ul>
       </div>
     )
   }
@@ -196,15 +193,31 @@ const topStyle = style({
   color: '#222',
   display: 'grid',
   gridAutoRows: '',
-  gridTemplateColumns: 'min-content min-content [main] 1fr',
+
   gridGap: '0.8em 0.4em',
   paddingTop: '1em',
   paddingBottom: '4em',
-  maxWidth: '700px',
+  maxWidth: '1050px',
   margin: '0 auto',
   alignItems: 'start',
+  gridTemplateColumns: '[left] 180px [main] 1fr [right] 180px',
 
   $nest: {
+    '& > .left': {
+      gridColumnStart: 'left',
+    },
+    '& > .main': {
+      gridColumnStart: 'main',
+    },
+    '& > .right': {
+      gridColumnStart: 'right',
+    },
+    '& > .tall': {
+      gridRowEnd: 'span 10',
+    },
+    '& > .left button': {
+      float: 'right',
+    },
     '& .CodeMirror': {
       border: '1px solid #ddd',
       height: '300px',
@@ -226,9 +239,6 @@ const topStyle = style({
     [`& .${CM.ManualMarkClassName}`]: {
       color: '#26a',
       background: '#e6e6e6',
-    },
-    '& > .main': {
-      gridColumnStart: 'main',
     },
     '& > *': {
       // Non-grid fallback
@@ -292,34 +302,22 @@ const topStyle = style({
       strokeOpacity: 0.8,
       fillOpacity: 0.8,
     },
-    '& .Modal': {
-      top: '0px',
-      left: '0',
-      height: '100%',
-      width: '100%',
-      bottom: 'auto',
-      zIndex: 5,
-      position: 'fixed',
-    },
-    '& .ModalInner': {
-      top: '0px',
-      left: '0',
-      padding: '10px 5px',
-      width: '200px',
-      height: '100%',
-
+    '& .sidekick': {
+      zIndex: 2,
+      position: 'relative',
       background: 'hsl(0,0%,96%)',
       borderTop: '2px hsl(220,65%,65%) solid',
       boxShadow: '2px 2px 3px 0px hsla(0,0%,0%,0.2)',
       borderRadius: '0px 0px 2px 2px',
+      marginRight: '10px',
     },
-    '& .Modal button': {
+    '& .sidekick button': {
       fontSize: '0.85em',
-      width: '90px',
+      width: '46%',
       marginBottom: '5px',
       marginRight: '5px',
     },
-    '& .Modal li button': {
+    '& .sidekick li button': {
       width: '30px',
     },
     '& button': {
@@ -460,98 +458,100 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
   const hovering = state.hover_id !== undefined && Object.keys(state.selected).length == 0
 
   return (
-    <DropZone webserviceURL={ws_url} onDrop={g => advance(() => graph.set(g))}>
-      <div className={topStyle} style={{position: 'relative'}}>
-        {ShowErrors(store.at('errors'))}
-        <LabelSidekick store={store} onBlur={() => cms.target.cm.focus()} />
-        {showhide('set source text', () => (
-          <div className="main">
-            <div className={hovering ? 'cm-hovering' : ''}>{cms.source.node}</div>
-            <div>
-              {Button('copy to target', '', () =>
-                advance(() => graph.modify(g => G.init_from(G.source_texts(g))))
-              )}
-            </div>
-          </div>
-        ))}
-        <div className="main buttonSep" style={{zIndex: 5}}>
-          {Button('undo', '', () => history.modify(Undo.undo), Undo.can_undo(history.get()))}
-          {Button('redo', '', () => history.modify(Undo.redo), Undo.can_redo(history.get()))}
-          {RestrictionButtons(store.at('side_restriction'))}
-        </div>
-        <div className="main">
-          <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
-        </div>
-        <div className={'main' + (hovering ? ' hovering' : '')} style={{minHeight: '10em'}}>
-          <L.Ladder
-            side={state.side_restriction}
-            orderChangingLabel={s => config.order_changing_labels[s]}
-            graph={state.subspan ? G.subgraph(graph.get(), state.subspan) : g}
-            hoverId={state.hover_id}
-            onHover={hover_id => store.update({hover_id})}
-            selectedIds={Object.keys(state.selected)}
-            generation={state.generation}
-            onSelect={ids => {
-              const selected = store.get().selected
-              const b = ids.every(id => selected[id]) ? undefined : true
-              advance(() =>
-                ids.forEach(id =>
-                  store
-                    .at('selected')
-                    .via(Lens.key(id))
-                    .set(b)
-                )
-              )
-            }}
-          />
-        </div>
-        {showhide('compact representation', () => (
-          <React.Fragment>
-            {G.sides.map((side, i) => (
-              <React.Fragment key={i}>
-                {Button('\u2b1a', 'clear', () => advance(() => units.at(side).set('')))}
-                {Button(i ? '\u21e1' : '\u21e3', 'copy to ' + side, () =>
-                  advance(() => units.at(G.opposite(side)).set(units.get()[side]))
+    <div onClick={e => Deselect(store)}>
+      <DropZone webserviceURL={ws_url} onDrop={g => advance(() => graph.set(g))}>
+        <div className={topStyle} style={{position: 'relative'}}>
+          {ShowErrors(store.at('errors'))}
+          {showhide('set source text', () => (
+            <div className="main">
+              <div className={hovering ? 'cm-hovering' : ''}>{cms.source.node}</div>
+              <div>
+                {Button('copy to target', '', () =>
+                  advance(() => graph.modify(g => G.init_from(G.source_texts(g))))
                 )}
-                <input
-                  defaultValue={units.at(side).get()}
-                  onKeyDown={e =>
-                    e.key === 'Enter' &&
-                    advance(() => {
-                      const t = e.target as HTMLInputElement
-                      units.at(side).set(t.value)
-                    })
-                  }
-                  tabIndex={(i + 1) as number}
-                  placeholder={'Enter ' + side + ' text...'}
-                />
-              </React.Fragment>
-            ))}
-          </React.Fragment>
-        ))}
-        {showhide('graph json', () => Utils.show(g))}
-        {showhide('diff json', () => Utils.show(RD.enrichen(g)))}
-        {links(graph.get())}
-        <div className="main TopPad">
-          <em>Examples:</em>
+              </div>
+            </div>
+          ))}
+          <div className="main buttonSep" style={{zIndex: 5}}>
+            {Button('undo', '', () => history.modify(Undo.undo), Undo.can_undo(history.get()))}
+            {Button('redo', '', () => history.modify(Undo.redo), Undo.can_redo(history.get()))}
+            {RestrictionButtons(store.at('side_restriction'))}
+          </div>
+          <div className="main">
+            <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
+          </div>
+          <LabelSidekick store={store} onBlur={() => cms.target.cm.focus()} />
+          <div className={'main' + (hovering ? ' hovering' : '')} style={{minHeight: '10em'}}>
+            <L.Ladder
+              side={state.side_restriction}
+              orderChangingLabel={s => config.order_changing_labels[s]}
+              graph={state.subspan ? G.subgraph(graph.get(), state.subspan) : g}
+              hoverId={state.hover_id}
+              onHover={hover_id => store.update({hover_id})}
+              selectedIds={Object.keys(state.selected)}
+              generation={state.generation}
+              onSelect={ids => {
+                const selected = store.get().selected
+                const b = ids.every(id => selected[id]) ? undefined : true
+                advance(() =>
+                  ids.forEach(id =>
+                    store
+                      .at('selected')
+                      .via(Lens.key(id))
+                      .set(b)
+                  )
+                )
+              }}
+            />
+          </div>
+          {showhide('compact representation', () => (
+            <React.Fragment>
+              {G.sides.map((side, i) => (
+                <React.Fragment key={i}>
+                  {Button('\u2b1a', 'clear', () => advance(() => units.at(side).set('')))}
+                  {Button(i ? '\u21e1' : '\u21e3', 'copy to ' + side, () =>
+                    advance(() => units.at(G.opposite(side)).set(units.get()[side]))
+                  )}
+                  <input
+                    defaultValue={units.at(side).get()}
+                    onKeyDown={e =>
+                      e.key === 'Enter' &&
+                      advance(() => {
+                        const t = e.target as HTMLInputElement
+                        units.at(side).set(t.value)
+                      })
+                    }
+                    tabIndex={(i + 1) as number}
+                    placeholder={'Enter ' + side + ' text...'}
+                  />
+                </React.Fragment>
+              ))}
+            </React.Fragment>
+          ))}
+          {showhide('graph json', () => Utils.show(g))}
+          {showhide('diff json', () => Utils.show(RD.enrichen(g)))}
+          {links(graph.get())}
+          <div className="main TopPad">
+            <em>Examples:</em>
+          </div>
+          {config.examples.map((e, i) => [
+            <div className="left" key={i}>
+              {!e.target ? (
+                <div />
+              ) : (
+                Button('\u21eb', 'see example analysis', () =>
+                  advance(() => units.set({source: e.source, target: e.target}))
+                )
+              )}
+              {Button('\u21ea', 'load example', () =>
+                advance(() => units.set({source: e.source, target: e.source}))
+              )}
+            </div>,
+            <span className="main">{e.source}</span>,
+          ])}
         </div>
-        {config.examples.map((e, i) => (
-          <React.Fragment key={i}>
-            {!e.target ? (
-              <div />
-            ) : (
-              Button('\u21eb', 'see example analysis', () =>
-                advance(() => units.set({source: e.source, target: e.target}))
-              )
-            )}
-            {Button('\u21ea', 'load example', () =>
-              advance(() => units.set({source: e.source, target: e.source}))
-            )}
-            <span>{e.source}</span>
-          </React.Fragment>
-        ))}
-      </div>
-    </DropZone>
+      </DropZone>
+    </div>
   )
 }
 
