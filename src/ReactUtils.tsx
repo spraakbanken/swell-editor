@@ -121,7 +121,8 @@ export function showhide(what: string, show: () => string | VNode, init = false)
               {b ? 'hide' : 'show'} {what}
             </a>
             {b &&
-              ((v = show()), typeof v === 'string' ? <pre className="pre-box main">{v}</pre> : v)}
+              ((v = show()),
+              typeof v === 'string' ? <pre className="box pre-box main">{v}</pre> : v)}
           </React.Fragment>
         )
       }}

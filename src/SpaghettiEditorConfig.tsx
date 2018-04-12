@@ -6,6 +6,8 @@ export interface Example {
 const ex = (source: string, target: string): Example => ({source, target})
 
 const examples: Example[] = `
+Alice and Bob went to Paris . Alice's wallet was stolen . // Alice:Person1 and Bob:Person2 went to Paris:City1 . Alice's:Person1:gen wallet was stolen .
+
 Their was a problem yesteray . // There was a problem yesterday .
 
 The team that hits the most runs get ice cream . // The team that hits the most runs gets ice cream .

@@ -42,6 +42,8 @@ export interface State {
   readonly generation: number
   /** error messages */
   readonly errors: Record<string, true>
+  /** anonymization mode */
+  readonly anon_view: boolean
 }
 
 export const init: State = {
@@ -53,6 +55,7 @@ export const init: State = {
   side_restriction: undefined,
   generation: 0,
   errors: {},
+  anon_view: false,
 }
 
 function RestrictionButtons(store: Store<G.Side | undefined>) {
@@ -147,7 +150,9 @@ function LabelSidekick({store, onBlur}: {store: Store<State>; onBlur: () => void
       )
     }
     return (
-      <div className="left tall sidekick" onClick={e => console.log('stop') || e.stopPropagation()}>
+      <div
+        className="left tall sidekick box"
+        onClick={e => console.log('stop') || e.stopPropagation()}>
         <div>
           {onSelectedActions.map(action =>
             Button(action, '', () =>
@@ -177,7 +182,7 @@ function LabelSidekick({store, onBlur}: {store: Store<State>; onBlur: () => void
         <ul>
           {labels.map((lbl, i) => (
             <li key={i}>
-              {Button('x', '', () => pop(lbl))} {lbl}
+              <Close title="remove label" onClick={() => pop(lbl)} /> {lbl}
             </li>
           ))}
         </ul>
@@ -215,9 +220,6 @@ const topStyle = style({
     '& > .tall': {
       gridRowEnd: 'span 10',
     },
-    '& > .left button': {
-      float: 'right',
-    },
     '& .CodeMirror': {
       border: '1px solid #ddd',
       height: '300px',
@@ -249,12 +251,23 @@ const topStyle = style({
       // Non-grid fallback
       display: 'inline-block',
     },
-    '& pre.pre-box': {
-      fontSize: '0.85em',
+    '& .box': {
       background: 'hsl(0,0%,96%)',
       borderTop: '2px hsl(220,65%,65%) solid',
       boxShadow: '2px 2px 3px 0px hsla(0,0%,0%,0.2)',
       borderRadius: '0px 0px 2px 2px',
+      padding: '3px',
+      marginRight: '3px',
+    },
+    '& .vsep': {
+      marginBottom: '10px',
+    },
+    '& .inline': {
+      display: 'inline-block',
+    },
+    '& pre.pre-box': {
+      fontSize: '0.85em',
+
       padding: '0.25em',
     },
     '& > .TopPad': {
@@ -302,26 +315,31 @@ const topStyle = style({
       strokeOpacity: 0.8,
       fillOpacity: 0.8,
     },
+    '& .sidekick ul': {
+      marginRight: '15px',
+      marginLeft: '0px',
+    },
     '& .sidekick': {
       zIndex: 2,
       position: 'relative',
-      background: 'hsl(0,0%,96%)',
-      borderTop: '2px hsl(220,65%,65%) solid',
-      boxShadow: '2px 2px 3px 0px hsla(0,0%,0%,0.2)',
-      borderRadius: '0px 0px 2px 2px',
       marginRight: '10px',
+      margin: 0,
+      padding: 1,
     },
-    '& .sidekick button': {
+    '& .sidekick > * > button': {
       fontSize: '0.85em',
-      width: '46%',
+      width: '47%',
       marginBottom: '5px',
-      marginRight: '5px',
     },
     '& .sidekick li button': {
+      fontSize: '0.85em',
       width: '30px',
     },
     '& button': {
       marginRight: '5px',
+    },
+    '& button:last-child': {
+      marginRight: 0,
     },
     '& .error': {
       whiteSpace: 'pre-wrap',
@@ -333,6 +351,10 @@ const topStyle = style({
       border: '1px solid transparent',
       borderRadius: '4px',
     },
+    '& .float_buttons_right button': {
+      float: 'right',
+      marginRight: '5px',
+    },
     '& .close': {
       float: 'right',
       textDecoration: 'none',
@@ -341,22 +363,31 @@ const topStyle = style({
     '& .close:hover': {
       opacity: 0.8,
     },
+    '& .NoManualBlue .GreyPath.Manual': {
+      stroke: '#999',
+    },
   },
 })
+
+function Close(props: {onClick(e: React.MouseEvent<HTMLAnchorElement>): void; title: string}) {
+  return (
+    <a className="close" href="#" title={props.title} onClick={props.onClick}>
+      ×
+    </a>
+  )
+}
 
 function ShowErrors(store: Store<Record<string, true>>) {
   return record.traverse(store.get(), (_, msg) => (
     <div className="main error">
-      <a
-        className="close"
-        href="#"
+      <Close
         title="dismiss"
         onClick={e => {
           store.via(Lens.key(msg)).set(undefined)
           e.preventDefault()
-        }}>
-        ×
-      </a>
+        }}
+      />
+
       {msg}
     </div>
   ))
@@ -435,7 +466,7 @@ export function Summary(g: Graph) {
   return (
     <div>
       {record.traverse(label_edge_map, (es, label) => (
-        <div key={label} style={{background: '#eee'}}>
+        <div key={label} className="box vsep">
           <div className={L.BorderCell}>
             <div>{label}</div>
           </div>
@@ -465,6 +496,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
   const state = store.get()
   const history = store.at('graph')
   const graph = history.at('now')
+  const {anon_view} = state
 
   const units: Store<G.ST<string>> = store
     .at('graph')
@@ -486,6 +518,47 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
 
   const hovering = state.hover_id !== undefined && Object.keys(state.selected).length == 0
 
+  const visible_graph = Utils.expr(() => {
+    if (anon_view) {
+      return G.anonymize(g)
+    } else if (state.subspan) {
+      return G.subgraph(g, state.subspan)
+    } else {
+      return g
+    }
+  })
+
+  const tmg = G.token_map(g)
+  const tmv = G.token_map(visible_graph)
+  const emv = G.edge_map(visible_graph)
+
+  function onSelect(ids: string[]) {
+    const involved_ids = Utils.flatMap(ids, id => {
+      if (anon_view) {
+        const t = tmv.get(id)
+        if (t && t.side == 'target') {
+          return visible_graph.edges[Utils.getUnsafe(emv, id).id].ids.filter(
+            id => Utils.getUnsafe(tmv, id).side === 'source'
+          )
+        } else {
+          return [id]
+        }
+      } else {
+        return [id]
+      }
+    })
+    const selected = store.get().selected
+    const b = involved_ids.every(id => selected[id]) ? undefined : true
+    store.transaction(() =>
+      involved_ids.forEach(id =>
+        store
+          .at('selected')
+          .via(Lens.key(id))
+          .set(b)
+      )
+    )
+  }
+
   return (
     <div onClick={e => Deselect(store)}>
       <DropZone webserviceURL={ws_url} onDrop={g => advance(() => graph.set(g))}>
@@ -502,35 +575,35 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             </div>
           ))}
           <div className="main buttonSep" style={{zIndex: 5}}>
-            {Button('undo', '', () => history.modify(Undo.undo), Undo.can_undo(history.get()))}
-            {Button('redo', '', () => history.modify(Undo.redo), Undo.can_redo(history.get()))}
-            {RestrictionButtons(store.at('side_restriction'))}
+            <div className="box inline">
+              {Button('undo', '', () => history.modify(Undo.undo), Undo.can_undo(history.get()))}
+              {Button('redo', '', () => history.modify(Undo.redo), Undo.can_redo(history.get()))}
+            </div>
+            <div className="box inline">{RestrictionButtons(store.at('side_restriction'))}</div>
+            <div className="box inline">
+              {Button(`${anon_view ? 'disable' : 'enable'} anonymization view`, '', () =>
+                store.at('anon_view').modify(b => !b)
+              )}
+            </div>
           </div>
-          <div className="main">
-            <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
-          </div>
+          {state.anon_view || (
+            <div className="main">
+              <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
+            </div>
+          )}
           <LabelSidekick store={store} onBlur={() => cms.target.cm.focus()} />
-          <div className={'main' + (hovering ? ' hovering' : '')} style={{minHeight: '10em'}}>
+          <div
+            className={'main' + (hovering ? ' hovering' : '') + (anon_view ? ' NoManualBlue' : '')}
+            style={{minHeight: '10em'}}>
             <L.Ladder
               side={state.side_restriction}
               orderChangingLabel={s => config.order_changing_labels[s]}
-              graph={state.subspan ? G.subgraph(graph.get(), state.subspan) : g}
+              graph={visible_graph}
               hoverId={state.hover_id}
               onHover={hover_id => store.update({hover_id})}
               selectedIds={Object.keys(state.selected)}
               generation={state.generation}
-              onSelect={ids => {
-                const selected = store.get().selected
-                const b = ids.every(id => selected[id]) ? undefined : true
-                advance(() =>
-                  ids.forEach(id =>
-                    store
-                      .at('selected')
-                      .via(Lens.key(id))
-                      .set(b)
-                  )
-                )
-              }}
+              onSelect={onSelect}
             />
           </div>
           <div className="right tall">{Summary(g)}</div>
@@ -565,16 +638,16 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             <em>Examples:</em>
           </div>
           {config.examples.map((e, i) => [
-            <div className="left" key={i}>
+            <div className="left float_buttons_right" key={i}>
+              {Button('\u21ea', 'load example', () =>
+                advance(() => units.set({source: e.source, target: e.source}))
+              )}
               {!e.target ? (
                 <div />
               ) : (
                 Button('\u21eb', 'see example analysis', () =>
                   advance(() => units.set({source: e.source, target: e.target}))
                 )
-              )}
-              {Button('\u21ea', 'load example', () =>
-                advance(() => units.set({source: e.source, target: e.source}))
               )}
             </div>,
             <span className="main">{e.source}</span>,
@@ -618,7 +691,7 @@ function links(g: Graph) {
   return (
     <>
       {showhide('compact form', () => (
-        <pre className={'pre-box main '} style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}>
+        <pre className={'box pre-box main '} style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}>
           {`${C.units_to_string(stu.source)} // ${C.units_to_string(stu.target)}`}
         </pre>
       ))}
@@ -626,7 +699,7 @@ function links(g: Graph) {
         'copy link',
         () => (
           <pre
-            className={'pre-box main ' + ReactUtils.Unselectable}
+            className={'box pre-box main ' + ReactUtils.Unselectable}
             style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}
             draggable={true}
             onDragStart={e => {

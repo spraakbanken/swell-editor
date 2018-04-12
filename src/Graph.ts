@@ -1214,3 +1214,71 @@ export function normalize_whitespace(g: Graph, ws = ' '): Graph {
   const on_tok = (s: Token) => Token((s.text.match(/\S+/) || [''])[0] + ws, s.id)
   return {...g, source: g.source.map(on_tok), target: g.target.map(on_tok)}
 }
+
+/** Ignores the target text completly, only looks at the source tokens and their
+edge groups and copies them to target if there is not label, otherwise replaces them
+with the label
+
+Source ids are preserved but target ids are generated
+
+  target_texts(anonymize(from_unaligned({
+    source: [{text: 'Hej ', labels: []}, {text: 'Maria ', labels: ['Person1']}],
+    target: []
+  }))) // => ['Hej ', 'Person1 ']
+
+*/
+export function anonymize(graph: Graph): Graph {
+  const g = source_to_target(graph)
+  let i = next_id(g)
+  const em = edge_map(g)
+  const tm = token_map(g)
+  const first = Utils.unique_check<string>()
+  const edges: Edge[] = []
+  const target: Token[] = Utils.flatMap(g.target, t => {
+    const e = Utils.getUnsafe(em, t.id)
+    if (e.labels.length) {
+      if (first(e.id)) {
+        const tokens = e.labels.map(text => Token(text + ' ', 't' + i++))
+        const source_ids = e.ids.filter(i => Utils.getUnsafe(tm, i).side == 'source')
+        const target_ids = tokens.map(t => t.id)
+        edges.push(Edge([...source_ids, ...target_ids], e.labels, true))
+        return tokens
+      } else {
+        return []
+      }
+    } else {
+      if (first(e.id)) {
+        edges.push(e)
+      }
+      return [t]
+    }
+  })
+  return {source: g.source, target, edges: edge_record(edges)}
+}
+
+/** Sets the target text to the source text, but preserving all labels */
+export function source_to_target(g: Graph): Graph {
+  let i = next_id(g)
+  const rename_map: Record<string, string> = {}
+  const target = g.source.map(s => {
+    const id = 't' + i++
+    rename_map[s.id] = id
+    return Token(s.text, id)
+  })
+  const edges = Utils.flatMap(Object.values(g.edges), e => {
+    const ids = Utils.flatMap(e.ids, sid => {
+      const tid = rename_map[sid]
+      if (tid) {
+        return [sid, tid]
+      } else {
+        return []
+      }
+    })
+    if (ids.length > 0) {
+      return [Edge(ids, e.labels, true)]
+    } else {
+      return []
+    }
+  })
+  return {source: g.source, target, edges: edge_record(edges)}
+}
