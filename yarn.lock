@@ -1267,6 +1267,12 @@ clones@^1.1.0:
   version "1.1.0"
   resolved "https://registry.npmjs.org/clones/-/clones-1.1.0.tgz#87e904132d6140c5c0b72006c08c0d05bd7b63b3"
 
+cm-resize@^0.2.2:
+  version "0.2.2"
+  resolved "https://registry.npmjs.org/cm-resize/-/cm-resize-0.2.2.tgz#739f01726cc08bc2128ed309c62c6a16d82738c8"
+  dependencies:
+    drag-tracker "^0.4.3"
+
 co@^4.6.0:
   version "4.6.0"
   resolved "https://registry.npmjs.org/co/-/co-4.6.0.tgz#6ea6bdf3d853ae54ccb8e47bfa0bf3f9031fb184"
@@ -1883,6 +1889,10 @@ domutils@^1.5.1:
 dotenv@^5.0.0:
   version "5.0.1"
   resolved "https://registry.npmjs.org/dotenv/-/dotenv-5.0.1.tgz#a5317459bd3d79ab88cff6e44057a6a3fbb1fcef"
+
+drag-tracker@^0.4.3:
+  version "0.4.5"
+  resolved "https://registry.npmjs.org/drag-tracker/-/drag-tracker-0.4.5.tgz#b061ba4075bdd0ddb986cb53313842d2f252d045"
 
 duplexer2@~0.1.4:
   version "0.1.4"
