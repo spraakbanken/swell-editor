@@ -13,7 +13,7 @@ import * as ReactUtils from './ReactUtils'
 const intended_font_size = 16
 const px = (i: number) => `${i / intended_font_size}em`
 
-const BorderCell = style(
+export const BorderCell = style(
   Utils.debugName('BorderCell'),
   csstips.horizontal,
   csstips.centerJustified,

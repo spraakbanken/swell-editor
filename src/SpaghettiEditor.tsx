@@ -428,6 +428,35 @@ export function App(store: Store<State>): () => VNode {
   return () => View(store, cms)
 }
 
+export function Summary(g: Graph) {
+  const label_edge_map: Record<string, G.Edge[]> = {}
+  record.forEach(g.edges, e => e.labels.forEach(l => Utils.push(label_edge_map, l, e)))
+  const m = G.token_map(g)
+  return (
+    <div>
+      {record.traverse(label_edge_map, (es, label) => (
+        <div key={label} style={{background: '#eee'}}>
+          <div className={L.BorderCell}>
+            <div>{label}</div>
+          </div>
+          <ul>
+            {es.map(e => (
+              <li key={e.id}>
+                {e.ids.map(id => {
+                  const si = Utils.getUnsafe(m, id)
+                  return (
+                    si.side === 'source' && <span key={si.index}>{g[si.side][si.index].text}</span>
+                  )
+                })}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
   // console.timeEnd('draw')
   // console.log('redraw')
@@ -504,6 +533,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
               }}
             />
           </div>
+          <div className="right tall">{Summary(g)}</div>
           {showhide('compact representation', () => (
             <React.Fragment>
               {G.sides.map((side, i) => (
