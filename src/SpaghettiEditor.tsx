@@ -228,9 +228,9 @@ const topStyle = style({
     '& .CodeMirror .cm-resize-handle': {
       display: 'block',
       position: 'absolute',
-      bottom: '0',
-      right: '0',
-      zIndex: '99',
+      bottom: 0,
+      right: 0,
+      zIndex: 99,
       width: '18px',
       height: '18px',
       boxShadow: 'inset -1px -1px 0 0 silver',
