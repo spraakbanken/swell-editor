@@ -6,4 +6,4 @@ cache:
   directories:
     - "node_modules"
 script:
-  - yarn run coverage --timeout 10000 --invert --grep webserver
+  - yarn run coverage --timeout 20000
