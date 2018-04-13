@@ -169,8 +169,10 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
             }
             if (e.key === 'ArrowDown') {
               this.setState({cursor: curse(1, cursor + 1)})
+              e.preventDefault()
             } else if (e.key === 'ArrowUp') {
               this.setState({cursor: curse(-1, cursor - 1)})
+              e.preventDefault()
             } else {
               this.setState({cursor: curse(1, cursor, new RegExp(t.value))})
             }
