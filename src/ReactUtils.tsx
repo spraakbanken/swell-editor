@@ -151,3 +151,12 @@ export function Wrap(h: HTMLElement, k: () => void) {
     />
   )
 }
+
+export function Close(props: {onClick(e: React.MouseEvent<HTMLAnchorElement>): void; title: string}) {
+  return (
+    <a className="close" href="#" title={props.title} onClick={props.onClick}>
+      ×
+    </a>
+  )
+}
+

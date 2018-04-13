@@ -1,17 +1,19 @@
 import * as CodeMirror from 'codemirror'
 import * as React from 'react'
 import {Store, Lens, Undo} from 'reactive-lens'
-import * as Utils from './Utils'
+import * as Utils from '../Utils'
 
-import * as D from './Diff'
-import {Graph} from './Graph'
-import * as G from './Graph'
-import * as L from './LadderView'
-import * as RD from './RichDiff'
-import * as T from './Token'
+import * as D from '../Diff'
+import {Graph} from '../Graph'
+import * as G from '../Graph'
+import * as L from '../LadderView'
+import * as RD from '../RichDiff'
+import * as T from '../Token'
 
-import {VNode} from './ReactUtils'
-import * as ReactUtils from './ReactUtils'
+import {VNode} from '../ReactUtils'
+import * as ReactUtils from '../ReactUtils'
+
+import {State} from './Model'
 
 interface cmResize {
   (cm: CodeMirror.Editor, opts?: any): CodeMirror.Editor
@@ -45,12 +47,6 @@ function defaultTabBehaviour(cm: CodeMirror.Editor) {
 export interface Cursor {
   head: number
   anchor: number
-}
-
-export interface State {
-  readonly graph: Undo<Graph>
-  readonly hover_id?: string
-  readonly subspan?: G.Subspan
 }
 
 export interface Actions {

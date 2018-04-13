@@ -1,11 +1,11 @@
 import * as React from 'react'
-import * as G from './Graph'
-import {Graph} from './Graph'
+import * as G from '../Graph'
+import {Graph} from '../Graph'
 
-import * as Utils from './Utils'
+import * as Utils from '../Utils'
 
-import * as png from './png'
-import {Data, key} from './SpaghettiTypes'
+import * as png from '../png'
+import {Data, key} from '../SpaghettiTypes'
 
 import {style} from 'typestyle'
 
