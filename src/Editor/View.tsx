@@ -147,26 +147,6 @@ const topStyle = style({
       strokeOpacity: 0.8,
       fillOpacity: 0.8,
     },
-    '& .sidekick ul': {
-      marginRight: '15px',
-      marginLeft: '0px',
-    },
-    '& .sidekick': {
-      zIndex: 2,
-      position: 'relative',
-      marginRight: '10px',
-      margin: 0,
-      padding: 1,
-    },
-    '& .sidekick > * > button': {
-      fontSize: '0.85em',
-      width: '47%',
-      marginBottom: '5px',
-    },
-    '& .sidekick li button': {
-      fontSize: '0.85em',
-      width: '30px',
-    },
     '& button': {
       marginRight: '5px',
     },
@@ -200,7 +180,6 @@ const topStyle = style({
     },
   },
 })
-
 
 export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
   // console.timeEnd('draw')
@@ -274,102 +253,107 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
   }
 
   function wrap(node: VNode) {
-    return <div onClick={e => Model.deselect(store)}><DropZone webserviceURL={config.image_ws_url} onDrop={g => advance(() => graph.set(g))}>{node}</DropZone></div>
+    return (
+      <div onClick={e => Model.deselect(store)}>
+        <DropZone webserviceURL={config.image_ws_url} onDrop={g => advance(() => graph.set(g))}>
+          {node}
+        </DropZone>
+      </div>
+    )
   }
 
-
   return wrap(
-        <div className={topStyle} style={{position: 'relative'}}>
-          {ShowErrors(store.at('errors'))}
-          {showhide('set source text', () => (
-            <div className="main">
-              <div className={hovering ? 'cm-hovering' : ''}>{cms.source.node}</div>
-              <div>
-                {Button('copy to target', '', () =>
-                  advance(() => graph.modify(g => G.init_from(G.source_texts(g))))
-                )}
-              </div>
-            </div>
-          ))}
-          <div className="main buttonSep" style={{zIndex: 5}}>
-            <div className="box inline">
-              {Button('undo', '', () => history.modify(Undo.undo), Undo.can_undo(history.get()))}
-              {Button('redo', '', () => history.modify(Undo.redo), Undo.can_redo(history.get()))}
-            </div>
-            <div className="box inline">{RestrictionButtons(store.at('side_restriction'))}</div>
-            <div className="box inline">
-              {Button(`${anon_view ? 'disable' : 'enable'} anonymization view`, '', () =>
-                store.at('anon_view').modify(b => !b)
-              )}
-            </div>
+    <div className={topStyle} style={{position: 'relative'}}>
+      {ShowErrors(store.at('errors'))}
+      {showhide('set source text', () => (
+        <div className="main">
+          <div className={hovering ? 'cm-hovering' : ''}>{cms.source.node}</div>
+          <div>
+            {Button('copy to target', '', () =>
+              advance(() => graph.modify(g => G.init_from(G.source_texts(g))))
+            )}
           </div>
-          {state.anon_view || (
-            <div className="main">
-              <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
-            </div>
+        </div>
+      ))}
+      <div className="main buttonSep" style={{zIndex: 5}}>
+        <div className="box inline">
+          {Button('undo', '', () => history.modify(Undo.undo), Undo.can_undo(history.get()))}
+          {Button('redo', '', () => history.modify(Undo.redo), Undo.can_redo(history.get()))}
+        </div>
+        <div className="box inline">{RestrictionButtons(store.at('side_restriction'))}</div>
+        <div className="box inline">
+          {Button(`${anon_view ? 'disable' : 'enable'} anonymization view`, '', () =>
+            store.at('anon_view').modify(b => !b)
           )}
-          <LabelSidekick store={store} onBlur={() => cms.target.cm.focus()} />
-          <div
-            className={'main' + (hovering ? ' hovering' : '') + (anon_view ? ' NoManualBlue' : '')}
-            style={{minHeight: '10em'}}>
-            <Ladder
-              side={state.side_restriction}
-              orderChangingLabel={s => config.order_changing_labels[s]}
-              graph={visible_graph}
-              hoverId={state.hover_id}
-              onHover={hover_id => store.update({hover_id})}
-              selectedIds={Object.keys(state.selected)}
-              generation={state.generation}
-              onSelect={onSelect}
-            />
-          </div>
-          <div className="right tall">{Summary(g)}</div>
-          {showhide('compact representation', () => (
-            <React.Fragment>
-              {G.sides.map((side, i) => (
-                <React.Fragment key={i}>
-                  {Button('\u2b1a', 'clear', () => advance(() => units.at(side).set('')))}
-                  {Button(i ? '\u21e1' : '\u21e3', 'copy to ' + side, () =>
-                    advance(() => units.at(G.opposite(side)).set(units.get()[side]))
-                  )}
-                  <input
-                    defaultValue={units.at(side).get()}
-                    onKeyDown={e =>
-                      e.key === 'Enter' &&
-                      advance(() => {
-                        const t = e.target as HTMLInputElement
-                        units.at(side).set(t.value)
-                      })
-                    }
-                    tabIndex={(i + 1) as number}
-                    placeholder={'Enter ' + side + ' text...'}
-                  />
-                </React.Fragment>
-              ))}
+        </div>
+      </div>
+      {state.anon_view || (
+        <div className="main">
+          <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
+        </div>
+      )}
+      <LabelSidekick store={store} onBlur={() => cms.target.cm.focus()} />
+      <div
+        className={'main' + (hovering ? ' hovering' : '') + (anon_view ? ' NoManualBlue' : '')}
+        style={{minHeight: '10em'}}>
+        <Ladder
+          side={state.side_restriction}
+          orderChangingLabel={s => config.order_changing_labels[s]}
+          graph={visible_graph}
+          hoverId={state.hover_id}
+          onHover={hover_id => store.update({hover_id})}
+          selectedIds={Object.keys(state.selected)}
+          generation={state.generation}
+          onSelect={onSelect}
+        />
+      </div>
+      <div className="right tall">{Summary(g)}</div>
+      {showhide('compact representation', () => (
+        <React.Fragment>
+          {G.sides.map((side, i) => (
+            <React.Fragment key={i}>
+              {Button('\u2b1a', 'clear', () => advance(() => units.at(side).set('')))}
+              {Button(i ? '\u21e1' : '\u21e3', 'copy to ' + side, () =>
+                advance(() => units.at(G.opposite(side)).set(units.get()[side]))
+              )}
+              <input
+                defaultValue={units.at(side).get()}
+                onKeyDown={e =>
+                  e.key === 'Enter' &&
+                  advance(() => {
+                    const t = e.target as HTMLInputElement
+                    units.at(side).set(t.value)
+                  })
+                }
+                tabIndex={(i + 1) as number}
+                placeholder={'Enter ' + side + ' text...'}
+              />
             </React.Fragment>
           ))}
-          {showhide('graph json', () => Utils.show(g))}
-          {showhide('diff json', () => Utils.show(RD.enrichen(g)))}
-          {ImageWebserviceAddresses(graph.get())}
-          <div className="main TopPad">
-            <em>Examples:</em>
-          </div>
-          {config.examples.map((e, i) => [
-            <div className="left float_buttons_right" key={i}>
-              {Button('\u21ea', 'load example', () =>
-                advance(() => units.set({source: e.source, target: e.source}))
-              )}
-              {!e.target ? (
-                <div />
-              ) : (
-                Button('\u21eb', 'see example analysis', () =>
-                  advance(() => units.set({source: e.source, target: e.target}))
-                )
-              )}
-            </div>,
-            <span className="main">{e.source}</span>,
-          ])}
-        </div>
+        </React.Fragment>
+      ))}
+      {showhide('graph json', () => Utils.show(g))}
+      {showhide('diff json', () => Utils.show(RD.enrichen(g)))}
+      {ImageWebserviceAddresses(graph.get())}
+      <div className="main TopPad">
+        <em>Examples:</em>
+      </div>
+      {config.examples.map((e, i) => [
+        <div className="left float_buttons_right" key={i}>
+          {Button('\u21ea', 'load example', () =>
+            advance(() => units.set({source: e.source, target: e.source}))
+          )}
+          {!e.target ? (
+            <div />
+          ) : (
+            Button('\u21eb', 'see example analysis', () =>
+              advance(() => units.set({source: e.source, target: e.target}))
+            )
+          )}
+        </div>,
+        <span className="main">{e.source}</span>,
+      ])}
+    </div>
   )
 }
 
@@ -378,7 +362,6 @@ function RestrictionButtons(store: Store<G.Side | undefined>): VNode[] {
   const name = (k?: string) => (k === undefined ? 'both sides' : k + ' only')
   return options.map(k => Button(name(k), '', () => store.set(k), store.get() !== k))
 }
-
 
 function ShowErrors(store: Store<Record<string, true>>) {
   return record.traverse(store.get(), (_, msg) => (
@@ -438,26 +421,31 @@ export function Summary(g: Graph) {
   const m = G.token_map(g)
   return (
     <div>
-      {record.traverse(label_edge_map, (es, label) => (
-        <div key={label} className="box vsep">
-          <div className={L.BorderCell}>
-            <div>{label}</div>
-          </div>
-          <ul>
-            {es.map(e => (
-              <li key={e.id}>
-                {e.ids.map(id => {
-                  const si = Utils.getUnsafe(m, id)
-                  return (
-                    si.side === 'source' && <span key={si.index}>{g[si.side][si.index].text}</span>
-                  )
-                })}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
+      {record.traverse(
+        label_edge_map,
+        (es, label) =>
+          /^\d+$/.test(label) && (
+            <div key={label} className="box vsep">
+              <div className={L.BorderCell}>
+                <div>{label}</div>
+              </div>
+              <ul>
+                {es.map(e => (
+                  <li key={e.id}>
+                    {e.ids.map(id => {
+                      const si = Utils.getUnsafe(m, id)
+                      return (
+                        si.side === 'source' && (
+                          <span key={si.index}>{g[si.side][si.index].text}</span>
+                        )
+                      )
+                    })}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )
+      )}
     </div>
   )
 }
-

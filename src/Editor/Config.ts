@@ -8,7 +8,7 @@ export interface Example {
 const ex = (source: string, target: string): Example => ({source, target})
 
 const examples: Example[] = `
-Alice and Bob went to Paris . Alice's wallet was stolen . // Alice:Person1 and Bob:Person2 went to Paris:City1 . Alice's:Person1:gen wallet was stolen .
+Alice and Bob went to Paris . Alice's wallet was stolen . // Alice:1:firstname:female:nom and Bob:2:firstname:male:nom went to Paris:city . Alice's:1:firstname:female:gen wallet was stolen .
 
 Their was a problem yesteray . // There was a problem yesterday .
 
@@ -59,4 +59,88 @@ const order_changing_labels: Record<string, true> = {
   OINV: true,
 }
 
-export const config = {order_changing_labels, examples, image_ws_url}
+export type Taxonomy = {
+  group: string
+  entries: {
+    label: string
+    desc: string
+  }[]
+}[]
+
+const taxonomy = [
+  {
+    group: 'Names',
+    entries: [
+      {label: 'surname', desc: ''},
+      {label: 'firstname', desc: ''},
+      {label: 'middlename', desc: ''},
+      {label: 'male', desc: ''},
+      {label: 'female', desc: ''},
+      {label: 'unknown', desc: ''},
+    ],
+  },
+  {
+    group: 'Morphology',
+    entries: [{label: 'gen', desc: ''}, {label: 'nom', desc: ''}],
+  },
+  {
+    group: 'Errors',
+    entries: [{label: 'ort', desc: ''}],
+  },
+  {
+    group: 'Institutions',
+    entries: [{label: 'institution', desc: ''}],
+  },
+  {
+    group: 'Geographic data',
+    entries: [
+      {label: 'country_of_origin', desc: ''},
+      {label: 'country', desc: 'except Sweden'},
+      {label: 'geo', desc: ''},
+      {label: 'zip_code', desc: ''},
+      {label: 'region', desc: ''},
+      {label: 'city-SWE', desc: ''},
+      {label: 'city', desc: 'city including villages'},
+      {label: 'area', desc: ''},
+      {label: 'street', desc: ''},
+      {label: 'geo', desc: 'forest, lake, mountain, etc'},
+    ],
+  },
+  {
+    group: 'Transportation',
+    entries: [
+      {label: 'transport', desc: 'bus, metro, tram, train, express'},
+      {label: 'transport_line', desc: 'number, color'},
+    ],
+  },
+  {
+    group: 'Age',
+    entries: [{label: 'age', desc: ''}],
+  },
+  {
+    group: 'Dates',
+    entries: [
+      {label: 'day', desc: ''},
+      {label: 'month-digit', desc: ''},
+      {label: 'month-word', desc: ''},
+      {label: 'year', desc: ''},
+    ],
+  },
+  {
+    group: 'Misc',
+    entries: [
+      {label: 'phone_nr', desc: ''},
+      {label: 'email', desc: ''},
+      {label: 'personid_nr', desc: ''},
+      {label: 'account_nr', desc: ''},
+      {label: 'license_nr', desc: ''},
+      {label: 'url', desc: ''},
+    ],
+  },
+  {
+    group: 'Mark',
+    entries: [{label: 'prof', desc: ''}, {label: 'sensitive', desc: ''}],
+  },
+]
+
+export const config = {order_changing_labels, examples, image_ws_url, taxonomy}

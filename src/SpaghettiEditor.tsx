@@ -64,9 +64,7 @@ export function App(store: Store<Model.State>): () => VNode {
     restricted && store.update(restricted)
   })
 
-  const cms = record.create(G.sides, side =>
-    CM.GraphEditingCM(store, side)
-  )
+  const cms = record.create(G.sides, side => CM.GraphEditingCM(store, side))
   return () => View(store, cms)
 }
 

@@ -82,9 +82,17 @@ export function make_history_advance_function(store: Store<State>) {
 
 export type ActionOnSelected = 'revert' | 'auto' | 'disconnect' | 'merge' | 'group'
 
-export const onSelectedActions: ActionOnSelected[] = ['revert', 'auto', 'disconnect', 'merge', 'group']
+export const onSelectedActions: ActionOnSelected[] = [
+  'revert',
+  'auto',
+  'disconnect',
+  'merge',
+  'group',
+]
 
-export const act_on_selected: {[K in ActionOnSelected]: (graph: Graph, selected: string[]) => Graph} = {
+export const act_on_selected: {
+  [K in ActionOnSelected]: (graph: Graph, selected: string[]) => Graph
+} = {
   revert(graph, selected) {
     const edge_ids = G.token_ids_to_edge_ids(graph, selected)
     const edges = G.token_ids_to_edges(graph, selected)
@@ -111,4 +119,3 @@ export const act_on_selected: {[K in ActionOnSelected]: (graph: Graph, selected:
     return this.merge(this.disconnect(graph, selected), selected)
   },
 }
-
