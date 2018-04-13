@@ -58,13 +58,29 @@ export const init: State = {
   anon_view: false,
 }
 
-function RestrictionButtons(store: Store<G.Side | undefined>) {
-  const options = [undefined, ...G.sides]
-  const name = (k?: string) => (k === undefined ? 'both sides' : k + ' only')
-  return options.map(k => Button(name(k), '', () => store.set(k), store.get() !== k))
+function check_invariant(store: Store<State>): (g: Graph) => void {
+  return g => {
+    const inv = G.check_invariant(g)
+    if (inv !== 'ok') {
+      Utils.stderr(inv)
+      const msg = [
+        `Internal invariant violated:`,
+        inv.violation,
+        '',
+        `Please report this as a bug, describe what you did and include the current graph:`,
+        Utils.show(inv.g),
+      ].join('\n')
+      store.at('errors').update({[msg]: true})
+      store.at('graph').set(Undo.init(G.init('x')))
+    }
+  }
 }
 
-function only_select_existing_words(graph: Graph, selected0: Record<string, true>) {
+function deselect(store: Store<State>) {
+  store.update({selected: {}, hover_id: undefined})
+}
+
+function deselect_removed_ids(graph: Graph, selected0: Record<string, true>) {
   const em = G.edge_map(graph)
   const present = (s: string) => em.has(s)
   const selected = record.filter(selected0, (_, id) => present(id))
@@ -74,7 +90,7 @@ function only_select_existing_words(graph: Graph, selected0: Record<string, true
   }
 }
 
-function advanceFactory(store: Store<State>) {
+function make_history_advance_function(store: Store<State>) {
   const graph = store.at('graph')
   const now = graph.at('now')
   return (k: () => void) =>
@@ -121,75 +137,50 @@ const act_on_selected: {[K in ActionOnSelected]: (graph: Graph, selected: string
   },
 }
 
-function ActOnSelected(action: ActionOnSelected, g: Graph, s: string[]): Graph {
-  return act_on_selected[action](g, s)
-}
+export function App(store: Store<State>): () => VNode {
+  const global = window as any
 
-function Deselect(store: Store<State>) {
-  store.update({selected: {}, hover_id: undefined})
-}
-
-function LabelSidekick({store, onBlur}: {store: Store<State>; onBlur: () => void}) {
-  const advance = advanceFactory(store)
-  const graph = store.at('graph').at('now')
-  const selected = Object.keys(store.get().selected)
-  if (selected.length > 0) {
-    const edges = G.token_ids_to_edges(graph.get(), selected)
-    const edge_ids = edges.map(e => e.id)
-    const labels = Utils.uniq(Utils.flatMap(edges, e => e.labels))
-    function pop(l: string) {
-      advance(() =>
-        edge_ids.forEach(id =>
-          graph.modify(g => G.modify_labels(g, id, ls => ls.filter(x => x !== l)))
-        )
-      )
-    }
-    function push(l: string) {
-      advance(() =>
-        edge_ids.forEach(id => graph.modify(g => G.modify_labels(g, id, ls => [...ls, l])))
-      )
-    }
-    return (
-      <div
-        className="left tall sidekick box"
-        onClick={e => console.log('stop') || e.stopPropagation()}>
-        <div>
-          {onSelectedActions.map(action =>
-            Button(action, '', () =>
-              advance(() => graph.modify(g => ActOnSelected(action, g, selected)))
-            )
-          )}
-          {Button('deselect', '', () => Deselect(store))}
-        </div>
-        <input
-          ref={e => e && e.focus()}
-          placeholder="Enter label..."
-          onKeyDown={e => {
-            const t = e.target as HTMLInputElement
-            if (e.key === 'Enter' || e.key === ' ') {
-              push(t.value)
-              t.value = ''
-            }
-            if (e.key === 'Escape') {
-              Deselect(store)
-              onBlur()
-            }
-            if (e.key === 'Backspace' && t.value == '' && labels.length > 0) {
-              pop(labels[labels.length - 1])
-            }
-          }}
-        />
-        <ul>
-          {labels.map((lbl, i) => (
-            <li key={i}>
-              <Close title="remove label" onClick={() => pop(lbl)} /> {lbl}
-            </li>
-          ))}
-        </ul>
-      </div>
-    )
+  if (bowser.name != 'Chrome') {
+    store.at('errors').update({
+      [`You are using an unsupported browser (${bowser.name}), only Chrome is supported.`]: true,
+    })
   }
-  return null
+
+  global.store = store
+  global.reset = () => store.set(init)
+  global.G = G
+  global.Utils = Utils
+  global.stress = () => stress(store)
+  store.at('generation').modify(i => i + 1)
+  store
+    .at('graph')
+    .at('now')
+    .storage_connect('swell-spaghetti-6')
+
+  store
+    .at('graph')
+    .at('now')
+    .ondiff(check_invariant(store))
+
+  check_invariant(store)(store.get().graph.now)
+
+  function trigger_invariant_error() {
+    window.setTimeout(() => {
+      const g0 = G.init('apa')
+      const g = {...g0, edges: {oops: g0.edges['e-s0-t0']}}
+      store.update({graph: Undo.init(g)})
+    }, 1000)
+  }
+
+  store.ondiff(state => {
+    const restricted = deselect_removed_ids(state.graph.now, state.selected)
+    restricted && store.update(restricted)
+  })
+
+  const cms = record.create(G.sides, side =>
+    CM.GraphEditingCM(store.pick('graph', 'hover_id', 'subspan'), side)
+  )
+  return () => View(store, cms)
 }
 
 const topStyle = style({
@@ -369,6 +360,75 @@ const topStyle = style({
   },
 })
 
+function RestrictionButtons(store: Store<G.Side | undefined>): VNode[] {
+  const options = [undefined, ...G.sides]
+  const name = (k?: string) => (k === undefined ? 'both sides' : k + ' only')
+  return options.map(k => Button(name(k), '', () => store.set(k), store.get() !== k))
+}
+
+function LabelSidekick({store, onBlur}: {store: Store<State>; onBlur: () => void}) {
+  const advance = make_history_advance_function(store)
+  const graph = store.at('graph').at('now')
+  const selected = Object.keys(store.get().selected)
+  if (selected.length > 0) {
+    const edges = G.token_ids_to_edges(graph.get(), selected)
+    const edge_ids = edges.map(e => e.id)
+    const labels = Utils.uniq(Utils.flatMap(edges, e => e.labels))
+    function pop(l: string) {
+      advance(() =>
+        edge_ids.forEach(id =>
+          graph.modify(g => G.modify_labels(g, id, ls => ls.filter(x => x !== l)))
+        )
+      )
+    }
+    function push(l: string) {
+      advance(() =>
+        edge_ids.forEach(id => graph.modify(g => G.modify_labels(g, id, ls => [...ls, l])))
+      )
+    }
+    return (
+      <div
+        className="left tall sidekick box"
+        onClick={e => console.log('stop') || e.stopPropagation()}>
+        <div>
+          {onSelectedActions.map(action =>
+            Button(action, '', () =>
+              advance(() => graph.modify(g => act_on_selected[action](g, selected)))
+            )
+          )}
+          {Button('deselect', '', () => deselect(store))}
+        </div>
+        <input
+          ref={e => e && e.focus()}
+          placeholder="Enter label..."
+          onKeyDown={e => {
+            const t = e.target as HTMLInputElement
+            if (e.key === 'Enter' || e.key === ' ') {
+              push(t.value)
+              t.value = ''
+            }
+            if (e.key === 'Escape') {
+              deselect(store)
+              onBlur()
+            }
+            if (e.key === 'Backspace' && t.value == '' && labels.length > 0) {
+              pop(labels[labels.length - 1])
+            }
+          }}
+        />
+        <ul>
+          {labels.map((lbl, i) => (
+            <li key={i}>
+              <Close title="remove label" onClick={() => pop(lbl)} /> {lbl}
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+  return null
+}
+
 function Close(props: {onClick(e: React.MouseEvent<HTMLAnchorElement>): void; title: string}) {
   return (
     <a className="close" href="#" title={props.title} onClick={props.onClick}>
@@ -393,70 +453,40 @@ function ShowErrors(store: Store<Record<string, true>>) {
   ))
 }
 
-const ws_url = 'https://ws.spraakbanken.gu.se/ws/swell'
-
-function check_invariant(store: Store<State>): (g: Graph) => void {
-  return g => {
-    const inv = G.check_invariant(g)
-    if (inv !== 'ok') {
-      Utils.stderr(inv)
-      const msg = [
-        `Internal invariant violated:`,
-        inv.violation,
-        '',
-        `Please report this as a bug, describe what you did and include the current graph:`,
-        Utils.show(inv.g),
-      ].join('\n')
-      store.at('errors').update({[msg]: true})
-      store.at('graph').set(Undo.init(G.init('x')))
-    }
-  }
-}
-
-export function App(store: Store<State>): () => VNode {
-  const global = window as any
-
-  if (bowser.name != 'Chrome') {
-    store.at('errors').update({
-      [`You are using an unsupported browser (${bowser.name}), only Chrome is supported.`]: true,
-    })
-  }
-
-  global.store = store
-  global.reset = () => store.set(init)
-  global.G = G
-  global.Utils = Utils
-  global.stress = () => stress(store)
-  store.at('generation').modify(i => i + 1)
-  store
-    .at('graph')
-    .at('now')
-    .storage_connect('swell-spaghetti-6')
-
-  store
-    .at('graph')
-    .at('now')
-    .ondiff(check_invariant(store))
-
-  check_invariant(store)(store.get().graph.now)
-
-  function trigger_invariant_error() {
-    window.setTimeout(() => {
-      const g0 = G.init('apa')
-      const g = {...g0, edges: {oops: g0.edges['e-s0-t0']}}
-      store.update({graph: Undo.init(g)})
-    }, 1000)
-  }
-
-  store.ondiff(state => {
-    const restricted = only_select_existing_words(state.graph.now, state.selected)
-    restricted && store.update(restricted)
-  })
-
-  const cms = record.create(G.sides, side =>
-    CM.GraphEditingCM(store.pick('graph', 'hover_id', 'subspan'), side)
+function ImageWebserviceAddresses(g: Graph) {
+  const stu = C.graph_to_units(g)
+  const esc = (s: string) =>
+    encodeURIComponent(s)
+      .replace('(', '%28')
+      .replace(')', '%29')
+  const escaped = G.with_st(stu, units => esc(C.units_to_string(units, '_')))
+  const st = escaped.source + '//' + escaped.target
+  const url = `${config.image_ws_url}/png?${st}`
+  const md = `![](${url})`
+  return (
+    <React.Fragment>
+      {showhide('compact form', () => (
+        <pre className={'box pre-box main '} style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}>
+          {`${C.units_to_string(stu.source)} // ${C.units_to_string(stu.target)}`}
+        </pre>
+      ))}
+      {showhide(
+        'copy link',
+        () => (
+          <pre
+            className={'box pre-box main ' + ReactUtils.Unselectable}
+            style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}
+            draggable={true}
+            onDragStart={e => {
+              e.dataTransfer.setData('text/plain', md)
+            }}>
+            {md}
+          </pre>
+        ),
+        true
+      )}
+    </React.Fragment>
   )
-  return () => View(store, cms)
 }
 
 export function Summary(g: Graph) {
@@ -514,7 +544,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
 
   const g = graph.get()
 
-  const advance = advanceFactory(store)
+  const advance = make_history_advance_function(store)
 
   const hovering = state.hover_id !== undefined && Object.keys(state.selected).length == 0
 
@@ -560,8 +590,8 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
   }
 
   return (
-    <div onClick={e => Deselect(store)}>
-      <DropZone webserviceURL={ws_url} onDrop={g => advance(() => graph.set(g))}>
+    <div onClick={e => deselect(store)}>
+      <DropZone webserviceURL={config.image_ws_url} onDrop={g => advance(() => graph.set(g))}>
         <div className={topStyle} style={{position: 'relative'}}>
           {ShowErrors(store.at('errors'))}
           {showhide('set source text', () => (
@@ -633,7 +663,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
           ))}
           {showhide('graph json', () => Utils.show(g))}
           {showhide('diff json', () => Utils.show(RD.enrichen(g)))}
-          {links(graph.get())}
+          {ImageWebserviceAddresses(graph.get())}
           <div className="main TopPad">
             <em>Examples:</em>
           </div>
@@ -676,40 +706,4 @@ function stress(store: Store<State>) {
     }, 1)
   }
   go(10)
-}
-
-function links(g: Graph) {
-  const stu = C.graph_to_units(g)
-  const esc = (s: string) =>
-    encodeURIComponent(s)
-      .replace('(', '%28')
-      .replace(')', '%29')
-  const escaped = G.with_st(stu, units => esc(C.units_to_string(units, '_')))
-  const st = escaped.source + '//' + escaped.target
-  const url = `${ws_url}/png?${st}`
-  const md = `![](${url})`
-  return (
-    <>
-      {showhide('compact form', () => (
-        <pre className={'box pre-box main '} style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}>
-          {`${C.units_to_string(stu.source)} // ${C.units_to_string(stu.target)}`}
-        </pre>
-      ))}
-      {showhide(
-        'copy link',
-        () => (
-          <pre
-            className={'box pre-box main ' + ReactUtils.Unselectable}
-            style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}
-            draggable={true}
-            onDragStart={e => {
-              e.dataTransfer.setData('text/plain', md)
-            }}>
-            {md}
-          </pre>
-        ),
-        true
-      )}
-    </>
-  )
 }

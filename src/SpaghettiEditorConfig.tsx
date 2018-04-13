@@ -1,3 +1,5 @@
+const image_ws_url = 'https://ws.spraakbanken.gu.se/ws/swell'
+
 export interface Example {
   source: string
   target: string
@@ -57,4 +59,4 @@ const order_changing_labels: Record<string, true> = {
   OINV: true,
 }
 
-export const config = {order_changing_labels, examples}
+export const config = {order_changing_labels, examples, image_ws_url}
