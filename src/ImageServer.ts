@@ -60,11 +60,11 @@ export async function ImageMaker<Data>(
 ) {
   const {render, cleanup} = await renderer()
 
-  async function snap(query_string: string) {
+  async function snap(query_string: string, filetype: 'png' | 'pdf' = 'png') {
     const data = image.string_to_data(query_string)
     const html = vnode_to_html(image.data_to_react(data))
-    const buf = await render(html, '#capture')
-    return png.onBuffer.set(image.key, data, buf)
+    const buf = await render(html, '#capture', filetype)
+    return filetype == 'png' ? png.onBuffer.set(image.key, data, buf) : buf
   }
 
   return {snap, cleanup}
@@ -99,14 +99,26 @@ export async function ImageServer<Data>(image: Image<Data>, port = 3000) {
   })
 
   const image_maker = await ImageMaker(image)
-  const snap = memo(url => image_maker.snap(req_to_string(url)))
+  const snap_png = memo(url => image_maker.snap(req_to_string(url), 'png'))
+  const snap_pdf = memo(url => image_maker.snap(req_to_string(url), 'pdf'))
   const metadata = memo(url => metadata_from_url(image, req_to_string(url)))
 
   app.get('/*png', throttle(throttle_options), async (req, res) => {
     try {
-      const png = await snap(req.url)
+      const png = await snap_png(req.url)
       res.setHeader('Cache-Control', 'no-cache')
       res.contentType('image/png')
+      res.send(png)
+    } catch (e) {
+      res.status(400).send(e.toString())
+    }
+  })
+
+  app.get('/*pdf', throttle(throttle_options), async (req, res) => {
+    try {
+      const png = await snap_pdf(req.url)
+      res.setHeader('Cache-Control', 'no-cache')
+      res.contentType('application/pdf')
       res.send(png)
     } catch (e) {
       res.status(400).send(e.toString())

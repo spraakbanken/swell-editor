@@ -64,9 +64,9 @@ const LadderStyle = style(
         ...csstips.horizontal,
         ...csstips.centerJustified,
       },
-      // note: li indexes starts from 1
       '& > ul > .bottom': {
-        marginTop: `${px(3)}`,
+        marginTop: `-${px(3)}`,
+        marginBottom: `${px(3)}`,
       },
       '& > ul > .source.mid': {
         marginTop: `${px(5)}`,
@@ -84,13 +84,9 @@ const LadderStyle = style(
         color: '#383',
         textDecoration: 'none',
       },
-      '& del ': {
+      '& del': {
         color: '#a00',
         textDecoration: 'none',
-      },
-      '& .EditedTop': {
-        boxShadow: `0 ${px(2)} 0 0 #777`,
-        zIndex: 11,
       },
       '& .GreyPath': {
         stroke: '#999',
@@ -106,6 +102,56 @@ const LadderStyle = style(
         stroke: '#fff',
         strokeWidth: px(12),
         fill: 'none',
+      },
+
+      '& .MustacheZ': {
+        zIndex: -1,
+      },
+      '& .PathZ': {
+        zIndex: -2,
+      },
+
+      '& .RelativeSVG': {
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+      },
+      '& .AbsoluteSVG': {
+        position: 'absolute',
+        top: '0',
+        left: '0',
+        width: '100%',
+        height: '100%',
+        // This needs to be <=0.5em, but smaller than that makes it not start
+        // growing until a sufficiently high zoom
+        fontSize: '0.25em',
+      },
+
+      // the point of the scaling up and down here is to make the vertical lines
+      // be on exact pixel coordinates to not make them look blurry.
+      '& .PixelPerfectOuter': {
+        // table rounds the sizes in webengine
+        display: 'table',
+        // we try to make the sizes just about 50%
+        width: 'calc(50% + 1px)',
+        height: 'calc(50% + 1px)',
+      },
+      '& .PixelPerfectInner': {
+        // and scale this div 200% of this to make it an even number of pixels
+        width: '200%',
+        height: '200%',
+        position: 'absolute',
+      },
+
+      '.NoPixelPerfect & .PixelPerfectOuter': {
+        display: 'block',
+        width: '100%',
+        height: '100%',
+      },
+      '.NoPixelPerfect & .PixelPerfectInner': {
+        width: '100%',
+        height: '100%',
+        position: 'absolute',
       },
     },
   }
@@ -125,18 +171,22 @@ const make_brows = (manual: boolean) => {
     </React.Fragment>
   )
 
-  const under = Absolute(
-    <svg height="200%" width="100%" viewBox="0 0 2 2" preserveAspectRatio="none">
-      {mustache2x2}
-    </svg>,
-    {zIndex: -1, position: 'absolute', top: '10%', left: '0.5px'}
+  const under = (
+    <div className="AbsoluteSVG MustacheZ" style={{top: '15%', left: '0.5px'}}>
+      <svg height="200%" width="100%" viewBox="0 0 2 2" preserveAspectRatio="none">
+        {mustache2x2}
+      </svg>
+    </div>
   )
-  const above = Absolute(
-    <svg height="200%" width="100%" viewBox="0 0 2 2" preserveAspectRatio="none">
-      <g transform="translate(0,2) scale(1,-1)">{mustache2x2}</g>
-    </svg>,
-    {zIndex: -1, position: 'absolute', top: '-100%', left: '0.5px'}
+
+  const above = (
+    <div className="AbsoluteSVG MustacheZ" style={{top: '-90%', left: '0.5px'}}>
+      <svg height="200%" width="100%" viewBox="0 0 2 2" preserveAspectRatio="none">
+        <g transform="translate(0,2) scale(1,-1)">{mustache2x2}</g>
+      </svg>
+    </div>
   )
+
   return {under, above}
 }
 
@@ -156,50 +206,6 @@ function Line<M>({x0, y0, x1, y1}: D.Line<M>, className: string) {
 
 function LineIsHorizontal<M>({y0, y1}: D.Line<M>) {
   return y0 == y1
-}
-
-function PixelPerfectSVG(svg: VNode, css: React.CSSProperties = {}) {
-  // the point of the scaling up and down here is to make the vertical lines
-  // be on exact pixel coordinates to not make them look blurry.
-  const more_css = {
-    ...css,
-    // table rounds the sizes in webengine
-    display: 'table',
-    // we try to make the sizes just about 50%
-    width: 'calc(50% + 1px)',
-    height: 'calc(50% + 1px)',
-  }
-  return Absolute(
-    <div
-      style={{
-        // and scale this div 200% of this to make it an even number of pixels
-        width: '200%',
-        height: '200%',
-        position: 'absolute',
-      }}>
-      {svg}
-    </div>,
-    more_css
-  )
-}
-
-function Absolute(vnode: VNode, css: React.CSSProperties = {}) {
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        top: '0',
-        left: '0',
-        width: '100%',
-        height: '100%',
-        // This needs to be <=0.5em, but smaller than that makes it not start
-        // growing until a sufficiently high zoom
-        fontSize: '0.25em',
-        ...css,
-      }}>
-      {vnode}
-    </div>
-  )
 }
 
 const {inserts, deletes} = Utils.expr(() => {
@@ -263,22 +269,28 @@ function Column(column: D.Line<LineMeta>[], rel: VNode | null | false = null): V
   const top = column.filter(line => line.meta.id == endpoint_id)
   const below = column.filter(line => line.meta.id != endpoint_id)
   return (
-    <div style={{position: 'relative', width: '100%', height: '100%'}}>
+    <div className="RelativeSVG">
       {rel}
-      {PixelPerfectSVG(
-        <svg height="100%" width="100%" viewBox="0 0 1 1" preserveAspectRatio="none">
-          {ReactUtils.Key([
-            ...below.map(line =>
-              Line(line, greyPath(line.meta.manual) + ' ' + (line.meta.hover ? ' hover ' : ''))
-            ),
-            ...top.map(line => Line(line, whitePath)),
-            ...top.map(line =>
-              Line(line, greyPath(line.meta.manual) + ' ' + (line.meta.hover ? ' hover ' : ''))
-            ),
-          ])}
-        </svg>,
-        {zIndex: -2}
-      )}
+      <div className="AbsoluteSVG PixelPerfectOuter PathZ">
+        <div className="PixelPerfectInner">
+          <svg
+            height="100%"
+            width="100%"
+            viewBox="0 0 1 1"
+            preserveAspectRatio="none"
+            style={{zIndex: -2}}>
+            {ReactUtils.Key([
+              ...below.map(line =>
+                Line(line, greyPath(line.meta.manual) + ' ' + (line.meta.hover ? ' hover ' : ''))
+              ),
+              ...(below.length == 0 ? [] : top.map(line => Line(line, whitePath))),
+              ...top.map(line =>
+                Line(line, greyPath(line.meta.manual) + ' ' + (line.meta.hover ? ' hover ' : ''))
+              ),
+            ])}
+          </svg>
+        </div>
+      </div>
     </div>
   )
 }

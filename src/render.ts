@@ -3,7 +3,7 @@ import * as puppeteer from 'puppeteer'
 import * as pool from 'generic-pool'
 
 export interface Renderer {
-  render(html: string, selector: string): Promise<Buffer>
+  render(html: string, selector: string, filetype?: 'png' | 'pdf'): Promise<Buffer>
   cleanup(): Promise<void>
 }
 
@@ -21,7 +21,11 @@ export async function makeChromeRenderer(): Promise<Renderer> {
     opts
   )
 
-  async function render(html: string, selector: string): Promise<Buffer> {
+  async function render(
+    html: string,
+    selector: string,
+    filetype: 'png' | 'pdf' = 'png'
+  ): Promise<Buffer> {
     const page = await chrome_page.acquire()
     let ret: Buffer | string = 'error'
     try {
@@ -30,7 +34,7 @@ export async function makeChromeRenderer(): Promise<Renderer> {
       if (!element) {
         throw `${selector} not found on chrome_page`
       }
-      return await element.screenshot({type: 'png'})
+      return (await filetype) == 'png' ? element.screenshot({type: 'png'}) : page.pdf()
     } finally {
       chrome_page.release(page)
     }

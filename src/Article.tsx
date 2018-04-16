@@ -18,12 +18,17 @@ import {VNode} from './ReactUtils'
 
 import {md} from './Slides'
 
-export interface State {}
+export interface State {
+  only?: number
+}
 
-export const init: State = {}
+export const init: State = {
+  only: undefined,
+}
 
 export function App(store: Store<State>): () => VNode {
-  return () => View(store)
+  ;(window as any).store = store
+  return () => View(store.get())
 }
 
 const ArticleStyle = style(Utils.debugName('ArticleStyle'), {
@@ -31,13 +36,27 @@ const ArticleStyle = style(Utils.debugName('ArticleStyle'), {
   minWidth: '200px',
   maxWidth: '980px',
   margin: '0 auto',
-  padding: '45px',
   color: '#24292e',
   fontFamily:
     'Lato, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"',
   lineHeight: 1.5,
   wordWrap: 'break-word',
   $nest: {
+    '&:not(.only)': {
+      padding: '45px',
+    },
+    '& .SmallLadder .upper': {
+      height: '14px',
+    },
+    '& .SmallLadder .mid, & .SmallLadder .lower': {
+      height: '8px',
+    },
+    '& .SmallLadder li:last-child': {
+      marginTop: '-2px',
+    },
+    '& .equidistant ul': {
+      width: '12px',
+    },
     '& .ladder': {
       fontFamily: 'Lato',
     },
@@ -112,9 +131,10 @@ export function alignment(): VNode {
 
   const s = 'Examples high light lotsof futures always'
   const t = 'Examples always highlight lots of features'
+  const wo = ' always'
 
   const full = make_example(s, t)
-  const wo_always = make_example(s.replace(' always', ''), t.replace(' always', ''))
+  const wo_always = make_example(s.replace(wo, ''), t.replace(wo, ''))
 
   return md`
 
@@ -122,42 +142,38 @@ export function alignment(): VNode {
 
     Initially we start with the target being equal to the source:
 
-    ${L.ladder(full.g0)}
+    ${ladder(full.g0)}
 
     We want to edit the target text as if it were in an input text box, without
     considering that the tokens in the text is part of a linked structure.
 
     If we edit the target text, by manually insterting and deleting characters, the program? gives us
 
-    ${L.ladder(full.g)}
+    ${ladder(full.g)}
 
     These alignments are all correct except for the word order movement.
     How was this calculated?
     Start with a standard diff edit script on the _character-level_:
 
-    ${L.ladder(full.g_unlab)}
+    ${ladder(full.g_unlab, 'equidistant')}
 
     We calculate this using Myers' diff algorithm provided by the
     [diff-match-patch](https://github.com/google/diff-match-patch) library.
-    By identifying each character with the token it originated from
-    we now reflect these character level alignments to the token level.
-    Name the source tokens _s0_, _s1_, ... and the target tokens _t0_, _t1_, ... .
-    We will not identify the spaces with anything and not consider them candidates for linking.
-    The diff where each character link is associated with the identifiers
-    it is related to looks like this:
-
-    ${L.ladder(full.g_label)}
+    Each character is identified with the token it originated from.
+    These character level alignments are now lifted to the token level.
+    Spaces are not used for alignment due to giving rise to too many
+    false positives.
 
     We can now read off from this which tokens should be aligned, namely these six groups:
 
-    | group | token identifiers | source words | target words |
-    | ---   | ---               | ---          | ---          |
-    | 1     | s0 t0             | Examples     | Examples     |
-    | 2     | t1                |              | always       |
-    | 3     | s1 s2 t2          | high light   | highlight    |
-    | 4     | s3 t3 t4          | lotsof       | lots of      |
-    | 5     | s4  t5            | futures      | features     |
-    | 6     | s5                | always       |              |
+    | group | source words | target words |
+    | ---   | ---          | ---          |
+    | 1     | Examples     | Examples     |
+    | 2     |              | always       |
+    | 3     | high light   | highlight    |
+    | 4     | lotsof       | lots of      |
+    | 5     | futures      | features     |
+    | 6     | always       |              |
 
     Writing parallell corpora this way is sometimes called standoff and is used in tools like Falco.
 
@@ -181,16 +197,11 @@ export function alignment(): VNode {
 
     We thus proceed by removing that word and aligning the rest of the text automatically to get this:
 
-    ${L.ladder(wo_always.g_unlab)}
-
-    When we now look at the identifiers, we see that the identifiers _t1_ and _s5_ for _always_
-    are skipped (because we already know how to connect these):
-
-    ${L.ladder(wo_always.g_label)}
+    ${ladder(wo_always.g_unlab, 'equidistant')}
 
     We now read off the aligments to get:
 
-    ${L.ladder(wo_always.g)}
+    ${ladder(wo_always.g)}
 
     We can now insert the missing words into their correct places based on position in the respective sentences
     to get the desired alignment:
@@ -242,7 +253,7 @@ export function alignment(): VNode {
     `
 }
 
-export function View(store: Store<State>): VNode {
+export function View(state: State): VNode {
   const intro = md`
     # Mostly Automatic Word Alignment of Parallel Corpora
 
@@ -260,13 +271,10 @@ export function View(store: Store<State>): VNode {
 
     Here is a hypothetical sentence from such a word aligned parallel learner corpus:
 
-    ${(
-      <div className="NoManualBlue">
-        {Align(
-          'Examples high light lotsof futures always',
-          'Examples always~always highlight lots of features'
-        )}
-      </div>
+    ${Align(
+      'Examples high light lotsof futures always',
+      'Examples always~always highlight lots of features',
+      'NoManualBlue'
     )}
 
     This example also illustrates the features of our representation
@@ -309,18 +317,18 @@ export function View(store: Store<State>): VNode {
 
     A natural place to put annotations is on the edges of these:
 
-    ${(
-      <div className="NoManualBlue">
-        {Align(
-          "Examples high light:undercompound lotsof:overcompound futures:'ortography||word choice' always:'word order'",
-          'Examples always~always highlight lots~lotsof of~lotsof features'
-        )}
-      </div>
+    ${Align(
+      "Examples high light:undercompound lotsof:overcompound futures:'ortography||word choice' always:'word order'",
+      'Examples always~always highlight lots~lotsof of~lotsof features',
+      'NoManualBlue',
+      false
     )}
 
     We will not focus more on such labels in this text but simply highlight
     that this is a possibility.
   `
+
+  const alignment_text = alignment()
 
   const future = md`
     ## Future work
@@ -366,31 +374,46 @@ export function View(store: Store<State>): VNode {
     ` a@1  a~@1 a~@1 a~@1 b@2 b~@2 b~@2 b~@2 // b~@2 b~@2 a~@1 a~@1 a~@1 `,
     ` a@1  a~@1 a~@1 b@2 b~@2 b~@2 b~@2 // b~@2 b~@2 a~@1 a~@1 a~@1      `,
     ` a@1 a~@1 v a~@1 w a~@1 a~@1 // a~@1 a~@1 v a~@1 w a~@1 a~@1        `,
-  ].map(s => (
-    <div className="NoManualBlue" style={{display: 'inline-table', marginRight: '40px'}}>
-      {align(s)}
-    </div>
-  ))
+  ].map(s => <div style={{display: 'inline-table', marginRight: '40px'}}>{align(s)}</div>)
 
-  return (
-    <div className={ArticleStyle}>
-      {intro}
-      {alignment()}
-      {future}
-      <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap'}}>{gallery}</div>
-    </div>
-  )
+  const only = state.only
+
+  if (only !== undefined) {
+    return <div className={ArticleStyle + ' only'}>{Ladders[only]}</div>
+  } else {
+    return (
+      <div className={ArticleStyle}>
+        {intro}
+        {alignment_text}
+        {future}
+        <div style={{display: 'flex', flexDirection: 'row', flexWrap: 'wrap'}}>{gallery}</div>
+      </div>
+    )
+  }
 }
 
-export function Align(source: string, target: string) {
+const Ladders = [] as VNode[]
+
+export function ladder(g: G.Graph, more_classes = '', SmallLadder = true): VNode {
+  const vn = (
+    <div
+      className={('NoPixelPerfect ' + (SmallLadder ? 'SmallLadder ' : '') + more_classes).trim()}>
+      {L.ladder(g)}
+    </div>
+  )
+  Ladders.push(vn)
+  return vn
+}
+
+export function Align(source: string, target: string, more_classes = '', SmallLadder = true) {
   const s = C.parse(source)
   const t = C.parse(target)
-  return L.ladder(C.units_to_graph(s, t))
+  return ladder(C.units_to_graph(s, t), more_classes, SmallLadder)
 }
 
 export function align(x: string) {
   const [source, target] = x.split('//')
   const s = C.parse(source)
   const t = C.parse(target)
-  return L.ladder(C.units_to_graph(s, t))
+  return ladder(C.units_to_graph(s, t), 'NoManualBlue')
 }
