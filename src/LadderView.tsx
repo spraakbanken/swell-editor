@@ -65,7 +65,7 @@ const LadderStyle = style(
         ...csstips.centerJustified,
       },
       '& > ul > .bottom': {
-        marginTop: `-${px(3)}`,
+        marginTop: `${px(3)}`,
         marginBottom: `${px(3)}`,
       },
       '& > ul > .source.mid': {
@@ -180,7 +180,7 @@ const make_brows = (manual: boolean) => {
   )
 
   const above = (
-    <div className="AbsoluteSVG MustacheZ" style={{top: '-90%', left: '0.5px'}}>
+    <div className="AbsoluteSVG MustacheZ" style={{top: '-100%', left: '0.5px'}}>
       <svg height="200%" width="100%" viewBox="0 0 2 2" preserveAspectRatio="none">
         <g transform="translate(0,2) scale(1,-1)">{mustache2x2}</g>
       </svg>
@@ -370,11 +370,11 @@ export function Ladder(props: LadderProps): React.ReactElement<LadderProps> {
               switch (d.edit) {
                 case 'Edited':
                   return [
-                    <div style={{position: 'relative'}}>
+                    <div style={{position: 'relative'}} className={hoverClass(hoverId, d.id)}>
                       {d.source_diffs.map((ds, i) => HoverSpan(d.source[i].id, deletes(ds)))}
                       {d.source.length > brow_threshold && brows[~~d.manual].under}
                     </div>,
-                    <div style={{position: 'relative'}}>
+                    <div style={{position: 'relative'}} className={hoverClass(hoverId, d.id)}>
                       {d.target_diffs.map((ds, i) => HoverSpan(d.target[i].id, inserts(ds)))}
                       {d.target.length > brow_threshold && brows[~~d.manual].above}
                     </div>,

@@ -51,8 +51,8 @@ const ArticleStyle = style(Utils.debugName('ArticleStyle'), {
     '& .SmallLadder .mid, & .SmallLadder .lower': {
       height: '8px',
     },
-    '& .SmallLadder li:last-child': {
-      marginTop: '-2px',
+    '& .SmallLadder .bottom': {
+      marginTop: '-0.20em',
     },
     '& .equidistant ul': {
       width: '12px',

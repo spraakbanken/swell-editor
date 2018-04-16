@@ -137,7 +137,7 @@ const topStyle = style({
     '& .cm-hovering span': {
       color: '#2228',
     },
-    '& .hovering .hover span, & .hovering path.hover': {
+    '& .hovering .hover span, & .hovering path.hover, & .hovering .hover path' : {
       opacity: 1.0,
       strokeOpacity: 1.0,
       fillOpacity: 1.0,

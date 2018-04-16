@@ -45,5 +45,5 @@ export const serve = (port?: number) => ImageServer(image, port)
 
 import {argv} from 'process'
 if (argv[2] == '--serve') {
-  serve(Number.parseInt(argv[3], 10))
+  serve(Number.parseInt(argv[3] || '3000', 10))
 }
