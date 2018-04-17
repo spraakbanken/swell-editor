@@ -51,7 +51,19 @@ const ArticleStyle = style(Utils.debugName('ArticleStyle'), {
     '& .SmallLadder .mid, & .SmallLadder .lower': {
       height: '8px',
     },
-    '& .SmallLadder .bottom': {
+    '& .SomewhatSmall .upper': {
+      height: '17px',
+    },
+    '& .SomewhatSmall .lower': {
+      height: '10px',
+    },
+    '& .SomewhatSmall .mid ': {
+      fontSize: '15px',
+    },
+    '& .SomewhatSmall .mid .RelativeSVG > div > div ': {
+      paddingTop: '0px',
+    },
+    '& .SmallLadder .bottom, & .SomewhatSmall .bottom': {
       marginTop: '-0.20em',
     },
     '& .equidistant ul': {
@@ -330,7 +342,7 @@ export function View(state: State): VNode {
     ${Align(
       "Examples high light:undercompound lotsof:overcompound futures:'ortography||word choice' always:'word order'",
       'Examples always~always highlight lots~lotsof of~lotsof features',
-      'NoManualBlue',
+      'NoManualBlue SomewhatSmall',
       false
     )}
 
