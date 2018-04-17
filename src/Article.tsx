@@ -60,6 +60,15 @@ const ArticleStyle = style(Utils.debugName('ArticleStyle'), {
     '& .ladder': {
       fontFamily: 'Lato',
     },
+    '& .ladder ins': {
+      textDecoration: 'underline',
+    },
+    '& .ladder del': {
+      textDecoration: 'line-through',
+    },
+    '& .ladder .Manual': {
+      'stroke-dasharray': '5, 2',
+    } as any,
     [Utils.range(6)
       .map(i => `& h${i + 1}`)
       .join(', ')]: {
@@ -104,6 +113,7 @@ const ArticleStyle = style(Utils.debugName('ArticleStyle'), {
     },
     '& .NoManualBlue .GreyPath.Manual': {
       stroke: '#999',
+      'stroke-dasharray': 'unset',
     },
   },
 })
