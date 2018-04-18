@@ -77,6 +77,9 @@ const ArticleStyle = style(Utils.debugName('ArticleStyle'), {
     '& .graphView .Manual': {
       'stroke-dasharray': '5, 2',
     } as any,
+    '& .graphView .WhitePath.CoversNothing': {
+      display: 'none',
+    },
     [Utils.range(6)
       .map(i => `& h${i + 1}`)
       .join(', ')]: {

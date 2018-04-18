@@ -281,7 +281,9 @@ function Column(column: G.Line<LineMeta>[], rel: VNode | null | false = null): V
               ...below.map(line =>
                 Line(line, greyPath(line.meta.manual) + ' ' + (line.meta.hover ? ' hover ' : ''))
               ),
-              ...(below.length == 0 ? [] : top.map(line => Line(line, whitePath))),
+              ...top.map(line =>
+                Line(line, whitePath + (below.length == 0 ? ' CoversNothing' : ''))
+              ),
               ...top.map(line =>
                 Line(line, greyPath(line.meta.manual) + ' ' + (line.meta.hover ? ' hover ' : ''))
               ),
