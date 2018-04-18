@@ -2,7 +2,7 @@ import * as GV from './GraphView'
 import * as G from './Graph'
 import {Image, ImageServer} from './ImageServer'
 
-import {Data, key} from './SpaghettiTypes'
+import {Data, key} from './EditorTypes'
 export {Data, key}
 
 export function graph_to_data(graph: G.Graph): Data {

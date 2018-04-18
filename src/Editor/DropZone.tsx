@@ -5,7 +5,7 @@ import {Graph} from '../Graph'
 import * as Utils from '../Utils'
 
 import * as png from '../png'
-import {Data, key} from '../SpaghettiTypes'
+import {Data, key} from '../EditorTypes'
 
 import {style} from 'typestyle'
 
