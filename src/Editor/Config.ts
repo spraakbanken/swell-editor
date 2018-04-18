@@ -67,7 +67,7 @@ export type Taxonomy = {
   }[]
 }[]
 
-const taxonomy = [
+const anonymization = [
   {
     group: 'Names',
     entries: [
@@ -143,4 +143,52 @@ const taxonomy = [
   },
 ]
 
-export const config = {order_changing_labels, examples, image_ws_url, taxonomy}
+// https://spraakbanken.gu.se/eng/swell/swell_codebook
+export const normalization: Taxonomy = [
+  { group: 'Lexical',
+    entries: [
+    {label:'W', desc: 'Wrong word or punctuation'},
+    {label:'W-REF', desc: 'Reference error'},
+    {label:'ORT', desc: 'Orthographic/spelling error'},
+    {label:'PART', desc: 'Overcompounding'},
+    {label:'SPL', desc: 'Oversplitting'},
+    {label:'DER', desc: 'Deviant derivational affix used'},
+    {label:'CAP', desc: 'Deviant letter case (upper/lower)'},
+    {label:'ID', desc: 'Idiomaticity'},
+    {label:'FL', desc: 'Non-Swedish word'}
+  ]},
+  { group: 'Morphological',
+    entries: [
+    {label:'F', desc: 'Deviant selection of morphosyntactic category'},
+    {label:'F-DEF', desc: 'Deviation in definite/indefinite forms'},
+    {label:'F-TENSE', desc: 'Covers all deviations with verbs and verb groups, incl aspect'},
+    {label:'F-NUM', desc: 'Deviation in number agreement'},
+    {label:'F-AGR', desc: 'Agreement error (kongruensfel)'},
+    {label:'INFL', desc: 'Deviant paradigm selection; overgeneralization'},
+  ]},
+  { group: 'Syntactical',
+    entries: [
+    {label:'M', desc: 'Word, phrase or punctuation missing'},
+    {label:'M-SUBJ', desc: 'Subject missing'},
+    {label:'R', desc: 'Word or phrase redundant'},
+    {label:'R-PREP', desc: 'Preposition redundant'},
+    {label:'R-PUNC', desc: 'Punctuation mark redundant'},
+    {label:'O', desc: 'Word or phrase order'},
+    {label:'INV', desc: 'Non-application of subject/verb inversion '},
+    {label:'OINV', desc: 'Application of subject/verb inversion in inappropriate contexts'},
+    {label:'MCA', desc: 'Incorrect position for main clause adverbial'},
+    {label:'SCA', desc: 'Incorrect position for subsidiary clause adverbial'},
+  ]},
+  { group: 'Intelligibility',
+    entries: [
+    {label:'X', desc: "impossible to interpret writer's intention"},
+  ]},
+  { group: 'Agreement',
+    entries: [
+    {label:'AGR', desc: 'Agreement errors'},
+  ]}
+]
+
+
+export const config = {order_changing_labels, examples, image_ws_url, taxonomy: {anonymization, normalization}}
+

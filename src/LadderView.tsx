@@ -228,8 +228,8 @@ const {inserts, deletes} = Utils.expr(() => {
 
   const skip = () => null
   const span = (text: string) => <span>{text}</span>
-  const ins = (text: string) => text.trim() ? <ins>{text}</ins> : span(text)
-  const del = (text: string) => text.trim() ? <del>{text}</del> : span(text)
+  const ins = (text: string) => (text.trim() ? <ins>{text}</ins> : span(text))
+  const del = (text: string) => (text.trim() ? <del>{text}</del> : span(text))
   return {
     inserts: diff_to_spans([skip, span, ins]),
     deletes: diff_to_spans([del, span, skip]),

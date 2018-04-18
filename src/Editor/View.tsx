@@ -189,7 +189,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
   const state = store.get()
   const history = store.at('graph')
   const graph = history.at('now')
-  const {anon_view} = state
+  const anon_view = state.mode === Model.modes.anonymization
 
   const units: Store<G.ST<string>> = store
     .at('graph')
@@ -283,16 +283,16 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
         <div className="box inline">{RestrictionButtons(store.at('side_restriction'))}</div>
         <div className="box inline">
           {Button(`${anon_view ? 'disable' : 'enable'} anonymization view`, '', () =>
-            store.at('anon_view').modify(b => !b)
+            store.at('mode').modify(Model.nextMode)
           )}
         </div>
       </div>
-      {state.anon_view || (
+      {anon_view || (
         <div className="main">
           <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
         </div>
       )}
-      <LabelSidekick store={store} onBlur={() => cms.target.cm.focus()} />
+      <LabelSidekick store={store} onBlur={() => cms.target.cm.focus()} taxonomy={state.taxonomy[state.mode]} />
       <div
         className={'main' + (hovering ? ' hovering' : '') + (anon_view ? ' NoManualBlue' : '')}
         style={{minHeight: '10em'}}>

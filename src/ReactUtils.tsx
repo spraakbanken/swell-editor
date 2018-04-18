@@ -130,8 +130,19 @@ export function showhide(what: string, show: () => string | VNode, init = false)
   )
 }
 
-export const Button = (label: string, title: string, on: () => void, enabled = true) => (
-  <button title={title} key={label} onClick={on} style={{cursor: 'pointer'}} disabled={!enabled}>
+export const Button = (
+  label: string,
+  title: string,
+  on: () => void,
+  enabled = true,
+  stopOnClickPropagation = true
+) => (
+  <button
+    title={title}
+    key={label}
+    onClick={e => (stopOnClickPropagation && e.stopPropagation(), on())}
+    style={{cursor: 'pointer'}}
+    disabled={!enabled}>
     {label}
   </button>
 )

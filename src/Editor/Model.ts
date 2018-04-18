@@ -6,6 +6,9 @@ import * as G from '../Graph'
 import * as Utils from '../Utils'
 import * as record from '../record'
 
+import {Taxonomy, config} from './Config'
+export {Taxonomy} from './Config'
+
 export interface State {
   readonly graph: Undo<Graph>
   readonly hover_id?: string
@@ -16,8 +19,21 @@ export interface State {
   readonly generation: number
   /** error messages */
   readonly errors: Record<string, true>
-  /** anonymization mode */
-  readonly anon_view: boolean
+
+  readonly mode: Mode
+  /* where should the taxonomy be stored? */
+  readonly taxonomy: Record<Mode, Taxonomy>
+}
+
+export type Mode = 'anonymization' | 'normalization'
+
+export const modes: Record<Mode, Mode> = {
+  anonymization: 'anonymization',
+  normalization: 'normalization'
+}
+
+export function nextMode(m: Mode) {
+  return m === modes.anonymization ? modes.normalization : modes.anonymization
 }
 
 export const init: State = {
@@ -28,7 +44,8 @@ export const init: State = {
   side_restriction: undefined,
   generation: 0,
   errors: {},
-  anon_view: false,
+  mode: modes.normalization,
+  taxonomy: config.taxonomy
 }
 
 export function check_invariant(store: Store<State>): (g: Graph) => void {
