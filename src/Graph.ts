@@ -1,18 +1,4 @@
-/** Parallel corpus as a graph
-
-Idea: make a variant type describing different kinds of positions:
-
-  - for source and target:
-    - from start of text and from start of current sentence:
-      - character offset
-      - token index
-      - token identifier
-  - edge identifier
-
-Make the exposed functions coordinates take any of these and convert them to the internal
-function's preferred view before executing
-
-*/
+/** Parallel corpus as a graph */
 import * as R from 'ramda'
 import * as Utils from './Utils'
 import * as record from './record'
@@ -28,16 +14,16 @@ export const opposite = (s: Side): Side => (s === 'source' ? 'target' : 'source'
 
 export const sides = ['source', 'target'] as Side[]
 
-export function with_st<A, B>(g: ST<A>, f: (a: A, side: Side) => B): ST<B> {
+export function mapSides<A, B>(g: SourceTarget<A>, f: (a: A, side: Side) => B): SourceTarget<B> {
   return {source: f(g.source, 'source'), target: f(g.target, 'target')}
 }
 
-export interface ST<A> {
+export interface SourceTarget<A> {
   readonly source: A
   readonly target: A
 }
 
-export interface Graph extends ST<Token[]> {
+export interface Graph extends SourceTarget<Token[]> {
   edges: Edges
 }
 
@@ -180,9 +166,9 @@ export function init_from(tokens: string[], manual = false): Graph {
   }), set_target(init('apa'), 'bepa ')) // => true
 
 */
-export function from_unaligned(st: ST<{text: string; labels: string[]}[]>): Graph {
+export function from_unaligned(st: SourceTarget<{text: string; labels: string[]}[]>): Graph {
   const edges: Record<string, Edge> = {}
-  const g = with_st(st, (toks, side) =>
+  const g = mapSides(st, (toks, side) =>
     toks.map((tok, i) => {
       const id = side[0] + i
       const e = Edge([id], tok.labels, false)
@@ -274,7 +260,7 @@ export type SidedIndex = {side: Side; index: number}
 
 */
 export function token_map(g: Graph): Map<string, SidedIndex> {
-  const m = with_st(g, (tokens, side) =>
+  const m = mapSides(g, (tokens, side) =>
     tokens.map((token, index) => [token.id, {side, index}] as [string, SidedIndex])
   )
   return new Map([...m.source, ...m.target])
@@ -661,7 +647,7 @@ export function align(g: Graph): Graph {
   )
 
   {
-    const chars = with_st(g, tokens =>
+    const chars = mapSides(g, tokens =>
       Utils.flatMap(tokens.filter(token => !em(token.id).manual), punctuate)
     )
 
@@ -682,7 +668,7 @@ export function align(g: Graph): Graph {
 
   const first = Utils.unique_check<string>()
 
-  with_st(g, (tokens, side) =>
+  mapSides(g, (tokens, side) =>
     tokens.forEach(token => {
       let e_repr = em(token.id)
       if (!e_repr.manual) {
@@ -1009,7 +995,7 @@ export function sentences(g: Graph, target_index: number): Subspan {
 /** Gets the sentences around some indicies */
 export function sentences_around(g: Graph, indicies: SidedIndex[]): Subspan {
   const starts = Utils.PolyUnionFind<SidedIndex>()
-  const bounds = with_st(g, (tokens, side) => {
+  const bounds = mapSides(g, (tokens, side) => {
     const bs = T.sentence_starts(T.texts(tokens))
     bs.forEach((start, index) => {
       starts.union({side, index}, {side, index: start})
@@ -1032,7 +1018,7 @@ export function sentences_around(g: Graph, indicies: SidedIndex[]): Subspan {
   // this will be correct
   const em = edge_map(g)
   const main_repr = starts.repr(main)
-  return with_st(g, (tokens, side) => {
+  return mapSides(g, (tokens, side) => {
     // If sentence starts or ends with only removed tokens we slurp these straggler tokens:
     function pad_missing(d: number, index: number): number {
       if (index < 0) {

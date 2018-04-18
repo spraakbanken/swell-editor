@@ -191,12 +191,12 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
   const graph = history.at('now')
   const anon_view = state.mode === Model.modes.anonymization
 
-  const units: Store<G.ST<string>> = store
+  const units: Store<G.SourceTarget<string>> = store
     .at('graph')
     .at('now')
     .via(
       Lens.iso(
-        g => G.with_st(C.graph_to_units(g), us => C.units_to_string(us)),
+        g => G.mapSides(C.graph_to_units(g), us => C.units_to_string(us)),
         state => {
           const s = C.parse(state.source)
           const t = C.parse(state.target)
@@ -385,7 +385,7 @@ function ImageWebserviceAddresses(g: Graph) {
     encodeURIComponent(s)
       .replace('(', '%28')
       .replace(')', '%29')
-  const escaped = G.with_st(stu, units => esc(C.units_to_string(units, '_')))
+  const escaped = G.mapSides(stu, units => esc(C.units_to_string(units, '_')))
   const st = escaped.source + '//' + escaped.target
   const url = `${config.image_ws_url}/png?${st}`
   const md = `![](${url})`

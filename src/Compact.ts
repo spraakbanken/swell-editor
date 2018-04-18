@@ -7,7 +7,7 @@ import * as pstr from 'parser-ts/lib/string'
 
 import * as T from './Token'
 import * as G from './Graph'
-import {Graph, ST, Edge} from './Graph'
+import {Graph, SourceTarget, Edge} from './Graph'
 import * as Utils from './Utils'
 import {UnionFind} from './Utils'
 import * as D from './Diff'
@@ -218,7 +218,7 @@ const identify = (prefix: string, us: Unit[]) =>
 // to try to preserve the user-supplied id
 // one problem is possible name-collision
 
-export function to_unaligned_graph(stu: STU): Graph {
+export function to_unaligned_graph(stu: SourceTargetUnits): Graph {
   const s = identify('s', stu.source)
   const t = identify('t', stu.target)
   const uf = Utils.PolyUnionFind<Link>()
@@ -321,7 +321,7 @@ export function units_to_string(units: Unit[], sep = ' ' as ' ' | '_') {
   return units.map(unit_to_string).join(sep)
 }
 
-type STU = ST<Unit[]>
+type SourceTargetUnits = SourceTarget<Unit[]>
 
 /**
 
@@ -336,12 +336,12 @@ type STU = ST<Unit[]>
   }) // => proto_graph_to_units(G.init('word', true))
 
 */
-export function proto_graph_to_units(g: Graph): STU {
+export function proto_graph_to_units(g: Graph): SourceTargetUnits {
   const em = Utils.chain(G.edge_map(g), m => (id: string): G.Edge =>
     m.get(id) || Utils.raise(`Token id ${id} not in edge map`)
   )
   const first = Utils.unique_check<string>()
-  return G.with_st(g, tokens =>
+  return G.mapSides(g, tokens =>
     tokens.map((token): Unit => {
       const e = em(token.id)
       const labels = first(e.id) ? e.labels : []
@@ -386,11 +386,11 @@ export function proto_graph_to_units(g: Graph): STU {
 
 
 */
-export function minimize(stu: STU): STU {
+export function minimize(stu: SourceTargetUnits): SourceTargetUnits {
   return remove_unused_ids(prefer_text_links(stu))
 }
 
-function prefer_text_links(stu: STU): STU {
+function prefer_text_links(stu: SourceTargetUnits): SourceTargetUnits {
   const count = Utils.Counter(stu.source.map(u => u.text))
   const repl = {} as Record<string, Link>
   stu.source.forEach(u => {
@@ -405,19 +405,19 @@ function prefer_text_links(stu: STU): STU {
       return link
     }
   }
-  return G.with_st(stu, units => units.map(u => ({...u, links: u.links.map(replace_link)})))
+  return G.mapSides(stu, units => units.map(u => ({...u, links: u.links.map(replace_link)})))
 }
 
-function remove_unused_ids(stu: STU): STU {
+function remove_unused_ids(stu: SourceTargetUnits): SourceTargetUnits {
   const ids: string[] = []
-  G.with_st(stu, units =>
+  G.mapSides(stu, units =>
     units.forEach(u => u.links.forEach(link => link.tag == 'id' && ids.push(link.id)))
   )
   const count = Utils.Counter(ids)
-  return G.with_st(stu, units => units.map(u => ({...u, ids: u.ids.filter(id => count(id) > 0)})))
+  return G.mapSides(stu, units => units.map(u => ({...u, ids: u.ids.filter(id => count(id) > 0)})))
 }
 
-export function graph_to_units(g: Graph): ST<Unit[]> {
+export function graph_to_units(g: Graph): SourceTarget<Unit[]> {
   return minimize(proto_graph_to_units(g))
 }
 

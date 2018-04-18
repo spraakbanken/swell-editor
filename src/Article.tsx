@@ -136,7 +136,7 @@ export function alignment(): VNode {
     const g = G.set_target(g0, t)
 
     const st = {source: s, target: t}
-    const punctuated = G.with_st(st, (s, side) =>
+    const punctuated = G.mapSides(st, (s, side) =>
       Utils.flatMap(T.tokenize(s), (text, i) =>
         Utils.str_map(text, c => ({text: c, labels: [side[0] + i]}))
       )
