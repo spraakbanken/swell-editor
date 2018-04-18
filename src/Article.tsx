@@ -340,7 +340,7 @@ export function View(state: State): VNode {
     A natural place to put annotations is on the edges of these:
 
     ${Align(
-      "Examples high light:undercompound lotsof:overcompound futures:'ortography||word choice' always:'word order'",
+      "Examples high light:oversplitting lotsof:overcompound futures:'orthography||word choice' always:'word order'",
       'Examples always~always highlight lots~lotsof of~lotsof features',
       'NoManualBlue SomewhatSmall',
       false

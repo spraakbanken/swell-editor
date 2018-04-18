@@ -9,7 +9,6 @@ import * as record from '../record'
 export interface State {
   readonly graph: Undo<Graph>
   readonly hover_id?: string
-  readonly label_id?: string
   readonly selected: Record<string, true>
   readonly subspan?: G.Subspan
   readonly side_restriction?: G.Side
@@ -24,7 +23,6 @@ export interface State {
 export const init: State = {
   graph: Undo.init(G.init('')),
   hover_id: undefined,
-  label_id: undefined,
   selected: {},
   subspan: undefined,
   side_restriction: undefined,
