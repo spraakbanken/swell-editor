@@ -39,8 +39,8 @@ export const BorderCell = style(
 
 export const ManualPathColour = '#6699cc'
 
-const LadderStyle = style(
-  Utils.debugName('LadderStyle'),
+const GraphViewStyle = style(
+  Utils.debugName('GraphViewStyle'),
   csstips.wrap,
   csstips.startJustified,
   csstips.horizontal,
@@ -293,7 +293,7 @@ function Column(column: G.Line<LineMeta>[], rel: VNode | null | false = null): V
   )
 }
 
-export interface LadderProps {
+export interface GraphViewProps {
   graph: G.Graph
   orderChangingLabel?: (label: string) => boolean
   onHover?: OnHover
@@ -305,7 +305,7 @@ export interface LadderProps {
   generation?: number
 }
 
-export function Ladder(props: LadderProps): React.ReactElement<LadderProps> {
+export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewProps> {
   const {
     graph,
     orderChangingLabel,
@@ -329,7 +329,8 @@ export function Ladder(props: LadderProps): React.ReactElement<LadderProps> {
   const l = grids.lower
   const c = Utils.count<string>()
   return (
-    <div className={`${LadderStyle} ${ReactUtils.clean_ul} ${ReactUtils.Unselectable} ladder`}>
+    <div
+      className={`${GraphViewStyle} ${ReactUtils.clean_ul} ${ReactUtils.Unselectable} graphView`}>
       {rd.map((d, i) =>
         ReactUtils.thunk(
           {
@@ -440,6 +441,6 @@ export function Ladder(props: LadderProps): React.ReactElement<LadderProps> {
   )
 }
 
-export function ladder(graph: G.Graph): VNode {
-  return <Ladder graph={graph} />
+export function graphView(graph: G.Graph): VNode {
+  return <GraphView graph={graph} />
 }

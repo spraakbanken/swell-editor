@@ -4,13 +4,13 @@ import {graph, insert_text} from './Common'
 
 import {enzyme} from './Common'
 
-import * as L from '../src/LadderView'
+import * as GV from '../src/GraphView'
 import * as Utils from '../src/Utils'
 import * as record from '../src/record'
 import * as ReactUtils from '../src/ReactUtils'
 
-qc('Ladder text sanity', graph.small(), (g, p) => {
-  const dom = enzyme.shallow(L.ladder(g))
+qc('GraphView text sanity', graph.small(), (g, p) => {
+  const dom = enzyme.shallow(GV.graphView(g))
 
   function text_somewhere(s: string) {
     function go(node: enzyme.ShallowWrapper): boolean {
@@ -46,7 +46,7 @@ function snap_attempt() {
     const d = G.calculate_diff(g)
     const rd = RD.enrichen(g, d)
     const grid = D.DiffToGrid(d)
-    const dom = shallow(L.Ladder(g)).html()
+    const dom = shallow(GV.GraphView(g)).html()
     snap(t, Utils.show({g,d,rd,grid}) + '\n' + dom)
     t.end()
   })

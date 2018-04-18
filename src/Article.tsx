@@ -6,7 +6,7 @@ import {Store} from 'reactive-lens'
 import {style, types} from 'typestyle'
 import * as csstips from 'csstips'
 import * as G from './Graph'
-import * as L from './LadderView'
+import * as GV from './GraphView'
 
 import * as Utils from './Utils'
 
@@ -41,40 +41,40 @@ const ArticleStyle = style(Utils.debugName('ArticleStyle'), {
     '&:not(.only)': {
       padding: '45px',
     },
-    '& .SmallLadder .upper': {
+    '& .Short .upper': {
       height: '14px',
     },
-    '& .SmallLadder .mid, & .SmallLadder .lower': {
+    '& .Short .mid, & .Short .lower': {
       height: '8px',
     },
-    '& .SomewhatSmall .upper': {
+    '& .SomewhatShort .upper': {
       height: '17px',
     },
-    '& .SomewhatSmall .lower': {
+    '& .SomewhatShort .lower': {
       height: '10px',
     },
-    '& .SomewhatSmall .mid ': {
+    '& .SomewhatShort .mid ': {
       fontSize: '15px',
     },
-    '& .SomewhatSmall .mid .RelativeSVG > div > div ': {
+    '& .SomewhatShort .mid .RelativeSVG > div > div ': {
       paddingTop: '0px',
     },
-    '& .SmallLadder .bottom, & .SomewhatSmall .bottom': {
+    '& .Short .bottom, & .SomewhatShort .bottom': {
       marginTop: '-0.20em',
     },
     '& .equidistant ul': {
       width: '12px',
     },
-    '& .ladder': {
+    '& .graphView': {
       fontFamily: 'Lato',
     },
-    '& .ladder ins': {
+    '& .graphView ins': {
       textDecoration: 'underline',
     },
-    '& .ladder del': {
+    '& .graphView del': {
       textDecoration: 'line-through',
     },
-    '& .ladder .Manual': {
+    '& .graphView .Manual': {
       'stroke-dasharray': '5, 2',
     } as any,
     [Utils.range(6)
@@ -160,20 +160,20 @@ export function alignment(): VNode {
 
     Initially we start with the target being equal to the source:
 
-    ${ladder(full.g0)}
+    ${graphView(full.g0)}
 
     We want to edit the target text as if it were in an input text box, without
     considering that the tokens in the text is part of a linked structure.
 
     If we edit the target text, by manually insterting and deleting characters, the program? gives us
 
-    ${ladder(full.g)}
+    ${graphView(full.g)}
 
     These alignments are all correct except for the word order movement.
     How was this calculated?
     Start with a standard diff edit script on the _character-level_:
 
-    ${ladder(full.g_unlab, 'equidistant')}
+    ${graphView(full.g_unlab, 'equidistant')}
 
     We calculate this using Myers' diff algorithm provided by the
     [diff-match-patch](https://github.com/google/diff-match-patch) library.
@@ -215,11 +215,11 @@ export function alignment(): VNode {
 
     We thus proceed by removing that word and aligning the rest of the text automatically to get this:
 
-    ${ladder(wo_always.g_unlab, 'equidistant')}
+    ${graphView(wo_always.g_unlab, 'equidistant')}
 
     We now read off the aligments to get:
 
-    ${ladder(wo_always.g)}
+    ${graphView(wo_always.g)}
 
     We can now insert the missing words into their correct places based on position in the respective sentences
     to get the desired alignment:
@@ -338,7 +338,7 @@ export function View(state: State): VNode {
     ${Align(
       "Examples high light:oversplitting lotsof:overcompound futures:'orthography||word choice' always:'word order'",
       'Examples always~always highlight lots~lotsof of~lotsof features',
-      'NoManualBlue SomewhatSmall',
+      'NoManualBlue SomewhatShort',
       false
     )}
 
@@ -397,7 +397,7 @@ export function View(state: State): VNode {
   const only = state.only
 
   if (only !== undefined) {
-    return <div className={ArticleStyle + ' only'}>{Ladders[only]}</div>
+    return <div className={ArticleStyle + ' only'}>{GraphViews[only]}</div>
   } else {
     return (
       <div className={ArticleStyle}>
@@ -410,28 +410,27 @@ export function View(state: State): VNode {
   }
 }
 
-const Ladders = [] as VNode[]
+const GraphViews = [] as VNode[]
 
-export function ladder(g: G.Graph, more_classes = '', SmallLadder = true): VNode {
+export function graphView(g: G.Graph, more_classes = '', Short = true): VNode {
   const vn = (
-    <div
-      className={('NoPixelPerfect ' + (SmallLadder ? 'SmallLadder ' : '') + more_classes).trim()}>
-      {L.ladder(g)}
+    <div className={('NoPixelPerfect ' + (Short ? 'Short ' : '') + more_classes).trim()}>
+      {GV.graphView(g)}
     </div>
   )
-  Ladders.push(vn)
+  GraphViews.push(vn)
   return vn
 }
 
-export function Align(source: string, target: string, more_classes = '', SmallLadder = true) {
+export function Align(source: string, target: string, more_classes = '', Short = true) {
   const s = G.parse(source)
   const t = G.parse(target)
-  return ladder(G.units_to_graph(s, t), more_classes, SmallLadder)
+  return graphView(G.units_to_graph(s, t), more_classes, Short)
 }
 
 export function align(x: string) {
   const [source, target] = x.split('//')
   const s = G.parse(source)
   const t = G.parse(target)
-  return ladder(G.units_to_graph(s, t), 'NoManualBlue')
+  return graphView(G.units_to_graph(s, t), 'NoManualBlue')
 }

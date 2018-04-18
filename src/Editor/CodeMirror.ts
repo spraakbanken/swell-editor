@@ -5,7 +5,7 @@ import * as Utils from '../Utils'
 
 import {Graph} from '../Graph'
 import * as G from '../Graph'
-import * as L from '../LadderView'
+import * as GV from '../GraphView'
 
 import {VNode} from '../ReactUtils'
 import * as ReactUtils from '../ReactUtils'
@@ -206,7 +206,7 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
           }
           e && e.manual && mark_me({className: ManualMarkClassName})
           if (e) {
-            const className = L.hoverClass(hover_id, e.id)
+            const className = GV.hoverClass(hover_id, e.id)
             className && mark_me({className})
           }
           i += n

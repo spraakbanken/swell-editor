@@ -19,8 +19,8 @@ import * as CM from './CodeMirror'
 import {config} from './Config'
 
 import {LabelSidekick} from './LabelSidekick'
-import {Ladder} from '../LadderView'
-import * as L from '../LadderView'
+import {GraphView} from '../GraphView'
+import * as GV from '../GraphView'
 
 const topStyle = style({
   ...Utils.debugName('topStyle'),
@@ -111,7 +111,7 @@ const topStyle = style({
       fontFamily: 'inherit',
       color: 'inherit',
     },
-    '& .ladder ul': {
+    '& .graphView ul': {
       zIndex: 10,
       cursor: 'pointer',
     },
@@ -298,7 +298,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
       <div
         className={'main' + (hovering ? ' hovering' : '') + (anon_view ? ' NoManualBlue' : '')}
         style={{minHeight: '10em'}}>
-        <Ladder
+        <GraphView
           side={state.side_restriction}
           orderChangingLabel={s => config.order_changing_labels[s]}
           graph={visible_graph}
@@ -428,7 +428,7 @@ export function Summary(g: Graph) {
         (es, label) =>
           /^\d+$/.test(label) && (
             <div key={label} className="box vsep">
-              <div className={L.BorderCell}>
+              <div className={GV.BorderCell}>
                 <div>{label}</div>
               </div>
               <ul>

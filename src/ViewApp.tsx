@@ -7,7 +7,7 @@ import * as csstips from 'csstips'
 import * as Pilot from './PilotData'
 import * as Utils from './Utils'
 import {GraphSegments} from './PilotData'
-import * as L from './LadderView'
+import * as GV from './GraphView'
 
 import {VNode} from './ReactUtils'
 import * as ReactUtils from './ReactUtils'
@@ -93,7 +93,7 @@ export function View(store: Store<State>): VNode {
                 marginBottom: '1.875em',
               }}>
               <li style={{flex: 1}}>{Utils.capitalize_head(m.annotator)}</li>
-              <li style={{flex: 6}}>{L.ladder(m.graph)}</li>
+              <li style={{flex: 6}}>{GV.graphView(m.graph)}</li>
             </ul>
           </React.Fragment>
         )

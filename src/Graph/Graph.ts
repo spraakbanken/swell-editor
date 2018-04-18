@@ -693,7 +693,7 @@ interface ScoreDDL {
 
 type DDL = Utils.LazySnocList<Dragged | Dropped>
 
-/** Calculate the ladder diff without merging contiguous edits
+/** Calculate the graphView diff without merging contiguous edits
 
 What we do here is try to find a diff using dragged and dropped looking only
 at the edge ids. This is different from finding a normal diff edit script

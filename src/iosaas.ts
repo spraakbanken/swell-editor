@@ -1,4 +1,4 @@
-import * as L from './LadderView'
+import * as GV from './GraphView'
 import * as G from './Graph'
 import {Image, ImageServer} from './ImageServer'
 
@@ -31,7 +31,7 @@ function string_to_data(query_string: string): Data {
 }
 
 function data_to_react(data: Data): React.ReactElement<{}> {
-  return L.ladder(data.graph)
+  return GV.graphView(data.graph)
 }
 
 export const image: Image<Data> = {

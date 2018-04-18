@@ -5,7 +5,7 @@ import {style, types} from 'typestyle'
 import * as csstips from 'csstips'
 
 import * as G from './Graph'
-import * as L from './LadderView'
+import * as GV from './GraphView'
 import * as Utils from './Utils'
 
 import {VNode} from './ReactUtils'
@@ -104,7 +104,7 @@ const SlideStyle = style(
 
 function secedge() {
   const graph = G.modify_tokens(G.init('en äpple'), 0, 1, 'ett ')
-  const apple = L.ladder(graph)
+  const apple = GV.graphView(graph)
   const side_by_side: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'row',
