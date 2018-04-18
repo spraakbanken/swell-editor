@@ -5,8 +5,6 @@ import * as csstips from 'csstips'
 
 import {Graph} from '../Graph'
 import * as G from '../Graph'
-import * as C from '../Compact'
-import * as RD from '../RichDiff'
 import * as Utils from '../Utils'
 import * as record from '../record'
 
@@ -137,7 +135,7 @@ const topStyle = style({
     '& .cm-hovering span': {
       color: '#2228',
     },
-    '& .hovering .hover span, & .hovering path.hover, & .hovering .hover path' : {
+    '& .hovering .hover span, & .hovering path.hover, & .hovering .hover path': {
       opacity: 1.0,
       strokeOpacity: 1.0,
       fillOpacity: 1.0,
@@ -196,11 +194,11 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
     .at('now')
     .via(
       Lens.iso(
-        g => G.mapSides(C.graph_to_units(g), us => C.units_to_string(us)),
+        g => G.mapSides(G.graph_to_units(g), us => G.units_to_string(us)),
         state => {
-          const s = C.parse(state.source)
-          const t = C.parse(state.target)
-          return C.units_to_graph(s, t)
+          const s = G.parse(state.source)
+          const t = G.parse(state.target)
+          return G.units_to_graph(s, t)
         }
       )
     )
@@ -292,7 +290,11 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
           <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
         </div>
       )}
-      <LabelSidekick store={store} onBlur={() => cms.target.cm.focus()} taxonomy={state.taxonomy[state.mode]} />
+      <LabelSidekick
+        store={store}
+        onBlur={() => cms.target.cm.focus()}
+        taxonomy={state.taxonomy[state.mode]}
+      />
       <div
         className={'main' + (hovering ? ' hovering' : '') + (anon_view ? ' NoManualBlue' : '')}
         style={{minHeight: '10em'}}>
@@ -333,7 +335,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
         </React.Fragment>
       ))}
       {showhide('graph json', () => Utils.show(g))}
-      {showhide('diff json', () => Utils.show(RD.enrichen(g)))}
+      {showhide('diff json', () => Utils.show(G.enrichen(g)))}
       {ImageWebserviceAddresses(graph.get())}
       <div className="main TopPad">
         <em>Examples:</em>
@@ -380,12 +382,12 @@ function ShowErrors(store: Store<Record<string, true>>) {
 }
 
 function ImageWebserviceAddresses(g: Graph) {
-  const stu = C.graph_to_units(g)
+  const stu = G.graph_to_units(g)
   const esc = (s: string) =>
     encodeURIComponent(s)
       .replace('(', '%28')
       .replace(')', '%29')
-  const escaped = G.mapSides(stu, units => esc(C.units_to_string(units, '_')))
+  const escaped = G.mapSides(stu, units => esc(G.units_to_string(units, '_')))
   const st = escaped.source + '//' + escaped.target
   const url = `${config.image_ws_url}/png?${st}`
   const md = `![](${url})`
@@ -393,7 +395,7 @@ function ImageWebserviceAddresses(g: Graph) {
     <React.Fragment>
       {showhide('compact form', () => (
         <pre className={'box pre-box main '} style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}>
-          {`${C.units_to_string(stu.source)} // ${C.units_to_string(stu.target)}`}
+          {`${G.units_to_string(stu.source)} // ${G.units_to_string(stu.target)}`}
         </pre>
       ))}
       {showhide(

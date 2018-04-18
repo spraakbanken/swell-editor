@@ -200,7 +200,15 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
   }
 }
 
-export function LabelSidekick({store, onBlur, taxonomy}: {store: Store<State>; onBlur: () => void, taxonomy: Taxonomy}) {
+export function LabelSidekick({
+  store,
+  onBlur,
+  taxonomy,
+}: {
+  store: Store<State>
+  onBlur: () => void
+  taxonomy: Taxonomy
+}) {
   const advance = Model.make_history_advance_function(store)
   const graph = store.at('graph').at('now')
   const selected = Object.keys(store.get().selected)

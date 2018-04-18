@@ -1,13 +1,10 @@
 import * as React from 'react'
 import {Store, Lens, Undo} from 'reactive-lens'
 
-import * as D from './Diff'
 import {Graph} from './Graph'
 import * as G from './Graph'
 import * as Utils from './Utils'
 import * as record from './record'
-
-import * as C from './Compact'
 
 import {VNode} from './ReactUtils'
 

@@ -1,11 +1,9 @@
 import * as React from 'react'
 import * as G from './Graph'
-import * as RD from './RichDiff'
 import {style} from 'typestyle'
 import * as csstips from 'csstips'
 import * as Utils from './Utils'
 import * as record from './record'
-import * as D from './Diff'
 
 import {VNode} from './ReactUtils'
 import * as ReactUtils from './ReactUtils'
@@ -196,7 +194,7 @@ function PixelPath(d: string, className: string) {
   return <path d={d} className={className} vectorEffect="non-scaling-stroke" />
 }
 
-function Line<M>({x0, y0, x1, y1}: D.Line<M>, className: string) {
+function Line<M>({x0, y0, x1, y1}: G.Line<M>, className: string) {
   const ff = x1 != 0.5
   const yi = ff ? y1 : y0
   const xi = ff ? x0 : x1
@@ -204,7 +202,7 @@ function Line<M>({x0, y0, x1, y1}: D.Line<M>, className: string) {
   return PixelPath(d, className)
 }
 
-function LineIsHorizontal<M>({y0, y1}: D.Line<M>) {
+function LineIsHorizontal<M>({y0, y1}: G.Line<M>) {
   return y0 == y1
 }
 
@@ -261,7 +259,7 @@ export interface LineMeta {
   hover: boolean
 }
 
-function Column(column: D.Line<LineMeta>[], rel: VNode | null | false = null): VNode {
+function Column(column: G.Line<LineMeta>[], rel: VNode | null | false = null): VNode {
   const endpoint_id: string | undefined = column
     .filter(line => !LineIsHorizontal(line))
     .map(line => line.meta.id)[0]
@@ -320,9 +318,9 @@ export function Ladder(props: LadderProps): React.ReactElement<LadderProps> {
   } = props
   const selected_ids = selectedIds || []
   const edges = graph.edges
-  const rd0 = RD.enrichen(graph, orderChangingLabel)
-  const rd = RD.restrict_to_side(rd0, side)
-  const grids = D.mapGrids(D.DiffToGrid(rd), ({id}) => ({
+  const rd0 = G.enrichen(graph, orderChangingLabel)
+  const rd = G.restrict_to_side(rd0, side)
+  const grids = G.mapGrids(G.DiffToGrid(rd), ({id}) => ({
     id,
     manual: graph.edges[id].manual === true,
     hover: hoverId === id,

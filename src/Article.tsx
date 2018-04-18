@@ -5,13 +5,9 @@ import * as React from 'react'
 import {Store} from 'reactive-lens'
 import {style, types} from 'typestyle'
 import * as csstips from 'csstips'
-import * as D from './Diff'
 import * as G from './Graph'
 import * as L from './LadderView'
-import * as C from './Compact'
 
-import * as RD from './RichDiff'
-import * as T from './Token'
 import * as Utils from './Utils'
 
 import {VNode} from './ReactUtils'
@@ -137,7 +133,7 @@ export function alignment(): VNode {
 
     const st = {source: s, target: t}
     const punctuated = G.mapSides(st, (s, side) =>
-      Utils.flatMap(T.tokenize(s), (text, i) =>
+      Utils.flatMap(G.tokenize(s), (text, i) =>
         Utils.str_map(text, c => ({text: c, labels: [side[0] + i]}))
       )
     )
@@ -428,14 +424,14 @@ export function ladder(g: G.Graph, more_classes = '', SmallLadder = true): VNode
 }
 
 export function Align(source: string, target: string, more_classes = '', SmallLadder = true) {
-  const s = C.parse(source)
-  const t = C.parse(target)
-  return ladder(C.units_to_graph(s, t), more_classes, SmallLadder)
+  const s = G.parse(source)
+  const t = G.parse(target)
+  return ladder(G.units_to_graph(s, t), more_classes, SmallLadder)
 }
 
 export function align(x: string) {
   const [source, target] = x.split('//')
-  const s = C.parse(source)
-  const t = C.parse(target)
-  return ladder(C.units_to_graph(s, t), 'NoManualBlue')
+  const s = G.parse(source)
+  const t = G.parse(target)
+  return ladder(G.units_to_graph(s, t), 'NoManualBlue')
 }

@@ -8,11 +8,12 @@ import * as pstr from 'parser-ts/lib/string'
 import * as T from './Token'
 import * as G from './Graph'
 import {Graph, SourceTarget, Edge} from './Graph'
-import * as Utils from './Utils'
-import {UnionFind} from './Utils'
 import * as D from './Diff'
 import {Diff} from './Diff'
-import * as record from './record'
+
+import * as Utils from '../Utils'
+import {UnionFind} from '../Utils'
+import * as record from '../record'
 
 type Link = {tag: 'text'; text: string} | {tag: 'id'; id: string} | {tag: 'unlinked'}
 

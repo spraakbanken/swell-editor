@@ -1,4 +1,4 @@
-src/*doctest*
+src/**/*doctest*
 *png
 *pdf
 *js

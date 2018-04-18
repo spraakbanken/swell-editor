@@ -4,11 +4,8 @@ import {Store} from 'reactive-lens'
 import {style, types} from 'typestyle'
 import * as csstips from 'csstips'
 
-import * as D from './Diff'
 import * as G from './Graph'
 import * as L from './LadderView'
-import * as RD from './RichDiff'
-import * as T from './Token'
 import * as Utils from './Utils'
 
 import {VNode} from './ReactUtils'

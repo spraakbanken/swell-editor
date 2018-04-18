@@ -29,7 +29,7 @@ export type Mode = 'anonymization' | 'normalization'
 
 export const modes: Record<Mode, Mode> = {
   anonymization: 'anonymization',
-  normalization: 'normalization'
+  normalization: 'normalization',
 }
 
 export function nextMode(m: Mode) {
@@ -45,7 +45,7 @@ export const init: State = {
   generation: 0,
   errors: {},
   mode: modes.normalization,
-  taxonomy: config.taxonomy
+  taxonomy: config.taxonomy,
 }
 
 export function check_invariant(store: Store<State>): (g: Graph) => void {

@@ -1,4 +1,3 @@
-import * as C from './Compact'
 import * as G from './Graph'
 
 export interface Data {
@@ -7,8 +6,8 @@ export interface Data {
 
   source_string: string
   target_string: string
-  source: C.Unit[]
-  target: C.Unit[]
+  source: G.Unit[]
+  target: G.Unit[]
 }
 
 // stored in png tEXt

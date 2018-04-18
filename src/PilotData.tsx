@@ -1,9 +1,6 @@
 import * as R from 'ramda'
 
-import * as D from './Diff'
 import * as G from './Graph'
-import * as RD from './RichDiff'
-import * as T from './Token'
 import * as Utils from './Utils'
 import * as record from './record'
 
@@ -57,7 +54,7 @@ export function imprint<A>(r: Record<string, Record<string, A>>, k1: string, k2:
 
 export interface RichGraph {
   graph: G.Graph
-  rich_diff: RD.RichDiff[]
+  rich_diff: G.RichDiff[]
 }
 export interface Labelled {
   labelled: number
@@ -79,7 +76,7 @@ Object.entries(pilot_data).forEach(([annotator, {graphs}]) => {
       text != 'examples' &&
       (text != 'text3' || (annotator != 'gunlög' && annotator != 'lena'))
     ) {
-      const rich_graph = {graph, rich_diff: RD.enrichen(graph), labelled}
+      const rich_graph = {graph, rich_diff: G.enrichen(graph), labelled}
       imprint(ByAnnotator, annotator, text, rich_graph)
       imprint(ByText, text, annotator, rich_graph)
       Edited.push({text, annotator, ...rich_graph})
@@ -100,7 +97,7 @@ export function GraphSegments(text: string): GraphSegments {
     groups.map(group =>
       record.traverse(group, (subspan, annotator) => {
         const graph = G.subgraph(graphs[annotator].graph, subspan)
-        return {subspan, annotator, text, graph, rich_diff: RD.enrichen(graph)}
+        return {subspan, annotator, text, graph, rich_diff: G.enrichen(graph)}
       })
     )
   )

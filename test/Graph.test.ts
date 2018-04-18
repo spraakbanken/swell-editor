@@ -4,7 +4,6 @@ import {Gen} from 'proptest'
 
 import {graph, insert_text} from './Common'
 
-import * as T from '../src/Token'
 import * as G from '../src/Graph'
 import {Graph} from '../src/Graph'
 import * as record from '../src/record'
@@ -145,7 +144,7 @@ describe('modify', () => {
     const mod = G.modify(g, from, to, text)
     const inside_before = new Set<string>()
     for (let i = from; i <= to; i++) {
-      G.related(g, T.token_at(G.target_texts(g), i).token).forEach(id => inside_before.add(id))
+      G.related(g, G.token_at(G.target_texts(g), i).token).forEach(id => inside_before.add(id))
     }
     const inside_after = new Set<string>()
     for (let i = from; i <= from + text.length; i++) {
@@ -153,7 +152,7 @@ describe('modify', () => {
         skip('too big!')
         continue
       }
-      G.related(mod, T.token_at(G.target_texts(mod), i).token).forEach(id => inside_after.add(id))
+      G.related(mod, G.token_at(G.target_texts(mod), i).token).forEach(id => inside_after.add(id))
     }
     const w = to - from
     for (const before of range(G.target_text(g).length)) {
@@ -186,8 +185,8 @@ describe('modify', () => {
         skip('after too big')
         continue
       }
-      const rel_before = new Set(G.related(g, T.token_at(G.target_texts(g), before).token))
-      const rel_after = new Set(G.related(mod, T.token_at(G.target_texts(mod), after).token))
+      const rel_before = new Set(G.related(g, G.token_at(G.target_texts(g), before).token))
+      const rel_after = new Set(G.related(mod, G.token_at(G.target_texts(mod), after).token))
       const sets = {
         inside_before: [...inside_before.keys()],
         inside_after: [...inside_after.keys()],
@@ -251,7 +250,7 @@ describe('diff', () => {
         return []
       }
     })
-    return G.target_text(g) == T.text(target)
+    return G.target_text(g) == G.text(target)
   })
 
   qc('diff source text preversed', graph, g => {
@@ -265,7 +264,7 @@ describe('diff', () => {
         return []
       }
     })
-    return G.source_text(g) == T.text(source)
+    return G.source_text(g) == G.text(source)
   })
 
   qc('diff edge set preserved', graph, g => {

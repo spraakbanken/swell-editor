@@ -4,8 +4,8 @@ import {Graph} from './Graph'
 import * as G from './Graph'
 import {Token, Span} from './Token'
 import * as T from './Token'
-import {TokenDiff} from './Utils'
-import * as Utils from './Utils'
+import {TokenDiff} from '../Utils'
+import * as Utils from '../Utils'
 
 export type RichDiff =
   | Edited & {index: number} & {target_diffs: TokenDiff[]; source_diffs: TokenDiff[]}

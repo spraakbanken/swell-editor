@@ -3,12 +3,9 @@ import * as React from 'react'
 import {Store, Lens, Undo} from 'reactive-lens'
 import * as Utils from '../Utils'
 
-import * as D from '../Diff'
 import {Graph} from '../Graph'
 import * as G from '../Graph'
 import * as L from '../LadderView'
-import * as RD from '../RichDiff'
-import * as T from '../Token'
 
 import {VNode} from '../ReactUtils'
 import * as ReactUtils from '../ReactUtils'
@@ -151,7 +148,7 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
   )
 
   function texts_differ(): undefined | {graph_text: string; editor_text: string} {
-    const graph_text = T.text(graph.get()[side]).slice(0, -1)
+    const graph_text = G.text(graph.get()[side]).slice(0, -1)
     const editor_text = cm.getDoc().getValue()
     if (graph_text !== editor_text) {
       return {graph_text, editor_text}
@@ -234,7 +231,7 @@ function PositionUtils(cm: CodeMirror.Editor, graph: Store<Graph>, side: G.Side)
   }
 
   class Token {
-    constructor(public readonly index: number | null, public readonly token: T.Token | null) {}
+    constructor(public readonly index: number | null, public readonly token: G.Token | null) {}
 
     toEdge() {
       if (this.token) {
@@ -275,7 +272,7 @@ function PositionUtils(cm: CodeMirror.Editor, graph: Store<Graph>, side: G.Side)
     toToken(): Token {
       if (this.index != null) {
         const g = graph.get()
-        const {token} = T.token_at(G.get_side_texts(g, side), this.index)
+        const {token} = G.token_at(G.get_side_texts(g, side), this.index)
         if (token in g[side]) {
           return new Token(token, g[side][token])
         }
