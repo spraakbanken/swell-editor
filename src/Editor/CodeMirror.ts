@@ -229,6 +229,7 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
   })
 
   graph_to_cm()
+  set_marks()
 
   return {node, cm}
 }
