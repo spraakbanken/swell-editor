@@ -214,8 +214,9 @@ const {inserts, deletes} = Utils.expr(() => {
     ReactUtils.Key(
       Utils.expr(() => {
         const out = [] as VNode[]
-        token_diff.map(([type, text]) => {
-          const node = rules[type + 1](text)
+        token_diff.map(([type, text], i) => {
+          const ignore = i == token_diff.length - 1 && text.trim().length == 0
+          const node = ignore ? null : rules[type + 1](text)
           if (node != null) {
             out.push(node)
           }
