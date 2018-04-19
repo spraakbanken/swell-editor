@@ -95,14 +95,14 @@ export function make_history_advance_function(store: Store<State>) {
     })
 }
 
-export type ActionOnSelected = 'revert' | 'auto' | 'disconnect' | 'merge' | 'group'
+export type ActionOnSelected = 'revert' | 'auto' | 'disconnect' | 'connect' | 'isolate'
 
 export const onSelectedActions: ActionOnSelected[] = [
   'revert',
   'auto',
   'disconnect',
-  'merge',
-  'group',
+  'connect',
+  'isolate',
 ]
 
 export const act_on_selected: {
@@ -127,10 +127,10 @@ export const act_on_selected: {
     })
   },
   disconnect: G.disconnect,
-  merge(graph, selected) {
+  connect(graph, selected) {
     return G.connect(graph, G.token_ids_to_edge_ids(graph, selected))
   },
-  group(graph, selected) {
-    return this.merge(this.disconnect(graph, selected), selected)
+  isolate(graph, selected) {
+    return this.connect(this.disconnect(graph, selected), selected)
   },
 }
