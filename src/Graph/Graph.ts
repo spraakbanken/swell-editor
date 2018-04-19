@@ -970,6 +970,14 @@ export function subspan_merge(ss: Subspan[]) {
   return {source, target}
 }
 
+export function subspan_to_indicies(subspan: Subspan): SidedIndex[] {
+  const flatten = (side: Side) => [
+    {side, index: subspan[side].begin},
+    {side, index: subspan[side].end},
+  ]
+  return [...flatten('source'), ...flatten('target')]
+}
+
 /** Gets the sentence in the target text around some offset(s)
 
   const g = init('apa bepa . Cepa depa . epa ', true)
@@ -1084,22 +1092,18 @@ export function subgraph(g: Graph, s: Subspan): Graph {
   return {source, target, edges}
 }
 
-export function sentence_subspans_around_positions(
+export function indicies_around_positions(
   g: Graph,
   side: Side,
   positions: number[]
-): Subspan | undefined {
+): {side: Side; index: number}[] {
   const N = target_text(g).length
   const nearby = Utils.flatMap(positions, i => [i - 1, i, i + 1])
   const in_bounds = nearby.filter(i => Utils.within(0, i, N))
-  const indicies = in_bounds.map(i => ({
+  return in_bounds.map(i => ({
     side: side,
     index: T.token_at(get_side_texts(g, side), i).token,
   }))
-  if (indicies.length > 0) {
-    return sentences_around(g, indicies)
-  }
-  return undefined
 }
 
 /** Given many graphs on the same source text, find the overlapping sentence groups

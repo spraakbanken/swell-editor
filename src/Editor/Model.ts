@@ -82,7 +82,11 @@ export function modifySelection(store: Store<State>, ids: string[], value: boole
 }
 
 export function setSelection(store: Store<State>, ids: string[]) {
-  store.update({selected: record.create<string, true>(ids, () => true)})
+  store.transaction(() => {
+    store.update({selected: record.create<string, true>(ids, () => true)})
+    const subspan = store.get().subspan
+    setSubspanIncluding(store, (subspan && G.subspan_to_indicies(subspan)) || [])
+  })
 }
 
 export function deselect_removed_ids(graph: Graph, selected0: Record<string, true>) {
@@ -93,6 +97,13 @@ export function deselect_removed_ids(graph: Graph, selected0: Record<string, tru
   if (n_keys(selected) < n_keys(selected0)) {
     return {selected}
   }
+}
+
+export function setSubspanIncluding(store: Store<State>, indicies: G.SidedIndex[]) {
+  const g = store.get().graph.now
+  const tm = G.token_map(g)
+  const selected = Object.keys(store.get().selected).map(token_id => Utils.getUnsafe(tm, token_id))
+  Utils.setIfChanged(store.at('subspan'), G.sentences_around(g, [...indicies, ...selected]))
 }
 
 export function make_history_advance_function(store: Store<State>) {
@@ -152,7 +163,7 @@ export const actionButtonNames: Record<ActionOnSelected, string> = {
   isolate: 'isolate',
   deselect: 'deselect',
   next: 'next',
-  prev: 'prev',
+  prev: 'previous',
 }
 
 export const actionKeyboard: Record<ActionOnSelected, string> = {
@@ -202,10 +213,10 @@ const act_on_selected: {
     return {type: 'selection', selected: []}
   },
   next({graph, selected}) {
-    return {type: 'selection', selected: G.navigate_token_ids(graph, selected, 'next') || []}
+    return {type: 'selection', selected: G.navigate_token_ids(graph, selected, 'next') || selected}
   },
   prev({graph, selected}) {
-    return {type: 'selection', selected: G.navigate_token_ids(graph, selected, 'prev') || []}
+    return {type: 'selection', selected: G.navigate_token_ids(graph, selected, 'prev') || selected}
   },
 }
 

@@ -136,9 +136,9 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
       const anchor = Index.cursor('anchor').index
       head &&
         anchor &&
-        Utils.setIfChanged(
-          store.at('subspan'),
-          G.sentence_subspans_around_positions(graph.get(), side, [head, anchor])
+        Model.setSubspanIncluding(
+          store,
+          G.indicies_around_positions(graph.get(), side, [head, anchor])
         )
     })
   }
