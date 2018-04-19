@@ -6,6 +6,7 @@ import * as csstips from 'csstips'
 import {Graph} from '../Graph'
 import * as G from '../Graph'
 import * as Utils from '../Utils'
+import * as record from '../record'
 
 import {VNode} from '../ReactUtils'
 import * as ReactUtils from '../ReactUtils'
@@ -63,9 +64,9 @@ interface DropdownProps {
   selected: string[]
   onChange(selected: string[]): void
   onBlur(): void
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
 }
 interface DropdownState {
-  input: string
   cursor: number
 }
 
@@ -73,7 +74,6 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
   constructor(props: DropdownProps) {
     super(props)
     this.state = {
-      input: '',
       cursor: 0,
     }
   }
@@ -81,7 +81,7 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
   render() {
     const props = this.props
     const {taxonomy, selected} = this.props
-    const {input, cursor} = this.state
+    const {cursor} = this.state
     const labels = Utils.flatMap(taxonomy, g => g.entries.map(e => e.label))
 
     function isSelected(l: string) {
@@ -108,23 +108,19 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
       }
     }
 
-    function curse(d: number, c: number, m = /.*/): number {
-      console.log(d, c, m.test(labels[c]))
-      if (labels.length == 0) {
-        return 0
-      } else if (c < 0) {
-        return curse(d, labels.length - 1, m)
-      } else if (c >= labels.length) {
-        return curse(d, 0, m)
-      } else if (d + c === cursor) {
-        // full circle, give up
-        return cursor
-      } else if (!m.test(labels[c])) {
-        // isSelected(labels[c])) {
-        return curse(d, c + d, m)
-      } else {
-        return c
+    function wrap(c: number) {
+      const N = labels.length
+      return (c + N) % N
+    }
+
+    function new_cursor(base: number, sign: 1 | -1 = 1, m = /.*/): number {
+      for (let i = 0; i < labels.length; i++) {
+        const c = wrap(base + i * sign)
+        if (m.test(labels[c])) {
+          return c
+        }
       }
+      return cursor
     }
 
     let c = 0
@@ -145,13 +141,14 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
       )
     }
 
+    const liberal_re = (s: string) => new RegExp(Utils.str_map(s, c => c + '-?').join(''), 'i')
+
     return (
       <React.Fragment>
         <input
           ref={e => e && e.focus()}
           placeholder="Enter label..."
           onKeyDown={e => {
-            console.log(e.key)
             const t = e.target as HTMLInputElement
             if (e.key === 'Enter' || e.key === ' ') {
               if (isDigit(t.value)) {
@@ -168,14 +165,17 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
               unset(labels[cursor])
             }
             if (e.key === 'ArrowDown') {
-              this.setState({cursor: curse(1, cursor + 1)})
+              this.setState({cursor: new_cursor(cursor, 1)})
               e.preventDefault()
             } else if (e.key === 'ArrowUp') {
-              this.setState({cursor: curse(-1, cursor - 1)})
+              this.setState({cursor: new_cursor(cursor, -1)})
               e.preventDefault()
             } else {
-              this.setState({cursor: curse(1, cursor, new RegExp(t.value + e.key, 'i'))})
+              if (!e.altKey && !e.ctrlKey) {
+                this.setState({cursor: new_cursor(cursor, 1, liberal_re(t.value + e.key))})
+              }
             }
+            this.props.onKeyDown && this.props.onKeyDown(e)
           }}
         />
         <ul>
@@ -228,14 +228,23 @@ export function LabelSidekick({
         edge_ids.forEach(id => graph.modify(g => G.modify_labels(g, id, ls => [...ls, l])))
       )
     }
+    function perform(action: Model.ActionOnSelected) {
+      advance(() => graph.modify(g => Model.act_on_selected[action](g, selected)))
+    }
     return (
       <div
         className={'left tall sidekick box ' + LabelSidekickStyle + ' ' + ReactUtils.clean_ul}
-        onClick={e => console.log('stop') || e.stopPropagation()}>
+        onClick={e => {
+          e.stopPropagation()
+          e.preventDefault()
+        }}>
         <div>
           {Model.onSelectedActions.map(action =>
-            Button(action, '', () =>
-              advance(() => graph.modify(g => Model.act_on_selected[action](g, selected)))
+            Button(
+              Model.actionButtonNames[action],
+              Model.actionDescriptions[action] +
+                `\n\nShortcut: Alt-${Model.actionKeyboard[action].toUpperCase()}`,
+              () => perform(action)
             )
           )}
           {Button('deselect', '', () => Model.deselect(store))}
@@ -249,6 +258,12 @@ export function LabelSidekick({
             )
           }
           onBlur={() => Model.deselect(store)}
+          onKeyDown={e => {
+            if (e.altKey) {
+              const action = record.reverse_lookup(Model.actionKeyboard, e.key.toLowerCase())
+              action && perform(action)
+            }
+          }}
         />
       </div>
     )

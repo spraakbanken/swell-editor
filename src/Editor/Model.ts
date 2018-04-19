@@ -105,6 +105,34 @@ export const onSelectedActions: ActionOnSelected[] = [
   'isolate',
 ]
 
+console.log('zz')
+
+export const actionDescriptions: Record<ActionOnSelected, string> = {
+  revert: 'Local undo on the selected tokens. Restores them to the source text.',
+  auto:
+    'Makes the selected tokens stop being manually linked and falls back to the automatic aligner.',
+  disconnect: 'Makes each of the selected token be disconnected and only connected to itself.',
+  connect: 'Connects the selected tokens and the tokens they are linked to.',
+  isolate:
+    'Connects the selected tokens only: the tokens they are connected to will not be part of the group.',
+}
+
+export const actionButtonNames: Record<ActionOnSelected, string> = {
+  revert: 'revert',
+  auto: 'auto',
+  disconnect: 'disconnect',
+  connect: 'connect',
+  isolate: 'isolate',
+}
+
+export const actionKeyboard: Record<ActionOnSelected, string> = {
+  revert: 'r',
+  auto: 'a',
+  disconnect: 'u',
+  connect: 'c',
+  isolate: 'i',
+}
+
 export const act_on_selected: {
   [K in ActionOnSelected]: (graph: Graph, selected: string[]) => Graph
 } = {

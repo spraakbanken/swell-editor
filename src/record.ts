@@ -32,11 +32,11 @@ export function map<K extends string, A, B>(x: Record<K, A>, k: (a: A, id: K) =>
   return out
 }
 
-export function filter<A>(
-  x: Record<string, A>,
+export function filter<K extends string, A>(
+  x: Record<K, A>,
   k: (a: A, id: string) => boolean
-): Record<string, A> {
-  const out = {} as Record<string, A>
+): Record<K, A> {
+  const out = {} as Record<K, A>
   forEach(x, (a, id) => k(a, id) && (out[id] = a))
   return out
 }
@@ -47,4 +47,11 @@ export function lookup<K extends string, V>(x: Record<K, V>, k: K, def: V): V {
 
 export function modify<K extends string, V>(x: Record<K, V>, k: K, def: V, f: (v: V) => V): V {
   return (x[k] = f(x[k] || def))
+}
+
+export function reverse_lookup<K extends string, V extends string>(
+  x: Record<K, V>,
+  v: V
+): K | undefined {
+  return traverse(filter(x, v2 => v == v2), (v, k: K) => k)[0]
 }
