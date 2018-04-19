@@ -174,7 +174,7 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
               this.setState({cursor: curse(-1, cursor - 1)})
               e.preventDefault()
             } else {
-              this.setState({cursor: curse(1, cursor, new RegExp(t.value))})
+              this.setState({cursor: curse(1, cursor, new RegExp(t.value + e.key, 'i'))})
             }
           }}
         />
