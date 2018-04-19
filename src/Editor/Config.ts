@@ -96,7 +96,6 @@ const anonymization = [
     entries: [
       {label: 'country_of_origin', desc: ''},
       {label: 'country', desc: 'except Sweden'},
-      {label: 'geo', desc: ''},
       {label: 'zip_code', desc: ''},
       {label: 'region', desc: ''},
       {label: 'city-SWE', desc: ''},
@@ -135,6 +134,7 @@ const anonymization = [
       {label: 'account_nr', desc: ''},
       {label: 'license_nr', desc: ''},
       {label: 'url', desc: ''},
+      {label: 'extra', desc: ''},
     ],
   },
   {
@@ -143,8 +143,164 @@ const anonymization = [
   },
 ]
 
-// https://spraakbanken.gu.se/eng/swell/swell_codebook
+// Julia's updated taxonomy 19 April 2018
 export const normalization: Taxonomy = [
+  {
+    group: 'Lexical',
+    entries: [
+      {
+        label: 'L',
+        desc: 'Wrong word',
+      },
+      {
+        label: 'L-REF',
+        desc: 'Reference error',
+      },
+      {
+        label: 'L-DER',
+        desc: 'Deviant derivational affix used',
+      },
+      {
+        label: 'L-ID',
+        desc: 'Idiomaticity',
+      },
+      {
+        label: 'L-FL',
+        desc: 'Non-Swedish word',
+      },
+    ],
+  },
+  {
+    group: 'Orthographic',
+    entries: [
+      {
+        label: 'O',
+        desc: 'Orthographic / spelling error',
+      },
+      {
+        label: 'O-CAP',
+        desc: 'Error with capitalization (upper / lower)',
+      },
+      {
+        label: 'O-COMP',
+        desc: 'Error within compounds (oversplitting, overcompounding)',
+      },
+    ],
+  },
+  {
+    group: 'Morphological',
+    entries: [
+      {
+        label: 'M-F',
+        desc: 'Deviant morphosyntactic category',
+      },
+      {
+        label: 'M-DEF',
+        desc: 'Deviation in definite/indefinite forms,',
+      },
+      {
+        label: 'M-NUM',
+        desc: 'Deviation in number agreement',
+      },
+      {
+        label: 'M-GEN',
+        desc: 'gender error ',
+      },
+      {
+        label: 'M-AGR',
+        desc: '? Note! This code need to be tested whether we should keep it.',
+      },
+      {
+        label: 'M-INFL',
+        desc:
+          'Deviant paradigm selection, but interpreted to be in accordance with a morpho-syntactic form in Swedish; overgeneralization',
+      },
+      {
+        label: 'M-VERB',
+        desc: 'Covers all deviations with verbs and verb groups, incl aspect',
+      },
+    ],
+  },
+  {
+    group: 'Syntactical',
+    entries: [
+      {
+        label: 'S-Msubj',
+        desc: 'Subject missing',
+      },
+      {
+        label: 'S-M',
+        desc: 'Word, phrase missing',
+      },
+      {
+        label: 'S-R',
+        desc: 'Word or phrase redundant',
+      },
+      {
+        label: 'S-adv',
+        desc: 'Word order error with adverbial placement',
+      },
+      {
+        label: 'S-finV',
+        desc: 'Word order error with finite verb placement',
+      },
+      {
+        label: 'S-WO',
+        desc: 'Word or phrase order - other',
+      },
+    ],
+  },
+  {
+    group: 'Punctuation',
+    entries: [
+      {
+        label: 'P-W',
+        desc: 'Wrong punctuation',
+      },
+      {
+        label: 'P-R',
+        desc: 'Redundant punctuation',
+      },
+      {
+        label: 'P-M',
+        desc: 'Missing punctuation',
+      },
+      {
+        label: 'Sent-Segmentation',
+        desc: 'Merging, or splitting a sentence',
+      },
+    ],
+  },
+  {
+    group: 'Intelligibility',
+    entries: [
+      {
+        label: 'X',
+        desc: 'impossible to interpret the writer’s intention ',
+      },
+    ],
+  },
+  {
+    group: 'Follow-up correction ',
+    entries: [
+      {
+        label: 'C',
+        desc: 'Consistence',
+      },
+    ],
+  },
+  {
+    group: 'Unidentified',
+    entries: [
+      {
+        label: 'Uni',
+        desc: 'Error that cannot be categorized according to other codes',
+      },
+    ],
+  },
+]
+
+const november_2017_pilot_taxonomy: Taxonomy = [
   {
     group: 'Lexical',
     entries: [
