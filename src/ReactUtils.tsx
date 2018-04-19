@@ -117,6 +117,7 @@ export function showhide(what: string, show: () => string | VNode, init = false)
               style={{opacity: '0.85', justifySelf: 'end'} as any}
               className="main"
               href=""
+              onMouseDown={e => e.stopPropagation()}
               onClick={e => (e.preventDefault(), flip())}>
               {b ? 'hide' : 'show'} {what}
             </a>
@@ -133,14 +134,15 @@ export function showhide(what: string, show: () => string | VNode, init = false)
 export const Button = (
   label: string,
   title: string,
-  on: () => void,
+  onClick: () => void,
   enabled = true,
-  stopOnClickPropagation = true
+  stopOnMouseDownPropagation = true
 ) => (
   <button
     title={title}
     key={label}
-    onClick={e => (stopOnClickPropagation && e.stopPropagation(), on())}
+    onMouseDown={e => stopOnMouseDownPropagation && e.stopPropagation()}
+    onClick={onClick}
     style={{cursor: 'pointer'}}
     disabled={!enabled}>
     {label}
@@ -164,11 +166,11 @@ export function Wrap(h: HTMLElement, k: () => void) {
 }
 
 export function Close(props: {
-  onClick(e: React.MouseEvent<HTMLAnchorElement>): void
+  onMouseDown(e: React.MouseEvent<HTMLAnchorElement>): void
   title: string
 }) {
   return (
-    <a className="close" href="#" title={props.title} onClick={props.onClick}>
+    <a className="close" href="#" title={props.title} onMouseDown={props.onMouseDown}>
       ×
     </a>
   )

@@ -252,7 +252,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
 
   function wrap(node: VNode) {
     return (
-      <div onClick={e => Model.deselect(store)}>
+      <div onMouseDown={e => Model.deselect(store)}>
         <DropZone webserviceURL={config.image_ws_url} onDrop={g => advance(() => graph.set(g))}>
           {node}
         </DropZone>
@@ -290,11 +290,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
           <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
         </div>
       )}
-      <LabelSidekick
-        store={store}
-        onBlur={() => cms.target.cm.focus()}
-        taxonomy={state.taxonomy[state.mode]}
-      />
+      <LabelSidekick store={store} taxonomy={state.taxonomy[state.mode]} />
       <div
         className={'main' + (hovering ? ' hovering' : '') + (anon_view ? ' NoManualBlue' : '')}
         style={{minHeight: '10em'}}>
@@ -370,7 +366,7 @@ function ShowErrors(store: Store<Record<string, true>>) {
     <div className="main error">
       <Close
         title="dismiss"
-        onClick={e => {
+        onMouseDown={e => {
           store.via(Lens.key(msg)).set(undefined)
           e.preventDefault()
         }}

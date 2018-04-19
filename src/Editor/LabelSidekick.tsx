@@ -63,7 +63,6 @@ interface DropdownProps {
   taxonomy: Taxonomy
   selected: string[]
   onChange(selected: string[]): void
-  onBlur(): void
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
 }
 interface DropdownState {
@@ -132,7 +131,7 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
         <span
           className={cls}
           onMouseOver={evt => c && this.setState({cursor: c})}
-          onClick={e => {
+          onMouseDown={e => {
             toggle(label)
             e.preventDefault()
           }}>
@@ -157,9 +156,6 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
                 toggle(labels[cursor])
                 t.value = ''
               }
-            }
-            if (e.key === 'Escape') {
-              props.onBlur()
             }
             if (e.key === 'Backspace' && t.value == '' && labels.length > 0) {
               unset(labels[cursor])
@@ -200,15 +196,7 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
   }
 }
 
-export function LabelSidekick({
-  store,
-  onBlur,
-  taxonomy,
-}: {
-  store: Store<State>
-  onBlur: () => void
-  taxonomy: Taxonomy
-}) {
+export function LabelSidekick({store, taxonomy}: {store: Store<State>; taxonomy: Taxonomy}) {
   const advance = Model.make_history_advance_function(store)
   const graph = store.at('graph').at('now')
   const selected = Object.keys(store.get().selected)
@@ -234,7 +222,7 @@ export function LabelSidekick({
     return (
       <div
         className={'left tall sidekick box ' + LabelSidekickStyle + ' ' + ReactUtils.clean_ul}
-        onClick={e => {
+        onMouseDown={e => {
           e.stopPropagation()
           e.preventDefault()
         }}>
@@ -257,11 +245,13 @@ export function LabelSidekick({
               edge_ids.forEach(id => graph.modify(g => G.modify_labels(g, id, () => labels)))
             )
           }
-          onBlur={() => Model.deselect(store)}
           onKeyDown={e => {
             if (e.altKey) {
               const action = record.reverse_lookup(Model.actionKeyboard, e.key.toLowerCase())
               action && perform(action)
+            }
+            if (e.key == 'Escape') {
+              Model.deselect(store)
             }
           }}
         />

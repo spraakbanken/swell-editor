@@ -58,7 +58,7 @@ export function View(store: Store<State>): VNode {
             <button
               key={text}
               style={{marginRight: '0.625em'}}
-              onClick={() => store.update({graph_segments: Pilot.GraphSegments(text)})}>
+              onMouseDown={() => store.update({graph_segments: Pilot.GraphSegments(text)})}>
               {text}
             </button>
           ))}

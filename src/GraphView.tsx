@@ -357,6 +357,7 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
                   }
                   onMouseDown={e => {
                     if (onSelect) {
+                      //console.log('span select mousedown')
                       e.stopPropagation()
                       e.preventDefault()
                       onSelect([token_id])
@@ -419,16 +420,13 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
             const on_hover: OnHover = id => onHover && hoverId !== id && onHover(id)
             return (
               <ul
-                onClick={e => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                }}
                 onMouseDown={e => {
+                  //console.log('ul mousedown')
                   if (onSelect) {
                     onSelect(edges[d.id].ids)
+                    e.preventDefault()
+                    e.stopPropagation()
                   }
-                  e.preventDefault()
-                  e.stopPropagation()
                 }}
                 onMouseEnter={() => on_hover(d.id)}
                 onMouseLeave={() => on_hover(undefined)}>

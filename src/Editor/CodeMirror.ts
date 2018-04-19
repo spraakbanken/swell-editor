@@ -10,6 +10,7 @@ import * as GV from '../GraphView'
 import {VNode} from '../ReactUtils'
 import * as ReactUtils from '../ReactUtils'
 
+import * as Model from './Model'
 import {State} from './Model'
 
 interface cmResize {
@@ -124,6 +125,8 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
     }
   })
 
+  cm.on('mousedown', () => Model.deselect(store))
+
   function update_cursor() {
     Utils.timeit('update_cursor', () => {
       const g = graph.get()
@@ -156,6 +159,11 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
       return undefined
     }
   }
+
+  cm.on('scrollCursorIntoView' as any, (_, e: {preventDefault(): void}) => {
+    //console.log('scroll cursor into view', e)
+    e.preventDefault()
+  })
 
   cm.on('change', (_, change) => {
     if (texts_differ()) {
