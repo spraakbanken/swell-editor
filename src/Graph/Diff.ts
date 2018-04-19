@@ -113,3 +113,16 @@ export type IndexedDiff = Diff & {index: number}
 export function Index(ds: Diff[]): IndexedDiff[] {
   return ds.map((d, index) => ({...d, index}))
 }
+
+export function mass_centers(diff: Diff[]): Record<string, number> {
+  return record.map(
+    R.groupBy(d => d.id, Index(diff)) as Record<string, IndexedDiff[]>,
+    (ds, id) => {
+      // try to move to a source position close to the center of mass of all involved positions
+      const fractional_center_of_mass = Utils.sum(ds.map(d => d.index)) / ds.length
+      // snap-to-grid center of mass calculated only from source positions
+      return Utils.minimumBy((d: IndexedDiff) => Math.abs(fractional_center_of_mass - d.index), ds)
+        .index
+    }
+  )
+}

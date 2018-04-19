@@ -37,22 +37,13 @@ export interface ProtoLine {
 export type ProtoLines = {id: string; center_of_mass: number; lines: ProtoLine[]}[]
 
 export function ProtoLines(diff: Diff[], keep: 'Dragged' | 'Dropped'): ProtoLines {
+  const centers = D.mass_centers(diff)
   return R.sortBy(
     r => r.lines.length,
     record.traverse(
       R.groupBy(d => d.id, D.Index(diff)) as Record<string, IndexedDiff[]>,
       (ds, id) => {
-        // try to move to a source position close to the center of mass of all involved positions
-        const proto_center_of_mass = Utils.sum(ds.map(d => d.index)) / ds.length
-        // snap-to-grid center of mass calculated only from source positions
-        // actually, let's skip that for now:
-        const dragged = ds // .filter(d => d.edit != 'Dropped')
-        // if there are any
-        const morally_dragged = dragged.length > 0 ? dragged : ds
-        const center_of_mass = Utils.minimumBy(
-          (d: IndexedDiff) => Math.abs(proto_center_of_mass - d.index),
-          morally_dragged
-        ).index
+        const center_of_mass = centers[ds[0].id]
         const lines = ds
           .filter(d => {
             if (d.edit == 'Edited') {

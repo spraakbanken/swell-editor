@@ -197,28 +197,14 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
 }
 
 export function LabelSidekick({store, taxonomy}: {store: Store<State>; taxonomy: Taxonomy}) {
-  const advance = Model.make_history_advance_function(store)
   const graph = store.at('graph').at('now')
   const selected = Object.keys(store.get().selected)
+  const advance = Model.make_history_advance_function(store)
   if (selected.length > 0) {
     const edges = G.token_ids_to_edges(graph.get(), selected)
     const edge_ids = edges.map(e => e.id)
     const labels = Utils.uniq(Utils.flatMap(edges, e => e.labels))
-    function pop(l: string) {
-      advance(() =>
-        edge_ids.forEach(id =>
-          graph.modify(g => G.modify_labels(g, id, ls => ls.filter(x => x !== l)))
-        )
-      )
-    }
-    function push(l: string) {
-      advance(() =>
-        edge_ids.forEach(id => graph.modify(g => G.modify_labels(g, id, ls => [...ls, l])))
-      )
-    }
-    function perform(action: Model.ActionOnSelected) {
-      advance(() => graph.modify(g => Model.act_on_selected[action](g, selected)))
-    }
+    function perform(action: Model.ActionOnSelected) {}
     return (
       <div
         className={'left tall sidekick box ' + LabelSidekickStyle + ' ' + ReactUtils.clean_ul}
@@ -230,12 +216,10 @@ export function LabelSidekick({store, taxonomy}: {store: Store<State>; taxonomy:
           {Model.onSelectedActions.map(action =>
             Button(
               Model.actionButtonNames[action],
-              Model.actionDescriptions[action] +
-                `\n\nShortcut: Alt-${Model.actionKeyboard[action].toUpperCase()}`,
-              () => perform(action)
+              Model.actionDescriptions[action] + `\n\nShortcut: ${Model.actionKeyboard[action]}`,
+              () => Model.performAction(store, action)
             )
           )}
-          {Button('deselect', '', () => Model.deselect(store))}
         </div>
         <Dropdown
           taxonomy={taxonomy}
@@ -246,13 +230,9 @@ export function LabelSidekick({store, taxonomy}: {store: Store<State>; taxonomy:
             )
           }
           onKeyDown={e => {
-            if (e.altKey) {
-              const action = record.reverse_lookup(Model.actionKeyboard, e.key.toLowerCase())
-              action && perform(action)
-            }
-            if (e.key == 'Escape') {
-              Model.deselect(store)
-            }
+            const key = (e.altKey ? 'Alt-' : '') + e.key
+            const action = record.reverse_lookup(Model.actionKeyboard, key)
+            action && Model.performAction(store, action)
           }}
         />
       </div>

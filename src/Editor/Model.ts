@@ -70,6 +70,21 @@ export function deselect(store: Store<State>) {
   store.update({selected: {}, hover_id: undefined})
 }
 
+export function modifySelection(store: Store<State>, ids: string[], value: boolean | undefined) {
+  store.transaction(() =>
+    ids.forEach(id =>
+      store
+        .at('selected')
+        .via(Lens.key(id))
+        .set(value == false ? undefined : value)
+    )
+  )
+}
+
+export function setSelection(store: Store<State>, ids: string[]) {
+  store.update({selected: record.create<string, true>(ids, () => true)})
+}
+
 export function deselect_removed_ids(graph: Graph, selected0: Record<string, true>) {
   const em = G.edge_map(graph)
   const present = (s: string) => em.has(s)
@@ -95,7 +110,15 @@ export function make_history_advance_function(store: Store<State>) {
     })
 }
 
-export type ActionOnSelected = 'revert' | 'auto' | 'disconnect' | 'connect' | 'isolate'
+export type ActionOnSelected =
+  | 'revert'
+  | 'auto'
+  | 'disconnect'
+  | 'connect'
+  | 'isolate'
+  | 'deselect'
+  | 'next'
+  | 'prev'
 
 export const onSelectedActions: ActionOnSelected[] = [
   'revert',
@@ -103,6 +126,9 @@ export const onSelectedActions: ActionOnSelected[] = [
   'disconnect',
   'connect',
   'isolate',
+  'deselect',
+  'next',
+  'prev',
 ]
 
 export const actionDescriptions: Record<ActionOnSelected, string> = {
@@ -113,6 +139,9 @@ export const actionDescriptions: Record<ActionOnSelected, string> = {
   connect: 'Connects the selected tokens and the tokens they are linked to.',
   isolate:
     'Connects the selected tokens only: the tokens they are connected to will not be part of the group.',
+  deselect: 'Deselects the current group',
+  next: 'Next group',
+  prev: 'Previous group',
 }
 
 export const actionButtonNames: Record<ActionOnSelected, string> = {
@@ -121,25 +150,33 @@ export const actionButtonNames: Record<ActionOnSelected, string> = {
   disconnect: 'disconnect',
   connect: 'connect',
   isolate: 'isolate',
+  deselect: 'deselect',
+  next: 'next',
+  prev: 'prev',
 }
 
 export const actionKeyboard: Record<ActionOnSelected, string> = {
-  revert: 'r',
-  auto: 'a',
-  disconnect: 'u',
-  connect: 'c',
-  isolate: 'i',
+  revert: 'Alt-r',
+  auto: 'Alt-a',
+  disconnect: 'Alt-u',
+  connect: 'Alt-c',
+  isolate: 'Alt-i',
+  deselect: 'Escape',
+  next: 'Alt-n',
+  prev: 'Alt-p',
 }
 
-export const act_on_selected: {
-  [K in ActionOnSelected]: (graph: Graph, selected: string[]) => Graph
+const act_on_selected: {
+  [K in ActionOnSelected]: (
+    gs: {graph: Graph; selected: string[]}
+  ) => Graph | {type: 'selection'; selected: string[]}
 } = {
-  revert(graph, selected) {
+  revert({graph, selected}) {
     const edge_ids = G.token_ids_to_edge_ids(graph, selected)
     const edges = G.token_ids_to_edges(graph, selected)
     return G.revert(graph, edge_ids)
   },
-  auto(graph, selected) {
+  auto({graph, selected}) {
     const edge_ids = G.token_ids_to_edge_ids(graph, selected)
     return G.align({
       ...graph,
@@ -152,11 +189,35 @@ export const act_on_selected: {
       }),
     })
   },
-  disconnect: G.disconnect,
-  connect(graph, selected) {
+  disconnect({graph, selected}) {
+    return G.disconnect(graph, selected)
+  },
+  connect({graph, selected}) {
     return G.connect(graph, G.token_ids_to_edge_ids(graph, selected))
   },
-  isolate(graph, selected) {
-    return this.connect(this.disconnect(graph, selected), selected)
+  isolate({graph, selected}) {
+    return this.connect({graph: G.disconnect(graph, selected), selected})
   },
+  deselect() {
+    return {type: 'selection', selected: []}
+  },
+  next({graph, selected}) {
+    return {type: 'selection', selected: G.navigate_token_ids(graph, selected, 'next') || []}
+  },
+  prev({graph, selected}) {
+    return {type: 'selection', selected: G.navigate_token_ids(graph, selected, 'prev') || []}
+  },
+}
+
+export function performAction(store: Store<State>, action: ActionOnSelected) {
+  const graph_store = store.at('graph').at('now')
+  const graph = graph_store.get()
+  const selected = Object.keys(store.get().selected)
+  const res = act_on_selected[action]({graph, selected})
+  if ('type' in res) {
+    setSelection(store, res.selected)
+  } else {
+    const advance = make_history_advance_function(store)
+    advance(() => graph_store.set(res))
+  }
 }

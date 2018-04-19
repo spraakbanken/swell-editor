@@ -240,14 +240,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
     })
     const selected = store.get().selected
     const b = involved_ids.every(id => selected[id]) ? undefined : true
-    store.transaction(() =>
-      involved_ids.forEach(id =>
-        store
-          .at('selected')
-          .via(Lens.key(id))
-          .set(b)
-      )
-    )
+    Model.modifySelection(store, involved_ids, b)
   }
 
   function wrap(node: VNode) {
