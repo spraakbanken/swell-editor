@@ -105,8 +105,6 @@ export const onSelectedActions: ActionOnSelected[] = [
   'isolate',
 ]
 
-console.log('zz')
-
 export const actionDescriptions: Record<ActionOnSelected, string> = {
   revert: 'Local undo on the selected tokens. Restores them to the source text.',
   auto:
