@@ -83,6 +83,7 @@
     "iosaas": "ts-node src/iosaas.ts --serve",
     "serve": "parcel $(ts-node src/generate_index.ts ${App:-Editor})",
     "build": "rm dist/* -rf; parcel build --public-url ./ $(ts-node src/generate_index.ts ${App:-Editor})",
+    "deploy": "yarn run build && scp dist/* fkswell@k2:/export/htdocs_sb/swell/dev",
     "doctest:generate": "doctest-ts src/*ts* src/*/*ts* --mocha",
     "pretest": "yarn run doctest:clean && yarn run doctest:generate",
     "test": "mocha --require ts-node/register {src,src/*,test}/*test.ts",
