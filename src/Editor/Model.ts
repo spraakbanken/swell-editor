@@ -130,16 +130,20 @@ export type ActionOnSelected =
   | 'deselect'
   | 'next'
   | 'prev'
+  | 'next_mod'
+  | 'prev_mod'
 
 export const onSelectedActions: ActionOnSelected[] = [
-  'revert',
-  'auto',
-  'disconnect',
-  'connect',
-  'isolate',
-  'deselect',
-  'next',
   'prev',
+  'next',
+  'prev_mod',
+  'next_mod',
+  'auto',
+  'isolate',
+  'connect',
+  'disconnect',
+  'revert',
+  'deselect',
 ]
 
 export const actionDescriptions: Record<ActionOnSelected, string> = {
@@ -151,8 +155,10 @@ export const actionDescriptions: Record<ActionOnSelected, string> = {
   isolate:
     'Connects the selected tokens only: the tokens they are connected to will not be part of the group.',
   deselect: 'Deselects the current group',
-  next: 'Next group',
-  prev: 'Previous group',
+  next: 'Select next group',
+  prev: 'Select previous group',
+  next_mod: 'Select the next group which has modifications',
+  prev_mod: 'Select the previous group which has modifications',
 }
 
 export const actionButtonNames: Record<ActionOnSelected, string> = {
@@ -164,6 +170,8 @@ export const actionButtonNames: Record<ActionOnSelected, string> = {
   deselect: 'deselect',
   next: 'next',
   prev: 'previous',
+  next_mod: 'next mod',
+  prev_mod: 'prev mod',
 }
 
 export const actionKeyboard: Record<ActionOnSelected, string> = {
@@ -175,6 +183,8 @@ export const actionKeyboard: Record<ActionOnSelected, string> = {
   deselect: 'Escape',
   next: 'Alt-n',
   prev: 'Alt-p',
+  next_mod: 'Alt-N',
+  prev_mod: 'Alt-P',
 }
 
 const act_on_selected: {
@@ -213,10 +223,16 @@ const act_on_selected: {
     return {type: 'selection', selected: []}
   },
   next({graph, selected}) {
-    return {type: 'selection', selected: G.navigate_token_ids(graph, selected, 'next') || selected}
+    return {type: 'selection', selected: G.navigate_token_ids(graph, selected, 'next', 'boring', i => config.order_changing_labels[i]) || selected}
   },
   prev({graph, selected}) {
-    return {type: 'selection', selected: G.navigate_token_ids(graph, selected, 'prev') || selected}
+    return {type: 'selection', selected: G.navigate_token_ids(graph, selected, 'prev', 'boring', i => config.order_changing_labels[i]) || selected}
+  },
+  next_mod({graph, selected}) {
+    return {type: 'selection', selected: G.navigate_token_ids(graph, selected, 'next', 'interesting', i => config.order_changing_labels[i]) || selected}
+  },
+  prev_mod({graph, selected}) {
+    return {type: 'selection', selected: G.navigate_token_ids(graph, selected, 'prev', 'interesting', i => config.order_changing_labels[i]) || selected}
   },
 }
 
