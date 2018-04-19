@@ -17,7 +17,7 @@ qc('GraphView text sanity', graph.small(), (g, p) => {
       if (node.is(ReactUtils.Thunk)) {
         return go(node.dive())
       }
-      return node.children().someWhere(w => node.text() == s || go(w))
+      return node.children().someWhere(w => node.text().trimRight() == s.trimRight() || go(w))
     }
     if (!go(dom)) {
       p.fail(`Could not find DOM with text ${Utils.show(s)}`)
