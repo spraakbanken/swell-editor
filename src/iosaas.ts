@@ -6,28 +6,15 @@ import {Data, key} from './EditorTypes'
 export {Data, key}
 
 export function graph_to_data(graph: G.Graph): Data {
-  const stu = G.graph_to_units(graph)
-  const {source, target} = stu
-  return {
-    graph,
-    ...stu,
+  return {graph}
+}
 
-    source_string: G.units_to_string(source),
-
-    target_string: G.units_to_string(target),
-  }
+export function data_to_string(d: Data): string {
+  return G.graph_to_compact(d.graph)
 }
 
 function string_to_data(query_string: string): Data {
-  const [source_string, target_string] = query_string.split('//', 2)
-  if (source_string && target_string) {
-    const source = G.parse(source_string)
-    const target = G.parse(target_string)
-    const graph = G.units_to_graph(source, target)
-    return {source, target, graph, source_string, target_string}
-  } else {
-    throw new Error('Need two // separated strings')
-  }
+  return {graph: G.compact_to_graph(query_string)}
 }
 
 function data_to_react(data: Data): React.ReactElement<{}> {
