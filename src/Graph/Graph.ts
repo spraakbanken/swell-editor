@@ -612,7 +612,7 @@ export function disconnect(g: Graph, ids: string[]): Graph {
   const em = edge_map(g)
   const edge = em.get(id)
   if (edge) {
-    const edge_without = Edge(edge.ids.filter(i => i != id), edge.labels)
+    const edge_without = Edge(edge.ids.filter(i => i != id), edge.labels, edge.manual)
     const edge_with = Edge([id], [], true)
     const edges = record.filter(g.edges, (_, id) => id != edge.id)
     edges[edge_with.id] = edge_with

@@ -210,7 +210,8 @@ const space_padded = <A>(f: Parser<A>) =>
 */
 const units = space_padded(p.sepBy(spaces1_, unit))
 
-export const parse = (s: string) => run_parser(units, s) || []
+export const safe_parse = (s: string) => run_parser(units, s) || undefined
+export const parse = (s: string) => safe_parse(s) || []
 export const parse_strict = (s: string) => run_parser_strict(units, s)
 
 const identify = (prefix: string, us: Unit[]) =>
@@ -422,13 +423,24 @@ export function graph_to_units(g: Graph): SourceTarget<Unit[]> {
   return minimize(proto_graph_to_units(g))
 }
 
-function testing() {
-  const source = parse_strict(`a b c@u c@z`)
-  const target = parse_strict(`a~@u b c~b`)
-  const m = minimize({source, target})
-  Utils.stderr(units_to_string(m.source))
-  Utils.stderr(units_to_string(m.target))
-  // Utils.stderr(units_to_graph(source, target))
-  // Utils.stderr(units_to_graph(m.source, m.target))
-  return 'ok'
+export function safe_compact_to_graph(s: string): Graph | undefined {
+  const [source_string, target_string] = s.split('//', 2)
+  if (source_string && target_string) {
+    const source = safe_parse(source_string)
+    const target = safe_parse(target_string)
+    if (source !== undefined && target !== undefined) {
+      return units_to_graph(source, target)
+    }
+  }
+}
+
+export function graph_to_compact(g: Graph): string {
+  const stu = graph_to_units(g)
+  return units_to_string(stu.source) + '//' + units_to_string(stu.target)
+}
+
+export function compact_to_graph(s: string): Graph {
+  return (
+    safe_compact_to_graph(s) || Utils.raise('not a valid compact representation ' + Utils.show(s))
+  )
 }

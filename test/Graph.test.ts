@@ -306,3 +306,12 @@ describe('diff', () => {
     )
   )
 }
+
+describe('disconnect', () => {
+  it('preserves manual status of unrelated parts', () => {
+    const before = G.compact_to_graph('a//b~a c~a')
+    const expect = G.compact_to_graph('a//b~a c~c')
+    const actual = G.disconnect(before, [before.target[1].id])
+    chai.assert.isTrue(G.equal(expect, actual), Utils.show({before, expect, actual}))
+  })
+})

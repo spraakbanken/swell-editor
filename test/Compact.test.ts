@@ -11,6 +11,10 @@ import {range} from '../src/Utils'
 
 import * as assert from 'assert'
 
+qc('roundtrip graph<->string', graph, (g, p) =>
+  p.equals(G.compact_to_graph(G.graph_to_compact(g)), g)
+)
+
 qc('roundtrip units<->graph', graph, (g, p) => {
   const stu = p.tap(G.graph_to_units(g))
   const g2 = G.units_to_graph(stu.source, stu.target)
