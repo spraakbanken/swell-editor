@@ -7,10 +7,10 @@ import {TokenDiff} from '../Utils'
 import * as record from '../record'
 
 export interface Dropped {
-  edit: 'Dropped'
-  target: Token
-  id: string
-  manual: boolean
+  readonly edit: 'Dropped'
+  readonly target: Token
+  readonly id: string
+  readonly manual: boolean
 }
 
 export const Dropped = (target: Token, id: string, manual: boolean): Dropped => ({
@@ -21,10 +21,10 @@ export const Dropped = (target: Token, id: string, manual: boolean): Dropped => 
 })
 
 export interface Dragged {
-  edit: 'Dragged'
-  source: Token
-  id: string
-  manual: boolean
+  readonly edit: 'Dragged'
+  readonly source: Token
+  readonly id: string
+  readonly manual: boolean
 }
 
 export const Dragged = (source: Token, id: string, manual: boolean): Dragged => ({
@@ -35,11 +35,11 @@ export const Dragged = (source: Token, id: string, manual: boolean): Dragged => 
 })
 
 export interface Edited {
-  edit: 'Edited'
-  source: Token[]
-  target: Token[]
-  id: string
-  manual: boolean
+  readonly edit: 'Edited'
+  readonly source: Token[]
+  readonly target: Token[]
+  readonly id: string
+  readonly manual: boolean
 }
 
 export const Edited = (source: Token[], target: Token[], id: string, manual: boolean): Edited => ({

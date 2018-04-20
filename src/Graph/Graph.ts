@@ -25,15 +25,19 @@ export interface SourceTarget<A> {
 }
 
 export interface Graph extends SourceTarget<Token[]> {
-  edges: Edges
+  readonly edges: Edges
 }
 
 export type Edges = Record<string, Edge>
 
 export interface Edge {
+  /** a copy of the identifier used in the edges object of the graph */
   readonly id: string
+  /** these are ids to source and target tokens */
   readonly ids: string[]
+  /** labels on this edge */
   readonly labels: string[]
+  /** is this manually or automatically aligned */
   readonly manual: boolean
 }
 
