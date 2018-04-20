@@ -122,14 +122,45 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
       return cursor
     }
 
-    let c = 0
+    const liberal_re = (s: string) => new RegExp(Utils.str_map(s, c => c + '-?').join(''), 'i')
+
+    const input = (
+      <input
+        ref={e => e && e.focus()}
+        placeholder="Enter label..."
+        onKeyDown={e => {
+          const t = e.target as HTMLInputElement
+          if (e.key === 'Enter' || e.key === ' ') {
+            if (isDigit(t.value)) {
+              toggle(t.value)
+            } else {
+              toggle(labels[cursor])
+              t.value = ''
+            }
+          }
+          if (e.key === 'Backspace') {
+            if (t.value == '' && labels.length > 0) {
+              unset(labels[cursor])
+            }
+          } else if (e.key === 'ArrowDown') {
+            this.setState({cursor: new_cursor(cursor, 1)})
+            e.preventDefault()
+          } else if (e.key === 'ArrowUp') {
+            this.setState({cursor: new_cursor(cursor, -1)})
+            e.preventDefault()
+          } else if (!e.altKey && !e.ctrlKey) {
+            this.setState({cursor: new_cursor(cursor, 1, liberal_re(t.value + e.key))})
+          }
+          this.props.onKeyDown && this.props.onKeyDown(e)
+        }}
+      />
+    )
 
     const entry_span = (label: string, c?: number) => {
-      const cls =
-        'entry' + (cursor == c ? ' cursor ' : '') + (isSelected(label) ? ' selected ' : '')
+      const classes = (cursor == c ? ' cursor' : '') + (isSelected(label) ? ' selected' : '')
       return (
         <span
-          className={cls}
+          className={'entry' + classes}
           onMouseOver={evt => c && this.setState({cursor: c})}
           onMouseDown={e => {
             toggle(label)
@@ -140,40 +171,9 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
       )
     }
 
-    const liberal_re = (s: string) => new RegExp(Utils.str_map(s, c => c + '-?').join(''), 'i')
-
-    return (
-      <React.Fragment>
-        <input
-          ref={e => e && e.focus()}
-          placeholder="Enter label..."
-          onKeyDown={e => {
-            const t = e.target as HTMLInputElement
-            if (e.key === 'Enter' || e.key === ' ') {
-              if (isDigit(t.value)) {
-                toggle(t.value)
-              } else {
-                toggle(labels[cursor])
-                t.value = ''
-              }
-            }
-            if (e.key === 'Backspace' && t.value == '' && labels.length > 0) {
-              unset(labels[cursor])
-            }
-            if (e.key === 'ArrowDown') {
-              this.setState({cursor: new_cursor(cursor, 1)})
-              e.preventDefault()
-            } else if (e.key === 'ArrowUp') {
-              this.setState({cursor: new_cursor(cursor, -1)})
-              e.preventDefault()
-            } else {
-              if (!e.altKey && !e.ctrlKey) {
-                this.setState({cursor: new_cursor(cursor, 1, liberal_re(t.value + e.key))})
-              }
-            }
-            this.props.onKeyDown && this.props.onKeyDown(e)
-          }}
-        />
+    const list = Utils.expr(() => {
+      let c = 0
+      return (
         <ul>
           {selected.filter(isDigit).map(i => <li key={'d' + i}>{entry_span(i + '')}</li>)}
           {taxonomy.map((g, i) => (
@@ -191,6 +191,13 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
             </li>
           ))}
         </ul>
+      )
+    })
+
+    return (
+      <React.Fragment>
+        {input}
+        {list}
       </React.Fragment>
     )
   }
@@ -204,7 +211,6 @@ export function LabelSidekick({store, taxonomy}: {store: Store<State>; taxonomy:
     const edges = G.token_ids_to_edges(graph.get(), selected)
     const edge_ids = edges.map(e => e.id)
     const labels = Utils.uniq(Utils.flatMap(edges, e => e.labels))
-    function perform(action: Model.ActionOnSelected) {}
     return (
       <div
         className={'left tall sidekick box ' + LabelSidekickStyle + ' ' + ReactUtils.clean_ul}

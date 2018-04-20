@@ -15,14 +15,14 @@ export interface State {
   readonly selected: Record<string, true>
   readonly subspan?: G.Subspan
   readonly side_restriction?: G.Side
-  /** for hot module reloading, bumped at each reload and used to make sure thunked components get updated */
-  readonly generation: number
+  readonly mode: Mode
+  readonly taxonomy: Record<Mode, Taxonomy>
+
   /** error messages */
   readonly errors: Record<string, true>
 
-  readonly mode: Mode
-  /* where should the taxonomy be stored? */
-  readonly taxonomy: Record<Mode, Taxonomy>
+  /** for hot module reloading, bumped at each reload and used to make sure thunked components get updated */
+  readonly generation: number
 }
 
 export type Mode = 'anonymization' | 'normalization'
@@ -109,10 +109,10 @@ export function setSubspanIncluding(store: Store<State>, indicies: G.SidedIndex[
 export function make_history_advance_function(store: Store<State>) {
   const graph = store.at('graph')
   const now = graph.at('now')
-  return (k: () => void) =>
+  return (k: (g0: Graph) => void) =>
     store.transaction(() => {
       const g0 = now.get()
-      k()
+      k(g0)
       const g1 = now.get()
       if (!G.equal(g0, g1)) {
         now.set(g0)
@@ -223,16 +223,56 @@ const act_on_selected: {
     return {type: 'selection', selected: []}
   },
   next({graph, selected}) {
-    return {type: 'selection', selected: G.navigate_token_ids(graph, selected, 'next', 'boring', i => config.order_changing_labels[i]) || selected}
+    return {
+      type: 'selection',
+      selected:
+        G.navigate_token_ids(
+          graph,
+          selected,
+          'next',
+          'boring',
+          i => config.order_changing_labels[i]
+        ) || selected,
+    }
   },
   prev({graph, selected}) {
-    return {type: 'selection', selected: G.navigate_token_ids(graph, selected, 'prev', 'boring', i => config.order_changing_labels[i]) || selected}
+    return {
+      type: 'selection',
+      selected:
+        G.navigate_token_ids(
+          graph,
+          selected,
+          'prev',
+          'boring',
+          i => config.order_changing_labels[i]
+        ) || selected,
+    }
   },
   next_mod({graph, selected}) {
-    return {type: 'selection', selected: G.navigate_token_ids(graph, selected, 'next', 'interesting', i => config.order_changing_labels[i]) || selected}
+    return {
+      type: 'selection',
+      selected:
+        G.navigate_token_ids(
+          graph,
+          selected,
+          'next',
+          'interesting',
+          i => config.order_changing_labels[i]
+        ) || selected,
+    }
   },
   prev_mod({graph, selected}) {
-    return {type: 'selection', selected: G.navigate_token_ids(graph, selected, 'prev', 'interesting', i => config.order_changing_labels[i]) || selected}
+    return {
+      type: 'selection',
+      selected:
+        G.navigate_token_ids(
+          graph,
+          selected,
+          'prev',
+          'interesting',
+          i => config.order_changing_labels[i]
+        ) || selected,
+    }
   },
 }
 

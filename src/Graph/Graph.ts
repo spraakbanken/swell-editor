@@ -34,7 +34,7 @@ export interface Edge {
   readonly id: string
   readonly ids: string[]
   readonly labels: string[]
-  readonly manual?: boolean
+  readonly manual: boolean
 }
 
 export function Edge(ids: string[], labels: string[], manual = false): Edge {
@@ -622,7 +622,7 @@ export function disconnect(g: Graph, ids: string[]): Graph {
   }
 }
 
-interface CharId {
+interface CharIdPair {
   char: string
   id?: string
 }
@@ -634,10 +634,10 @@ interface CharId {
     {char: 'a', id: 'id'},
     {char: 'b', id: 'id'},
     {char: ' ', id: undefined}
-  ] // => punctuate(Token(' ab ', 'id'))
+  ] // => to_char_ids(Token(' ab ', 'id'))
 
 */
-function punctuate(token: Token): CharId[] {
+function to_char_ids(token: Token): CharIdPair[] {
   return Utils.str_map(token.text, char => ({char, id: char === ' ' ? undefined : token.id}))
 }
 
@@ -649,7 +649,7 @@ export function align(g: Graph): Graph {
 
   {
     const chars = mapSides(g, tokens =>
-      Utils.flatMap(tokens.filter(token => !em(token.id).manual), punctuate)
+      Utils.flatMap(tokens.filter(token => !em(token.id).manual), to_char_ids)
     )
 
     const char_diff = Utils.hdiff(chars.source, chars.target, u => u.char, u => u.char)
@@ -657,7 +657,7 @@ export function align(g: Graph): Graph {
     char_diff.forEach(c => {
       if (c.change == 0) {
         // these undefined makes the alignment skip spaces.
-        // they originate from punctuate
+        // they originate from to_char_ids
         if (c.a.id !== undefined && c.b.id !== undefined) {
           uf.union(c.a.id, c.b.id)
         }
@@ -685,13 +685,11 @@ export function align(g: Graph): Graph {
   return {...g, edges}
 }
 
-interface ScoreDDL {
+interface ScoreDiffPair {
   score: number
   // A reversed list of the way back (Instead of constructing it from back links)
-  diff: DDL
+  diff: Utils.LazySnocList<Dragged | Dropped>
 }
-
-type DDL = Utils.LazySnocList<Dragged | Dropped>
 
 /** Calculate the graphView diff without merging contiguous edits
 
@@ -712,7 +710,7 @@ export function calculate_raw_diff(
   const I = g.source.length
   const J = g.target.length
 
-  const OPT: ScoreDDL[][] = new Array(I + 1)
+  const OPT: ScoreDiffPair[][] = new Array(I + 1)
     .fill({})
     .map(i => new Array(J + 1).fill({score: 0, diff: null}))
 
@@ -726,7 +724,7 @@ export function calculate_raw_diff(
 
   for (let i = -1; i < I; ++i) {
     for (let j = -1; j < J; ++j) {
-      const cands: ScoreDDL[] = []
+      const cands: ScoreDiffPair[] = []
       const same = (ii: number, jj: number) =>
         ii >= 0 && jj >= 0 && lookup(g.source[ii]).id === lookup(g.target[jj]).id
       if (i >= 0 && j >= 0 && same(i, j)) {
@@ -971,11 +969,11 @@ export function subspan_merge(ss: Subspan[]) {
 }
 
 export function subspan_to_indicies(subspan: Subspan): SidedIndex[] {
-  const flatten = (side: Side) => [
+  const span_to_indicies = (side: Side) => [
     {side, index: subspan[side].begin},
     {side, index: subspan[side].end},
   ]
-  return [...flatten('source'), ...flatten('target')]
+  return [...span_to_indicies('source'), ...span_to_indicies('target')]
 }
 
 /** Gets the sentence in the target text around some offset(s)
@@ -1021,10 +1019,7 @@ export function sentences_around(g: Graph, indicies: SidedIndex[]): Subspan {
   const main = indicies[0]
 
   // grr-ish: we want to get the "minimal" representative now, but have to loop over
-  // all positions to check. well at least it will be correct
-  // loop for (begin+end) over all indicies in (source+target) and
-  // update min resp max if it was found in the indicies stash
-  // this will be correct
+  // all positions to check.
   const em = edge_map(g)
   const main_repr = starts.repr(main)
   return mapSides(g, (tokens, side) => {

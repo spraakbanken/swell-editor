@@ -59,6 +59,7 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
   It must necessarily be whitespace anyway. */
   const history = store.at('graph')
   const graph = history.at('now')
+  const advance = Model.make_history_advance_function(store)
 
   function undo() {
     history.modify(Undo.undo)
@@ -80,6 +81,8 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
   defaultTabBehaviour(cm)
   cm.setValue(G.get_side_text(graph.get(), side))
 
+  const {Index} = PositionUtils(cm, graph, side)
+
   function transpose(d: number) {
     return () => {
       if (side === 'source') {
@@ -94,10 +97,11 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
         const g = graph.get()
         const N = g[side].length
         if (Utils.within(0, begin + d, N) && Utils.within(0, end + d, N)) {
-          history.modify(Undo.advance_to(G.rearrange(g, begin, end, d > 0 ? end + d : begin + d)))
+          advance(() => G.rearrange(g, begin, end, d > 0 ? end + d : begin + d))
           // update CM text now to set the selection at the moved word(s)
           graph_to_cm()
           const g2 = graph.get()
+          // set the selection to the displaced word:
           const from = G.get_side_texts(g2, side)
             .slice(0, begin + d)
             .join('').length
@@ -107,13 +111,11 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
               .join('').length - 1
           const doc = cm.getDoc()
           doc.setSelection(doc.posFromIndex(from), doc.posFromIndex(to))
-          update_cursor()
+          cursor_to_viewport()
         }
       }
     }
   }
-
-  const {Index} = PositionUtils(cm, graph, side)
 
   cm.on('beforeChange', (_, change) => {
     if (change.origin == 'undo') {
@@ -127,8 +129,8 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
 
   cm.on('mousedown', () => Model.deselect(store))
 
-  function update_cursor() {
-    Utils.timeit('update_cursor', () => {
+  function cursor_to_viewport() {
+    Utils.timeit('cursor_to_viewport', () => {
       const g = graph.get()
       const text = G.get_side_text(graph.get(), side)
       const doc = cm.getDoc()
@@ -145,12 +147,12 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
 
   cm.on('cursorActivity', _ =>
     store.transaction(() => {
-      update_cursor()
+      cursor_to_viewport()
       Utils.setIfChanged(store.at('hover_id'), undefined)
     })
   )
 
-  function texts_differ(): undefined | {graph_text: string; editor_text: string} {
+  function do_texts_differ(): undefined | {graph_text: string; editor_text: string} {
     const graph_text = G.text(graph.get()[side]).slice(0, -1)
     const editor_text = cm.getDoc().getValue()
     if (graph_text !== editor_text) {
@@ -166,17 +168,15 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
   })
 
   cm.on('change', (_, change) => {
-    if (texts_differ()) {
-      store.transaction(() => {
-        const g = graph.get()
-        history.modify(Undo.advance)
+    if (do_texts_differ()) {
+      advance(g => {
         graph.set(G.set_side(g, side, cm.getDoc().getValue() + ' '))
       })
     }
   })
 
   function graph_to_cm() {
-    const t = texts_differ()
+    const t = do_texts_differ()
     if (t) {
       const {from, to, insert} = Utils.edit_range(t.editor_text, t.graph_text)
       const doc = cm.getDoc()
@@ -223,13 +223,13 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
     })
   }
 
-  store.on(() => {
+  function sync() {
     graph_to_cm()
     set_marks()
-  })
+  }
 
-  graph_to_cm()
-  set_marks()
+  store.on(sync)
+  sync()
 
   return {node, cm}
 }
