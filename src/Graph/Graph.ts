@@ -557,7 +557,7 @@ export function invert(g: Graph): Graph {
 /** Revert at an edge id */
 export function unaligned_revert(g: Graph, edge_ids: string[]): Graph {
   const edge_set = new Set(edge_ids)
-  const diff = calculate_raw_diff(g)
+  const diff = calculate_dnd_diff(g)
   let supply = next_id(g)
   const edges = record.filter(g.edges, (_, id) => !edge_set.has(id))
   const reverted = Utils.flatMap(
@@ -583,7 +583,7 @@ export function unaligned_revert(g: Graph, edge_ids: string[]): Graph {
       },
     })
   )
-  return from_raw_diff(reverted, edges)
+  return from_dnd_diff(reverted, edges)
 }
 
 /** Revert at an edge id */
@@ -692,10 +692,10 @@ export function align(g: Graph): Graph {
 interface ScoreDiffPair {
   score: number
   // A reversed list of the way back (Instead of constructing it from back links)
-  diff: Utils.LazySnocList<Dragged | Dropped>
+  diff: Utils.LazySnocList<Diff>
 }
 
-/** Calculate the graphView diff without merging contiguous edits
+/** Calculate the (graphView) diff
 
 What we do here is try to find a diff using dragged and dropped looking only
 at the edge ids. This is different from finding a normal diff edit script
@@ -703,131 +703,6 @@ over an alphabet because the edge ids may be used at several discontinuous
 locations that all should be close to each other. This was done using
 the diff algorithm before but the results were subpar, see #32
 
-*/
-export function calculate_raw_diff(
-  g: Graph,
-  order_changing_label: (s: string) => boolean = () => false
-): (Dragged | Dropped)[] {
-  const m = edge_map(g)
-  const lookup = (tok: Token) => m.get(tok.id) as Edge
-
-  const I = g.source.length
-  const J = g.target.length
-
-  const OPT: ScoreDiffPair[][] = new Array(I + 1)
-    .fill({})
-    .map(i => new Array(J + 1).fill({score: 0, diff: null}))
-
-  function opt(i: number, j: number) {
-    if (i < 0 && j < 0) {
-      return {score: 0, diff: null}
-    } else {
-      return OPT[i + 1][j + 1]
-    }
-  }
-
-  for (let i = -1; i < I; ++i) {
-    for (let j = -1; j < J; ++j) {
-      const cands: ScoreDiffPair[] = []
-      const same = (ii: number, jj: number) =>
-        ii >= 0 && jj >= 0 && lookup(g.source[ii]).id === lookup(g.target[jj]).id
-      if (i >= 0 && j >= 0 && same(i, j)) {
-        let ii = i
-        let jj = j
-        while (same(--ii, j));
-        while (same(i, --jj));
-        const edge = lookup(g.source[i])
-        const {score, diff} = opt(ii, jj)
-        let factor = 1
-        if (edge.manual) {
-          factor *= 0.01
-        }
-        if (edge.labels.some(order_changing_label)) {
-          factor *= 0.0001
-        }
-        cands.push({
-          score: score + factor * (i - ii + (j - jj)),
-          diff:
-            // snoc(diff, D.Edited(g.source.slice(ii,i),g.target.slice(jj,j), edge_id(g.source[i])))
-            Utils.snocs(diff, [
-              ...g.source
-                .slice(ii + 1, i + 1)
-                .map(tok => D.Dragged(tok, edge.id, !!edge.manual) as Dragged | Dropped),
-              ...g.target
-                .slice(jj + 1, j + 1)
-                .map(tok => D.Dropped(tok, edge.id, !!edge.manual) as Dragged | Dropped),
-            ]),
-        })
-      }
-      if (j >= 0) {
-        const {score, diff} = opt(i, j - 1)
-        const edge = lookup(g.target[j])
-        cands.push({score, diff: Utils.snoc(diff, D.Dropped(g.target[j], edge.id, !!edge.manual))})
-      }
-      if (i >= 0) {
-        const {score, diff} = opt(i - 1, j)
-        const edge = lookup(g.source[i])
-        cands.push({score, diff: Utils.snoc(diff, D.Dragged(g.source[i], edge.id, !!edge.manual))})
-      }
-      OPT[i + 1][j + 1] = R.sortBy(x => -x.score, cands)[0]
-    }
-  }
-
-  const {score, diff} = opt(I - 1, J - 1)
-  const arr = Utils.snocsToArray(diff)
-  return arr
-}
-
-export function from_raw_diff(diff: (Dragged | Dropped)[], edges0: Record<string, Edge>): Graph {
-  const source = [] as Token[]
-  const target = [] as Token[]
-  const edges = R.clone(edges0)
-  diff.forEach(d =>
-    record.modify(edges, d.id, zero_edge, e => merge_edges(e, Edge([], [], d.manual)))
-  )
-  diff.forEach(
-    D.dnd_match({
-      Dragged: d => source.push(d.source),
-      Dropped: d => target.push(d.target),
-    })
-  )
-  return {source, target, edges}
-}
-
-/** Merging contiguous edits of Dragged...Dropped to Edited */
-function merge_diff(diff: (Dragged | Dropped)[]): Diff[] {
-  const rev = new Map<string, number[]>()
-  diff.forEach((d, i) => {
-    let m = rev.get(d.id)
-    if (m === undefined) {
-      m = []
-      rev.set(d.id, m)
-    }
-    m.push(i)
-  })
-  const out = [] as Diff[]
-  for (let i = 0; i < diff.length; i++) {
-    const d = diff[i]
-    const m = rev.get(d.id)
-    if (m && Utils.contiguous(m)) {
-      const {dragged, dropped} = D.partition(diff.slice(i, i + m.length))
-      out.push(
-        D.Edited(
-          dragged.map(c => c.source),
-          dropped.map(c => c.target),
-          d.id,
-          [...dragged, ...dropped].some(d => d.manual)
-        )
-      )
-      i += m.length - 1
-    } else {
-      out.push(d)
-    }
-  }
-  return out
-}
-
-/** Calculate the diff
 
   const expect: Diff[] = [
     {
@@ -894,7 +769,69 @@ export function calculate_diff(
   g: Graph,
   order_changing_label: (s: string) => boolean = () => false
 ): Diff[] {
-  return merge_diff(calculate_raw_diff(g, order_changing_label))
+
+  const m = edge_map(g)
+  const lookup = (tok: Token) => m.get(tok.id) as Edge
+
+  const I = g.source.length
+  const J = g.target.length
+
+  const OPT: ScoreDiffPair[][] = new Array(I + 1)
+    .fill({})
+    .map(i => new Array(J + 1).fill({score: 0, diff: null}))
+
+  function opt(i: number, j: number) {
+    if (i < 0 && j < 0) {
+      return {score: 0, diff: null}
+    } else {
+      return OPT[i + 1][j + 1]
+    }
+  }
+
+  for (let i = -1; i < I; ++i) {
+    for (let j = -1; j < J; ++j) {
+      const cands: ScoreDiffPair[] = []
+      const same = (ii: number, jj: number) =>
+        ii >= 0 && jj >= 0 && lookup(g.source[ii]).id === lookup(g.target[jj]).id
+      if (i >= 0 && j >= 0 && same(i, j)) {
+        let ii = i
+        let jj = j
+        while (same(--ii, j));
+        while (same(i, --jj));
+        const edge = lookup(g.source[i])
+        const {score, diff} = opt(ii, jj)
+        let factor = 1
+        if (edge.manual) {
+          factor *= 0.01
+        }
+        if (edge.labels.some(order_changing_label)) {
+          factor *= 0.0001
+        }
+        cands.push({
+          score: score + factor * (i - ii + (j - jj)),
+          diff:
+            Utils.snoc(
+              diff,
+              D.Edited(g.source.slice(ii+1,i+1),g.target.slice(jj+1,j+1), edge.id, !!edge.manual))
+        })
+      }
+      if (j >= 0) {
+        const {score, diff} = opt(i, j - 1)
+        const edge = lookup(g.target[j])
+        cands.push({score, diff: Utils.snoc(diff, D.Dropped(g.target[j], edge.id, !!edge.manual))})
+      }
+      if (i >= 0) {
+        const {score, diff} = opt(i - 1, j)
+        const edge = lookup(g.source[i])
+        cands.push({score, diff: Utils.snoc(diff, D.Dragged(g.source[i], edge.id, !!edge.manual))})
+      }
+      OPT[i + 1][j + 1] = R.sortBy(x => -x.score, cands)[0]
+    }
+  }
+
+  const {score, diff} = opt(I - 1, J - 1)
+  const arr = Utils.snocsToArray(diff)
+  return arr
 }
 
 /**
@@ -944,6 +881,29 @@ export function split_up_edits(ds: Diff[], audit = (edge_id: string) => true): D
   })
 }
 
+export function calculate_dnd_diff(
+  g: Graph,
+  order_changing_label: (s: string) => boolean = () => false
+): (Dragged | Dropped)[] {
+  return split_up_edits(calculate_diff(g, order_changing_label)) as any
+}
+
+export function from_dnd_diff(diff: (Dragged | Dropped)[], edges0: Record<string, Edge>): Graph {
+  const source = [] as Token[]
+  const target = [] as Token[]
+  const edges = R.clone(edges0)
+  diff.forEach(d =>
+    record.modify(edges, d.id, zero_edge, e => merge_edges(e, Edge([], [], d.manual)))
+  )
+  diff.forEach(
+    D.dnd_match({
+      Dragged: d => source.push(d.source),
+      Dropped: d => target.push(d.target),
+    })
+  )
+  return {source, target, edges}
+}
+
 /**
 
   const g = modify_tokens(init('apa bepa cepa '), 1, 2, 'depa epa ')
@@ -953,7 +913,7 @@ export function split_up_edits(ds: Diff[], audit = (edge_id: string) => true): D
 
 */
 export function diff_to_graph(diff: Diff[], edges: Record<string, Edge>): Graph {
-  return align(from_raw_diff(split_up_edits(diff) as any, edges))
+  return align(from_dnd_diff(split_up_edits(diff) as any, edges))
 }
 
 /** Gets the sentence in the target text around some offset, without thinking about edits */

@@ -435,5 +435,5 @@ export function align(x: string) {
   const [source, target] = x.split('//')
   const s = G.parse(source)
   const t = G.parse(target)
-  return graphView(G.units_to_graph(s, t), 'NoManualBlue')
+  return graphView(G.units_to_graph(s, t), 'NoManualBlue', false)
 }
