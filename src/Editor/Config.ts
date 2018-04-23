@@ -67,6 +67,19 @@ export type Taxonomy = {
   }[]
 }[]
 
+const last = 'gen ort sensitive'.split(' ')
+const digits = /^\d+$/
+
+function anonymization_label_order(label: string): number {
+  if (-1 != last.indexOf(label)) {
+    return 2
+  } else if (digits.test(label)) {
+    return 1
+  } else {
+    return 0
+  }
+}
+
 const anonymization = [
   {
     group: 'Morphology',
@@ -366,4 +379,5 @@ export const config = {
   examples,
   image_ws_url,
   taxonomy: {anonymization, normalization},
+  anonymization_label_order
 }

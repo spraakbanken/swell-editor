@@ -211,7 +211,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
 
   const visible_graph = Utils.expr(() => {
     if (anon_view) {
-      return G.anonymize(g)
+      return G.anonymize(G.sort_edge_labels(g, config.anonymization_label_order))
     } else if (state.subspan) {
       return G.subgraph(g, state.subspan)
     } else {

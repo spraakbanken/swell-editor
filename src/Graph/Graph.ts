@@ -1232,3 +1232,8 @@ export function source_to_target(g: Graph): Graph {
   })
   return {source: g.source, target, edges: edge_record(edges)}
 }
+
+/* Sort edge labels according to some order */
+export function sort_edge_labels(g: Graph, order: (label: string) => number): Graph {
+  return {...g, edges: record.map(g.edges, e => Edge(e.ids, R.sortBy(order, e.labels), e.manual))}
+}
