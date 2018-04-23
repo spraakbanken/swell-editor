@@ -8,7 +8,7 @@ export interface Example {
 const ex = (source: string, target: string): Example => ({source, target})
 
 const examples: Example[] = `
-Alice and Bob went to Paris . Alice's wallet was stolen . // Alice:1:firstname:female:nom and Bob:2:firstname:male:nom went to Paris:city . Alice's:1:firstname:female:gen wallet was stolen .
+Alice and Bob went to Paris . Alice's wallet was stolen . // Alice:1:'firstname:female' and Bob:2:'firstname:male' went to Paris:city . Alice's:1:'firstname:female':gen wallet was stolen .
 
 Their was a problem yesteray . // There was a problem yesterday .
 
@@ -69,27 +69,32 @@ export type Taxonomy = {
 
 const anonymization = [
   {
-    group: 'Names',
-    entries: [
-      {label: 'surname', desc: ''},
-      {label: 'firstname', desc: ''},
-      {label: 'middlename', desc: ''},
-      {label: 'male', desc: ''},
-      {label: 'female', desc: ''},
-      {label: 'unknown', desc: ''},
-    ],
-  },
-  {
     group: 'Morphology',
-    entries: [{label: 'gen', desc: ''}, {label: 'nom', desc: ''}],
+    entries: [{label: 'gen', desc: 'gender'}],
   },
   {
     group: 'Errors',
-    entries: [{label: 'ort', desc: ''}],
+    entries: [{label: 'ort', desc: 'orthography'}],
+  },
+  {
+    group: 'Names',
+    entries: [
+      {label: 'firstname:male', desc: ''},
+      {label: 'firstname:female', desc: ''},
+      {label: 'firstname:unknown', desc: ''},
+      {label: 'surname', desc: ''},
+      {label: 'middlename', desc: ''},
+      {label: 'initials', desc: ''},
+    ],
   },
   {
     group: 'Institutions',
-    entries: [{label: 'institution', desc: ''}],
+    entries: [
+      {label: 'institution', desc: ''},
+      {label: 'school', desc: ''},
+      {label: 'work', desc: ''},
+      {label: 'other_institution', desc: ''},
+    ]
   },
   {
     group: 'Geographic data',
@@ -103,6 +108,7 @@ const anonymization = [
       {label: 'area', desc: ''},
       {label: 'street', desc: ''},
       {label: 'geo', desc: 'forest, lake, mountain, etc'},
+      {label: 'street_nr', desc: 'street number'},
     ],
   },
   {
@@ -139,7 +145,11 @@ const anonymization = [
   },
   {
     group: 'Mark',
-    entries: [{label: 'prof', desc: ''}, {label: 'sensitive', desc: ''}],
+    entries: [
+      {label: 'prof', desc: 'profession'},
+      {label: 'edu', desc: 'education, courses'},
+      {label: 'sensitive', desc: ''}
+    ],
   },
 ]
 
