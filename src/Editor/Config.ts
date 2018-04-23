@@ -107,7 +107,7 @@ const anonymization = [
       {label: 'school', desc: ''},
       {label: 'work', desc: ''},
       {label: 'other_institution', desc: ''},
-    ]
+    ],
   },
   {
     group: 'Geographic data',
@@ -161,7 +161,7 @@ const anonymization = [
     entries: [
       {label: 'prof', desc: 'profession'},
       {label: 'edu', desc: 'education, courses'},
-      {label: 'sensitive', desc: ''}
+      {label: 'sensitive', desc: ''},
     ],
   },
 ]
@@ -379,5 +379,5 @@ export const config = {
   examples,
   image_ws_url,
   taxonomy: {anonymization, normalization},
-  anonymization_label_order
+  anonymization_label_order,
 }

@@ -19,12 +19,16 @@ export function navigate(
 ) {
   const diff = G.calculate_diff(g, order_changing_label)
   const interesting = new Set(
-    diff.filter(d => Utils.any(
-      g.edges[d.id].labels.length > 0,
-      g.edges[d.id].manual,
-      d.edit != 'Edited',
-      D.target(d) != D.source(d)
-    )).map(d => d.id)
+    diff
+      .filter(d =>
+        Utils.any(
+          g.edges[d.id].labels.length > 0,
+          g.edges[d.id].manual,
+          d.edit != 'Edited',
+          D.target(d) != D.source(d)
+        )
+      )
+      .map(d => d.id)
   )
   const centers = R.sortBy(
     i => (dir == 'next' ? i.center : -i.center),

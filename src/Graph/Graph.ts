@@ -769,7 +769,6 @@ export function calculate_diff(
   g: Graph,
   order_changing_label: (s: string) => boolean = () => false
 ): Diff[] {
-
   const m = edge_map(g)
   const lookup = (tok: Token) => m.get(tok.id) as Edge
 
@@ -809,10 +808,15 @@ export function calculate_diff(
         }
         cands.push({
           score: score + factor * (i - ii + (j - jj)),
-          diff:
-            Utils.snoc(
-              diff,
-              D.Edited(g.source.slice(ii+1,i+1),g.target.slice(jj+1,j+1), edge.id, !!edge.manual))
+          diff: Utils.snoc(
+            diff,
+            D.Edited(
+              g.source.slice(ii + 1, i + 1),
+              g.target.slice(jj + 1, j + 1),
+              edge.id,
+              !!edge.manual
+            )
+          ),
         })
       }
       if (j >= 0) {

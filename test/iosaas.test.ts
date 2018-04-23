@@ -18,8 +18,10 @@ import * as Utils from '../src/Utils'
 describe('png metadata via webserver', async () => {
   const port = 3001
   const server = `http://localhost:${port}`
-  const png_url = (d: iosaas.Data) => `${server}/i.png?${encodeURIComponent(iosaas.data_to_string(d))}`
-  const metadata_url = (d: iosaas.Data) => `${server}/metadata.json?${encodeURIComponent(png_url(d))}`
+  const png_url = (d: iosaas.Data) =>
+    `${server}/i.png?${encodeURIComponent(iosaas.data_to_string(d))}`
+  const metadata_url = (d: iosaas.Data) =>
+    `${server}/metadata.json?${encodeURIComponent(png_url(d))}`
   let shutdown: () => Promise<void>
   before(async () => {
     shutdown = await iosaas.serve(3001)

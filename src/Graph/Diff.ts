@@ -126,8 +126,7 @@ export function mass_centers(diff: Diff[]): Record<string, number> {
     (ds, id) => {
       // try to move to a source position close to the center of mass of all involved positions
       const fractional_center_of_mass =
-        Utils.sum(ds.map(d => d.index * token_count(d))) /
-        Utils.sum(ds.map(token_count))
+        Utils.sum(ds.map(d => d.index * token_count(d))) / Utils.sum(ds.map(token_count))
       // snap-to-grid center of mass calculated only from source positions
       return Utils.minimumBy((d: IndexedDiff) => Math.abs(fractional_center_of_mass - d.index), ds)
         .index

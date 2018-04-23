@@ -6,7 +6,13 @@ import {argv} from 'process'
 
 const args: Record<string, string> = minimist(argv.slice(2))
 
-const {set, get, to, out, _: [infile]} = args
+const {
+  set,
+  get,
+  to,
+  out,
+  _: [infile],
+} = args
 if (set && to && out && infile) {
   onFile.set(set, to, infile, out)
 } else if (get && infile) {

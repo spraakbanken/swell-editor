@@ -103,17 +103,19 @@ export async function ImageServer<Data>(image: Image<Data>, port = 3000) {
   const snap_pdf = memo(url => image_maker.snap(req_to_string(url), 'pdf'))
   const metadata = memo(url => metadata_from_url(image, req_to_string(url)))
 
-  app.get('/*png', // throttle(throttle_options),
-  async (req, res) => {
-    try {
-      const png = await snap_png(req.url)
-      res.setHeader('Cache-Control', 'no-cache')
-      res.contentType('image/png')
-      res.send(png)
-    } catch (e) {
-      res.status(400).send(e.toString())
+  app.get(
+    '/*png', // throttle(throttle_options),
+    async (req, res) => {
+      try {
+        const png = await snap_png(req.url)
+        res.setHeader('Cache-Control', 'no-cache')
+        res.contentType('image/png')
+        res.send(png)
+      } catch (e) {
+        res.status(400).send(e.toString())
+      }
     }
-  })
+  )
 
   app.get('/*pdf', throttle(throttle_options), async (req, res) => {
     try {
@@ -126,16 +128,18 @@ export async function ImageServer<Data>(image: Image<Data>, port = 3000) {
     }
   })
 
-  app.get('/metadata.json', // throttle(throttle_options)
+  app.get(
+    '/metadata.json', // throttle(throttle_options)
     async (req, res) => {
-    try {
-      res.contentType('application/json')
-      const data = await metadata(req.url)
-      res.send(data)
-    } catch (e) {
-      res.status(400).send(e.toString())
+      try {
+        res.contentType('application/json')
+        const data = await metadata(req.url)
+        res.send(data)
+      } catch (e) {
+        res.status(400).send(e.toString())
+      }
     }
-  })
+  )
 
   const server = app.listen(port, () => console.log(`Serving on port ${port}`))
 
