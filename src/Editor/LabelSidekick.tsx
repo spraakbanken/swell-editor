@@ -10,7 +10,7 @@ import * as record from '../record'
 
 import {VNode} from '../ReactUtils'
 import * as ReactUtils from '../ReactUtils'
-import {Close, Button, showhide} from '../ReactUtils'
+import {Button, showhide} from '../ReactUtils'
 
 import {State} from './Model'
 import * as Model from './Model'

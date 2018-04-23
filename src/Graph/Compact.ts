@@ -164,7 +164,7 @@ const attribute: Parser<Attribute> = p.alts<Attribute>(
   link.map(x => [x]).map(links => ({links}))
 )
 
-export function Unit(text: string, attrs: Attribute[]): Unit {
+function Unit(text: string, attrs: Attribute[]): Unit {
   const r = flatten(['ids', 'labels', 'links'], attrs)
   return {text, ...r}
 }
@@ -210,7 +210,7 @@ const space_padded = <A>(f: Parser<A>) =>
 */
 const units = space_padded(p.sepBy(spaces1_, unit))
 
-export const safe_parse = (s: string) => run_parser(units, s) || undefined
+const safe_parse = (s: string) => run_parser(units, s) || undefined
 export const parse = (s: string) => safe_parse(s) || []
 export const parse_strict = (s: string) => run_parser_strict(units, s)
 
@@ -220,7 +220,7 @@ const identify = (prefix: string, us: Unit[]) =>
 // to try to preserve the user-supplied id
 // one problem is possible name-collision
 
-export function to_unaligned_graph(stu: SourceTargetUnits): Graph {
+function to_unaligned_graph(stu: SourceTargetUnits): Graph {
   const s = identify('s', stu.source)
   const t = identify('t', stu.target)
   const uf = Utils.PolyUnionFind<Link>()
@@ -290,7 +290,7 @@ export function units_to_graph(source: Unit[], target: Unit[]): Graph {
   return G.align(to_unaligned_graph({source, target}))
 }
 
-export function unit_to_string(unit: Unit): string {
+function unit_to_string(unit: Unit): string {
   const quote_as_necessary = (text: string) => {
     const escape = text.search(/[ '_\t\n:@^~]/)
     if (escape != -1) {
@@ -423,7 +423,7 @@ export function graph_to_units(g: Graph): SourceTarget<Unit[]> {
   return minimize(proto_graph_to_units(g))
 }
 
-export function safe_compact_to_graph(s: string): Graph | undefined {
+function safe_compact_to_graph(s: string): Graph | undefined {
   const [source_string, target_string] = s.split('//', 2)
   if (source_string && target_string) {
     const source = safe_parse(source_string)
