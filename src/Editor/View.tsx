@@ -291,8 +291,8 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
           side={state.side_restriction}
           orderChangingLabel={s => config.order_changing_labels[s]}
           graph={visible_graph}
-          hoverId={state.hover_id}
-          onHover={hover_id => store.update({hover_id})}
+          hoverId={anon_view ? undefined : state.hover_id}
+          onHover={anon_view ? undefined : hover_id => store.update({hover_id})}
           selectedIds={Object.keys(state.selected)}
           generation={state.generation}
           onSelect={onSelect}
