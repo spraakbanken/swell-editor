@@ -18,6 +18,9 @@ export interface State {
   readonly mode: Mode
   readonly taxonomy: Record<Mode, Taxonomy>
 
+  /** are we reading the user manual? */
+  readonly user_manual_page?: string
+
   /** error messages */
   readonly errors: Record<string, true>
 

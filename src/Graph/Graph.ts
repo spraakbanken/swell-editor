@@ -1150,7 +1150,7 @@ export function normalize(
     record.traverse(g.edges, e => {
       const E = Edge(
         e.ids.map(new_id),
-        e.labels,
+        e.labels.sort(),
         set_manual_to === 'keep' ? e.manual : set_manual_to
       )
       return [E.id, E] as [string, Edge]

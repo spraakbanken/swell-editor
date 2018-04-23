@@ -133,20 +133,22 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
           if (e.key === 'Enter' || e.key === ' ') {
             if (isDigit(t.value)) {
               toggle(t.value)
+              t.value = ''
             } else {
               toggle(labels[cursor])
               t.value = ''
             }
           }
+          console.log(e.key)
           if (e.key === 'Backspace') {
             if (t.value == '' && labels.length > 0) {
               unset(labels[cursor])
             }
           } else if (e.key === 'ArrowDown') {
-            this.setState({cursor: new_cursor(cursor, 1)})
+            this.setState({cursor: new_cursor(cursor + 1, 1)})
             e.preventDefault()
           } else if (e.key === 'ArrowUp') {
-            this.setState({cursor: new_cursor(cursor, -1)})
+            this.setState({cursor: new_cursor(cursor - 1, -1)})
             e.preventDefault()
           } else if (!e.altKey && !e.ctrlKey) {
             this.setState({cursor: new_cursor(cursor, 1, liberal_re(t.value + e.key))})

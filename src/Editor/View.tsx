@@ -22,6 +22,8 @@ import {LabelSidekick} from './LabelSidekick'
 import {GraphView} from '../GraphView'
 import * as GV from '../GraphView'
 
+import * as Manual from './Manual'
+
 const topStyle = style({
   ...Utils.debugName('topStyle'),
   fontFamily: 'lato, sans-serif, DejaVu Sans',
@@ -253,9 +255,41 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
     )
   }
 
+  const manual_page = state.user_manual_page !== undefined && Manual.manual[state.user_manual_page]
+
+  const manual_part = () => (
+    <div className="main" style={manual_page ? {minHeight: '18em'} : {}}>
+      {Manual.slugs.slice(0, manual_page ? -1 : 1).map(slug => (
+        <span>
+          <ReactUtils.A
+            title={slug}
+            text={slug}
+            onMouseDown={e => {
+              e.stopPropagation()
+              const page = Manual.manual[slug]
+              store.update({user_manual_page: slug, graph: Undo.init(page.graph), mode: page.mode})
+            }}
+          />{' '}
+        </span>
+      ))}
+      {manual_page && (
+        <React.Fragment>
+          <Close
+            onMouseDown={() => store.at('user_manual_page').set(undefined)}
+            title="Close manual"
+          />
+          {manual_page.text}
+          {G.equal(Utils.stdout(manual_page.target), Utils.stdout(visible_graph), true) &&
+            'Correct!'}
+        </React.Fragment>
+      )}
+    </div>
+  )
+
   return wrap(
     <div className={topStyle} style={{position: 'relative'}}>
       {ShowErrors(store.at('errors'))}
+      {manual_part()}
       {showhide('set source text', () => (
         <div className="main">
           <div className={hovering ? 'cm-hovering' : ''}>{cms.source.node}</div>

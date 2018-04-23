@@ -175,3 +175,15 @@ export function Close(props: {
     </a>
   )
 }
+
+export function A(props: {
+  onMouseDown(e: React.MouseEvent<HTMLAnchorElement>): void
+  title: string
+  text: string
+}) {
+  return (
+    <a href="#" title={props.title} onMouseDown={props.onMouseDown}>
+      {props.text}
+    </a>
+  )
+}
