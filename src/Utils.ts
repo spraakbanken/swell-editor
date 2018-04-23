@@ -996,3 +996,12 @@ export function timeit<A>(label: string, doit: () => A): A {
 export function getUnsafe<K, V>(m: Map<K, V>, k: K): V {
   return m.get(k) || raise(`Key missing: ${k}`)
 }
+
+export function any(...bs: boolean[]): boolean {
+  for (const b of bs) {
+    if (b) {
+      return true
+    }
+  }
+  return false
+}
