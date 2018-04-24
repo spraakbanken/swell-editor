@@ -1,0 +1,2618 @@
+[
+  {
+    "graph": {
+      "now": {
+        "source": [
+          {"id": "s0", "text": "ost "},
+          {"id": "s1", "text": "kex "},
+          {"id": "s2", "text": "vin "},
+          {"id": "s3", "text": ". "},
+          {"id": "s4", "text": "get "},
+          {"id": "s5", "text": "bär "},
+          {"id": "s6", "text": ". "}
+        ],
+        "target": [
+          {"id": "t7", "text": "host "},
+          {"id": "t1", "text": "kex "},
+          {"id": "t2", "text": "vin "},
+          {"id": "t3", "text": ". "},
+          {"id": "t4", "text": "get "},
+          {"id": "t5", "text": "bär "},
+          {"id": "t6", "text": ". "}
+        ],
+        "edges": {
+          "e-s0-t7": {
+            "id": "e-s0-t7",
+            "ids": ["s0", "t7"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s1-t1": {
+            "id": "e-s1-t1",
+            "ids": ["s1", "t1"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s2-t2": {
+            "id": "e-s2-t2",
+            "ids": ["s2", "t2"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s3-t3": {
+            "id": "e-s3-t3",
+            "ids": ["s3", "t3"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s4-t4": {
+            "id": "e-s4-t4",
+            "ids": ["s4", "t4"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s5-t5": {
+            "id": "e-s5-t5",
+            "ids": ["s5", "t5"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s6-t6": {
+            "id": "e-s6-t6",
+            "ids": ["s6", "t6"],
+            "labels": [],
+            "manual": false
+          }
+        }
+      },
+      "prev": {
+        "top": {
+          "source": [
+            {"id": "s0", "text": "ost "},
+            {"id": "s1", "text": "kex "},
+            {"id": "s2", "text": "vin "},
+            {"id": "s3", "text": ". "},
+            {"id": "s4", "text": "get "},
+            {"id": "s5", "text": "bär "},
+            {"id": "s6", "text": ". "}
+          ],
+          "target": [
+            {"id": "t0", "text": "ost "},
+            {"id": "t1", "text": "kex "},
+            {"id": "t2", "text": "vin "},
+            {"id": "t3", "text": ". "},
+            {"id": "t4", "text": "get "},
+            {"id": "t5", "text": "bär "},
+            {"id": "t6", "text": ". "}
+          ],
+          "edges": {
+            "e-s0-t0": {
+              "id": "e-s0-t0",
+              "ids": ["s0", "t0"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s1-t1": {
+              "id": "e-s1-t1",
+              "ids": ["s1", "t1"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s2-t2": {
+              "id": "e-s2-t2",
+              "ids": ["s2", "t2"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s3-t3": {
+              "id": "e-s3-t3",
+              "ids": ["s3", "t3"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s4-t4": {
+              "id": "e-s4-t4",
+              "ids": ["s4", "t4"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s5-t5": {
+              "id": "e-s5-t5",
+              "ids": ["s5", "t5"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s6-t6": {
+              "id": "e-s6-t6",
+              "ids": ["s6", "t6"],
+              "labels": [],
+              "manual": false
+            }
+          }
+        },
+        "pop": null
+      },
+      "next": null
+    },
+    "selected": {},
+    "subspan": {
+      "source": {"begin": 0, "end": 3},
+      "target": {"begin": 0, "end": 3}
+    },
+    "generation": 0,
+    "errors": {},
+    "mode": "normalization"
+  },
+  {
+    "graph": {
+      "now": {
+        "source": [
+          {"id": "s0", "text": "ost "},
+          {"id": "s1", "text": "kex "},
+          {"id": "s2", "text": "vin "},
+          {"id": "s3", "text": ". "},
+          {"id": "s4", "text": "get "},
+          {"id": "s5", "text": "bär "},
+          {"id": "s6", "text": ". "}
+        ],
+        "target": [
+          {"id": "t7", "text": "host "},
+          {"id": "t2", "text": "vin "},
+          {"id": "t1", "text": "kex "},
+          {"id": "t3", "text": ". "},
+          {"id": "t4", "text": "get "},
+          {"id": "t5", "text": "bär "},
+          {"id": "t6", "text": ". "}
+        ],
+        "edges": {
+          "e-s1-t1": {
+            "id": "e-s1-t1",
+            "ids": ["s1", "t1"],
+            "labels": [],
+            "manual": true
+          },
+          "e-s0-t7": {
+            "id": "e-s0-t7",
+            "ids": ["s0", "t7"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s2-t2": {
+            "id": "e-s2-t2",
+            "ids": ["s2", "t2"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s3-t3": {
+            "id": "e-s3-t3",
+            "ids": ["s3", "t3"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s4-t4": {
+            "id": "e-s4-t4",
+            "ids": ["s4", "t4"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s5-t5": {
+            "id": "e-s5-t5",
+            "ids": ["s5", "t5"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s6-t6": {
+            "id": "e-s6-t6",
+            "ids": ["s6", "t6"],
+            "labels": [],
+            "manual": false
+          }
+        }
+      },
+      "prev": {
+        "top": {
+          "source": [
+            {"id": "s0", "text": "ost "},
+            {"id": "s1", "text": "kex "},
+            {"id": "s2", "text": "vin "},
+            {"id": "s3", "text": ". "},
+            {"id": "s4", "text": "get "},
+            {"id": "s5", "text": "bär "},
+            {"id": "s6", "text": ". "}
+          ],
+          "target": [
+            {"id": "t7", "text": "host "},
+            {"id": "t1", "text": "kex "},
+            {"id": "t2", "text": "vin "},
+            {"id": "t3", "text": ". "},
+            {"id": "t4", "text": "get "},
+            {"id": "t5", "text": "bär "},
+            {"id": "t6", "text": ". "}
+          ],
+          "edges": {
+            "e-s0-t7": {
+              "id": "e-s0-t7",
+              "ids": ["s0", "t7"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s1-t1": {
+              "id": "e-s1-t1",
+              "ids": ["s1", "t1"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s2-t2": {
+              "id": "e-s2-t2",
+              "ids": ["s2", "t2"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s3-t3": {
+              "id": "e-s3-t3",
+              "ids": ["s3", "t3"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s4-t4": {
+              "id": "e-s4-t4",
+              "ids": ["s4", "t4"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s5-t5": {
+              "id": "e-s5-t5",
+              "ids": ["s5", "t5"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s6-t6": {
+              "id": "e-s6-t6",
+              "ids": ["s6", "t6"],
+              "labels": [],
+              "manual": false
+            }
+          }
+        },
+        "pop": {
+          "top": {
+            "source": [
+              {"id": "s0", "text": "ost "},
+              {"id": "s1", "text": "kex "},
+              {"id": "s2", "text": "vin "},
+              {"id": "s3", "text": ". "},
+              {"id": "s4", "text": "get "},
+              {"id": "s5", "text": "bär "},
+              {"id": "s6", "text": ". "}
+            ],
+            "target": [
+              {"id": "t0", "text": "ost "},
+              {"id": "t1", "text": "kex "},
+              {"id": "t2", "text": "vin "},
+              {"id": "t3", "text": ". "},
+              {"id": "t4", "text": "get "},
+              {"id": "t5", "text": "bär "},
+              {"id": "t6", "text": ". "}
+            ],
+            "edges": {
+              "e-s0-t0": {
+                "id": "e-s0-t0",
+                "ids": ["s0", "t0"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s1-t1": {
+                "id": "e-s1-t1",
+                "ids": ["s1", "t1"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s2-t2": {
+                "id": "e-s2-t2",
+                "ids": ["s2", "t2"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s3-t3": {
+                "id": "e-s3-t3",
+                "ids": ["s3", "t3"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s4-t4": {
+                "id": "e-s4-t4",
+                "ids": ["s4", "t4"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s5-t5": {
+                "id": "e-s5-t5",
+                "ids": ["s5", "t5"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s6-t6": {
+                "id": "e-s6-t6",
+                "ids": ["s6", "t6"],
+                "labels": [],
+                "manual": false
+              }
+            }
+          },
+          "pop": null
+        }
+      },
+      "next": null
+    },
+    "selected": {},
+    "subspan": {
+      "source": {"begin": 0, "end": 3},
+      "target": {"begin": 0, "end": 3}
+    },
+    "generation": 0,
+    "errors": {},
+    "mode": "normalization"
+  },
+  {
+    "graph": {
+      "now": {
+        "source": [
+          {"id": "s0", "text": "ost "},
+          {"id": "s1", "text": "kex "},
+          {"id": "s2", "text": "vin "},
+          {"id": "s3", "text": ". "},
+          {"id": "s4", "text": "get "},
+          {"id": "s5", "text": "bär "},
+          {"id": "s6", "text": ". "}
+        ],
+        "target": [
+          {"id": "t7", "text": "host "},
+          {"id": "t2", "text": "vin "},
+          {"id": "t1", "text": "kex "},
+          {"id": "t3", "text": ". "},
+          {"id": "t4", "text": "get "},
+          {"id": "t5", "text": "bär "},
+          {"id": "t6", "text": ". "}
+        ],
+        "edges": {
+          "e-s1-t1": {
+            "id": "e-s1-t1",
+            "ids": ["s1", "t1"],
+            "labels": [],
+            "manual": true
+          },
+          "e-s0-t7": {
+            "id": "e-s0-t7",
+            "ids": ["s0", "t7"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s2-t2": {
+            "id": "e-s2-t2",
+            "ids": ["s2", "t2"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s3-t3": {
+            "id": "e-s3-t3",
+            "ids": ["s3", "t3"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s4-t4": {
+            "id": "e-s4-t4",
+            "ids": ["s4", "t4"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s5-t5": {
+            "id": "e-s5-t5",
+            "ids": ["s5", "t5"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s6-t6": {
+            "id": "e-s6-t6",
+            "ids": ["s6", "t6"],
+            "labels": [],
+            "manual": false
+          }
+        }
+      },
+      "prev": {
+        "top": {
+          "source": [
+            {"id": "s0", "text": "ost "},
+            {"id": "s1", "text": "kex "},
+            {"id": "s2", "text": "vin "},
+            {"id": "s3", "text": ". "},
+            {"id": "s4", "text": "get "},
+            {"id": "s5", "text": "bär "},
+            {"id": "s6", "text": ". "}
+          ],
+          "target": [
+            {"id": "t7", "text": "host "},
+            {"id": "t1", "text": "kex "},
+            {"id": "t2", "text": "vin "},
+            {"id": "t3", "text": ". "},
+            {"id": "t4", "text": "get "},
+            {"id": "t5", "text": "bär "},
+            {"id": "t6", "text": ". "}
+          ],
+          "edges": {
+            "e-s0-t7": {
+              "id": "e-s0-t7",
+              "ids": ["s0", "t7"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s1-t1": {
+              "id": "e-s1-t1",
+              "ids": ["s1", "t1"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s2-t2": {
+              "id": "e-s2-t2",
+              "ids": ["s2", "t2"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s3-t3": {
+              "id": "e-s3-t3",
+              "ids": ["s3", "t3"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s4-t4": {
+              "id": "e-s4-t4",
+              "ids": ["s4", "t4"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s5-t5": {
+              "id": "e-s5-t5",
+              "ids": ["s5", "t5"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s6-t6": {
+              "id": "e-s6-t6",
+              "ids": ["s6", "t6"],
+              "labels": [],
+              "manual": false
+            }
+          }
+        },
+        "pop": {
+          "top": {
+            "source": [
+              {"id": "s0", "text": "ost "},
+              {"id": "s1", "text": "kex "},
+              {"id": "s2", "text": "vin "},
+              {"id": "s3", "text": ". "},
+              {"id": "s4", "text": "get "},
+              {"id": "s5", "text": "bär "},
+              {"id": "s6", "text": ". "}
+            ],
+            "target": [
+              {"id": "t0", "text": "ost "},
+              {"id": "t1", "text": "kex "},
+              {"id": "t2", "text": "vin "},
+              {"id": "t3", "text": ". "},
+              {"id": "t4", "text": "get "},
+              {"id": "t5", "text": "bär "},
+              {"id": "t6", "text": ". "}
+            ],
+            "edges": {
+              "e-s0-t0": {
+                "id": "e-s0-t0",
+                "ids": ["s0", "t0"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s1-t1": {
+                "id": "e-s1-t1",
+                "ids": ["s1", "t1"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s2-t2": {
+                "id": "e-s2-t2",
+                "ids": ["s2", "t2"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s3-t3": {
+                "id": "e-s3-t3",
+                "ids": ["s3", "t3"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s4-t4": {
+                "id": "e-s4-t4",
+                "ids": ["s4", "t4"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s5-t5": {
+                "id": "e-s5-t5",
+                "ids": ["s5", "t5"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s6-t6": {
+                "id": "e-s6-t6",
+                "ids": ["s6", "t6"],
+                "labels": [],
+                "manual": false
+              }
+            }
+          },
+          "pop": null
+        }
+      },
+      "next": null
+    },
+    "hover_id": "e-s0-t7",
+    "selected": {"s0": true},
+    "subspan": {
+      "source": {"begin": 0, "end": 3},
+      "target": {"begin": 0, "end": 3}
+    },
+    "generation": 0,
+    "errors": {},
+    "mode": "normalization"
+  },
+  {
+    "graph": {
+      "now": {
+        "source": [
+          {"id": "s0", "text": "ost "},
+          {"id": "s1", "text": "kex "},
+          {"id": "s2", "text": "vin "},
+          {"id": "s3", "text": ". "},
+          {"id": "s4", "text": "get "},
+          {"id": "s5", "text": "bär "},
+          {"id": "s6", "text": ". "}
+        ],
+        "target": [
+          {"id": "t7", "text": "host "},
+          {"id": "t2", "text": "vin "},
+          {"id": "t1", "text": "kex "},
+          {"id": "t3", "text": ". "},
+          {"id": "t4", "text": "get "},
+          {"id": "t5", "text": "bär "},
+          {"id": "t6", "text": ". "}
+        ],
+        "edges": {
+          "e-s1-t1": {
+            "id": "e-s1-t1",
+            "ids": ["s1", "t1"],
+            "labels": [],
+            "manual": true
+          },
+          "e-s0-t7": {
+            "id": "e-s0-t7",
+            "ids": ["s0", "t7"],
+            "labels": ["X"],
+            "manual": false
+          },
+          "e-s2-t2": {
+            "id": "e-s2-t2",
+            "ids": ["s2", "t2"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s3-t3": {
+            "id": "e-s3-t3",
+            "ids": ["s3", "t3"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s4-t4": {
+            "id": "e-s4-t4",
+            "ids": ["s4", "t4"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s5-t5": {
+            "id": "e-s5-t5",
+            "ids": ["s5", "t5"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s6-t6": {
+            "id": "e-s6-t6",
+            "ids": ["s6", "t6"],
+            "labels": [],
+            "manual": false
+          }
+        }
+      },
+      "prev": {
+        "top": {
+          "source": [
+            {"id": "s0", "text": "ost "},
+            {"id": "s1", "text": "kex "},
+            {"id": "s2", "text": "vin "},
+            {"id": "s3", "text": ". "},
+            {"id": "s4", "text": "get "},
+            {"id": "s5", "text": "bär "},
+            {"id": "s6", "text": ". "}
+          ],
+          "target": [
+            {"id": "t7", "text": "host "},
+            {"id": "t2", "text": "vin "},
+            {"id": "t1", "text": "kex "},
+            {"id": "t3", "text": ". "},
+            {"id": "t4", "text": "get "},
+            {"id": "t5", "text": "bär "},
+            {"id": "t6", "text": ". "}
+          ],
+          "edges": {
+            "e-s1-t1": {
+              "id": "e-s1-t1",
+              "ids": ["s1", "t1"],
+              "labels": [],
+              "manual": true
+            },
+            "e-s0-t7": {
+              "id": "e-s0-t7",
+              "ids": ["s0", "t7"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s2-t2": {
+              "id": "e-s2-t2",
+              "ids": ["s2", "t2"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s3-t3": {
+              "id": "e-s3-t3",
+              "ids": ["s3", "t3"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s4-t4": {
+              "id": "e-s4-t4",
+              "ids": ["s4", "t4"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s5-t5": {
+              "id": "e-s5-t5",
+              "ids": ["s5", "t5"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s6-t6": {
+              "id": "e-s6-t6",
+              "ids": ["s6", "t6"],
+              "labels": [],
+              "manual": false
+            }
+          }
+        },
+        "pop": {
+          "top": {
+            "source": [
+              {"id": "s0", "text": "ost "},
+              {"id": "s1", "text": "kex "},
+              {"id": "s2", "text": "vin "},
+              {"id": "s3", "text": ". "},
+              {"id": "s4", "text": "get "},
+              {"id": "s5", "text": "bär "},
+              {"id": "s6", "text": ". "}
+            ],
+            "target": [
+              {"id": "t7", "text": "host "},
+              {"id": "t1", "text": "kex "},
+              {"id": "t2", "text": "vin "},
+              {"id": "t3", "text": ". "},
+              {"id": "t4", "text": "get "},
+              {"id": "t5", "text": "bär "},
+              {"id": "t6", "text": ". "}
+            ],
+            "edges": {
+              "e-s0-t7": {
+                "id": "e-s0-t7",
+                "ids": ["s0", "t7"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s1-t1": {
+                "id": "e-s1-t1",
+                "ids": ["s1", "t1"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s2-t2": {
+                "id": "e-s2-t2",
+                "ids": ["s2", "t2"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s3-t3": {
+                "id": "e-s3-t3",
+                "ids": ["s3", "t3"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s4-t4": {
+                "id": "e-s4-t4",
+                "ids": ["s4", "t4"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s5-t5": {
+                "id": "e-s5-t5",
+                "ids": ["s5", "t5"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s6-t6": {
+                "id": "e-s6-t6",
+                "ids": ["s6", "t6"],
+                "labels": [],
+                "manual": false
+              }
+            }
+          },
+          "pop": {
+            "top": {
+              "source": [
+                {"id": "s0", "text": "ost "},
+                {"id": "s1", "text": "kex "},
+                {"id": "s2", "text": "vin "},
+                {"id": "s3", "text": ". "},
+                {"id": "s4", "text": "get "},
+                {"id": "s5", "text": "bär "},
+                {"id": "s6", "text": ". "}
+              ],
+              "target": [
+                {"id": "t0", "text": "ost "},
+                {"id": "t1", "text": "kex "},
+                {"id": "t2", "text": "vin "},
+                {"id": "t3", "text": ". "},
+                {"id": "t4", "text": "get "},
+                {"id": "t5", "text": "bär "},
+                {"id": "t6", "text": ". "}
+              ],
+              "edges": {
+                "e-s0-t0": {
+                  "id": "e-s0-t0",
+                  "ids": ["s0", "t0"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s1-t1": {
+                  "id": "e-s1-t1",
+                  "ids": ["s1", "t1"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s2-t2": {
+                  "id": "e-s2-t2",
+                  "ids": ["s2", "t2"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s3-t3": {
+                  "id": "e-s3-t3",
+                  "ids": ["s3", "t3"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s4-t4": {
+                  "id": "e-s4-t4",
+                  "ids": ["s4", "t4"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s5-t5": {
+                  "id": "e-s5-t5",
+                  "ids": ["s5", "t5"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s6-t6": {
+                  "id": "e-s6-t6",
+                  "ids": ["s6", "t6"],
+                  "labels": [],
+                  "manual": false
+                }
+              }
+            },
+            "pop": null
+          }
+        }
+      },
+      "next": null
+    },
+    "hover_id": "e-s0-t7",
+    "selected": {"s0": true},
+    "subspan": {
+      "source": {"begin": 0, "end": 3},
+      "target": {"begin": 0, "end": 3}
+    },
+    "generation": 0,
+    "errors": {},
+    "mode": "normalization"
+  },
+  {
+    "graph": {
+      "now": {
+        "source": [
+          {"id": "s0", "text": "ost "},
+          {"id": "s1", "text": "kex "},
+          {"id": "s2", "text": "vin "},
+          {"id": "s3", "text": ". "},
+          {"id": "s4", "text": "get "},
+          {"id": "s5", "text": "bär "},
+          {"id": "s6", "text": ". "}
+        ],
+        "target": [
+          {"id": "t7", "text": "host "},
+          {"id": "t2", "text": "vin "},
+          {"id": "t1", "text": "kex "},
+          {"id": "t3", "text": ". "},
+          {"id": "t4", "text": "get "},
+          {"id": "t5", "text": "bär "},
+          {"id": "t6", "text": ". "}
+        ],
+        "edges": {
+          "e-s1-t1": {
+            "id": "e-s1-t1",
+            "ids": ["s1", "t1"],
+            "labels": [],
+            "manual": true
+          },
+          "e-s0-t7": {
+            "id": "e-s0-t7",
+            "ids": ["s0", "t7"],
+            "labels": ["X"],
+            "manual": false
+          },
+          "e-s2-t2": {
+            "id": "e-s2-t2",
+            "ids": ["s2", "t2"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s3-t3": {
+            "id": "e-s3-t3",
+            "ids": ["s3", "t3"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s4-t4": {
+            "id": "e-s4-t4",
+            "ids": ["s4", "t4"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s5-t5": {
+            "id": "e-s5-t5",
+            "ids": ["s5", "t5"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s6-t6": {
+            "id": "e-s6-t6",
+            "ids": ["s6", "t6"],
+            "labels": [],
+            "manual": false
+          }
+        }
+      },
+      "prev": {
+        "top": {
+          "source": [
+            {"id": "s0", "text": "ost "},
+            {"id": "s1", "text": "kex "},
+            {"id": "s2", "text": "vin "},
+            {"id": "s3", "text": ". "},
+            {"id": "s4", "text": "get "},
+            {"id": "s5", "text": "bär "},
+            {"id": "s6", "text": ". "}
+          ],
+          "target": [
+            {"id": "t7", "text": "host "},
+            {"id": "t2", "text": "vin "},
+            {"id": "t1", "text": "kex "},
+            {"id": "t3", "text": ". "},
+            {"id": "t4", "text": "get "},
+            {"id": "t5", "text": "bär "},
+            {"id": "t6", "text": ". "}
+          ],
+          "edges": {
+            "e-s1-t1": {
+              "id": "e-s1-t1",
+              "ids": ["s1", "t1"],
+              "labels": [],
+              "manual": true
+            },
+            "e-s0-t7": {
+              "id": "e-s0-t7",
+              "ids": ["s0", "t7"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s2-t2": {
+              "id": "e-s2-t2",
+              "ids": ["s2", "t2"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s3-t3": {
+              "id": "e-s3-t3",
+              "ids": ["s3", "t3"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s4-t4": {
+              "id": "e-s4-t4",
+              "ids": ["s4", "t4"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s5-t5": {
+              "id": "e-s5-t5",
+              "ids": ["s5", "t5"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s6-t6": {
+              "id": "e-s6-t6",
+              "ids": ["s6", "t6"],
+              "labels": [],
+              "manual": false
+            }
+          }
+        },
+        "pop": {
+          "top": {
+            "source": [
+              {"id": "s0", "text": "ost "},
+              {"id": "s1", "text": "kex "},
+              {"id": "s2", "text": "vin "},
+              {"id": "s3", "text": ". "},
+              {"id": "s4", "text": "get "},
+              {"id": "s5", "text": "bär "},
+              {"id": "s6", "text": ". "}
+            ],
+            "target": [
+              {"id": "t7", "text": "host "},
+              {"id": "t1", "text": "kex "},
+              {"id": "t2", "text": "vin "},
+              {"id": "t3", "text": ". "},
+              {"id": "t4", "text": "get "},
+              {"id": "t5", "text": "bär "},
+              {"id": "t6", "text": ". "}
+            ],
+            "edges": {
+              "e-s0-t7": {
+                "id": "e-s0-t7",
+                "ids": ["s0", "t7"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s1-t1": {
+                "id": "e-s1-t1",
+                "ids": ["s1", "t1"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s2-t2": {
+                "id": "e-s2-t2",
+                "ids": ["s2", "t2"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s3-t3": {
+                "id": "e-s3-t3",
+                "ids": ["s3", "t3"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s4-t4": {
+                "id": "e-s4-t4",
+                "ids": ["s4", "t4"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s5-t5": {
+                "id": "e-s5-t5",
+                "ids": ["s5", "t5"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s6-t6": {
+                "id": "e-s6-t6",
+                "ids": ["s6", "t6"],
+                "labels": [],
+                "manual": false
+              }
+            }
+          },
+          "pop": {
+            "top": {
+              "source": [
+                {"id": "s0", "text": "ost "},
+                {"id": "s1", "text": "kex "},
+                {"id": "s2", "text": "vin "},
+                {"id": "s3", "text": ". "},
+                {"id": "s4", "text": "get "},
+                {"id": "s5", "text": "bär "},
+                {"id": "s6", "text": ". "}
+              ],
+              "target": [
+                {"id": "t0", "text": "ost "},
+                {"id": "t1", "text": "kex "},
+                {"id": "t2", "text": "vin "},
+                {"id": "t3", "text": ". "},
+                {"id": "t4", "text": "get "},
+                {"id": "t5", "text": "bär "},
+                {"id": "t6", "text": ". "}
+              ],
+              "edges": {
+                "e-s0-t0": {
+                  "id": "e-s0-t0",
+                  "ids": ["s0", "t0"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s1-t1": {
+                  "id": "e-s1-t1",
+                  "ids": ["s1", "t1"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s2-t2": {
+                  "id": "e-s2-t2",
+                  "ids": ["s2", "t2"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s3-t3": {
+                  "id": "e-s3-t3",
+                  "ids": ["s3", "t3"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s4-t4": {
+                  "id": "e-s4-t4",
+                  "ids": ["s4", "t4"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s5-t5": {
+                  "id": "e-s5-t5",
+                  "ids": ["s5", "t5"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s6-t6": {
+                  "id": "e-s6-t6",
+                  "ids": ["s6", "t6"],
+                  "labels": [],
+                  "manual": false
+                }
+              }
+            },
+            "pop": null
+          }
+        }
+      },
+      "next": null
+    },
+    "hover_id": "e-s0-t7",
+    "selected": {"s4": true, "t4": true},
+    "subspan": {
+      "source": {"begin": 0, "end": 6},
+      "target": {"begin": 0, "end": 6}
+    },
+    "generation": 0,
+    "errors": {},
+    "mode": "normalization"
+  },
+  {
+    "graph": {
+      "now": {
+        "source": [
+          {"id": "s0", "text": "ost "},
+          {"id": "s1", "text": "kex "},
+          {"id": "s2", "text": "vin "},
+          {"id": "s3", "text": ". "},
+          {"id": "s4", "text": "get "},
+          {"id": "s5", "text": "bär "},
+          {"id": "s6", "text": ". "}
+        ],
+        "target": [
+          {"id": "t7", "text": "host "},
+          {"id": "t2", "text": "vin "},
+          {"id": "t1", "text": "kex "},
+          {"id": "t3", "text": ". "},
+          {"id": "t4", "text": "get "},
+          {"id": "t5", "text": "bär "},
+          {"id": "t6", "text": ". "}
+        ],
+        "edges": {
+          "e-s1-t1": {
+            "id": "e-s1-t1",
+            "ids": ["s1", "t1"],
+            "labels": [],
+            "manual": true
+          },
+          "e-s0-t7": {
+            "id": "e-s0-t7",
+            "ids": ["s0", "t7"],
+            "labels": ["X"],
+            "manual": false
+          },
+          "e-s2-t2": {
+            "id": "e-s2-t2",
+            "ids": ["s2", "t2"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s3-t3": {
+            "id": "e-s3-t3",
+            "ids": ["s3", "t3"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s4-t4": {
+            "id": "e-s4-t4",
+            "ids": ["s4", "t4"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s5-t5": {
+            "id": "e-s5-t5",
+            "ids": ["s5", "t5"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s6-t6": {
+            "id": "e-s6-t6",
+            "ids": ["s6", "t6"],
+            "labels": [],
+            "manual": false
+          }
+        }
+      },
+      "prev": {
+        "top": {
+          "source": [
+            {"id": "s0", "text": "ost "},
+            {"id": "s1", "text": "kex "},
+            {"id": "s2", "text": "vin "},
+            {"id": "s3", "text": ". "},
+            {"id": "s4", "text": "get "},
+            {"id": "s5", "text": "bär "},
+            {"id": "s6", "text": ". "}
+          ],
+          "target": [
+            {"id": "t7", "text": "host "},
+            {"id": "t2", "text": "vin "},
+            {"id": "t1", "text": "kex "},
+            {"id": "t3", "text": ". "},
+            {"id": "t4", "text": "get "},
+            {"id": "t5", "text": "bär "},
+            {"id": "t6", "text": ". "}
+          ],
+          "edges": {
+            "e-s1-t1": {
+              "id": "e-s1-t1",
+              "ids": ["s1", "t1"],
+              "labels": [],
+              "manual": true
+            },
+            "e-s0-t7": {
+              "id": "e-s0-t7",
+              "ids": ["s0", "t7"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s2-t2": {
+              "id": "e-s2-t2",
+              "ids": ["s2", "t2"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s3-t3": {
+              "id": "e-s3-t3",
+              "ids": ["s3", "t3"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s4-t4": {
+              "id": "e-s4-t4",
+              "ids": ["s4", "t4"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s5-t5": {
+              "id": "e-s5-t5",
+              "ids": ["s5", "t5"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s6-t6": {
+              "id": "e-s6-t6",
+              "ids": ["s6", "t6"],
+              "labels": [],
+              "manual": false
+            }
+          }
+        },
+        "pop": {
+          "top": {
+            "source": [
+              {"id": "s0", "text": "ost "},
+              {"id": "s1", "text": "kex "},
+              {"id": "s2", "text": "vin "},
+              {"id": "s3", "text": ". "},
+              {"id": "s4", "text": "get "},
+              {"id": "s5", "text": "bär "},
+              {"id": "s6", "text": ". "}
+            ],
+            "target": [
+              {"id": "t7", "text": "host "},
+              {"id": "t1", "text": "kex "},
+              {"id": "t2", "text": "vin "},
+              {"id": "t3", "text": ". "},
+              {"id": "t4", "text": "get "},
+              {"id": "t5", "text": "bär "},
+              {"id": "t6", "text": ". "}
+            ],
+            "edges": {
+              "e-s0-t7": {
+                "id": "e-s0-t7",
+                "ids": ["s0", "t7"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s1-t1": {
+                "id": "e-s1-t1",
+                "ids": ["s1", "t1"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s2-t2": {
+                "id": "e-s2-t2",
+                "ids": ["s2", "t2"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s3-t3": {
+                "id": "e-s3-t3",
+                "ids": ["s3", "t3"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s4-t4": {
+                "id": "e-s4-t4",
+                "ids": ["s4", "t4"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s5-t5": {
+                "id": "e-s5-t5",
+                "ids": ["s5", "t5"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s6-t6": {
+                "id": "e-s6-t6",
+                "ids": ["s6", "t6"],
+                "labels": [],
+                "manual": false
+              }
+            }
+          },
+          "pop": {
+            "top": {
+              "source": [
+                {"id": "s0", "text": "ost "},
+                {"id": "s1", "text": "kex "},
+                {"id": "s2", "text": "vin "},
+                {"id": "s3", "text": ". "},
+                {"id": "s4", "text": "get "},
+                {"id": "s5", "text": "bär "},
+                {"id": "s6", "text": ". "}
+              ],
+              "target": [
+                {"id": "t0", "text": "ost "},
+                {"id": "t1", "text": "kex "},
+                {"id": "t2", "text": "vin "},
+                {"id": "t3", "text": ". "},
+                {"id": "t4", "text": "get "},
+                {"id": "t5", "text": "bär "},
+                {"id": "t6", "text": ". "}
+              ],
+              "edges": {
+                "e-s0-t0": {
+                  "id": "e-s0-t0",
+                  "ids": ["s0", "t0"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s1-t1": {
+                  "id": "e-s1-t1",
+                  "ids": ["s1", "t1"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s2-t2": {
+                  "id": "e-s2-t2",
+                  "ids": ["s2", "t2"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s3-t3": {
+                  "id": "e-s3-t3",
+                  "ids": ["s3", "t3"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s4-t4": {
+                  "id": "e-s4-t4",
+                  "ids": ["s4", "t4"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s5-t5": {
+                  "id": "e-s5-t5",
+                  "ids": ["s5", "t5"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s6-t6": {
+                  "id": "e-s6-t6",
+                  "ids": ["s6", "t6"],
+                  "labels": [],
+                  "manual": false
+                }
+              }
+            },
+            "pop": null
+          }
+        }
+      },
+      "next": null
+    },
+    "hover_id": "e-s0-t7",
+    "selected": {"s1": true, "t1": true},
+    "subspan": {
+      "source": {"begin": 0, "end": 6},
+      "target": {"begin": 0, "end": 6}
+    },
+    "generation": 0,
+    "errors": {},
+    "mode": "normalization"
+  },
+  {
+    "graph": {
+      "now": {
+        "source": [
+          {"id": "s0", "text": "ost "},
+          {"id": "s1", "text": "kex "},
+          {"id": "s2", "text": "vin "},
+          {"id": "s3", "text": ". "},
+          {"id": "s4", "text": "get "},
+          {"id": "s5", "text": "bär "},
+          {"id": "s6", "text": ". "}
+        ],
+        "target": [
+          {"id": "t7", "text": "host "},
+          {"id": "t2", "text": "vin "},
+          {"id": "t1", "text": "kex "},
+          {"id": "t3", "text": ". "},
+          {"id": "t4", "text": "get "},
+          {"id": "t5", "text": "bär "},
+          {"id": "t6", "text": ". "}
+        ],
+        "edges": {
+          "e-s1-t1": {
+            "id": "e-s1-t1",
+            "ids": ["s1", "t1"],
+            "labels": ["Uni"],
+            "manual": true
+          },
+          "e-s0-t7": {
+            "id": "e-s0-t7",
+            "ids": ["s0", "t7"],
+            "labels": ["X"],
+            "manual": false
+          },
+          "e-s2-t2": {
+            "id": "e-s2-t2",
+            "ids": ["s2", "t2"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s3-t3": {
+            "id": "e-s3-t3",
+            "ids": ["s3", "t3"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s4-t4": {
+            "id": "e-s4-t4",
+            "ids": ["s4", "t4"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s5-t5": {
+            "id": "e-s5-t5",
+            "ids": ["s5", "t5"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s6-t6": {
+            "id": "e-s6-t6",
+            "ids": ["s6", "t6"],
+            "labels": [],
+            "manual": false
+          }
+        }
+      },
+      "prev": {
+        "top": {
+          "source": [
+            {"id": "s0", "text": "ost "},
+            {"id": "s1", "text": "kex "},
+            {"id": "s2", "text": "vin "},
+            {"id": "s3", "text": ". "},
+            {"id": "s4", "text": "get "},
+            {"id": "s5", "text": "bär "},
+            {"id": "s6", "text": ". "}
+          ],
+          "target": [
+            {"id": "t7", "text": "host "},
+            {"id": "t2", "text": "vin "},
+            {"id": "t1", "text": "kex "},
+            {"id": "t3", "text": ". "},
+            {"id": "t4", "text": "get "},
+            {"id": "t5", "text": "bär "},
+            {"id": "t6", "text": ". "}
+          ],
+          "edges": {
+            "e-s1-t1": {
+              "id": "e-s1-t1",
+              "ids": ["s1", "t1"],
+              "labels": [],
+              "manual": true
+            },
+            "e-s0-t7": {
+              "id": "e-s0-t7",
+              "ids": ["s0", "t7"],
+              "labels": ["X"],
+              "manual": false
+            },
+            "e-s2-t2": {
+              "id": "e-s2-t2",
+              "ids": ["s2", "t2"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s3-t3": {
+              "id": "e-s3-t3",
+              "ids": ["s3", "t3"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s4-t4": {
+              "id": "e-s4-t4",
+              "ids": ["s4", "t4"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s5-t5": {
+              "id": "e-s5-t5",
+              "ids": ["s5", "t5"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s6-t6": {
+              "id": "e-s6-t6",
+              "ids": ["s6", "t6"],
+              "labels": [],
+              "manual": false
+            }
+          }
+        },
+        "pop": {
+          "top": {
+            "source": [
+              {"id": "s0", "text": "ost "},
+              {"id": "s1", "text": "kex "},
+              {"id": "s2", "text": "vin "},
+              {"id": "s3", "text": ". "},
+              {"id": "s4", "text": "get "},
+              {"id": "s5", "text": "bär "},
+              {"id": "s6", "text": ". "}
+            ],
+            "target": [
+              {"id": "t7", "text": "host "},
+              {"id": "t2", "text": "vin "},
+              {"id": "t1", "text": "kex "},
+              {"id": "t3", "text": ". "},
+              {"id": "t4", "text": "get "},
+              {"id": "t5", "text": "bär "},
+              {"id": "t6", "text": ". "}
+            ],
+            "edges": {
+              "e-s1-t1": {
+                "id": "e-s1-t1",
+                "ids": ["s1", "t1"],
+                "labels": [],
+                "manual": true
+              },
+              "e-s0-t7": {
+                "id": "e-s0-t7",
+                "ids": ["s0", "t7"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s2-t2": {
+                "id": "e-s2-t2",
+                "ids": ["s2", "t2"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s3-t3": {
+                "id": "e-s3-t3",
+                "ids": ["s3", "t3"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s4-t4": {
+                "id": "e-s4-t4",
+                "ids": ["s4", "t4"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s5-t5": {
+                "id": "e-s5-t5",
+                "ids": ["s5", "t5"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s6-t6": {
+                "id": "e-s6-t6",
+                "ids": ["s6", "t6"],
+                "labels": [],
+                "manual": false
+              }
+            }
+          },
+          "pop": {
+            "top": {
+              "source": [
+                {"id": "s0", "text": "ost "},
+                {"id": "s1", "text": "kex "},
+                {"id": "s2", "text": "vin "},
+                {"id": "s3", "text": ". "},
+                {"id": "s4", "text": "get "},
+                {"id": "s5", "text": "bär "},
+                {"id": "s6", "text": ". "}
+              ],
+              "target": [
+                {"id": "t7", "text": "host "},
+                {"id": "t1", "text": "kex "},
+                {"id": "t2", "text": "vin "},
+                {"id": "t3", "text": ". "},
+                {"id": "t4", "text": "get "},
+                {"id": "t5", "text": "bär "},
+                {"id": "t6", "text": ". "}
+              ],
+              "edges": {
+                "e-s0-t7": {
+                  "id": "e-s0-t7",
+                  "ids": ["s0", "t7"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s1-t1": {
+                  "id": "e-s1-t1",
+                  "ids": ["s1", "t1"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s2-t2": {
+                  "id": "e-s2-t2",
+                  "ids": ["s2", "t2"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s3-t3": {
+                  "id": "e-s3-t3",
+                  "ids": ["s3", "t3"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s4-t4": {
+                  "id": "e-s4-t4",
+                  "ids": ["s4", "t4"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s5-t5": {
+                  "id": "e-s5-t5",
+                  "ids": ["s5", "t5"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s6-t6": {
+                  "id": "e-s6-t6",
+                  "ids": ["s6", "t6"],
+                  "labels": [],
+                  "manual": false
+                }
+              }
+            },
+            "pop": {
+              "top": {
+                "source": [
+                  {"id": "s0", "text": "ost "},
+                  {"id": "s1", "text": "kex "},
+                  {"id": "s2", "text": "vin "},
+                  {"id": "s3", "text": ". "},
+                  {"id": "s4", "text": "get "},
+                  {"id": "s5", "text": "bär "},
+                  {"id": "s6", "text": ". "}
+                ],
+                "target": [
+                  {"id": "t0", "text": "ost "},
+                  {"id": "t1", "text": "kex "},
+                  {"id": "t2", "text": "vin "},
+                  {"id": "t3", "text": ". "},
+                  {"id": "t4", "text": "get "},
+                  {"id": "t5", "text": "bär "},
+                  {"id": "t6", "text": ". "}
+                ],
+                "edges": {
+                  "e-s0-t0": {
+                    "id": "e-s0-t0",
+                    "ids": ["s0", "t0"],
+                    "labels": [],
+                    "manual": false
+                  },
+                  "e-s1-t1": {
+                    "id": "e-s1-t1",
+                    "ids": ["s1", "t1"],
+                    "labels": [],
+                    "manual": false
+                  },
+                  "e-s2-t2": {
+                    "id": "e-s2-t2",
+                    "ids": ["s2", "t2"],
+                    "labels": [],
+                    "manual": false
+                  },
+                  "e-s3-t3": {
+                    "id": "e-s3-t3",
+                    "ids": ["s3", "t3"],
+                    "labels": [],
+                    "manual": false
+                  },
+                  "e-s4-t4": {
+                    "id": "e-s4-t4",
+                    "ids": ["s4", "t4"],
+                    "labels": [],
+                    "manual": false
+                  },
+                  "e-s5-t5": {
+                    "id": "e-s5-t5",
+                    "ids": ["s5", "t5"],
+                    "labels": [],
+                    "manual": false
+                  },
+                  "e-s6-t6": {
+                    "id": "e-s6-t6",
+                    "ids": ["s6", "t6"],
+                    "labels": [],
+                    "manual": false
+                  }
+                }
+              },
+              "pop": null
+            }
+          }
+        }
+      },
+      "next": null
+    },
+    "hover_id": "e-s0-t7",
+    "selected": {"s1": true, "t1": true},
+    "subspan": {
+      "source": {"begin": 0, "end": 6},
+      "target": {"begin": 0, "end": 6}
+    },
+    "generation": 0,
+    "errors": {},
+    "mode": "normalization"
+  },
+  {
+    "graph": {
+      "now": {
+        "source": [
+          {"id": "s0", "text": "ost "},
+          {"id": "s1", "text": "kex "},
+          {"id": "s2", "text": "vin "},
+          {"id": "s3", "text": ". "},
+          {"id": "s4", "text": "get "},
+          {"id": "s5", "text": "bär "},
+          {"id": "s6", "text": ". "}
+        ],
+        "target": [
+          {"id": "t7", "text": "host "},
+          {"id": "t2", "text": "vin "},
+          {"id": "t1", "text": "kex "},
+          {"id": "t3", "text": ". "},
+          {"id": "t4", "text": "get "},
+          {"id": "t5", "text": "bär "},
+          {"id": "t6", "text": ". "}
+        ],
+        "edges": {
+          "e-s0-t7": {
+            "id": "e-s0-t7",
+            "ids": ["s0", "t7"],
+            "labels": ["X"],
+            "manual": false
+          },
+          "e-s1-t1": {
+            "id": "e-s1-t1",
+            "ids": ["s1", "t1"],
+            "labels": ["Uni"],
+            "manual": false
+          },
+          "e-s2": {"id": "e-s2", "ids": ["s2"], "labels": [], "manual": false},
+          "e-s3-t3": {
+            "id": "e-s3-t3",
+            "ids": ["s3", "t3"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s4-t4": {
+            "id": "e-s4-t4",
+            "ids": ["s4", "t4"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s5-t5": {
+            "id": "e-s5-t5",
+            "ids": ["s5", "t5"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s6-t6": {
+            "id": "e-s6-t6",
+            "ids": ["s6", "t6"],
+            "labels": [],
+            "manual": false
+          },
+          "e-t2": {"id": "e-t2", "ids": ["t2"], "labels": [], "manual": false}
+        }
+      },
+      "prev": {
+        "top": {
+          "source": [
+            {"id": "s0", "text": "ost "},
+            {"id": "s1", "text": "kex "},
+            {"id": "s2", "text": "vin "},
+            {"id": "s3", "text": ". "},
+            {"id": "s4", "text": "get "},
+            {"id": "s5", "text": "bär "},
+            {"id": "s6", "text": ". "}
+          ],
+          "target": [
+            {"id": "t7", "text": "host "},
+            {"id": "t2", "text": "vin "},
+            {"id": "t1", "text": "kex "},
+            {"id": "t3", "text": ". "},
+            {"id": "t4", "text": "get "},
+            {"id": "t5", "text": "bär "},
+            {"id": "t6", "text": ". "}
+          ],
+          "edges": {
+            "e-s1-t1": {
+              "id": "e-s1-t1",
+              "ids": ["s1", "t1"],
+              "labels": ["Uni"],
+              "manual": true
+            },
+            "e-s0-t7": {
+              "id": "e-s0-t7",
+              "ids": ["s0", "t7"],
+              "labels": ["X"],
+              "manual": false
+            },
+            "e-s2-t2": {
+              "id": "e-s2-t2",
+              "ids": ["s2", "t2"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s3-t3": {
+              "id": "e-s3-t3",
+              "ids": ["s3", "t3"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s4-t4": {
+              "id": "e-s4-t4",
+              "ids": ["s4", "t4"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s5-t5": {
+              "id": "e-s5-t5",
+              "ids": ["s5", "t5"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s6-t6": {
+              "id": "e-s6-t6",
+              "ids": ["s6", "t6"],
+              "labels": [],
+              "manual": false
+            }
+          }
+        },
+        "pop": {
+          "top": {
+            "source": [
+              {"id": "s0", "text": "ost "},
+              {"id": "s1", "text": "kex "},
+              {"id": "s2", "text": "vin "},
+              {"id": "s3", "text": ". "},
+              {"id": "s4", "text": "get "},
+              {"id": "s5", "text": "bär "},
+              {"id": "s6", "text": ". "}
+            ],
+            "target": [
+              {"id": "t7", "text": "host "},
+              {"id": "t2", "text": "vin "},
+              {"id": "t1", "text": "kex "},
+              {"id": "t3", "text": ". "},
+              {"id": "t4", "text": "get "},
+              {"id": "t5", "text": "bär "},
+              {"id": "t6", "text": ". "}
+            ],
+            "edges": {
+              "e-s1-t1": {
+                "id": "e-s1-t1",
+                "ids": ["s1", "t1"],
+                "labels": [],
+                "manual": true
+              },
+              "e-s0-t7": {
+                "id": "e-s0-t7",
+                "ids": ["s0", "t7"],
+                "labels": ["X"],
+                "manual": false
+              },
+              "e-s2-t2": {
+                "id": "e-s2-t2",
+                "ids": ["s2", "t2"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s3-t3": {
+                "id": "e-s3-t3",
+                "ids": ["s3", "t3"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s4-t4": {
+                "id": "e-s4-t4",
+                "ids": ["s4", "t4"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s5-t5": {
+                "id": "e-s5-t5",
+                "ids": ["s5", "t5"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s6-t6": {
+                "id": "e-s6-t6",
+                "ids": ["s6", "t6"],
+                "labels": [],
+                "manual": false
+              }
+            }
+          },
+          "pop": {
+            "top": {
+              "source": [
+                {"id": "s0", "text": "ost "},
+                {"id": "s1", "text": "kex "},
+                {"id": "s2", "text": "vin "},
+                {"id": "s3", "text": ". "},
+                {"id": "s4", "text": "get "},
+                {"id": "s5", "text": "bär "},
+                {"id": "s6", "text": ". "}
+              ],
+              "target": [
+                {"id": "t7", "text": "host "},
+                {"id": "t2", "text": "vin "},
+                {"id": "t1", "text": "kex "},
+                {"id": "t3", "text": ". "},
+                {"id": "t4", "text": "get "},
+                {"id": "t5", "text": "bär "},
+                {"id": "t6", "text": ". "}
+              ],
+              "edges": {
+                "e-s1-t1": {
+                  "id": "e-s1-t1",
+                  "ids": ["s1", "t1"],
+                  "labels": [],
+                  "manual": true
+                },
+                "e-s0-t7": {
+                  "id": "e-s0-t7",
+                  "ids": ["s0", "t7"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s2-t2": {
+                  "id": "e-s2-t2",
+                  "ids": ["s2", "t2"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s3-t3": {
+                  "id": "e-s3-t3",
+                  "ids": ["s3", "t3"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s4-t4": {
+                  "id": "e-s4-t4",
+                  "ids": ["s4", "t4"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s5-t5": {
+                  "id": "e-s5-t5",
+                  "ids": ["s5", "t5"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s6-t6": {
+                  "id": "e-s6-t6",
+                  "ids": ["s6", "t6"],
+                  "labels": [],
+                  "manual": false
+                }
+              }
+            },
+            "pop": {
+              "top": {
+                "source": [
+                  {"id": "s0", "text": "ost "},
+                  {"id": "s1", "text": "kex "},
+                  {"id": "s2", "text": "vin "},
+                  {"id": "s3", "text": ". "},
+                  {"id": "s4", "text": "get "},
+                  {"id": "s5", "text": "bär "},
+                  {"id": "s6", "text": ". "}
+                ],
+                "target": [
+                  {"id": "t7", "text": "host "},
+                  {"id": "t1", "text": "kex "},
+                  {"id": "t2", "text": "vin "},
+                  {"id": "t3", "text": ". "},
+                  {"id": "t4", "text": "get "},
+                  {"id": "t5", "text": "bär "},
+                  {"id": "t6", "text": ". "}
+                ],
+                "edges": {
+                  "e-s0-t7": {
+                    "id": "e-s0-t7",
+                    "ids": ["s0", "t7"],
+                    "labels": [],
+                    "manual": false
+                  },
+                  "e-s1-t1": {
+                    "id": "e-s1-t1",
+                    "ids": ["s1", "t1"],
+                    "labels": [],
+                    "manual": false
+                  },
+                  "e-s2-t2": {
+                    "id": "e-s2-t2",
+                    "ids": ["s2", "t2"],
+                    "labels": [],
+                    "manual": false
+                  },
+                  "e-s3-t3": {
+                    "id": "e-s3-t3",
+                    "ids": ["s3", "t3"],
+                    "labels": [],
+                    "manual": false
+                  },
+                  "e-s4-t4": {
+                    "id": "e-s4-t4",
+                    "ids": ["s4", "t4"],
+                    "labels": [],
+                    "manual": false
+                  },
+                  "e-s5-t5": {
+                    "id": "e-s5-t5",
+                    "ids": ["s5", "t5"],
+                    "labels": [],
+                    "manual": false
+                  },
+                  "e-s6-t6": {
+                    "id": "e-s6-t6",
+                    "ids": ["s6", "t6"],
+                    "labels": [],
+                    "manual": false
+                  }
+                }
+              },
+              "pop": {
+                "top": {
+                  "source": [
+                    {"id": "s0", "text": "ost "},
+                    {"id": "s1", "text": "kex "},
+                    {"id": "s2", "text": "vin "},
+                    {"id": "s3", "text": ". "},
+                    {"id": "s4", "text": "get "},
+                    {"id": "s5", "text": "bär "},
+                    {"id": "s6", "text": ". "}
+                  ],
+                  "target": [
+                    {"id": "t0", "text": "ost "},
+                    {"id": "t1", "text": "kex "},
+                    {"id": "t2", "text": "vin "},
+                    {"id": "t3", "text": ". "},
+                    {"id": "t4", "text": "get "},
+                    {"id": "t5", "text": "bär "},
+                    {"id": "t6", "text": ". "}
+                  ],
+                  "edges": {
+                    "e-s0-t0": {
+                      "id": "e-s0-t0",
+                      "ids": ["s0", "t0"],
+                      "labels": [],
+                      "manual": false
+                    },
+                    "e-s1-t1": {
+                      "id": "e-s1-t1",
+                      "ids": ["s1", "t1"],
+                      "labels": [],
+                      "manual": false
+                    },
+                    "e-s2-t2": {
+                      "id": "e-s2-t2",
+                      "ids": ["s2", "t2"],
+                      "labels": [],
+                      "manual": false
+                    },
+                    "e-s3-t3": {
+                      "id": "e-s3-t3",
+                      "ids": ["s3", "t3"],
+                      "labels": [],
+                      "manual": false
+                    },
+                    "e-s4-t4": {
+                      "id": "e-s4-t4",
+                      "ids": ["s4", "t4"],
+                      "labels": [],
+                      "manual": false
+                    },
+                    "e-s5-t5": {
+                      "id": "e-s5-t5",
+                      "ids": ["s5", "t5"],
+                      "labels": [],
+                      "manual": false
+                    },
+                    "e-s6-t6": {
+                      "id": "e-s6-t6",
+                      "ids": ["s6", "t6"],
+                      "labels": [],
+                      "manual": false
+                    }
+                  }
+                },
+                "pop": null
+              }
+            }
+          }
+        }
+      },
+      "next": null
+    },
+    "hover_id": "e-s0-t7",
+    "selected": {"s1": true, "t1": true},
+    "subspan": {
+      "source": {"begin": 0, "end": 6},
+      "target": {"begin": 0, "end": 6}
+    },
+    "generation": 0,
+    "errors": {},
+    "mode": "normalization"
+  },
+  {
+    "graph": {
+      "now": {
+        "source": [
+          {"id": "s0", "text": "ost "},
+          {"id": "s1", "text": "kex "},
+          {"id": "s2", "text": "vin "},
+          {"id": "s3", "text": ". "},
+          {"id": "s4", "text": "get "},
+          {"id": "s5", "text": "bär "},
+          {"id": "s6", "text": ". "}
+        ],
+        "target": [
+          {"id": "t7", "text": "host "},
+          {"id": "t2", "text": "vin "},
+          {"id": "t8", "text": "kex "},
+          {"id": "t3", "text": ". "},
+          {"id": "t4", "text": "get "},
+          {"id": "t5", "text": "bär "},
+          {"id": "t6", "text": ". "}
+        ],
+        "edges": {
+          "e-s0-t7": {
+            "id": "e-s0-t7",
+            "ids": ["s0", "t7"],
+            "labels": ["X"],
+            "manual": false
+          },
+          "e-s1-t8": {
+            "id": "e-s1-t8",
+            "ids": ["s1", "t8"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s2": {"id": "e-s2", "ids": ["s2"], "labels": [], "manual": false},
+          "e-s3-t3": {
+            "id": "e-s3-t3",
+            "ids": ["s3", "t3"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s4-t4": {
+            "id": "e-s4-t4",
+            "ids": ["s4", "t4"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s5-t5": {
+            "id": "e-s5-t5",
+            "ids": ["s5", "t5"],
+            "labels": [],
+            "manual": false
+          },
+          "e-s6-t6": {
+            "id": "e-s6-t6",
+            "ids": ["s6", "t6"],
+            "labels": [],
+            "manual": false
+          },
+          "e-t2": {"id": "e-t2", "ids": ["t2"], "labels": [], "manual": false}
+        }
+      },
+      "prev": {
+        "top": {
+          "source": [
+            {"id": "s0", "text": "ost "},
+            {"id": "s1", "text": "kex "},
+            {"id": "s2", "text": "vin "},
+            {"id": "s3", "text": ". "},
+            {"id": "s4", "text": "get "},
+            {"id": "s5", "text": "bär "},
+            {"id": "s6", "text": ". "}
+          ],
+          "target": [
+            {"id": "t7", "text": "host "},
+            {"id": "t2", "text": "vin "},
+            {"id": "t1", "text": "kex "},
+            {"id": "t3", "text": ". "},
+            {"id": "t4", "text": "get "},
+            {"id": "t5", "text": "bär "},
+            {"id": "t6", "text": ". "}
+          ],
+          "edges": {
+            "e-s0-t7": {
+              "id": "e-s0-t7",
+              "ids": ["s0", "t7"],
+              "labels": ["X"],
+              "manual": false
+            },
+            "e-s1-t1": {
+              "id": "e-s1-t1",
+              "ids": ["s1", "t1"],
+              "labels": ["Uni"],
+              "manual": false
+            },
+            "e-s2": {
+              "id": "e-s2",
+              "ids": ["s2"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s3-t3": {
+              "id": "e-s3-t3",
+              "ids": ["s3", "t3"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s4-t4": {
+              "id": "e-s4-t4",
+              "ids": ["s4", "t4"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s5-t5": {
+              "id": "e-s5-t5",
+              "ids": ["s5", "t5"],
+              "labels": [],
+              "manual": false
+            },
+            "e-s6-t6": {
+              "id": "e-s6-t6",
+              "ids": ["s6", "t6"],
+              "labels": [],
+              "manual": false
+            },
+            "e-t2": {"id": "e-t2", "ids": ["t2"], "labels": [], "manual": false}
+          }
+        },
+        "pop": {
+          "top": {
+            "source": [
+              {"id": "s0", "text": "ost "},
+              {"id": "s1", "text": "kex "},
+              {"id": "s2", "text": "vin "},
+              {"id": "s3", "text": ". "},
+              {"id": "s4", "text": "get "},
+              {"id": "s5", "text": "bär "},
+              {"id": "s6", "text": ". "}
+            ],
+            "target": [
+              {"id": "t7", "text": "host "},
+              {"id": "t2", "text": "vin "},
+              {"id": "t1", "text": "kex "},
+              {"id": "t3", "text": ". "},
+              {"id": "t4", "text": "get "},
+              {"id": "t5", "text": "bär "},
+              {"id": "t6", "text": ". "}
+            ],
+            "edges": {
+              "e-s1-t1": {
+                "id": "e-s1-t1",
+                "ids": ["s1", "t1"],
+                "labels": ["Uni"],
+                "manual": true
+              },
+              "e-s0-t7": {
+                "id": "e-s0-t7",
+                "ids": ["s0", "t7"],
+                "labels": ["X"],
+                "manual": false
+              },
+              "e-s2-t2": {
+                "id": "e-s2-t2",
+                "ids": ["s2", "t2"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s3-t3": {
+                "id": "e-s3-t3",
+                "ids": ["s3", "t3"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s4-t4": {
+                "id": "e-s4-t4",
+                "ids": ["s4", "t4"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s5-t5": {
+                "id": "e-s5-t5",
+                "ids": ["s5", "t5"],
+                "labels": [],
+                "manual": false
+              },
+              "e-s6-t6": {
+                "id": "e-s6-t6",
+                "ids": ["s6", "t6"],
+                "labels": [],
+                "manual": false
+              }
+            }
+          },
+          "pop": {
+            "top": {
+              "source": [
+                {"id": "s0", "text": "ost "},
+                {"id": "s1", "text": "kex "},
+                {"id": "s2", "text": "vin "},
+                {"id": "s3", "text": ". "},
+                {"id": "s4", "text": "get "},
+                {"id": "s5", "text": "bär "},
+                {"id": "s6", "text": ". "}
+              ],
+              "target": [
+                {"id": "t7", "text": "host "},
+                {"id": "t2", "text": "vin "},
+                {"id": "t1", "text": "kex "},
+                {"id": "t3", "text": ". "},
+                {"id": "t4", "text": "get "},
+                {"id": "t5", "text": "bär "},
+                {"id": "t6", "text": ". "}
+              ],
+              "edges": {
+                "e-s1-t1": {
+                  "id": "e-s1-t1",
+                  "ids": ["s1", "t1"],
+                  "labels": [],
+                  "manual": true
+                },
+                "e-s0-t7": {
+                  "id": "e-s0-t7",
+                  "ids": ["s0", "t7"],
+                  "labels": ["X"],
+                  "manual": false
+                },
+                "e-s2-t2": {
+                  "id": "e-s2-t2",
+                  "ids": ["s2", "t2"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s3-t3": {
+                  "id": "e-s3-t3",
+                  "ids": ["s3", "t3"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s4-t4": {
+                  "id": "e-s4-t4",
+                  "ids": ["s4", "t4"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s5-t5": {
+                  "id": "e-s5-t5",
+                  "ids": ["s5", "t5"],
+                  "labels": [],
+                  "manual": false
+                },
+                "e-s6-t6": {
+                  "id": "e-s6-t6",
+                  "ids": ["s6", "t6"],
+                  "labels": [],
+                  "manual": false
+                }
+              }
+            },
+            "pop": {
+              "top": {
+                "source": [
+                  {"id": "s0", "text": "ost "},
+                  {"id": "s1", "text": "kex "},
+                  {"id": "s2", "text": "vin "},
+                  {"id": "s3", "text": ". "},
+                  {"id": "s4", "text": "get "},
+                  {"id": "s5", "text": "bär "},
+                  {"id": "s6", "text": ". "}
+                ],
+                "target": [
+                  {"id": "t7", "text": "host "},
+                  {"id": "t2", "text": "vin "},
+                  {"id": "t1", "text": "kex "},
+                  {"id": "t3", "text": ". "},
+                  {"id": "t4", "text": "get "},
+                  {"id": "t5", "text": "bär "},
+                  {"id": "t6", "text": ". "}
+                ],
+                "edges": {
+                  "e-s1-t1": {
+                    "id": "e-s1-t1",
+                    "ids": ["s1", "t1"],
+                    "labels": [],
+                    "manual": true
+                  },
+                  "e-s0-t7": {
+                    "id": "e-s0-t7",
+                    "ids": ["s0", "t7"],
+                    "labels": [],
+                    "manual": false
+                  },
+                  "e-s2-t2": {
+                    "id": "e-s2-t2",
+                    "ids": ["s2", "t2"],
+                    "labels": [],
+                    "manual": false
+                  },
+                  "e-s3-t3": {
+                    "id": "e-s3-t3",
+                    "ids": ["s3", "t3"],
+                    "labels": [],
+                    "manual": false
+                  },
+                  "e-s4-t4": {
+                    "id": "e-s4-t4",
+                    "ids": ["s4", "t4"],
+                    "labels": [],
+                    "manual": false
+                  },
+                  "e-s5-t5": {
+                    "id": "e-s5-t5",
+                    "ids": ["s5", "t5"],
+                    "labels": [],
+                    "manual": false
+                  },
+                  "e-s6-t6": {
+                    "id": "e-s6-t6",
+                    "ids": ["s6", "t6"],
+                    "labels": [],
+                    "manual": false
+                  }
+                }
+              },
+              "pop": {
+                "top": {
+                  "source": [
+                    {"id": "s0", "text": "ost "},
+                    {"id": "s1", "text": "kex "},
+                    {"id": "s2", "text": "vin "},
+                    {"id": "s3", "text": ". "},
+                    {"id": "s4", "text": "get "},
+                    {"id": "s5", "text": "bär "},
+                    {"id": "s6", "text": ". "}
+                  ],
+                  "target": [
+                    {"id": "t7", "text": "host "},
+                    {"id": "t1", "text": "kex "},
+                    {"id": "t2", "text": "vin "},
+                    {"id": "t3", "text": ". "},
+                    {"id": "t4", "text": "get "},
+                    {"id": "t5", "text": "bär "},
+                    {"id": "t6", "text": ". "}
+                  ],
+                  "edges": {
+                    "e-s0-t7": {
+                      "id": "e-s0-t7",
+                      "ids": ["s0", "t7"],
+                      "labels": [],
+                      "manual": false
+                    },
+                    "e-s1-t1": {
+                      "id": "e-s1-t1",
+                      "ids": ["s1", "t1"],
+                      "labels": [],
+                      "manual": false
+                    },
+                    "e-s2-t2": {
+                      "id": "e-s2-t2",
+                      "ids": ["s2", "t2"],
+                      "labels": [],
+                      "manual": false
+                    },
+                    "e-s3-t3": {
+                      "id": "e-s3-t3",
+                      "ids": ["s3", "t3"],
+                      "labels": [],
+                      "manual": false
+                    },
+                    "e-s4-t4": {
+                      "id": "e-s4-t4",
+                      "ids": ["s4", "t4"],
+                      "labels": [],
+                      "manual": false
+                    },
+                    "e-s5-t5": {
+                      "id": "e-s5-t5",
+                      "ids": ["s5", "t5"],
+                      "labels": [],
+                      "manual": false
+                    },
+                    "e-s6-t6": {
+                      "id": "e-s6-t6",
+                      "ids": ["s6", "t6"],
+                      "labels": [],
+                      "manual": false
+                    }
+                  }
+                },
+                "pop": {
+                  "top": {
+                    "source": [
+                      {"id": "s0", "text": "ost "},
+                      {"id": "s1", "text": "kex "},
+                      {"id": "s2", "text": "vin "},
+                      {"id": "s3", "text": ". "},
+                      {"id": "s4", "text": "get "},
+                      {"id": "s5", "text": "bär "},
+                      {"id": "s6", "text": ". "}
+                    ],
+                    "target": [
+                      {"id": "t0", "text": "ost "},
+                      {"id": "t1", "text": "kex "},
+                      {"id": "t2", "text": "vin "},
+                      {"id": "t3", "text": ". "},
+                      {"id": "t4", "text": "get "},
+                      {"id": "t5", "text": "bär "},
+                      {"id": "t6", "text": ". "}
+                    ],
+                    "edges": {
+                      "e-s0-t0": {
+                        "id": "e-s0-t0",
+                        "ids": ["s0", "t0"],
+                        "labels": [],
+                        "manual": false
+                      },
+                      "e-s1-t1": {
+                        "id": "e-s1-t1",
+                        "ids": ["s1", "t1"],
+                        "labels": [],
+                        "manual": false
+                      },
+                      "e-s2-t2": {
+                        "id": "e-s2-t2",
+                        "ids": ["s2", "t2"],
+                        "labels": [],
+                        "manual": false
+                      },
+                      "e-s3-t3": {
+                        "id": "e-s3-t3",
+                        "ids": ["s3", "t3"],
+                        "labels": [],
+                        "manual": false
+                      },
+                      "e-s4-t4": {
+                        "id": "e-s4-t4",
+                        "ids": ["s4", "t4"],
+                        "labels": [],
+                        "manual": false
+                      },
+                      "e-s5-t5": {
+                        "id": "e-s5-t5",
+                        "ids": ["s5", "t5"],
+                        "labels": [],
+                        "manual": false
+                      },
+                      "e-s6-t6": {
+                        "id": "e-s6-t6",
+                        "ids": ["s6", "t6"],
+                        "labels": [],
+                        "manual": false
+                      }
+                    }
+                  },
+                  "pop": null
+                }
+              }
+            }
+          }
+        }
+      },
+      "next": null
+    },
+    "hover_id": "e-s0-t7",
+    "selected": {"s1": true},
+    "subspan": {
+      "source": {"begin": 0, "end": 6},
+      "target": {"begin": 0, "end": 6}
+    },
+    "generation": 0,
+    "errors": {},
+    "mode": "normalization"
+  }
+]
