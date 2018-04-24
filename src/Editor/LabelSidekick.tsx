@@ -62,7 +62,7 @@ const LabelSidekickStyle = style({
 interface DropdownProps {
   taxonomy: Taxonomy
   selected: string[]
-  onChange(selected: string[]): void
+  onChange(label: string, value: boolean): void
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
 }
 interface DropdownState {
@@ -92,11 +92,11 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
     }
 
     function set(l: string) {
-      props.onChange(Utils.uniq([...selected, l]))
+      props.onChange(l, true)
     }
 
     function unset(l: string) {
-      props.onChange(selected.filter(s => s != l))
+      props.onChange(l, false)
     }
 
     function toggle(l: string) {
@@ -139,7 +139,6 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
               t.value = ''
             }
           }
-          console.log(e.key)
           if (e.key === 'Backspace') {
             if (t.value == '' && labels.length > 0) {
               unset(labels[cursor])
@@ -180,6 +179,7 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
           {selected.filter(isDigit).map(i => <li key={'d' + i}>{entry_span(i + '')}</li>)}
           {taxonomy.map((g, i) => (
             <li key={i}>
+              :
               <b>{g.group}</b>
               <ul>
                 {g.entries.map((e, i) => {
@@ -232,9 +232,13 @@ export function LabelSidekick({store, taxonomy}: {store: Store<State>; taxonomy:
         <Dropdown
           taxonomy={taxonomy}
           selected={labels}
-          onChange={labels =>
+          onChange={(label, value) =>
             advance(() =>
-              edge_ids.forEach(id => graph.modify(g => G.modify_labels(g, id, () => labels)))
+              edge_ids.forEach(id =>
+                graph.modify(g =>
+                  G.modify_labels(g, id, labels => Utils.set_modify(labels, label, value))
+                )
+              )
             )
           }
           onKeyDown={e => {

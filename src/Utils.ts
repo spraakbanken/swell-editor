@@ -428,6 +428,23 @@ export function uniq<A>(xs: A[]): A[] {
   })
 }
 
+/** Considers the array a set and modifies the membership at some point (equality via toString)
+
+  const abc = 'abc'.split('')
+  set_modify(abc, 'a', true)  // => abc
+  set_modify(abc, 'a', false) // => 'bc'.split('')
+  set_modify(abc, 'd', true)  // => 'abcd'.split('')
+  set_modify(abc, 'd', false) // => abc
+
+*/
+export function set_modify<A>(members: A[], point: A, value: boolean) {
+  if (value) {
+    return uniq([...members, point])
+  } else {
+    return members.filter(m => m.toString() != point.toString())
+  }
+}
+
 /** Removes adjacent elements that are equal, using === */
 export function drop_adjacent_equal<A>(xs: A[]): A[] {
   return xs.filter((x, i) => i == 0 || x !== xs[i - 1])
