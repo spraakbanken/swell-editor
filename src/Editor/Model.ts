@@ -273,6 +273,22 @@ export const actionKeyboard: Record<ActionOnSelected, string> = {
   prev_mod: 'Alt-P',
 }
 
+function navigate(direction: 'next' | 'prev', kind: G.NavigationKind) {
+  return ({graph, selected}: {graph: Graph; selected: string[]}) => {
+    return {
+      type: 'selection' as 'selection',
+      selected:
+        G.navigate_token_ids(
+          graph,
+          selected,
+          direction,
+          kind,
+          i => config.order_changing_labels[i]
+        ) || selected,
+    }
+  }
+}
+
 const act_on_selected: {
   [K in ActionOnSelected]: (
     gs: {graph: Graph; selected: string[]}
@@ -308,58 +324,10 @@ const act_on_selected: {
   deselect() {
     return {type: 'selection', selected: []}
   },
-  next({graph, selected}) {
-    return {
-      type: 'selection',
-      selected:
-        G.navigate_token_ids(
-          graph,
-          selected,
-          'next',
-          'boring',
-          i => config.order_changing_labels[i]
-        ) || selected,
-    }
-  },
-  prev({graph, selected}) {
-    return {
-      type: 'selection',
-      selected:
-        G.navigate_token_ids(
-          graph,
-          selected,
-          'prev',
-          'boring',
-          i => config.order_changing_labels[i]
-        ) || selected,
-    }
-  },
-  next_mod({graph, selected}) {
-    return {
-      type: 'selection',
-      selected:
-        G.navigate_token_ids(
-          graph,
-          selected,
-          'next',
-          'interesting',
-          i => config.order_changing_labels[i]
-        ) || selected,
-    }
-  },
-  prev_mod({graph, selected}) {
-    return {
-      type: 'selection',
-      selected:
-        G.navigate_token_ids(
-          graph,
-          selected,
-          'prev',
-          'interesting',
-          i => config.order_changing_labels[i]
-        ) || selected,
-    }
-  },
+  next: navigate('next', 'boring'),
+  prev: navigate('prev', 'boring'),
+  next_mod: navigate('next', 'interesting'),
+  prev_mod: navigate('prev', 'interesting'),
 }
 
 export function performAction(store: Store<State>, action: ActionOnSelected) {
