@@ -187,73 +187,18 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
   // console.time('draw')
 
   const state = store.get()
-  const history = store.at('graph')
-  const graph = history.at('now')
-  const anon_view = state.mode === Model.modes.anonymization
+  const graph = Model.graphStore(store)
+  const anon_view = Model.inAnonMode(store)
 
-  const units: Store<G.SourceTarget<string>> = store
-    .at('graph')
-    .at('now')
-    .via(
-      Lens.iso(
-        g => G.mapSides(G.graph_to_units(g), us => G.units_to_string(us)),
-        state => {
-          const s = G.parse(state.source)
-          const t = G.parse(state.target)
-          return G.units_to_graph(s, t)
-        }
-      )
-    )
+  const units = Model.compactStore(store)
 
-  const g = graph.get()
+  const g = Model.currentGraph(store)
 
   const advance = Model.make_history_advance_function(store)
 
-  const hovering = state.hover_id !== undefined && Object.keys(state.selected).length == 0
+  const hovering = Model.isHovering(store)
 
-  const visible_graph = Utils.expr(() => {
-    if (anon_view) {
-      return G.anonymize(G.sort_edge_labels(g, config.anonymization_label_order))
-    } else if (state.subspan) {
-      return G.subgraph(g, state.subspan)
-    } else {
-      return g
-    }
-  })
-
-  const tmg = G.token_map(g)
-  const tmv = G.token_map(visible_graph)
-  const emv = G.edge_map(visible_graph)
-
-  function onSelect(ids: string[]) {
-    const involved_ids = Utils.flatMap(ids, id => {
-      if (anon_view) {
-        const t = tmv.get(id)
-        if (t && t.side == 'target') {
-          return visible_graph.edges[Utils.getUnsafe(emv, id).id].ids.filter(
-            id => Utils.getUnsafe(tmv, id).side === 'source'
-          )
-        } else {
-          return [id]
-        }
-      } else {
-        return [id]
-      }
-    })
-    const selected = store.get().selected
-    const b = involved_ids.every(id => selected[id]) ? undefined : true
-    Model.modifySelection(store, involved_ids, b)
-  }
-
-  function wrap(node: VNode) {
-    return (
-      <div onMouseDown={e => Model.deselect(store)}>
-        <DropZone webserviceURL={config.image_ws_url} onDrop={g => advance(() => graph.set(g))}>
-          {node}
-        </DropZone>
-      </div>
-    )
-  }
+  const visible_graph = Model.visibleGraph(store)
 
   const manual_page = state.user_manual_page !== undefined && Manual.manual[state.user_manual_page]
 
@@ -266,8 +211,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             text={slug}
             onMouseDown={e => {
               e.stopPropagation()
-              const page = Manual.manual[slug]
-              store.update({user_manual_page: slug, graph: Undo.init(page.graph), mode: page.mode})
+              Model.setManualTo(store, slug)
             }}
           />{' '}
         </span>
@@ -279,12 +223,23 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             title="Close manual"
           />
           {manual_page.text}
-          {G.equal(manual_page.target, visible_graph, true) &&
-            'Correct!'}
+          {G.equal(manual_page.target, visible_graph, true) && 'Correct!'}
         </React.Fragment>
       )}
     </div>
   )
+
+  function wrap(node: VNode) {
+    return (
+      <div onMouseDown={e => Model.deselect(store)}>
+        <DropZone webserviceURL={config.image_ws_url} onDrop={g => advance(() => graph.set(g))}>
+          {node}
+        </DropZone>
+      </div>
+    )
+  }
+
+  const history = Model.history(store)
 
   return wrap(
     <div className={topStyle} style={{position: 'relative'}}>
@@ -302,8 +257,8 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
       ))}
       <div className="main buttonSep" style={{zIndex: 5}}>
         <div className="box inline">
-          {Button('undo', '', () => history.modify(Undo.undo), Undo.can_undo(history.get()))}
-          {Button('redo', '', () => history.modify(Undo.redo), Undo.can_redo(history.get()))}
+          {Button('undo', '', history.undo, history.canUndo())}
+          {Button('redo', '', history.redo, history.canRedo())}
         </div>
         <div className="box inline">{RestrictionButtons(store.at('side_restriction'))}</div>
         <div className="box inline">
@@ -329,7 +284,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
           onHover={anon_view ? undefined : hover_id => store.update({hover_id})}
           selectedIds={Object.keys(state.selected)}
           generation={state.generation}
-          onSelect={onSelect}
+          onSelect={ids => Model.onSelect(store, ids)}
         />
       </div>
       <div className="right tall">{Summary(g)}</div>

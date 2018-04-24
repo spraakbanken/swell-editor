@@ -1,15 +1,16 @@
 import * as React from 'react'
 import * as G from '../Graph'
-import * as Model from './Model'
 import {md} from '../Slides'
 import {VNode} from '../ReactUtils'
+
+type Mode = 'anonymization' | 'normalization'
 
 export interface ManualPage {
   slug: string
   text: VNode
   graph: G.Graph
   target: G.Graph
-  mode: Model.Mode
+  mode: Mode
 }
 
 export const manual: Record<string, ManualPage> = {}
@@ -20,7 +21,7 @@ function page(
   text: VNode,
   target: G.Graph,
   graph = G.init_from(G.source_texts(target)),
-  mode: Model.Mode = Model.modes.normalization
+  mode: Mode = 'normalization'
 ) {
   slugs.push(slug)
   manual[slug] = {slug, text, graph, target, mode}
@@ -167,5 +168,5 @@ Alice and Bob went to Paris . Alice's wallet was stolen . //
 Alice:'firstname:female':1 and Bob:'firstname:male':2 went to Paris:city . Alice's:'firstname:female':1:gen wallet was stolen .
 `),
   undefined,
-  Model.modes.anonymization
+  'anonymization'
 )

@@ -47,26 +47,13 @@ export interface Cursor {
   anchor: number
 }
 
-export interface Actions {
-  undo(): void
-  redo(): void
-  set(s: string): void
-  onUpdate(k: (s: string) => void): void
-}
-
 export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
   /* Note that we don't show the last character of the graph in the code mirror.
   It must necessarily be whitespace anyway. */
-  const history = store.at('graph')
-  const graph = history.at('now')
+  const graph = Model.graphStore(store)
   const advance = Model.make_history_advance_function(store)
 
-  function undo() {
-    history.modify(Undo.undo)
-  }
-  function redo() {
-    history.modify(Undo.redo)
-  }
+  const {undo, redo} = Model.history(store)
 
   const extraKeys = {
     'Ctrl-Z': undo,

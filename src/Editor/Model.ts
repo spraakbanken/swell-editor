@@ -6,6 +6,8 @@ import * as G from '../Graph'
 import * as Utils from '../Utils'
 import * as record from '../record'
 
+import * as Manual from './Manual'
+
 import {Taxonomy, config} from './Config'
 export {Taxonomy} from './Config'
 
@@ -69,6 +71,11 @@ export function check_invariant(store: Store<State>): (g: Graph) => void {
   }
 }
 
+export function setManualTo(store: Store<State>, slug: string) {
+  const page = Manual.manual[slug]
+  store.update({user_manual_page: slug, graph: Undo.init(page.graph), mode: page.mode})
+}
+
 export function deselect(store: Store<State>) {
   store.update({selected: {}, hover_id: undefined})
 }
@@ -107,6 +114,82 @@ export function setSubspanIncluding(store: Store<State>, indicies: G.SidedIndex[
   const tm = G.token_map(g)
   const selected = Object.keys(store.get().selected).map(token_id => Utils.getUnsafe(tm, token_id))
   Utils.setIfChanged(store.at('subspan'), G.sentences_around(g, [...indicies, ...selected]))
+}
+
+export function isHovering(store: Store<State>) {
+  const state = store.get()
+  return state.hover_id !== undefined && Object.keys(state.selected).length == 0
+}
+
+export function inAnonMode(store: Store<State>) {
+  return store.get().mode === modes.anonymization
+}
+
+export function history(store: Store<State>) {
+  return {
+    undo: () => store.at('graph').modify(Undo.undo),
+    redo: () => store.at('graph').modify(Undo.redo),
+    canUndo: () => Undo.can_undo(store.get().graph),
+    canRedo: () => Undo.can_redo(store.get().graph),
+  }
+}
+
+export function graphStore(store: Store<State>): Store<Graph> {
+  return store.at('graph').at('now')
+}
+
+export function currentGraph(store: Store<State>) {
+  return graphStore(store).get()
+}
+
+export function compactStore(store: Store<State>): Store<G.SourceTarget<string>> {
+  return graphStore(store).via(
+    Lens.iso(
+      g => G.mapSides(G.graph_to_units(g), us => G.units_to_string(us)),
+      state => {
+        const s = G.parse(state.source)
+        const t = G.parse(state.target)
+        return G.units_to_graph(s, t)
+      }
+    )
+  )
+}
+
+export function visibleGraph(store: Store<State>) {
+  const state = store.get()
+  const g = currentGraph(store)
+  if (inAnonMode(store)) {
+    return G.anonymize(G.sort_edge_labels(g, config.anonymization_label_order))
+  } else if (state.subspan) {
+    return G.subgraph(g, state.subspan)
+  } else {
+    return g
+  }
+}
+
+export function onSelect(store: Store<State>, ids: string[]) {
+  const g = currentGraph(store)
+  const visible_graph = visibleGraph(store)
+  const tmg = G.token_map(g)
+  const tmv = G.token_map(visible_graph)
+  const emv = G.edge_map(visible_graph)
+  const involved_ids = Utils.flatMap(ids, id => {
+    if (inAnonMode(store)) {
+      const t = tmv.get(id)
+      if (t && t.side == 'target') {
+        return visible_graph.edges[Utils.getUnsafe(emv, id).id].ids.filter(
+          id => Utils.getUnsafe(tmv, id).side === 'source'
+        )
+      } else {
+        return [id]
+      }
+    } else {
+      return [id]
+    }
+  })
+  const selected = store.get().selected
+  const b = involved_ids.every(id => selected[id]) ? undefined : true
+  modifySelection(store, involved_ids, b)
 }
 
 export function make_history_advance_function(store: Store<State>) {
