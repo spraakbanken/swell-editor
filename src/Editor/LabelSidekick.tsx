@@ -138,6 +138,7 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
               toggle(labels[cursor])
               t.value = ''
             }
+            e.preventDefault()
           }
           if (e.key === 'Backspace') {
             if (t.value == '' && labels.length > 0) {

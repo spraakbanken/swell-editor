@@ -31,7 +31,10 @@ export function App(store: Store<Model.State>): () => VNode {
   }
 
   global.store = store
-  global.reset = () => store.set(init)
+  global.reset = (v0: string = '') => {
+    store.set(init)
+    Model.graphStore(store).set(G.init(v0))
+  }
   global.G = G
   global.Utils = Utils
   global.stress = () => stress(store)
