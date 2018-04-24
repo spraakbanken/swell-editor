@@ -97,7 +97,7 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
         const g = graph.get()
         const N = g[side].length
         if (Utils.within(0, begin + d, N) && Utils.within(0, end + d, N)) {
-          advance(() => G.rearrange(g, begin, end, d > 0 ? end + d : begin + d))
+          advance(() => graph.set(G.rearrange(g, begin, end, d > 0 ? end + d : begin + d)))
           // update CM text now to set the selection at the moved word(s)
           graph_to_cm()
           const g2 = graph.get()
