@@ -179,7 +179,6 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
           {selected.filter(isDigit).map(i => <li key={'d' + i}>{entry_span(i + '')}</li>)}
           {taxonomy.map((g, i) => (
             <li key={i}>
-              :
               <b>{g.group}</b>
               <ul>
                 {g.entries.map((e, i) => {
