@@ -259,7 +259,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
 
   const manual_part = () => (
     <div className="main" style={manual_page ? {minHeight: '18em'} : {}}>
-      {Manual.slugs.slice(0, manual_page ? -1 : 1).map(slug => (
+      {Manual.slugs.slice(0, manual_page ? Manual.slugs.length : 1).map(slug => (
         <span>
           <ReactUtils.A
             title={slug}
@@ -279,7 +279,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             title="Close manual"
           />
           {manual_page.text}
-          {G.equal(Utils.stdout(manual_page.target), Utils.stdout(visible_graph), true) &&
+          {G.equal(manual_page.target, visible_graph, true) &&
             'Correct!'}
         </React.Fragment>
       )}
