@@ -314,7 +314,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
       ))}
       {showhide('graph json', () => Utils.show(g))}
       {showhide('diff json', () => Utils.show(G.enrichen(g)))}
-      {ImageWebserviceAddresses(graph.get())}
+      {ImageWebserviceAddresses(visible_graph)}
       <div className="main TopPad">
         <em>Examples:</em>
       </div>
