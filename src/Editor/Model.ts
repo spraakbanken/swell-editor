@@ -72,7 +72,7 @@ export function check_invariant(store: Store<State>): (g: Graph) => void {
 }
 
 export function setManualTo(store: Store<State>, slug: string) {
-  const page = Manual.manual[slug]
+  const page = Manual.manual[slug] || {graph: G.init(''), mode: modes.normalization}
   store.update({
     user_manual_page: slug,
     graph: Undo.init(page.graph),

@@ -229,11 +229,50 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
     </div>
   )
 
+  function full_manual() {
+    return (
+      <div className={topStyle}>
+        <div className="main">
+          <Close
+            onMouseDown={() => store.at('user_manual_page').set(undefined)}
+            title="Close manual"
+          />
+          {Manual.slugs.map(slug => {
+            const page = Manual.manual[slug]
+            if (page) {
+              return (
+                <React.Fragment>
+                  {page.text}
+                  <i>Initial view:</i>
+                  <div>
+                    <GraphView graph={page.graph} />
+                  </div>
+                  <i>Target view:</i>
+                  <div>
+                    <GraphView graph={page.target} />
+                  </div>
+                  <ReactUtils.A
+                    title={'Try this!'}
+                    text={'Try this!'}
+                    onMouseDown={e => {
+                      e.stopPropagation()
+                      Model.setManualTo(store, slug)
+                    }}
+                  />
+                </React.Fragment>
+              )
+            }
+          })}
+        </div>
+      </div>
+    )
+  }
+
   function wrap(node: VNode) {
     return (
       <div onMouseDown={e => Model.deselect(store)}>
         <DropZone webserviceURL={config.image_ws_url} onDrop={g => advance(() => graph.set(g))}>
-          {node}
+          {state.user_manual_page === 'print' ? full_manual() : node}
         </DropZone>
       </div>
     )

@@ -228,3 +228,5 @@ Alice:'firstname:female':1 and Bob:'firstname:male':2 went to Paris:city . Alice
   undefined,
   'anonymization'
 )
+
+slugs.push('print')
