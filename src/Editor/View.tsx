@@ -327,30 +327,6 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
         />
       </div>
       <div className="right tall">{Summary(g)}</div>
-      {showhide('compact representation', () => (
-        <React.Fragment>
-          {G.sides.map((side, i) => (
-            <React.Fragment key={i}>
-              {Button('\u2b1a', 'clear', () => advance(() => units.at(side).set('')))}
-              {Button(i ? '\u21e1' : '\u21e3', 'copy to ' + side, () =>
-                advance(() => units.at(G.opposite(side)).set(units.get()[side]))
-              )}
-              <input
-                defaultValue={units.at(side).get()}
-                onKeyDown={e =>
-                  e.key === 'Enter' &&
-                  advance(() => {
-                    const t = e.target as HTMLInputElement
-                    units.at(side).set(t.value)
-                  })
-                }
-                tabIndex={(i + 1) as number}
-                placeholder={'Enter ' + side + ' text...'}
-              />
-            </React.Fragment>
-          ))}
-        </React.Fragment>
-      ))}
       {showhide('graph json', () => Utils.show(g))}
       {showhide('diff json', () => Utils.show(G.enrichen(g)))}
       {ImageWebserviceAddresses(visible_graph)}
