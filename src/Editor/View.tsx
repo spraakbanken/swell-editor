@@ -240,16 +240,18 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
           {Manual.slugs.map(slug => {
             const page = Manual.manual[slug]
             if (page) {
+              const anon_view = page.mode == 'anonymization'
+              const m = anon_view ? G.anonymize : (g: G.Graph) => g
               return (
                 <React.Fragment>
                   {page.text}
                   <i>Initial view:</i>
-                  <div>
-                    <GraphView graph={page.graph} />
+                  <div className={anon_view ? ' NoManualBlue' : ''}>
+                    <GraphView graph={m(page.graph)} />
                   </div>
                   <i>Target view:</i>
-                  <div>
-                    <GraphView graph={page.target} />
+                  <div className={anon_view ? ' NoManualBlue' : ''}>
+                    <GraphView graph={m(page.target)} />
                   </div>
                   <ReactUtils.A
                     title={'Try this!'}
