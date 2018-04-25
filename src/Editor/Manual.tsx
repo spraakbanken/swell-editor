@@ -57,7 +57,7 @@ page(
 Under the target hypothesis window you see the linked structure from the learner text (on the top layer) to the
 hypothesis text (on the bottom layer). Click on the first link to select it.
 
-When you have a selection you can put labels on it using the menu that appears the left.
+When you have a selection you can put labels on it using the menu that appears to the left.
 You can either write in the label name into the text area or click on the name of the label.
 Pick an appropriate label for this error (_O_).
   `,
