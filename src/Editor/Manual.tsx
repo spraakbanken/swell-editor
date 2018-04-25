@@ -32,13 +32,19 @@ page(
   md`
 # Manual
 
-This is the interactive manual.
+This is an interactive manual.
 
 It consists of a series of examples of fabricated learner texts that illustrate how to use the editor.
 
-Below is the learner text _a example_. Edit the target hypothesis text below to make it _an example_.
+There are two windows for text: source text and target hypothesis text.
+Showing the source text is toggled by clicking _show source text_.
+The text areas can be resized. Try resizing the target hypothesis window so that you can see what is below it.
 
-The word pairs _a_ and _an_ will automatically be aligned because the words are similar.
+In the target hypothesis window below you can see the learner text _a example_.
+Edit the target hypothesis text below to make it _an example_.
+
+The word pairs _a_ and _an_ will automatically be aligned in the graph under
+the target hypothesis window because the words are similar.
   `,
   G.compact_to_graph('a example//an example')
 )
@@ -48,14 +54,33 @@ page(
   md`
 # Labelling
 
-Below you also see the linked structure from the learner text (on the top layer) to the
+Under the target hypothesis window you see the linked structure from the learner text (on the top layer) to the
 hypothesis text (on the bottom layer). Click on the first link to select it.
 
-When you have a selections you can put labels on it using the menu to the right.
+When you have a selection you can put labels on it using the menu that appears the right.
 You can either write in the label name into the text area or click on the name of the label.
-Pick an appropriate label for this error.
+Pick an appropriate label for this error (_O_).
   `,
-  G.compact_to_graph('a example//an:M-DEF example')
+  G.compact_to_graph('a example//an:O example')
+)
+
+page(
+  'selections',
+  md`
+# Browsing between links
+
+When you have a selection you can select the next group with the next and prev buttons.
+There are also shortcuts to these which you find by hovering them.
+You can also go directly to the next group which has any modifications (skipping pairs
+that are the same) by clicking _prev mod_ and _next mod_.
+
+When left-clicking a word the selection for other words remains. Thus if you want to
+make a "new" selection you must first deselect. Deselect by clicking outside
+the graph. You can also make a new selection by right-clicking on a word. That will
+make only that word be selected.
+  `,
+  G.compact_to_graph(`Their was a problem yesteray .//There:O was a problem yesterday:O .`),
+  G.compact_to_graph(`Their was a problem yesteray .//There was a problem yesterday .`)
 )
 
 page(
@@ -68,9 +93,10 @@ We will now look at a little bit more complicated link structures.
 Compound errors (over-compounding and over-splitting) introduce links that are 2-1 and 1-2
 (from two source words to one target word, and vice versa.)
 
-Correct the sentence below and you will see that you get 2-1 and 1-2 links.
+Correct the sentence below by changing _highlight_ to _high light_ and _compounderrors_ to _compound errors_ and you will see that you get 2-1 and 1-2 links.
 
-Label the linked groups. When you put a label on these all three words share the label.
+Mark a group to label it. When you put a label on these all three linked words (for example: _highlight_, _high_ and _light_) share the label.
+Put labels on both linked groups (_O-COMP_).
   `,
   G.compact_to_graph(`
 This example high lights compounderrors .//
@@ -79,25 +105,62 @@ This example highlights:O-COMP compound errors:O-COMP .
 )
 
 page(
-  'links',
+  'group',
   md`
-# Making manual links
+# Making manual link groups
 
 The automatic linking will not work when the words are too dissimilar.
 
-When this happens, click the words you want to connect and press connect
-
+When this happens, click the words you want to group and press group
 in the label sidebar. There is also a keyboard shortcut and you see the shortcut
-by hovering over the connect button.
+by hovering over the button.
 
-Connect the words _well_ and _good_ below. The link will become blue to highlight that it is a manual link.
+Connect the words _well_ and _good_ below. They are not automatically linked since they have no common letters. The link will become blue to highlight that it is a manual link.
   `,
   G.compact_to_graph(`I see good .//I see well~good .`),
   G.compact_to_graph(`I see good .//I see well .`)
 )
 
 page(
+  'orphan',
+  md`
+# Orphan: disconnecting words
+
+Here a linked group has too many members.
+We want to put _with_ and _many_ on groups on their own.
+Here we cannot select both of them and press _group_ since then they will
+be linked to themselves (try it and use then use undo).
+
+Instead select both and press the the _orphan_ button to make each word orphaned: only connected to itself.
+
+(Another alternative is to select the words one by one and press _group_: indeed, with only one word selected _group_ and _orphan_ do the same thing.)
+  `,
+  G.compact_to_graph(
+    `A sentence wery missing words .// A sentence with~ very many~ missing words .`
+  ),
+  G.compact_to_graph(`A sentence wery missing words .// A sentence with very many missing words .`)
+)
+
+page(
   'unlinking',
+  md`
+# Removing links
+
+In the example below the automatic aligner has aligned _his_ and _where_ (because they share the _h_)
+but we want _his_ and _he_ to be aligned.
+
+This can be resolved in three ways:
+
+1.  Select _his_ and _he_ and use _group_.
+2.  Select _where_ and use _orphan_.
+3.  Select _where_ and use _group_.
+  `,
+  G.compact_to_graph(`I don't know his lives .//I don't know where he~his lives .`),
+  G.compact_to_graph(`I don't know his lives .//I don't know where he lives .`)
+)
+
+page(
+  'auto',
   md`
 # Removing manual links
 
@@ -110,45 +173,18 @@ are aligned.
 )
 
 page(
-  'isolating',
+  'revert',
   md`
-# Isolating a group
+# Revert
 
-In the example below the automatic aligned has aligned _his_ and _where_ (because they share the _h_)
-but we want _his_ and _he_ to be aligned.
+There is normal undo functionality on Ctrl-Z and redo on Ctrl-Y which works with linear history.
 
-This example illustrates the difference between _isolate_ and _connect_:
-If you select _his_ and _he_ and click _connect_ then the word _where_ will also be connected
-because it was part of the group before. If you instead choose _isolate_ then the words
-_he_ and _his_ will be "isolated" alone in a new group.
+Sometimes it is more useful to revert at a specific selection in the graph.
+In the example below some changes have been made to the text but we would like to revert them.
+Select a changed word and use _revert_. Do this for all changed words.
   `,
-  G.compact_to_graph(`I don't know his lives .//I don't know where he~his lives .`),
-  G.compact_to_graph(`I don't know his lives .//I don't know where he lives .`)
-)
-
-page(
-  'disconnecting',
-  md`
-# Disconnecting a word
-
-Here a group has too many members. Use the _disconnect_ button to remove _where_ from the group.
-  `,
-  G.compact_to_graph(`I don't know his lives .//I don't know where he~his lives .`),
-  G.compact_to_graph(`I don't know his lives .//I don't know where~his he~his lives .`)
-)
-
-page(
-  'labels',
-  md`
-# Adding many labels
-
-When you have a selection you can select the next group with the next and prev buttons.
-There are also shortcuts to these which you find by hovering them.
-You can also go directly to the next group which has any modifications (skipping pairs
-that are the same.)
-  `,
-  G.compact_to_graph(`Their was a problem yesteray .//There:O was a problem yesterday:O .`),
-  G.compact_to_graph(`Their was a problem yesteray .//There was a problem yesterday .`)
+  G.compact_to_graph(`A sentence with many words . // A sentence with many words . `),
+  G.compact_to_graph(`A sentence with many words . // Sentences with many missing words .`)
 )
 
 page(
@@ -162,6 +198,9 @@ Data about the entities are put directly onto the edge groups.
 Each entity needs a unique number. The label editor allows adding numbers besides
 the predefined categories of labels. Give Alice number 1 and Bob number 2.
 Put other labels as appropriate. Remember that _Alice's_ is in genitive.
+
+In the demo mode you can toggle between the anonymization view and normalization
+view with _enable/disable anonymization view_.
   `,
   G.compact_to_graph(`
 Alice and Bob went to Paris . Alice's wallet was stolen . //

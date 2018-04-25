@@ -244,7 +244,7 @@ export function LabelSidekick({store, taxonomy}: {store: Store<State>; taxonomy:
             )
           }
           onKeyDown={e => {
-            const key = ((e.altKey || e.metaKey) ? 'Alt-' : '') + e.key
+            const key = (e.altKey || e.metaKey ? 'Alt-' : '') + e.key
             const action = record.reverse_lookup(Model.actionKeyboard, key)
             if (action) {
               Model.performAction(store, action)

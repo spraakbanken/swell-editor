@@ -219,9 +219,9 @@ export function make_history_advance_function(store: Store<State>) {
 export type ActionOnSelected =
   | 'revert'
   | 'auto'
-  | 'disconnect'
-  | 'connect'
-  | 'isolate'
+  | 'orphan'
+  | 'merge'
+  | 'group'
   | 'deselect'
   | 'next'
   | 'prev'
@@ -233,22 +233,22 @@ export const onSelectedActions: ActionOnSelected[] = [
   'next',
   'prev_mod',
   'next_mod',
+  'group',
+  'orphan',
+  // 'merge',
   'auto',
-  'isolate',
-  'connect',
-  'disconnect',
   'revert',
-  'deselect',
+  // 'deselect',
 ]
 
 export const actionDescriptions: Record<ActionOnSelected, string> = {
   revert: 'Local undo on the selected tokens. Restores them to the source text.',
   auto:
     'Makes the selected tokens stop being manually linked and falls back to the automatic aligner.',
-  disconnect: 'Makes each of the selected token be disconnected and only connected to itself.',
-  connect: 'Connects the selected tokens and the tokens they are linked to.',
-  isolate:
-    'Connects the selected tokens only: the tokens they are connected to will not be part of the group.',
+  orphan: 'Makes each of the selected tokens be orphaned: only linked to themselves.',
+  merge: 'Connects the selected tokens and the tokens they are linked to.',
+  group:
+    'Makes a group of the selected words. (Any words they in turn are connected that are not selected will not be part of the group.)',
   deselect: 'Deselects the current group',
   next: 'Select next group',
   prev: 'Select previous group',
@@ -259,9 +259,9 @@ export const actionDescriptions: Record<ActionOnSelected, string> = {
 export const actionButtonNames: Record<ActionOnSelected, string> = {
   revert: 'revert',
   auto: 'auto',
-  disconnect: 'disconnect',
-  connect: 'connect',
-  isolate: 'isolate',
+  orphan: 'orphan',
+  merge: 'merge',
+  group: 'group',
   deselect: 'deselect',
   next: 'next',
   prev: 'previous',
@@ -272,9 +272,9 @@ export const actionButtonNames: Record<ActionOnSelected, string> = {
 export const actionKeyboard: Record<ActionOnSelected, string> = {
   revert: 'Alt-r',
   auto: 'Alt-a',
-  disconnect: 'Alt-u',
-  connect: 'Alt-c',
-  isolate: 'Alt-i',
+  orphan: 'Alt-o',
+  merge: 'Alt-m',
+  group: 'Alt-g',
   deselect: 'Escape',
   next: 'Alt-n',
   prev: 'Alt-p',
@@ -321,14 +321,14 @@ const act_on_selected: {
       }),
     })
   },
-  disconnect({graph, selected}) {
+  orphan({graph, selected}) {
     return G.disconnect(graph, selected)
   },
-  connect({graph, selected}) {
+  merge({graph, selected}) {
     return G.connect(graph, G.token_ids_to_edge_ids(graph, selected))
   },
-  isolate({graph, selected}) {
-    return this.connect({graph: G.disconnect(graph, selected), selected})
+  group({graph, selected}) {
+    return this.merge({graph: G.disconnect(graph, selected), selected})
   },
   deselect() {
     return {type: 'selection', selected: []}

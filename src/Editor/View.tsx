@@ -245,7 +245,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
     <div className={topStyle} style={{position: 'relative'}}>
       {ShowErrors(store.at('errors'))}
       {manual_part()}
-      {showhide('set source text', () => (
+      {showhide('source text', () => (
         <div className="main">
           <div className={hovering ? 'cm-hovering' : ''}>{cms.source.node}</div>
           <div>
