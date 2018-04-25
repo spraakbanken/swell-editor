@@ -67,7 +67,7 @@ Pick an appropriate label for this error (_O_).
 page(
   'selections',
   md`
-# Browsing between links
+# Selections and browsing between links
 
 When you have a selection you can select the next group with the next and prev buttons.
 There are also shortcuts to these which you find by hovering them.
