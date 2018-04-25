@@ -62,6 +62,8 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
     'Cmd-Y': redo,
     'Alt-N': transpose(1),
     'Alt-P': transpose(-1),
+    'Cmd-N': transpose(1),
+    'Cmd-P': transpose(-1),
   }
 
   const {cm, node} = CM({extraKeys, tabindex: 3})
