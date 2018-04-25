@@ -73,7 +73,12 @@ export function check_invariant(store: Store<State>): (g: Graph) => void {
 
 export function setManualTo(store: Store<State>, slug: string) {
   const page = Manual.manual[slug]
-  store.update({user_manual_page: slug, graph: Undo.init(page.graph), mode: page.mode})
+  store.update({
+    user_manual_page: slug,
+    graph: Undo.init(page.graph),
+    mode: page.mode,
+    selected: {},
+  })
 }
 
 export function deselect(store: Store<State>) {
