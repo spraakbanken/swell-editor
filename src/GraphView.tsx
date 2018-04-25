@@ -244,7 +244,7 @@ export interface OnMenu {
 }
 
 export interface OnSelect {
-  (ids: string[]): void
+  (ids: string[], only: boolean): void
 }
 
 export function hoverClass(hover_id: string | undefined, id: string) {
@@ -333,6 +333,7 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
   const c = Utils.count<string>()
   return (
     <div
+      onContextMenu={e => e.preventDefault()}
       className={`${GraphViewStyle} ${ReactUtils.clean_ul} ${ReactUtils.Unselectable} graphView`}>
       {rd.map((d, i) =>
         ReactUtils.thunk(
@@ -358,10 +359,9 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
                   }
                   onMouseDown={e => {
                     if (onSelect) {
-                      //console.log('span select mousedown')
+                      onSelect([token_id], e.button != 0)
                       e.stopPropagation()
                       e.preventDefault()
-                      onSelect([token_id])
                     }
                   }}>
                   {v}
@@ -424,7 +424,7 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
                 onMouseDown={e => {
                   //console.log('ul mousedown')
                   if (onSelect) {
-                    onSelect(edges[d.id].ids)
+                    onSelect(edges[d.id].ids, e.button != 0)
                     e.preventDefault()
                     e.stopPropagation()
                   }

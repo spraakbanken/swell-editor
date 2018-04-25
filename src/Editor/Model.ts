@@ -172,7 +172,7 @@ export function visibleGraph(store: Store<State>) {
   }
 }
 
-export function onSelect(store: Store<State>, ids: string[]) {
+export function onSelect(store: Store<State>, ids: string[], only: boolean) {
   const g = currentGraph(store)
   const visible_graph = visibleGraph(store)
   const tmg = G.token_map(g)
@@ -192,9 +192,13 @@ export function onSelect(store: Store<State>, ids: string[]) {
       return [id]
     }
   })
-  const selected = store.get().selected
-  const b = involved_ids.every(id => selected[id]) ? undefined : true
-  modifySelection(store, involved_ids, b)
+  if (only) {
+    setSelection(store, involved_ids)
+  } else {
+    const selected = store.get().selected
+    const b = involved_ids.every(id => selected[id]) ? undefined : true
+    modifySelection(store, involved_ids, b)
+  }
 }
 
 export function make_history_advance_function(store: Store<State>) {

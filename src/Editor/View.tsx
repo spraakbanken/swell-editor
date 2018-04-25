@@ -284,7 +284,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
           onHover={anon_view ? undefined : hover_id => store.update({hover_id})}
           selectedIds={Object.keys(state.selected)}
           generation={state.generation}
-          onSelect={ids => Model.onSelect(store, ids)}
+          onSelect={(ids, only) => Model.onSelect(store, ids, only)}
         />
       </div>
       <div className="right tall">{Summary(g)}</div>
