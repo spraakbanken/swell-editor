@@ -223,7 +223,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             title="Close manual"
           />
           {manual_page.text}
-          {G.equal(manual_page.target, visible_graph, true) && 'Correct!'}
+          {G.equal(manual_page.target, graph.get(), true) && 'Correct!'}
         </React.Fragment>
       )}
     </div>

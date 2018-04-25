@@ -188,6 +188,25 @@ Select a changed word and use _revert_. Do this for all changed words.
 )
 
 page(
+  'movement',
+  md`
+# Word movement
+
+Word movement can be tracked by changing the text and then selecting the words and grouping them.
+You can do this by erasing the word and then rewriting it or by using standard copy and paste functionality.
+
+A quicker way is to have the cursor on the word and use Alt-n and Alt-p for transposing the word onto the **n**ext and the **p**revious word.
+If the cursor is on many words (select many words in the editor by using the mouse or shift and arrow keys) they will be moved in unison.
+
+Try these different approaches to move _was_ and _his son_ into their correct places.
+  `,
+  G.compact_to_graph(`
+    The room very dirty was . He got to clean his son . //
+    The room was~was very dirty . He got his~his son~son to clean .
+  `)
+)
+
+page(
   'anonymization',
   md`
 # Anonymization mode
