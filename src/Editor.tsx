@@ -49,6 +49,10 @@ export function App(store: Store<Model.State>): () => VNode {
     .at('now')
     .ondiff(Model.check_invariant(store))
 
+  Store.location_connect(store.at('user_manual_page').via(Lens.def('')))
+  const p = store.get().user_manual_page
+  p && Model.setManualTo(store, p)
+
   Model.check_invariant(store)(store.get().graph.now)
 
   function trigger_invariant_error() {

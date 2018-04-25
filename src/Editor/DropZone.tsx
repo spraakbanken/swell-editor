@@ -22,6 +22,8 @@ const dropping = style({
 
 const dropTargetClass = (b: boolean) => ambient + ' ' + (b ? dropping : '')
 
+const log = (...xs: any[]) => void 0 // console.log(...xs)
+
 export class DropZone extends React.Component<
   {
     onDrop: (g: Graph) => void
@@ -36,7 +38,6 @@ export class DropZone extends React.Component<
   }
 
   _onDrop(e: React.DragEvent<HTMLDivElement>) {
-    const log = (...xs: any[]) => false || console.log(...xs)
     this.setState({drop_target: false})
     e.preventDefault()
     e.stopPropagation()
@@ -93,7 +94,7 @@ export class DropZone extends React.Component<
   }
 
   _set_drop_target = Utils.debounce(50, b => {
-    console.log('setting drop target', this.state, b)
+    log('setting drop target', this.state, b)
     this.state.drop_target != b && this.setState({drop_target: b})
   })
 
@@ -110,7 +111,7 @@ export class DropZone extends React.Component<
         className={dropTargetClass(this.state.drop_target)}
         onDrop={e => this._onDrop(e)}
         onDragLeave={e => {
-          console.log('drag leave')
+          log('drag leave')
           e.preventDefault()
           this._set_drop_target(false)
           return false

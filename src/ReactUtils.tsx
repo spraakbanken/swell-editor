@@ -182,7 +182,11 @@ export function A(props: {
   text: string
 }) {
   return (
-    <a href="#" title={props.title} onMouseDown={props.onMouseDown}>
+    <a
+      href=""
+      onClick={e => e.preventDefault()}
+      title={props.title}
+      onMouseDown={props.onMouseDown}>
       {props.text}
     </a>
   )

@@ -4570,9 +4570,9 @@ react@^16.3.2:
     object-assign "^4.1.1"
     prop-types "^15.6.0"
 
-reactive-lens@^0.4.0:
-  version "0.4.0"
-  resolved "https://registry.npmjs.org/reactive-lens/-/reactive-lens-0.4.0.tgz#e8b7d16d4b5b84fc5b4e08fa91d89c2dc4e4c87d"
+reactive-lens@^0.5.0:
+  version "0.5.0"
+  resolved "https://registry.npmjs.org/reactive-lens/-/reactive-lens-0.5.0.tgz#6839e34757adc2f9196077c04e39f06f858bd925"
 
 read-pkg-up@^1.0.1:
   version "1.0.1"
