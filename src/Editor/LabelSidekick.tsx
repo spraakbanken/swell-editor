@@ -139,10 +139,9 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
               t.value = ''
             }
             e.preventDefault()
-          }
-          if (e.key === 'Backspace') {
-            if (t.value == '' && labels.length > 0) {
-              unset(labels[cursor])
+          } else if (e.key === 'Backspace') {
+            if (t.value == '' && selected.length > 0) {
+              unset(selected[selected.length - 1])
             }
           } else if (e.key === 'ArrowDown') {
             this.setState({cursor: new_cursor(cursor + 1, 1)})
@@ -150,7 +149,10 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
           } else if (e.key === 'ArrowUp') {
             this.setState({cursor: new_cursor(cursor - 1, -1)})
             e.preventDefault()
-          } else if (!e.altKey && !e.ctrlKey) {
+          } else if (e.key === 'Tab') {
+            this.setState({cursor: new_cursor(cursor + 1, 1, liberal_re(t.value))})
+            e.preventDefault()
+          } else if (!e.altKey && !e.ctrlKey && !e.metaKey) {
             this.setState({cursor: new_cursor(cursor, 1, liberal_re(t.value + e.key))})
           }
           this.props.onKeyDown && this.props.onKeyDown(e)
