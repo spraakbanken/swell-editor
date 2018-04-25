@@ -32,6 +32,13 @@ yarn run serve
 yarn run test
 ```
 
+End to end:
+
+```
+yarn run serve # start server on port 1234
+yarn run test:e2e
+```
+
 Coverage:
 
 ```
@@ -49,10 +56,12 @@ yarn run doctest:watch
 _SB-specific_:
 
 ```
-yarn run build
-for i in dist/*js; do < $i closure-compiler --language_out ECMASCRIPT3 | sponge $i; done # optional for polyfills
-scp dist/* fkswell@k2:/export/htdocs_sb/swell/dev
+yarn run deploy
 ```
+
+### Updating the taxonomy
+
+The intent is that the taxonomy should come from the backend. However, it can also be updated in `src/Editor/Config.ts` and then deployed (see above).
 
 ## Images of Spaghetti as a Service
 

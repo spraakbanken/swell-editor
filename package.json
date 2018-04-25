@@ -86,6 +86,7 @@
     "doctest:generate": "doctest-ts src/*ts* src/*/*ts* --mocha",
     "pretest": "yarn run doctest:clean && yarn run doctest:generate",
     "test": "mocha --require ts-node/register {src,src/*,test}/*test.ts*",
+    "test:e2e": "mocha --require ts-node/register test/e2e.ts --timeout 20000",
     "coverage": "yarn run pretest && yarn run tsc && for i in dist/**/*.doctest.js; do cp $i $(echo $i | sed s/doctest.//); done && nyc mocha dist/test/*js $(echo dist/**/*.doctest.js | sed s/doctest.//g)",
     "test:watch": "mocha --require ts-node/register --watch --watch-extensions ts test/*test.ts*",
     "doctest:watch": "yarn run doctest:clean && doctest-ts --tape --watch src/*ts* src/**/*ts* | while read file; do echo running tape on $file; ts-node $file | tap-diff; done",
