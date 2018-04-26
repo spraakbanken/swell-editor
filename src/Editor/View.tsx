@@ -225,10 +225,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
         ))}
         {manual_page && (
           <React.Fragment>
-            <Close
-              onMouseDown={() => store.at('user_manual_page').set(undefined)}
-              title="Close manual"
-            />
+            <Close onMouseDown={() => Model.setManualTo(store, undefined)} title="Close manual" />
             {manual_page.text}
             {G.equal(manual_page.target, graph.get(), true) && (
               <i style={{color: 'darkgreen'}}>Correct!</i>
@@ -242,10 +239,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
     return (
       <div className={topStyle}>
         <div className="main">
-          <Close
-            onMouseDown={() => store.at('user_manual_page').set(undefined)}
-            title="Close manual"
-          />
+          <Close onMouseDown={() => Model.setManualTo(store, undefined)} title="Close manual" />
           {Manual.slugs.map(slug => {
             const page = Manual.manual[slug]
             if (page) {
@@ -323,7 +317,6 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             onSelect={(ids, only) => Model.onSelect(store, ids, only)}
           />
         </div>
-
         {state.show.graph && <pre className="box pre-box">{Utils.show(g)}</pre>}
         {state.show.diff && <pre className="box pre-box">{Utils.show(G.enrichen(g))}</pre>}
         {state.show.image_link && ImageWebserviceAddresses(visible_graph, anon_mode)}
@@ -364,7 +357,11 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
           {Button(`${anon_mode ? 'disable' : 'enable'} anonymization view`, '', () =>
             store.at('mode').modify(Model.nextMode)
           )}
-          {Button('show manual', 'show manual', () => Model.setManualTo(store, 'manual'))}
+          {Button(
+            show_hide_str(state.user_manual_page !== undefined) + 'manual',
+            'toggle showing manual',
+            () => Model.setManualTo(store, state.user_manual_page ? undefined : 'manual')
+          )}
           {Model.shows.map(show =>
             Button(show_hide_str(state.show[show]) + show.replace('_', ' '), '', () =>
               store

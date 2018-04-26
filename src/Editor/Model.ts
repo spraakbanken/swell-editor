@@ -78,14 +78,18 @@ export function check_invariant(store: Store<State>): (g: Graph) => void {
   }
 }
 
-export function setManualTo(store: Store<State>, slug: string) {
-  const page = Manual.manual[slug] || {graph: G.init(''), mode: modes.normalization}
-  store.update({
-    user_manual_page: slug,
-    graph: Undo.init(page.graph),
-    mode: page.mode,
-    selected: {},
-  })
+export function setManualTo(store: Store<State>, slug: string | undefined) {
+  if (slug === undefined) {
+    store.at('user_manual_page').set(undefined)
+  } else {
+    const page = Manual.manual[slug] || {graph: G.init(''), mode: modes.normalization}
+    store.update({
+      user_manual_page: slug,
+      graph: Undo.init(page.graph),
+      mode: page.mode,
+      selected: {},
+    })
+  }
 }
 
 export function deselect(store: Store<State>) {
