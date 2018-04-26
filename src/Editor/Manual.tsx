@@ -127,11 +127,11 @@ page(
 # Orphan: disconnecting words
 
 Here a linked group has too many members.
-We want to put _with_ and _many_ on groups on their own.
+We want to put _with_ and _many_ in groups of their own.
 Here we cannot select both of them and press _group_ since then they will
 be linked to themselves (try it and use then use undo).
 
-Instead select both and press the the _orphan_ button to make each word orphaned: only connected to itself.
+Instead select both and press the _orphan_ button to make each word orphaned: only connected to itself.
 
 (Another alternative is to select the words one by one and press _group_: indeed, with only one word selected _group_ and _orphan_ do the same thing.)
   `,
@@ -149,7 +149,7 @@ page(
 In the example below the automatic aligner has aligned _his_ and _where_ (because they share the _h_)
 but we want _his_ and _he_ to be aligned.
 
-This can be resolved in three ways:
+This can be resolved in three ways (use "undo" after each try):
 
 1.  Select _his_ and _he_ and use _group_.
 2.  Select _where_ and use _orphan_.
