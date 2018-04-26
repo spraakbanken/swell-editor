@@ -10,7 +10,7 @@ import * as record from '../record'
 
 import {VNode} from '../ReactUtils'
 import * as ReactUtils from '../ReactUtils'
-import {Button, showhide} from '../ReactUtils'
+import {Button} from '../ReactUtils'
 
 import {State} from './Model'
 import * as Model from './Model'
@@ -207,7 +207,15 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
   }
 }
 
-export function LabelSidekick({store, taxonomy}: {store: Store<State>; taxonomy: Taxonomy}) {
+export function LabelSidekick({
+  store,
+  taxonomy,
+  mode,
+}: {
+  store: Store<State>
+  taxonomy: Taxonomy
+  mode: Model.Mode
+}) {
   const graph = store.at('graph').at('now')
   const selected = Object.keys(store.get().selected)
   const advance = Model.make_history_advance_function(store)
@@ -223,7 +231,7 @@ export function LabelSidekick({store, taxonomy}: {store: Store<State>; taxonomy:
           e.preventDefault()
         }}>
         <div>
-          {Model.onSelectedActions.map(action =>
+          {Model.actionButtons[mode].map(action =>
             Button(
               Model.actionButtonNames[action],
               Model.actionDescriptions[action] + `\n\nShortcut: ${Model.actionKeyboard[action]}`,

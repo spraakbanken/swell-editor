@@ -28,7 +28,13 @@ export interface State {
 
   /** for hot module reloading, bumped at each reload and used to make sure thunked components get updated */
   readonly generation: number
+
+  readonly show: Partial<Record<Show, true>>
 }
+
+export type Show = 'graph' | 'diff' | 'image_link' | 'examples' | 'source_text'
+
+export const shows = ['graph', 'diff', 'image_link', 'examples', 'source_text'] as Show[]
 
 export type Mode = 'anonymization' | 'normalization'
 
@@ -51,6 +57,7 @@ export const init: State = {
   errors: {},
   mode: modes.normalization,
   taxonomy: config.taxonomy,
+  show: {},
 }
 
 export function check_invariant(store: Store<State>): (g: Graph) => void {
@@ -228,18 +235,21 @@ export type ActionOnSelected =
   | 'next_mod'
   | 'prev_mod'
 
-export const onSelectedActions: ActionOnSelected[] = [
-  'prev',
-  'next',
-  'prev_mod',
-  'next_mod',
-  'group',
-  'orphan',
-  // 'merge',
-  'auto',
-  'revert',
-  // 'deselect',
-]
+export const actionButtons: Record<Mode, ActionOnSelected[]> = {
+  normalization: [
+    'prev',
+    'next',
+    'prev_mod',
+    'next_mod',
+    'group',
+    'orphan',
+    // 'merge',
+    'auto',
+    'revert',
+    // 'deselect',
+  ],
+  anonymization: ['prev', 'next', 'prev_mod', 'next_mod'],
+}
 
 export const actionDescriptions: Record<ActionOnSelected, string> = {
   revert: 'Local undo on the selected tokens. Restores them to the source text.',

@@ -89,48 +89,6 @@ export function Input(store: Store<string>, tabIndex?: number) {
   )
 }
 
-export class If extends React.Component<
-  {
-    children: (b: boolean, set: (b?: any) => void) => React.ReactNode
-    init?: boolean
-  },
-  {b: boolean}
-> {
-  constructor(p: any) {
-    super(p)
-    this.state = {b: p.init === undefined ? false : p.init}
-  }
-  render() {
-    const b = this.state.b
-    return this.props.children(b, next => this.setState({b: typeof next === 'boolean' ? next : !b}))
-  }
-}
-
-export function showhide(what: string, show: () => string | VNode, init = false) {
-  return (
-    <If init={init}>
-      {(b, flip) => {
-        let v
-        return (
-          <React.Fragment>
-            <a
-              style={{opacity: '0.85', justifySelf: 'end'} as any}
-              className="main"
-              href=""
-              onMouseDown={e => e.stopPropagation()}
-              onClick={e => (e.preventDefault(), flip())}>
-              {b ? 'hide' : 'show'} {what}
-            </a>
-            {b &&
-              ((v = show()),
-              typeof v === 'string' ? <pre className="box pre-box main">{v}</pre> : v)}
-          </React.Fragment>
-        )
-      }}
-    </If>
-  )
-}
-
 export const Button = (
   label: string,
   title: string,

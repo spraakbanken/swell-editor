@@ -1,6 +1,7 @@
 import * as React from 'react'
 import {Store, Lens, Undo} from 'reactive-lens'
 import {style} from 'typestyle'
+import * as typestyle from 'typestyle'
 import * as csstips from 'csstips'
 
 import {Graph} from '../Graph'
@@ -10,7 +11,7 @@ import * as record from '../record'
 
 import {VNode} from '../ReactUtils'
 import * as ReactUtils from '../ReactUtils'
-import {Close, Button, showhide} from '../ReactUtils'
+import {Close, Button} from '../ReactUtils'
 
 import {State} from './Model'
 import * as Model from './Model'
@@ -26,34 +27,40 @@ import * as GV from '../GraphView'
 
 import * as Manual from './Manual'
 
+typestyle.cssRaw(`
+body > div {
+  height: 100%
+}
+`)
+
 const topStyle = style({
   ...Utils.debugName('topStyle'),
   fontFamily: 'lato, sans-serif, DejaVu Sans',
   color: '#222',
   display: 'grid',
-  gridAutoRows: '',
 
-  gridGap: '0.8em 0.4em',
-  paddingTop: '1em',
-  paddingBottom: '4em',
-  maxWidth: '1050px',
+  // gridAutoRows: '',
+  // gridGap: '0.8em 0.4em',
+  // paddingTop: '1em',
+  // paddingBottom: '4em',
   margin: '0 auto',
   alignItems: 'start',
-  gridTemplateColumns: '[left] 180px [main] 1fr [right] 180px',
+  gridTemplate: `
+    "header   header header"  40px
+    "sidekick main   summary" 1fr
+  / 180px     1fr    180px
+  `,
+  height: '100%',
 
   $nest: {
-    '& > .left': {
-      gridColumnStart: 'left',
-    },
-    '& > .main': {
-      gridColumnStart: 'main',
-    },
-    '& > .right': {
-      gridColumnStart: 'right',
-    },
-    '& > .tall': {
-      gridRowEnd: 'span 10',
-    },
+    ...record.flatten(
+      'sidekick main summary header'.split(' ').map(area => ({
+        [`& > .${area}`]: {
+          gridArea: area,
+          height: '100%',
+        },
+      }))
+    ),
     '& .CodeMirror': {
       border: '1px solid #ddd',
       height: '300px',
@@ -201,34 +208,35 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
 
   const manual_page = state.user_manual_page !== undefined && Manual.manual[state.user_manual_page]
 
-  const manual_part = () => (
-    <div className="main" style={manual_page ? {minHeight: '18em'} : {}}>
-      {Manual.slugs.slice(0, manual_page ? Manual.slugs.length : 1).map(slug => (
-        <span>
-          <ReactUtils.A
-            title={slug}
-            text={slug}
-            onMouseDown={e => {
-              e.stopPropagation()
-              Model.setManualTo(store, slug)
-            }}
-          />{' '}
-        </span>
-      ))}
-      {manual_page && (
-        <React.Fragment>
-          <Close
-            onMouseDown={() => store.at('user_manual_page').set(undefined)}
-            title="Close manual"
-          />
-          {manual_page.text}
-          {G.equal(manual_page.target, graph.get(), true) && (
-            <i style={{color: 'darkgreen'}}>Correct!</i>
-          )}
-        </React.Fragment>
-      )}
-    </div>
-  )
+  const manual_part = () =>
+    manual_page && (
+      <div className="main" style={{minHeight: '18em'}}>
+        {Manual.slugs.map(slug => (
+          <span>
+            <ReactUtils.A
+              title={slug}
+              text={slug}
+              onMouseDown={e => {
+                e.stopPropagation()
+                Model.setManualTo(store, slug)
+              }}
+            />{' '}
+          </span>
+        ))}
+        {manual_page && (
+          <React.Fragment>
+            <Close
+              onMouseDown={() => store.at('user_manual_page').set(undefined)}
+              title="Close manual"
+            />
+            {manual_page.text}
+            {G.equal(manual_page.target, graph.get(), true) && (
+              <i style={{color: 'darkgreen'}}>Correct!</i>
+            )}
+          </React.Fragment>
+        )}
+      </div>
+    )
 
   function full_manual() {
     return (
@@ -272,8 +280,105 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
   }
 
   function wrap(node: VNode) {
+    return <div />
+  }
+
+  const history = Model.history(store)
+
+  function main() {
     return (
-      <div onMouseDown={e => Model.deselect(store)}>
+      <React.Fragment>
+        {ShowErrors(store.at('errors'))}
+        {manual_part()}
+        {state.show.source_text && (
+          <div>
+            <div>
+              {Button('copy to target', '', () =>
+                advance(() => graph.modify(g => G.init_from(G.source_texts(g))))
+              )}
+            </div>
+            <div className={hovering ? 'cm-hovering' : ''}>{cms.source.node}</div>
+          </div>
+        )}
+        <div>
+          {Button('undo', '', history.undo, history.canUndo())}
+          {Button('redo', '', history.redo, history.canRedo())}
+        </div>
+        {anon_mode || (
+          <div className="main">
+            <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
+          </div>
+        )}
+        <div
+          className={'main' + (hovering ? ' hovering' : '') + (anon_mode ? ' NoManualBlue' : '')}
+          style={{minHeight: '10em'}}>
+          <GraphView
+            side={state.side_restriction}
+            orderChangingLabel={s => config.order_changing_labels[s]}
+            graph={visible_graph}
+            hoverId={anon_mode ? undefined : state.hover_id}
+            onHover={anon_mode ? undefined : hover_id => store.update({hover_id})}
+            selectedIds={Object.keys(state.selected)}
+            generation={state.generation}
+            onSelect={(ids, only) => Model.onSelect(store, ids, only)}
+          />
+        </div>
+
+        {state.show.graph && <pre className="box pre-box">{Utils.show(g)}</pre>}
+        {state.show.diff && <pre className="box pre-box">{Utils.show(G.enrichen(g))}</pre>}
+        {state.show.image_link && ImageWebserviceAddresses(visible_graph, anon_mode)}
+        {state.show.examples && (
+          <div className="main TopPad">
+            <em>Examples:</em>
+
+            {config.examples.map((e, i) => (
+              <div key={i}>
+                <div>
+                  {Button('\u21ea', 'load example', () =>
+                    advance(() => units.set({source: e.source, target: e.source}))
+                  )}
+                  {!e.target ? (
+                    <div />
+                  ) : (
+                    Button('\u21eb', 'see example analysis', () =>
+                      advance(() => units.set({source: e.source, target: e.target}))
+                    )
+                  )}
+                  <span className="main">{e.source}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </React.Fragment>
+    )
+  }
+
+  return state.user_manual_page === 'print' ? (
+    full_manual()
+  ) : (
+    <div className={topStyle} style={{position: 'relative'}}>
+      <div className="header box">
+        <div className="inline">
+          {RestrictionButtons(store.at('side_restriction'))}
+          {Button(`${anon_mode ? 'disable' : 'enable'} anonymization view`, '', () =>
+            store.at('mode').modify(Model.nextMode)
+          )}
+          {Button('show manual', 'show manual', () => Model.setManualTo(store, 'manual'))}
+          {Model.shows.map(show =>
+            Button(show_hide_str(state.show[show]) + show.replace('_', ' '), '', () =>
+              store
+                .at('show')
+                .via(Lens.key(show))
+                .modify(b => (b ? undefined : true))
+            )
+          )}
+        </div>
+      </div>
+      <div className="sidekick">
+        <LabelSidekick store={store} taxonomy={state.taxonomy[state.mode]} mode={state.mode} />
+      </div>
+      <div className="main" onMouseDown={e => Model.deselect(store)}>
         <DropZone
           webserviceURL={config.image_ws_url}
           onDrop={d =>
@@ -284,84 +389,16 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
               })
             })
           }>
-          {state.user_manual_page === 'print' ? full_manual() : node}
+          {main()}
         </DropZone>
       </div>
-    )
-  }
-
-  const history = Model.history(store)
-
-  return wrap(
-    <div className={topStyle} style={{position: 'relative'}}>
-      {ShowErrors(store.at('errors'))}
-      {manual_part()}
-      {showhide('source text', () => (
-        <div className="main">
-          <div className={hovering ? 'cm-hovering' : ''}>{cms.source.node}</div>
-          <div>
-            {Button('copy to target', '', () =>
-              advance(() => graph.modify(g => G.init_from(G.source_texts(g))))
-            )}
-          </div>
-        </div>
-      ))}
-      <div className="main buttonSep" style={{zIndex: 5}}>
-        <div className="box inline">
-          {Button('undo', '', history.undo, history.canUndo())}
-          {Button('redo', '', history.redo, history.canRedo())}
-        </div>
-        <div className="box inline">{RestrictionButtons(store.at('side_restriction'))}</div>
-        <div className="box inline">
-          {Button(`${anon_mode ? 'disable' : 'enable'} anonymization view`, '', () =>
-            store.at('mode').modify(Model.nextMode)
-          )}
-        </div>
-      </div>
-      {anon_mode || (
-        <div className="main">
-          <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
-        </div>
-      )}
-      <LabelSidekick store={store} taxonomy={state.taxonomy[state.mode]} />
-      <div
-        className={'main' + (hovering ? ' hovering' : '') + (anon_mode ? ' NoManualBlue' : '')}
-        style={{minHeight: '10em'}}>
-        <GraphView
-          side={state.side_restriction}
-          orderChangingLabel={s => config.order_changing_labels[s]}
-          graph={visible_graph}
-          hoverId={anon_mode ? undefined : state.hover_id}
-          onHover={anon_mode ? undefined : hover_id => store.update({hover_id})}
-          selectedIds={Object.keys(state.selected)}
-          generation={state.generation}
-          onSelect={(ids, only) => Model.onSelect(store, ids, only)}
-        />
-      </div>
-      <div className="right tall">{Summary(g)}</div>
-      {showhide('graph json', () => Utils.show(g))}
-      {showhide('diff json', () => Utils.show(G.enrichen(g)))}
-      {ImageWebserviceAddresses(visible_graph, anon_mode)}
-      <div className="main TopPad">
-        <em>Examples:</em>
-      </div>
-      {config.examples.map((e, i) => [
-        <div className="left float_buttons_right" key={i}>
-          {Button('\u21ea', 'load example', () =>
-            advance(() => units.set({source: e.source, target: e.source}))
-          )}
-          {!e.target ? (
-            <div />
-          ) : (
-            Button('\u21eb', 'see example analysis', () =>
-              advance(() => units.set({source: e.source, target: e.target}))
-            )
-          )}
-        </div>,
-        <span className="main">{e.source}</span>,
-      ])}
+      <div className="summary">{Summary(g)}</div>
     </div>
   )
+}
+
+function show_hide_str(b: boolean | undefined) {
+  return b ? 'hide ' : 'show '
 }
 
 function RestrictionButtons(store: Store<G.Side | undefined>): VNode[] {
@@ -396,28 +433,15 @@ function ImageWebserviceAddresses(g: Graph, anon_mode: boolean) {
   const url = `${config.image_ws_url}/png?${escape(st)}`
   const md = `![](${url})`
   return (
-    <React.Fragment>
-      {showhide('compact form', () => (
-        <pre className={'box pre-box main '} style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}>
-          {G.graph_to_compact(g)}
-        </pre>
-      ))}
-      {showhide(
-        'copy link',
-        () => (
-          <pre
-            className={'box pre-box main ' + ReactUtils.Unselectable}
-            style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}
-            draggable={true}
-            onDragStart={e => {
-              e.dataTransfer.setData('text/plain', md)
-            }}>
-            {md}
-          </pre>
-        ),
-        true
-      )}
-    </React.Fragment>
+    <pre
+      className={'box pre-box ' + ReactUtils.Unselectable}
+      style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}
+      draggable={true}
+      onDragStart={e => {
+        e.dataTransfer.setData('text/plain', md)
+      }}>
+      {md}
+    </pre>
   )
 }
 

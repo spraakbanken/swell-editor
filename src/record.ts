@@ -10,6 +10,12 @@ export function init<K extends string, V>(kvs: {k: K; v: V}[]): Record<K, V> {
   return obj
 }
 
+export function flatten<O extends Record<string, any>>(oss: O[]): O {
+  const obj = {} as O
+  oss.forEach(os => forEach(os, (v: string, k: any) => (obj[k] = v)))
+  return obj
+}
+
 export function forEach<K extends string, A>(x: Record<K, A>, k: (a: A, id: K) => void): void {
   ;(Object.keys(x) as K[]).forEach((id: K) => k(x[id], id))
 }
