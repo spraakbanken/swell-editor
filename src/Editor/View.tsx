@@ -18,6 +18,8 @@ import {DropZone} from './DropZone'
 import * as CM from './CodeMirror'
 import {config} from './Config'
 
+import * as EditorTypes from '../EditorTypes'
+
 import {LabelSidekick} from './LabelSidekick'
 import {GraphView} from '../GraphView'
 import * as GV from '../GraphView'
@@ -175,9 +177,6 @@ const topStyle = style({
     '& .close:hover': {
       opacity: 0.8,
     },
-    '& .NoManualBlue .GreyPath.Manual': {
-      stroke: '#999',
-    },
   },
 })
 
@@ -188,7 +187,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
 
   const state = store.get()
   const graph = Model.graphStore(store)
-  const anon_view = Model.inAnonMode(store)
+  const anon_mode = Model.inAnonMode(store)
 
   const units = Model.compactStore(store)
 
@@ -242,17 +241,17 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
           {Manual.slugs.map(slug => {
             const page = Manual.manual[slug]
             if (page) {
-              const anon_view = page.mode == 'anonymization'
-              const m = anon_view ? G.anonymize : (g: G.Graph) => g
+              const anon_mode = page.mode == 'anonymization'
+              const m = G.anonymize_when(anon_mode)
               return (
                 <React.Fragment>
                   {page.text}
                   <i>Initial view:</i>
-                  <div className={anon_view ? ' NoManualBlue' : ''}>
+                  <div className={anon_mode ? ' NoManualBlue' : ''}>
                     <GraphView graph={m(page.graph)} />
                   </div>
                   <i>Target view:</i>
-                  <div className={anon_view ? ' NoManualBlue' : ''}>
+                  <div className={anon_mode ? ' NoManualBlue' : ''}>
                     <GraphView graph={m(page.target)} />
                   </div>
                   <ReactUtils.A
@@ -275,7 +274,16 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
   function wrap(node: VNode) {
     return (
       <div onMouseDown={e => Model.deselect(store)}>
-        <DropZone webserviceURL={config.image_ws_url} onDrop={g => advance(() => graph.set(g))}>
+        <DropZone
+          webserviceURL={config.image_ws_url}
+          onDrop={d =>
+            advance(() => {
+              graph.set(d.graph)
+              store.update({
+                mode: d.anon_mode ? Model.modes.anonymization : Model.modes.normalization,
+              })
+            })
+          }>
           {state.user_manual_page === 'print' ? full_manual() : node}
         </DropZone>
       </div>
@@ -305,26 +313,26 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
         </div>
         <div className="box inline">{RestrictionButtons(store.at('side_restriction'))}</div>
         <div className="box inline">
-          {Button(`${anon_view ? 'disable' : 'enable'} anonymization view`, '', () =>
+          {Button(`${anon_mode ? 'disable' : 'enable'} anonymization view`, '', () =>
             store.at('mode').modify(Model.nextMode)
           )}
         </div>
       </div>
-      {anon_view || (
+      {anon_mode || (
         <div className="main">
           <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
         </div>
       )}
       <LabelSidekick store={store} taxonomy={state.taxonomy[state.mode]} />
       <div
-        className={'main' + (hovering ? ' hovering' : '') + (anon_view ? ' NoManualBlue' : '')}
+        className={'main' + (hovering ? ' hovering' : '') + (anon_mode ? ' NoManualBlue' : '')}
         style={{minHeight: '10em'}}>
         <GraphView
           side={state.side_restriction}
           orderChangingLabel={s => config.order_changing_labels[s]}
           graph={visible_graph}
-          hoverId={anon_view ? undefined : state.hover_id}
-          onHover={anon_view ? undefined : hover_id => store.update({hover_id})}
+          hoverId={anon_mode ? undefined : state.hover_id}
+          onHover={anon_mode ? undefined : hover_id => store.update({hover_id})}
           selectedIds={Object.keys(state.selected)}
           generation={state.generation}
           onSelect={(ids, only) => Model.onSelect(store, ids, only)}
@@ -333,7 +341,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
       <div className="right tall">{Summary(g)}</div>
       {showhide('graph json', () => Utils.show(g))}
       {showhide('diff json', () => Utils.show(G.enrichen(g)))}
-      {ImageWebserviceAddresses(visible_graph)}
+      {ImageWebserviceAddresses(visible_graph, anon_mode)}
       <div className="main TopPad">
         <em>Examples:</em>
       </div>
@@ -378,21 +386,20 @@ function ShowErrors(store: Store<Record<string, true>>) {
   ))
 }
 
-function ImageWebserviceAddresses(g: Graph) {
-  const stu = G.graph_to_units(g)
-  const esc = (s: string) =>
+function ImageWebserviceAddresses(g: Graph, anon_mode: boolean) {
+  const escape = (s: string) =>
     encodeURIComponent(s)
       .replace('(', '%28')
       .replace(')', '%29')
-  const escaped = G.mapSides(stu, units => esc(G.units_to_string(units, '_')))
-  const st = escaped.source + '//' + escaped.target
-  const url = `${config.image_ws_url}/png?${st}`
+  const data: EditorTypes.Data = EditorTypes.graph_to_data(g, anon_mode)
+  const st = EditorTypes.data_to_string(data)
+  const url = `${config.image_ws_url}/png?${escape(st)}`
   const md = `![](${url})`
   return (
     <React.Fragment>
       {showhide('compact form', () => (
         <pre className={'box pre-box main '} style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}>
-          {`${G.units_to_string(stu.source)} // ${G.units_to_string(stu.target)}`}
+          {G.graph_to_compact(g)}
         </pre>
       ))}
       {showhide(

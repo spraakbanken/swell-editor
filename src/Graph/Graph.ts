@@ -1210,6 +1210,10 @@ export function anonymize(graph: Graph): Graph {
   return {source: g.source, target, edges: edge_record(edges)}
 }
 
+export function anonymize_when(b: boolean | undefined): (graph: Graph) => Graph {
+  return graph => (b ? anonymize(graph) : graph)
+}
+
 /** Sets the target text to the source text, but preserving all labels */
 export function source_to_target(g: Graph): Graph {
   let i = next_id(g)

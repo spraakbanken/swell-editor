@@ -28,17 +28,14 @@ describe('png metadata via webserver', async () => {
   })
   Utils.range(8).map(s0 => {
     const size = (s0 + 1) * 12
+    const anon_mode = s0 % 2 == 1
     const mem = (i: number) => (i > 0 ? `, and hits memo` : '')
     Utils.range(4).forEach(i =>
       it(`roundtrips graph of size ${size}${mem(i)}`, async () => {
         const g = graph_one_space.sample(size, 45)
-        const data = iosaas.graph_to_data(g)
-        // Utils.stdout(g)
-        // Utils.stdout(iosaas.data_to_string(data))
-        // const data2 = await ImageServer.metadata_from_url(iosaas.image, png_url(data))
-        // expect(data2.graph).to.deep.equal(data.graph)
-        const data3 = await fetch(metadata_url(data)).then(x => x.json())
-        expect(data3.graph).to.deep.equal(data.graph)
+        const data = iosaas.graph_to_data(g, anon_mode)
+        const data2 = await fetch(metadata_url(data)).then(x => x.json())
+        expect(data2).to.deep.equal(data)
       })
     )
   })

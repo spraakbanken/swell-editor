@@ -91,6 +91,9 @@ const GraphViewStyle = style(
         strokeWidth: px(4),
         fill: 'none',
       },
+      '.NoManualBlue & .GreyPath.Manual': {
+        stroke: '#999',
+      },
       '& .GreyPath.Manual': {
         stroke: ManualPathColour,
         strokeWidth: px(4),

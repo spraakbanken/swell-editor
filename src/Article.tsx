@@ -123,7 +123,6 @@ const ArticleStyle = style(Utils.debugName('ArticleStyle'), {
       marginBottom: '0',
     },
     '& .NoManualBlue .GreyPath.Manual': {
-      stroke: '#999',
       'stroke-dasharray': 'unset',
     },
   },

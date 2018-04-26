@@ -26,7 +26,7 @@ const log = (...xs: any[]) => void 0 // console.log(...xs)
 
 export class DropZone extends React.Component<
   {
-    onDrop: (g: Graph) => void
+    onDrop: (data: Data) => void
     webserviceURL?: string
     children: React.ReactNode
   },
@@ -58,9 +58,9 @@ export class DropZone extends React.Component<
           log(url, 'looks like an address')
           const query_url = this.props.webserviceURL + '/metadata.json?' + encodeURIComponent(url)
           Utils.GET(query_url, str => {
-            const data = JSON.parse(str)
+            const data: Data = JSON.parse(str)
             log(data, 'from', url)
-            this.props.onDrop(data.graph)
+            this.props.onDrop(data)
           })
         }
       })
@@ -81,9 +81,9 @@ export class DropZone extends React.Component<
         if (r.readyState === 2) {
           try {
             const buf = new Buffer(r.result)
-            const data = png.onBuffer.get(key, buf)
+            const data: Data = png.onBuffer.get(key, buf)
             log({data})
-            this.props.onDrop(data.graph)
+            this.props.onDrop(data)
           } catch (e) {
             log('file not a png with meta data:', file, r.result)
           }
