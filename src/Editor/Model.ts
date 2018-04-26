@@ -269,6 +269,8 @@ export const actionButtonNames: Record<ActionOnSelected, string> = {
   prev_mod: 'prev mod',
 }
 
+// Alt-{q,w,t,n} are blocked on mac
+// Alt is called Cmd (kringlan) on mac
 export const actionKeyboard: Record<ActionOnSelected, string> = {
   revert: 'Alt-r',
   auto: 'Alt-a',
@@ -276,10 +278,10 @@ export const actionKeyboard: Record<ActionOnSelected, string> = {
   merge: 'Alt-m',
   group: 'Alt-g',
   deselect: 'Escape',
-  next: 'Alt-n',
-  prev: 'Alt-p',
-  next_mod: 'Alt-N',
-  prev_mod: 'Alt-P',
+  next: 'Alt-ArrowRight',
+  prev: 'Alt-ArrowLeft',
+  next_mod: 'Alt-Shift-ArrowRight',
+  prev_mod: 'Alt-Shift-ArrowLeft',
 }
 
 function navigate(direction: 'next' | 'prev', kind: G.NavigationKind) {
