@@ -32,14 +32,7 @@ export interface State {
   readonly show: Partial<Record<Show, true>>
 }
 
-export type Show =
-  | 'graph'
-  | 'diff'
-  | 'image_link'
-  | 'examples'
-  | 'source_text'
-  | 'left_menu'
-  | 'right_menu'
+export type Show = 'graph' | 'diff' | 'image_link' | 'examples' | 'source_text' | 'options'
 
 export const shows = ['graph', 'diff', 'image_link', 'examples', 'source_text'] as Show[]
 

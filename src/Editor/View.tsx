@@ -43,7 +43,7 @@ const topStyle = style({
   display: 'grid',
 
   // gridAutoRows: '',
-  gridGap: '10px 5px',
+  gridGap: '0px 5px',
   // paddingTop: '1em',
   // paddingBottom: '4em',
   margin: '0 auto',
@@ -70,16 +70,11 @@ const topStyle = style({
       paddingBottom: '5px',
       marginBottom: '5px',
     },
-    '& .menu': {
+    '& .menu div': {
       position: 'absolute',
-      top: `calc(${header_height} - 2px)`,
-      zIndex: 20,
-    },
-    '& .menu.left': {
-      left: 0,
-    },
-    '& .menu.right': {
+      top: header_height,
       right: 0,
+      zIndex: 100,
     },
     '& .menu button': {
       display: 'block',
@@ -105,15 +100,6 @@ const topStyle = style({
     [`& .${CM.ManualMarkClassName}`]: {
       color: '#26a',
       background: '#e6e6e6',
-    },
-    '& > *': {
-      // Non-grid fallback
-      display: 'block',
-    },
-    '& > button': {
-      marginTop: '-0.125em',
-      // Non-grid fallback
-      display: 'inline-block',
     },
     '& .box': {
       background: 'hsl(0,0%,96%)',
@@ -219,15 +205,9 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
   const graph = Model.graphStore(store)
   const anon_mode = Model.inAnonMode(store)
 
-  const units = Model.compactStore(store)
-
   const g = Model.currentGraph(store)
 
   const advance = Model.make_history_advance_function(store)
-
-  const hovering = Model.isHovering(store)
-
-  const visible_graph = Model.visibleGraph(store)
 
   const manual_page = state.user_manual_page !== undefined && Manual.manual[state.user_manual_page]
 
@@ -296,13 +276,11 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
     )
   }
 
-  function wrap(node: VNode) {
-    return <div />
-  }
-
-  const history = Model.history(store)
-
   function main() {
+    const hovering = Model.isHovering(store)
+    const visible_graph = Model.visibleGraph(store)
+    const units = Model.compactStore(store)
+
     return (
       <React.Fragment>
         {ShowErrors(store.at('errors'))}
@@ -318,10 +296,6 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             </div>
           </div>
         )}
-        <div>
-          {Button('undo', '', history.undo, history.canUndo())}
-          {Button('redo', '', history.redo, history.canRedo())}
-        </div>
         {anon_mode || (
           <React.Fragment>
             <em>Target text:</em>
@@ -371,45 +345,56 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
     )
   }
 
-  const right_menu = ['graph', 'diff', 'image_link', 'examples', 'source_text'] as Model.Show[]
+  const show_store = (show: Model.Show) => store.at('show').via(Lens.key(show))
 
-  const toggle = (show: Model.Show) =>
-    store
-      .at('show')
-      .via(Lens.key(show))
-      .modify(b => (b ? undefined : true))
+  function header() {
+    const history = Model.history(store)
 
-  const toggle_button = (show: Model.Show, label = show.replace('_', ' ')) =>
-    Button(show_hide_str(state.show[show]) + label, '', () => toggle(show))
+    const options = ['graph', 'diff', 'image_link', 'examples', 'source_text'] as Model.Show[]
+
+    const toggle = (show: Model.Show) => show_store(show).modify(b => (b ? undefined : true))
+
+    const toggle_button = (show: Model.Show, label = show.replace('_', ' ')) =>
+      Button(show_hide_str(state.show[show]) + label, '', () => toggle(show), undefined, true)
+
+    return (
+      <React.Fragment>
+        <div className="float_buttons_right">{toggle_button('options', 'options')}</div>
+        <div>
+          {Button('undo', '', history.undo, history.canUndo())}
+          {Button('redo', '', history.redo, history.canRedo())}
+        </div>
+        {state.show.options && (
+          <div className="menu">
+            <div className="box">
+              {RestrictionButtons(store.at('side_restriction'))}
+              <hr />
+              {Button(`${anon_mode ? 'disable' : 'enable'} anonymization view`, '', () =>
+                store.at('mode').modify(Model.nextMode)
+              )}
+              <hr />
+              {Button(
+                show_hide_str(state.user_manual_page !== undefined) + 'manual',
+                'toggle showing manual',
+                () => Model.setManualTo(store, state.user_manual_page ? undefined : 'manual')
+              )}
+              <hr />
+              {options.map(s => toggle_button(s))}
+            </div>
+          </div>
+        )}
+      </React.Fragment>
+    )
+  }
 
   return state.user_manual_page === 'print' ? (
     full_manual()
   ) : (
-    <div className={topStyle} style={{position: 'relative'}}>
-      <div className="header box">
-        <div className="float_buttons_right">{toggle_button('right_menu', 'view options')}</div>
-        {toggle_button('left_menu', 'mode options')}
-        {state.show.left_menu && (
-          <div className="left menu box">
-            <Close title="dismiss" onMouseDown={() => toggle('left_menu')} />
-            {RestrictionButtons(store.at('side_restriction'))}
-            {Button(`${anon_mode ? 'disable' : 'enable'} anonymization view`, '', () =>
-              store.at('mode').modify(Model.nextMode)
-            )}
-          </div>
-        )}
-        {state.show.right_menu && (
-          <div className="right menu box">
-            <Close title="dismiss" onMouseDown={() => toggle('right_menu')} />
-            {Button(
-              show_hide_str(state.user_manual_page !== undefined) + 'manual',
-              'toggle showing manual',
-              () => Model.setManualTo(store, state.user_manual_page ? undefined : 'manual')
-            )}
-            {right_menu.map(s => toggle_button(s))}
-          </div>
-        )}
-      </div>
+    <div
+      className={topStyle}
+      style={{position: 'relative'}}
+      onMouseDown={() => show_store('options').set(undefined)}>
+      <div className="header box">{header()}</div>
       <div className="sidekick">
         <LabelSidekick store={store} taxonomy={state.taxonomy[state.mode]} mode={state.mode} />
       </div>
