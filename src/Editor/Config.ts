@@ -23,7 +23,9 @@ We wrote down the number . // We wrote the number down~down .
   .map(line => ex.apply({}, line.split('//').map(side => side.trim())))
 
 const order_changing_labels: Record<string, true> = {
-  O: true,
+  'S-adv': true,
+  'S-finV': true,
+  'S-WO': true,
   WO: true,
   INV: true,
   OINV: true,
