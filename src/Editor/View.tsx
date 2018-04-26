@@ -33,6 +33,9 @@ body > div {
 }
 `)
 
+const header_height = '32px'
+const footer_height = '26px'
+
 const topStyle = style({
   ...Utils.debugName('topStyle'),
   fontFamily: 'lato, sans-serif, DejaVu Sans',
@@ -40,27 +43,47 @@ const topStyle = style({
   display: 'grid',
 
   // gridAutoRows: '',
-  // gridGap: '0.8em 0.4em',
+  gridGap: '10px 5px',
   // paddingTop: '1em',
   // paddingBottom: '4em',
   margin: '0 auto',
   alignItems: 'start',
   gridTemplate: `
-    "header   header header"  40px
+    "header   header header"  ${header_height}
     "sidekick main   summary" 1fr
-  / 180px     1fr    180px
+    "footer   footer footer"  ${footer_height}
+  / 185px     1fr    180px
   `,
   height: '100%',
 
   $nest: {
     ...record.flatten(
-      'sidekick main summary header'.split(' ').map(area => ({
+      'sidekick main summary header footer'.split(' ').map(area => ({
         [`& > .${area}`]: {
           gridArea: area,
           height: '100%',
         },
       }))
     ),
+    '& .header': {
+      position: 'relative',
+      paddingBottom: '5px',
+      marginBottom: '5px',
+    },
+    '& .menu': {
+      position: 'absolute',
+      top: `calc(${header_height} - 2px)`,
+      zIndex: 20,
+    },
+    '& .menu.left': {
+      left: 0,
+    },
+    '& .menu.right': {
+      right: 0,
+    },
+    '& .menu button': {
+      display: 'block',
+    },
     '& .CodeMirror': {
       border: '1px solid #ddd',
       height: '300px',
@@ -98,7 +121,6 @@ const topStyle = style({
       boxShadow: '2px 2px 3px 0px hsla(0,0%,0%,0.2)',
       borderRadius: '0px 0px 2px 2px',
       padding: '3px',
-      marginRight: '3px',
     },
     '& .vsep': {
       marginBottom: '10px',
@@ -157,7 +179,9 @@ const topStyle = style({
       fillOpacity: 0.8,
     },
     '& button': {
+      fontSize: '0.85em',
       marginRight: '5px',
+      marginBottom: '5px',
     },
     '& button:last-child': {
       marginRight: 0,
@@ -174,7 +198,6 @@ const topStyle = style({
     },
     '& .float_buttons_right button': {
       float: 'right',
-      marginRight: '5px',
     },
     '& .close': {
       float: 'right',
@@ -286,12 +309,13 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
         {manual_part()}
         {state.show.source_text && (
           <div>
+            <em>Source text:</em>
+            <div className={hovering ? 'cm-hovering' : ''}>{cms.source.node}</div>
             <div>
               {Button('copy to target', '', () =>
                 advance(() => graph.modify(g => G.init_from(G.source_texts(g))))
               )}
             </div>
-            <div className={hovering ? 'cm-hovering' : ''}>{cms.source.node}</div>
           </div>
         )}
         <div>
@@ -299,9 +323,10 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
           {Button('redo', '', history.redo, history.canRedo())}
         </div>
         {anon_mode || (
-          <div className="main">
+          <React.Fragment>
+            <em>Target text:</em>
             <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
-          </div>
+          </React.Fragment>
         )}
         <div
           className={'main' + (hovering ? ' hovering' : '') + (anon_mode ? ' NoManualBlue' : '')}
@@ -317,13 +342,12 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             onSelect={(ids, only) => Model.onSelect(store, ids, only)}
           />
         </div>
+        {state.show.image_link && ImageWebserviceAddresses(visible_graph, anon_mode)}
         {state.show.graph && <pre className="box pre-box">{Utils.show(g)}</pre>}
         {state.show.diff && <pre className="box pre-box">{Utils.show(G.enrichen(g))}</pre>}
-        {state.show.image_link && ImageWebserviceAddresses(visible_graph, anon_mode)}
         {state.show.examples && (
-          <div className="main TopPad">
+          <div className="TopPad">
             <em>Examples:</em>
-
             {config.examples.map((e, i) => (
               <div key={i}>
                 <div>
@@ -337,7 +361,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
                       advance(() => units.set({source: e.source, target: e.target}))
                     )
                   )}
-                  <span className="main">{e.source}</span>
+                  <span>{e.source}</span>
                 </div>
               </div>
             ))}
@@ -347,30 +371,44 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
     )
   }
 
+  const right_menu = ['graph', 'diff', 'image_link', 'examples', 'source_text'] as Model.Show[]
+
+  const toggle = (show: Model.Show) =>
+    store
+      .at('show')
+      .via(Lens.key(show))
+      .modify(b => (b ? undefined : true))
+
+  const toggle_button = (show: Model.Show, label = show.replace('_', ' ')) =>
+    Button(show_hide_str(state.show[show]) + label, '', () => toggle(show))
+
   return state.user_manual_page === 'print' ? (
     full_manual()
   ) : (
     <div className={topStyle} style={{position: 'relative'}}>
       <div className="header box">
-        <div className="inline">
-          {RestrictionButtons(store.at('side_restriction'))}
-          {Button(`${anon_mode ? 'disable' : 'enable'} anonymization view`, '', () =>
-            store.at('mode').modify(Model.nextMode)
-          )}
-          {Button(
-            show_hide_str(state.user_manual_page !== undefined) + 'manual',
-            'toggle showing manual',
-            () => Model.setManualTo(store, state.user_manual_page ? undefined : 'manual')
-          )}
-          {Model.shows.map(show =>
-            Button(show_hide_str(state.show[show]) + show.replace('_', ' '), '', () =>
-              store
-                .at('show')
-                .via(Lens.key(show))
-                .modify(b => (b ? undefined : true))
-            )
-          )}
-        </div>
+        <div className="float_buttons_right">{toggle_button('right_menu', 'view options')}</div>
+        {toggle_button('left_menu', 'mode options')}
+        {state.show.left_menu && (
+          <div className="left menu box">
+            <Close title="dismiss" onMouseDown={() => toggle('left_menu')} />
+            {RestrictionButtons(store.at('side_restriction'))}
+            {Button(`${anon_mode ? 'disable' : 'enable'} anonymization view`, '', () =>
+              store.at('mode').modify(Model.nextMode)
+            )}
+          </div>
+        )}
+        {state.show.right_menu && (
+          <div className="right menu box">
+            <Close title="dismiss" onMouseDown={() => toggle('right_menu')} />
+            {Button(
+              show_hide_str(state.user_manual_page !== undefined) + 'manual',
+              'toggle showing manual',
+              () => Model.setManualTo(store, state.user_manual_page ? undefined : 'manual')
+            )}
+            {right_menu.map(s => toggle_button(s))}
+          </div>
+        )}
       </div>
       <div className="sidekick">
         <LabelSidekick store={store} taxonomy={state.taxonomy[state.mode]} mode={state.mode} />
@@ -390,6 +428,17 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
         </DropZone>
       </div>
       <div className="summary">{Summary(g)}</div>
+      <div className="footer box">
+        <span style={{opacity: 0.8, fontSize: '0.9em'}}>
+          swell-editor{' '}
+          <a href="https://github.com/spraakbanken/swell-editor" target="_blank">
+            repo
+          </a>{' '}
+          <a href="https://github.com/spraakbanken/swell-editor/issues" target="_blank">
+            issues
+          </a>{' '}
+        </span>
+      </div>
     </div>
   )
 }
@@ -400,7 +449,7 @@ function show_hide_str(b: boolean | undefined) {
 
 function RestrictionButtons(store: Store<G.Side | undefined>): VNode[] {
   const options = [undefined, ...G.sides]
-  const name = (k?: string) => (k === undefined ? 'both sides' : k + ' only')
+  const name = (k?: string) => 'view ' + (k === undefined ? 'both sides' : k + ' only')
   return options.map(k => Button(name(k), '', () => store.set(k), store.get() !== k))
 }
 

@@ -48,13 +48,8 @@ const LabelSidekickStyle = style({
       padding: 1,
     },
     '& > * > button': {
-      fontSize: '0.85em',
       width: '47%',
       marginBottom: '5px',
-    },
-    '& li button': {
-      fontSize: '0.85em',
-      width: '30px',
     },
   },
 })
@@ -225,7 +220,7 @@ export function LabelSidekick({
     const labels = Utils.uniq(Utils.flatMap(edges, e => e.labels))
     return (
       <div
-        className={'left tall sidekick box ' + LabelSidekickStyle + ' ' + ReactUtils.clean_ul}
+        className={'sidekick box ' + LabelSidekickStyle + ' ' + ReactUtils.clean_ul}
         onMouseDown={e => {
           e.stopPropagation()
           e.preventDefault()
