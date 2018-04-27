@@ -220,7 +220,12 @@ Put other labels as appropriate. Remember that _Alice's_ is in genitive.
 
 In the demo mode you can toggle between the anonymization view and normalization
 view with _enable/disable anonymization view_.
-  `,
+
+The views _source only_ and _target only_ which are accessible under _show options_
+can be helpful when doing the anonymization: they make the view more compact
+and the _target only_ view can work as assistance to verify that the text
+actually reads as anonymized.
+`,
   G.compact_to_graph(`
 Alice and Bob went to Paris . Alice's wallet was stolen . //
 Alice:'firstname:female':1 and Bob:'firstname:male':2 went to Paris:city . Alice's:'firstname:female':1:gen wallet was stolen .
