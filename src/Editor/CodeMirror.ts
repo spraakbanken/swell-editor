@@ -47,7 +47,7 @@ export interface Cursor {
   anchor: number
 }
 
-export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
+export function GraphEditingCM(store: Store<State>, side: G.Side, readOnly=false): CMVN {
   /* Note that we don't show the last character of the graph in the code mirror.
   It must necessarily be whitespace anyway. */
   const graph = Model.graphStore(store)
@@ -66,7 +66,7 @@ export function GraphEditingCM(store: Store<State>, side: G.Side): CMVN {
     'Cmd-P': transpose(-1),
   }
 
-  const {cm, node} = CM({extraKeys, tabindex: 3})
+  const {cm, node} = CM({extraKeys, tabindex: 3, readOnly})
   defaultTabBehaviour(cm)
   cm.setValue(G.get_side_text(graph.get(), side))
 
