@@ -123,9 +123,10 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
       <input
         ref={e => {
           if (e) {
-            const x = window.scrollX, y = window.scrollY;
-            e.focus();
-            window.scrollTo(x, y);
+            const x = window.scrollX
+            const y = window.scrollY
+            e.focus()
+            window.scrollTo(x, y)
           }
         }}
         placeholder="Enter label..."
