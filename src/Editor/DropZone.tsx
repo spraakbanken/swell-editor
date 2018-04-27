@@ -10,14 +10,18 @@ import {Data, key} from '../EditorTypes'
 import {style} from 'typestyle'
 
 const ambient = style({
-  ...Utils.debugName('ambient'),
+  ...Utils.debugName('DropZone_ambient'),
   border: '0.3em dashed #0000',
   margin: '0.1em',
+  width: '100%',
+  height: '100%',
 })
 
 const dropping = style({
-  ...Utils.debugName('dropping'),
+  ...Utils.debugName('DropZone_dropping'),
   borderColor: '#ccc !important',
+  width: '100%',
+  height: '100%',
 })
 
 const dropTargetClass = (b: boolean) => ambient + ' ' + (b ? dropping : '')
