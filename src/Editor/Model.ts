@@ -60,15 +60,17 @@ export function initialBackendFetch(store: Store<State>) {
         try {
           const res = JSON.parse(res_str)
           const version = res.version
-          const state = JSON.parse(res.state)
           if (
             version !== undefined &&
-            typeof version === 'number' &&
-            state !== undefined &&
-            typeof state === 'object'
+            typeof version === 'number'
           ) {
-            const raw = state.raw
-            const graph = raw !== undefined && typeof raw === 'string' ? G.init(raw) : state
+            function try_raw(raw: any) {
+              if (raw !== undefined && typeof raw === 'string') {
+                return G.init(raw)
+              }
+            }
+            let state
+            const graph = try_raw(res.raw) || (state = JSON.parse(res.state), try_raw(state.raw) || state)
             console.log({version})
             store.update({
               graph: Undo.init(graph),
