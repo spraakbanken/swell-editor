@@ -229,4 +229,31 @@ Alice:'firstname:female':1 and Bob:'firstname:male':2 went to Paris:city . Alice
   'anonymization'
 )
 
+page(
+  'image_links',
+  md`
+# Image linking
+
+To facilitate communication and documentation it is possible to link to a
+view of the editor. This gives a link that is usable as the mark up format _markdown_,
+which can be used in many issue tracking system's such as github's.
+
+To view the link for the current sentence go to _show options_ and then _show image link_.
+This will give you a link at the bottom of the page which can be dragged into a
+text area which supports markdown.
+
+To get the image back you drag and drop it into the editor using the mouse.
+There is an example image here already which to try on:
+
+![](https://ws.spraakbanken.gu.se/ws/swell/png?Drag_and_drop_me//Drag_and_drop_me)
+
+The actual markdown containing the link to the image looks like this:
+
+    ![](https://ws.spraakbanken.gu.se/ws/swell/png?Drag_and_drop_me//Drag_and_drop_me)
+`,
+  G.init('Drag and drop me'),
+  G.init('The graph'),
+  undefined,
+)
+
 slugs.push('print')

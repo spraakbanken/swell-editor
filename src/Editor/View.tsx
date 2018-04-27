@@ -120,8 +120,8 @@ const topStyle = style({
 
       padding: '0.25em',
     },
-    '& > .TopPad': {
-      paddingTop: '4em',
+    '& .TopPad': {
+      paddingTop: '1em',
     },
     '& path': {
       stroke: '#222',
@@ -214,8 +214,8 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
         {Manual.slugs.map(slug => (
           <span key={slug}>
             <ReactUtils.A
-              title={slug}
-              text={slug}
+              title={slug.replace('_', ' ')}
+              text={slug.replace('_', ' ')}
               onMouseDown={e => {
                 e.stopPropagation()
                 Model.setManualTo(store, slug)
@@ -287,7 +287,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
         {state.show.source_text && (
           <div>
             <em>Source text:</em>
-            <div className={hovering ? 'cm-hovering' : ''}>{cms.source.node}</div>
+            <div className={'TopPad ' + (hovering ? 'cm-hovering' : '')}>{cms.source.node}</div>
             <div>
               {!!state.backend || Button('copy to target', '', () =>
                 advance(() => graph.modify(g => G.init_from(G.source_texts(g))))
@@ -296,10 +296,10 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
           </div>
         )}
         {anon_mode || (
-          <React.Fragment>
+          <div className='TopPad'>
             <em>Target text:</em>
             <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
-          </React.Fragment>
+          </div>
         )}
         <div
           className={(hovering ? ' hovering' : '') + (anon_mode ? ' NoManualBlue' : '')}
