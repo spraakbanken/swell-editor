@@ -225,7 +225,7 @@ The views _source only_ and _target only_ which are accessible under _show optio
 can be helpful when doing the anonymization: they make the view more compact
 and the _target only_ view can work as assistance to verify that the text
 actually reads as anonymized.
-`,
+  `,
   G.compact_to_graph(`
 Alice and Bob went to Paris . Alice's wallet was stolen . //
 Alice:'firstname:female':1 and Bob:'firstname:male':2 went to Paris:city . Alice's:'firstname:female':1:gen wallet was stolen .
@@ -255,10 +255,10 @@ There is an example image here already which to try on:
 The actual markdown containing the link to the image looks like this:
 
     ![](https://ws.spraakbanken.gu.se/ws/swell/png?Drag_and_drop_me//Drag_and_drop_me)
-`,
+  `,
   G.init('Drag and drop me'),
   G.init('The graph'),
-  undefined,
+  undefined
 )
 
 slugs.push('print')

@@ -48,7 +48,7 @@ export function disconnectBackend(store: Store<State>, k: () => void) {
       backend: undefined,
       essay: undefined,
       start_mode: undefined,
-      version: undefined
+      version: undefined,
     })
     k()
   })

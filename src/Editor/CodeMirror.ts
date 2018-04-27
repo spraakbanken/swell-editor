@@ -47,7 +47,7 @@ export interface Cursor {
   anchor: number
 }
 
-export function GraphEditingCM(store: Store<State>, side: G.Side, readOnly=false): CMVN {
+export function GraphEditingCM(store: Store<State>, side: G.Side, readOnly = false): CMVN {
   /* Note that we don't show the last character of the graph in the code mirror.
   It must necessarily be whitespace anyway. */
   const graph = Model.graphStore(store)

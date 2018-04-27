@@ -289,14 +289,15 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             <em>Source text:</em>
             <div className={'TopPad ' + (hovering ? 'cm-hovering' : '')}>{cms.source.node}</div>
             <div>
-              {!!state.backend || Button('copy to target', '', () =>
-                advance(() => graph.modify(g => G.init_from(G.source_texts(g))))
-              )}
+              {!!state.backend ||
+                Button('copy to target', '', () =>
+                  advance(() => graph.modify(g => G.init_from(G.source_texts(g))))
+                )}
             </div>
           </div>
         )}
         {anon_mode || (
-          <div className='TopPad'>
+          <div className="TopPad">
             <em>Target text:</em>
             <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
           </div>
@@ -381,8 +382,11 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             <div className="box">
               {RestrictionButtons(store.at('side_restriction'))}
               <hr />
-              {Button(`${anon_mode ? 'disable' : 'enable'} anonymization view`, '', () =>
-                store.at('mode').modify(Model.nextMode), !state.backend
+              {Button(
+                `${anon_mode ? 'disable' : 'enable'} anonymization view`,
+                '',
+                () => store.at('mode').modify(Model.nextMode),
+                !state.backend
               )}
               <hr />
               {Button(
