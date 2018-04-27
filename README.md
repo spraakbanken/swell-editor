@@ -63,6 +63,22 @@ yarn run deploy
 
 The intent is that the taxonomy should come from the backend. However, it can also be updated in `src/Editor/Config.ts` and then deployed (see above).
 
+## Backend connection
+
+The url hash contains two fields for talking to a backend: `backend` and `essay`.
+The `backend` should a base64 encoded url. You can set this from the developer console like this:
+
+```typescript
+store.update({backend: 'https://spraakbanken.gu.se/swell/dev-backend/annotation', essay: 'K0Rv'})
+```
+
+The store is only fetched on page load, so you'll need to reload the page after setting this.
+
+The `start_mode` flag can be `norm` or `anon` and will start the editor in that mode.
+
+Note that while there is a backend connected it is not possible to change mode
+(anonymisation or normalisation) or edit the source text.
+
 ## Images of Spaghetti as a Service
 
 There is also a web-service that takes a compact description of a parallell corpus sentence and renders it as a png, like this:
