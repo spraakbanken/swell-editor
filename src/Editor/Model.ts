@@ -43,9 +43,10 @@ export interface State {
 export function disconnectBackend(store: Store<State>, k: () => void) {
   store.transaction(() => {
     store.update({
-      back: undefined,
       backend: undefined,
       essay: undefined,
+      start_mode: undefined,
+      version: undefined
     })
     k()
   })
