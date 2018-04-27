@@ -42,10 +42,7 @@ const topStyle = style({
   color: '#222',
   display: 'grid',
 
-  // gridAutoRows: '',
   gridGap: '0px 5px',
-  // paddingTop: '1em',
-  // paddingBottom: '4em',
   margin: '0 auto',
   alignItems: 'start',
   gridTemplate: `
@@ -148,10 +145,6 @@ const topStyle = style({
       padding: '2px',
       border: '1px solid #8886',
     },
-    // '& .hoverable, & .hoverable': {
-    //   transition: 'opacity 50ms 0ms',
-    //   opacity: 1.0,
-    // },
     '& .cm-hovering span.hover': {
       color: '#222f',
     },
