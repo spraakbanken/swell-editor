@@ -79,6 +79,8 @@ The `start_mode` flag can be `norm` or `anon` and will start the editor in that 
 Note that while there is a backend connected it is not possible to change mode
 (anonymisation or normalisation) or edit the source text.
 
+The `backurl` will add a _back_ link to an url (base64-encoded).
+
 ## Images of Spaghetti as a Service
 
 There is also a web-service that takes a compact description of a parallell corpus sentence and renders it as a png, like this:

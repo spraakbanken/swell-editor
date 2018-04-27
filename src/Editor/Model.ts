@@ -31,7 +31,7 @@ export interface State {
   /** are we reading the user manual? */
   readonly manual?: string
 
-  readonly back?: string
+  readonly backurl?: string
   readonly backend?: string
   readonly essay?: string
 
@@ -470,8 +470,8 @@ export function performAction(store: Store<State>, action: ActionOnSelected) {
 }
 
 const subkeys = <K extends string>(...ks: K[]): K[] => ks
-const location_keys = subkeys('manual', 'back', 'backend', 'essay', 'start_mode')
-const base64_keys = subkeys('back', 'backend')
+const location_keys = subkeys('manual', 'backurl', 'backend', 'essay', 'start_mode')
+const base64_keys = subkeys('backurl', 'backend')
 const id = (s: string) => s
 
 export function locationStore(store: Store<State>): Store<string> {

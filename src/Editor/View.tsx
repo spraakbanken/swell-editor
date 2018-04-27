@@ -179,7 +179,7 @@ const topStyle = style({
       border: '1px solid transparent',
       borderRadius: '4px',
     },
-    '& .float_buttons_right button': {
+    '& .float_right > *': {
       float: 'right',
     },
     '& .close': {
@@ -358,7 +358,10 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
 
     return (
       <React.Fragment>
-        <div className="float_buttons_right">{toggle_button('options', 'options')}</div>
+        <div className="float_right">
+          {toggle_button('options', 'options')}
+          {!!state.backurl && <a style={{margin: '3px 8px', fontSize: '0.9em', opacity: 0.8}} href={state.backurl}>back{' '}</a>}
+        </div>
         <div>
           {Button('undo', '', history.undo, history.canUndo())}
           {Button('redo', '', history.redo, history.canRedo())}
