@@ -358,13 +358,23 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
 
     return (
       <React.Fragment>
-        <div className="float_right">
-          {toggle_button('options', 'options')}
-          {!!state.backurl && <a style={{margin: '3px 8px', fontSize: '0.9em', opacity: 0.8}} href={state.backurl}>back{' '}</a>}
-        </div>
-        <div>
-          {Button('undo', '', history.undo, history.canUndo())}
-          {Button('redo', '', history.redo, history.canRedo())}
+        <div style={{display: 'flex', justifyContent: 'space-between', width: '100%'}}>
+          <div>
+            {Button('undo', '', history.undo, history.canUndo())}
+            {Button('redo', '', history.redo, history.canRedo())}
+          </div>
+          <div>
+            {!!state.backurl && (
+              <a style={{margin: '3px 8px', fontSize: '0.9em', opacity: 0.8}} href={state.backurl}>
+                back{' '}
+              </a>
+            )}
+            {state.done !== undefined &&
+              Button(state.done ? 'not done' : 'done', 'toggle between done and not done', () =>
+                store.at('done').modify(b => !b)
+              )}
+            {toggle_button('options', 'options')}
+          </div>
         </div>
         {state.show.options && (
           <div className="menu">

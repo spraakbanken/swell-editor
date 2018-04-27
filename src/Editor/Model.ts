@@ -38,6 +38,8 @@ export interface State {
   readonly start_mode?: Mode
 
   readonly version?: number
+
+  readonly done?: boolean
 }
 
 export function disconnectBackend(store: Store<State>, k: () => void) {
@@ -55,37 +57,48 @@ export function disconnectBackend(store: Store<State>, k: () => void) {
 export function initialBackendFetch(store: Store<State>) {
   const state = store.get()
   if (state.backend && state.essay) {
-    Utils.GET(
-      `${state.backend}/essay/${state.essay}`,
-      res_str => {
-        try {
-          const res = JSON.parse(res_str)
-          const version = res.version
-          if (
-            version !== undefined &&
-            typeof version === 'number'
-          ) {
-            function try_raw(raw: any) {
-              if (raw !== undefined && typeof raw === 'string') {
-                return G.init(raw)
-              }
-            }
-            let state
-            const graph = try_raw(res.raw) || (state = JSON.parse(res.state), try_raw(state.raw) || state)
-            console.log({version})
-            store.update({
-              graph: Undo.init(graph),
-              version,
-            })
-          } else {
-            flagError(store, `Invalid state in ${Utils.show(res)}`)
+    function get(last_route: string, h: (res: any) => void) {
+      Utils.GET(
+        `${state.backend}/essay/${state.essay}${last_route}`,
+        res_str => {
+          try {
+            h(JSON.parse(res_str))
+          } catch (e) {
+            flagError(store, `Error ${e.toString} when extracting state from ${res_str}`)
           }
-        } catch (e) {
-          flagError(store, `Error ${e.toString} when extracting state from ${res_str}`)
+        },
+        (err, code) => flagError(store, `${code}: ${Utils.show(err)}`)
+      )
+    }
+
+    get('', res => {
+      const version = res.version
+      if (version !== undefined && typeof version === 'number') {
+        function try_raw(raw: any) {
+          if (raw !== undefined && typeof raw === 'string') {
+            return G.init(raw)
+          }
         }
-      },
-      (err, code) => flagError(store, `${code}: ${Utils.show(err)}`)
-    )
+        let state
+        const graph =
+          try_raw(res.raw) || ((state = JSON.parse(res.state)), try_raw(state.raw) || state)
+        console.log({version})
+        store.update({
+          graph: Undo.init(graph),
+          version,
+        })
+        get('/status', res => {
+          const done = res.done
+          if (done !== undefined && typeof done == 'boolean') {
+            store.update({done})
+          } else {
+            flagError(store, `Invalid status in ${Utils.show(res)}`)
+          }
+        })
+      } else {
+        flagError(store, `Invalid state in ${Utils.show(res)}`)
+      }
+    })
   }
 }
 
@@ -125,6 +138,18 @@ export function savePeriodicallyToBackend(store: Store<State>) {
     .at('graph')
     .at('now')
     .ondiff((g1, g2) => G.equal(g1, g2) || save())
+  store.at('done').ondiff(done => {
+    const state = store.get()
+    if (state.backend && state.essay && Object.keys(state.errors).length == 0) {
+      Utils.POST(
+        `${state.backend}/essay/${state.essay}/status`,
+        {done},
+        () => void 0,
+        (err, code) =>
+          flagError(store, `Error ${code} when setting done status: ${Utils.show(err)}`)
+      )
+    }
+  })
 }
 
 export type Show = 'graph' | 'diff' | 'image_link' | 'examples' | 'source_text' | 'options'
