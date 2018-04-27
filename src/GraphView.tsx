@@ -33,6 +33,9 @@ export const BorderCell = style(
         paddingRight: `${px(4)}`,
         marginRight: `${px(4)}`,
       },
+      '&.OBS > div': {
+        background: 'pink',
+      },
     },
   }
 )
@@ -412,11 +415,12 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
                     },
                   ]
                 : []
+            const obs_class = labels.some(l => -1 != l.indexOf('!')) ? ' OBS ' : ''
             const mid = Column(
               line_below_label,
               labels.length > 0 &&
                 show_label_now && (
-                  <div className={BorderCell + ' ' + hoverClass(hoverId, d.id)}>
+                  <div className={BorderCell + ' ' + hoverClass(hoverId, d.id) + obs_class}>
                     <div>{labels.map((l, i) => <span key={i}>{l}</span>)}</div>
                   </div>
                 )

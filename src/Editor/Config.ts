@@ -134,6 +134,7 @@ const anonymization = [
       {label: 'prof', desc: 'profession'},
       {label: 'edu', desc: 'education, courses'},
       {label: 'sensitive', desc: ''},
+      {label: 'OBS!', desc: 'Attention'},
     ],
   },
 ]
@@ -291,6 +292,7 @@ export const normalization: Taxonomy = [
         label: 'Uni',
         desc: 'Error that cannot be categorized according to other codes',
       },
+      {label: 'OBS!', desc: 'Attention'},
     ],
   },
 ]
