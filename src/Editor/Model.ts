@@ -20,9 +20,6 @@ export interface State {
   readonly mode: Mode
   readonly taxonomy: Record<Mode, Taxonomy>
 
-  /** are we reading the user manual? */
-  readonly user_manual_page?: string
-
   /** error messages */
   readonly errors: Record<string, true>
 
@@ -30,6 +27,99 @@ export interface State {
   readonly generation: number
 
   readonly show: Partial<Record<Show, true>>
+
+  /** are we reading the user manual? */
+  readonly manual?: string
+
+  readonly back?: string
+  readonly backend?: string
+  readonly essay?: string
+
+  readonly version?: number
+}
+
+export function disconnectBackend(store: Store<State>, k: () => void) {
+  store.transaction(() => {
+    store.update({
+      back: undefined,
+      backend: undefined,
+      essay: undefined,
+    })
+    k()
+  })
+}
+
+export function initialBackendFetch(store: Store<State>) {
+  const state = store.get()
+  if (state.backend && state.essay) {
+    Utils.GET(
+      `${state.backend}/essay/${state.essay}`,
+      res_str => {
+        try {
+          const res = JSON.parse(res_str)
+          const version = res.version
+          const state = JSON.parse(res.state)
+          if (
+            version !== undefined &&
+            typeof version === 'number' &&
+            state !== undefined &&
+            typeof state === 'object'
+          ) {
+            const raw = state.raw
+            const graph = raw !== undefined && typeof raw === 'string' ? G.init(raw) : state
+            console.log({version})
+            store.update({
+              graph: Undo.init(graph),
+              version,
+            })
+          } else {
+            flagError(store, `Invalid state in ${Utils.show(res)}`)
+          }
+        } catch (e) {
+          flagError(store, `Error ${e.toString} when extracting state from ${res_str}`)
+        }
+      },
+      (err, code) => flagError(store, `${code}: ${Utils.show(err)}`)
+    )
+  }
+}
+
+export function savePeriodicallyToBackend(store: Store<State>) {
+  const save = Utils.debounce(1000, () => {
+    const state = store.get()
+    if (
+      state.version !== undefined &&
+      state.backend &&
+      state.essay &&
+      Object.keys(state.errors).length == 0
+    ) {
+      console.log('saving...')
+      store.update({version: undefined})
+      Utils.POST(
+        `${state.backend}/essay/${state.essay}/${state.version + 1}`,
+        state.graph.now,
+        res_str => {
+          try {
+            const res = JSON.parse(res_str)
+            const version = res.version
+            if (version !== undefined && typeof version === 'number') {
+              console.log({version})
+              store.update({version})
+            } else {
+              flagError(store, `No version confirmation in ${Utils.show(res)}`)
+            }
+          } catch (e) {
+            flagError(store, `Error ${e.toString} when responding to ${res_str}`)
+          }
+        },
+        (err, code) => flagError(store, `Error ${code} when saving: ${Utils.show(err)}`)
+      )
+    }
+  })
+  store
+    .at('graph')
+    .at('now')
+    .ondiff((g1, g2) => G.equal(g1, g2) || save())
 }
 
 export type Show = 'graph' | 'diff' | 'image_link' | 'examples' | 'source_text' | 'options'
@@ -72,23 +162,29 @@ export function check_invariant(store: Store<State>): (g: Graph) => void {
         `Please report this as a bug, describe what you did and include the current graph:`,
         Utils.show(inv.g),
       ].join('\n')
-      store.at('errors').update({[msg]: true})
+      flagError(store, msg)
       store.at('graph').set(Undo.init(G.init('x')))
     }
   }
 }
 
+export function flagError(store: Store<State>, msg: string) {
+  store.at('errors').update({[msg]: true})
+}
+
 export function setManualTo(store: Store<State>, slug: string | undefined) {
   if (slug === undefined) {
-    store.at('user_manual_page').set(undefined)
+    store.at('manual').set(undefined)
   } else {
     const page = Manual.manual[slug] || {graph: G.init(''), mode: modes.normalization}
-    store.update({
-      user_manual_page: slug,
-      graph: Undo.init(page.graph),
-      mode: page.mode,
-      selected: {},
-    })
+    disconnectBackend(store, () =>
+      store.update({
+        manual: slug,
+        graph: Undo.init(page.graph),
+        mode: page.mode,
+        selected: {},
+      })
+    )
   }
 }
 
@@ -366,4 +462,49 @@ export function performAction(store: Store<State>, action: ActionOnSelected) {
     const advance = make_history_advance_function(store)
     advance(() => graph_store.set(res))
   }
+}
+
+const subkeys = <K extends string>(...ks: K[]): K[] => ks
+const location_keys = subkeys('manual', 'back', 'backend', 'essay')
+const base64_keys = subkeys('back', 'backend')
+const id = (s: string) => s
+
+export function locationStore(store: Store<State>): Store<string> {
+  const encode = (k: string) => (base64_keys.some(o => o == k) ? btoa : id)
+  const decode = (k: string) => (base64_keys.some(o => o == k) ? atob : id)
+  const substore = store.pick(...location_keys)
+  return substore.via(
+    Lens.iso(
+      (state: Record<string, string | undefined>) =>
+        record
+          .traverse(state, (v, k) => (v === undefined ? '' : `${k}=${encode(k)(v)}`))
+          .filter(s => s)
+          .join('&'),
+      str => {
+        const obj = record.flatten(
+          str.split('&').map(s => {
+            const i = s.indexOf('=')
+            if (i) {
+              const k = s.slice(0, i)
+              const v = s.slice(i + 1)
+              return {[k]: v}
+            } else {
+              return {}
+            }
+          })
+        )
+        const r = {} as Record<string, string | undefined>
+        location_keys.map(k => {
+          if (k in obj) {
+            try {
+              r[k] = decode(k)(obj[k])
+            } catch (e) {
+              //pass
+            }
+          }
+        })
+        return r as any
+      }
+    )
+  )
 }

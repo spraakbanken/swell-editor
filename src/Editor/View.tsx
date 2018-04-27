@@ -70,6 +70,10 @@ const topStyle = style({
       paddingBottom: '5px',
       marginBottom: '5px',
     },
+    '& .content': {
+      maxWidth: '800px',
+      height: '100%',
+    },
     '& .menu div': {
       position: 'absolute',
       top: header_height,
@@ -209,13 +213,13 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
 
   const advance = Model.make_history_advance_function(store)
 
-  const manual_page = state.user_manual_page !== undefined && Manual.manual[state.user_manual_page]
+  const manual_page = state.manual !== undefined && Manual.manual[state.manual]
 
   const manual_part = () =>
     manual_page && (
       <div className="main" style={{minHeight: '18em'}}>
         {Manual.slugs.map(slug => (
-          <span>
+          <span key={slug}>
             <ReactUtils.A
               title={slug}
               text={slug}
@@ -242,35 +246,37 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
     return (
       <div className={topStyle}>
         <div className="main">
-          <Close onMouseDown={() => Model.setManualTo(store, undefined)} title="Close manual" />
-          {Manual.slugs.map(slug => {
-            const page = Manual.manual[slug]
-            if (page) {
-              const anon_mode = page.mode == 'anonymization'
-              const m = G.anonymize_when(anon_mode)
-              return (
-                <React.Fragment>
-                  {page.text}
-                  <i>Initial view:</i>
-                  <div className={anon_mode ? ' NoManualBlue' : ''}>
-                    <GraphView graph={m(page.graph)} />
-                  </div>
-                  <i>Target view:</i>
-                  <div className={anon_mode ? ' NoManualBlue' : ''}>
-                    <GraphView graph={m(page.target)} />
-                  </div>
-                  <ReactUtils.A
-                    title={'Try this!'}
-                    text={'Try this!'}
-                    onMouseDown={e => {
-                      e.stopPropagation()
-                      Model.setManualTo(store, slug)
-                    }}
-                  />
-                </React.Fragment>
-              )
-            }
-          })}
+          <div className="content">
+            <Close onMouseDown={() => Model.setManualTo(store, undefined)} title="Close manual" />
+            {Manual.slugs.map(slug => {
+              const page = Manual.manual[slug]
+              if (page) {
+                const anon_mode = page.mode == 'anonymization'
+                const m = G.anonymize_when(anon_mode)
+                return (
+                  <React.Fragment>
+                    {page.text}
+                    <i>Initial view:</i>
+                    <div className={anon_mode ? ' NoManualBlue' : ''}>
+                      <GraphView graph={m(page.graph)} />
+                    </div>
+                    <i>Target view:</i>
+                    <div className={anon_mode ? ' NoManualBlue' : ''}>
+                      <GraphView graph={m(page.target)} />
+                    </div>
+                    <ReactUtils.A
+                      title={'Try this!'}
+                      text={'Try this!'}
+                      onMouseDown={e => {
+                        e.stopPropagation()
+                        Model.setManualTo(store, slug)
+                      }}
+                    />
+                  </React.Fragment>
+                )
+              }
+            })}
+          </div>
         </div>
       </div>
     )
@@ -282,7 +288,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
     const units = Model.compactStore(store)
 
     return (
-      <React.Fragment>
+      <div className="content">
         {ShowErrors(store.at('errors'))}
         {manual_part()}
         {state.show.source_text && (
@@ -303,7 +309,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
           </React.Fragment>
         )}
         <div
-          className={'main' + (hovering ? ' hovering' : '') + (anon_mode ? ' NoManualBlue' : '')}
+          className={(hovering ? ' hovering' : '') + (anon_mode ? ' NoManualBlue' : '')}
           style={{minHeight: '10em'}}>
           <GraphView
             side={state.side_restriction}
@@ -341,7 +347,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             ))}
           </div>
         )}
-      </React.Fragment>
+      </div>
     )
   }
 
@@ -374,9 +380,9 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
               )}
               <hr />
               {Button(
-                show_hide_str(state.user_manual_page !== undefined) + 'manual',
+                show_hide_str(state.manual !== undefined) + 'manual',
                 'toggle showing manual',
-                () => Model.setManualTo(store, state.user_manual_page ? undefined : 'manual')
+                () => Model.setManualTo(store, state.manual ? undefined : 'manual')
               )}
               <hr />
               {options.map(s => toggle_button(s))}
@@ -387,7 +393,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
     )
   }
 
-  return state.user_manual_page === 'print' ? (
+  return state.manual === 'print' ? (
     full_manual()
   ) : (
     <div
@@ -403,9 +409,11 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
           webserviceURL={config.image_ws_url}
           onDrop={d =>
             advance(() => {
-              graph.set(d.graph)
-              store.update({
-                mode: d.anon_mode ? Model.modes.anonymization : Model.modes.normalization,
+              Model.disconnectBackend(store, () => {
+                graph.set(d.graph)
+                store.update({
+                  mode: d.anon_mode ? Model.modes.anonymization : Model.modes.normalization,
+                })
               })
             })
           }>
@@ -421,7 +429,16 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
           </a>{' '}
           <a href="https://github.com/spraakbanken/swell-editor/issues" target="_blank">
             issues
-          </a>{' '}
+          </a>
+          {state.essay &&
+            state.backend && (
+              <span style={{float: 'right', opacity: 0.9}}>
+                {`${state.version ? 'revision ' + state.version + ' of' : 'saving'} essay ${
+                  state.essay
+                } at `}
+                <code style={{fontSize: '0.95em'}}>{state.backend}</code>
+              </span>
+            )}
         </span>
       </div>
     </div>
@@ -440,7 +457,7 @@ function RestrictionButtons(store: Store<G.Side | undefined>): VNode[] {
 
 function ShowErrors(store: Store<Record<string, true>>) {
   return record.traverse(store.get(), (_, msg) => (
-    <div className="main error">
+    <div className="error" key={msg}>
       <Close
         title="dismiss"
         onMouseDown={e => {

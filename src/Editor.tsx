@@ -49,13 +49,14 @@ export function App(store: Store<Model.State>): () => VNode {
     .at('now')
     .ondiff(Model.check_invariant(store))
 
-  Store.location_connect(store.at('user_manual_page').via(Lens.def('')))
-  const p = store.get().user_manual_page
+  Store.location_connect(Model.locationStore(store))
+
+  const p = store.get().manual
   p && Model.setManualTo(store, p)
 
   Model.check_invariant(store)(store.get().graph.now)
 
-  function trigger_invariant_error() {
+  global.trigger_invariant_error = () => {
     window.setTimeout(() => {
       const g0 = G.init('apa')
       const g = {...g0, edges: {oops: g0.edges['e-s0-t0']}}
@@ -67,6 +68,9 @@ export function App(store: Store<Model.State>): () => VNode {
     const restricted = Model.deselect_removed_ids(state.graph.now, state.selected)
     restricted && store.update(restricted)
   })
+
+  Model.initialBackendFetch(store)
+  Model.savePeriodicallyToBackend(store)
 
   const cms = record.create(G.sides, side => CM.GraphEditingCM(store, side))
   return () => View(store, cms)
