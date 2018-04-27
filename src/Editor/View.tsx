@@ -289,7 +289,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             <em>Source text:</em>
             <div className={hovering ? 'cm-hovering' : ''}>{cms.source.node}</div>
             <div>
-              {Button('copy to target', '', () =>
+              {!!state.backend || Button('copy to target', '', () =>
                 advance(() => graph.modify(g => G.init_from(G.source_texts(g))))
               )}
             </div>
@@ -369,7 +369,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
               {RestrictionButtons(store.at('side_restriction'))}
               <hr />
               {Button(`${anon_mode ? 'disable' : 'enable'} anonymization view`, '', () =>
-                store.at('mode').modify(Model.nextMode)
+                store.at('mode').modify(Model.nextMode), !state.backend
               )}
               <hr />
               {Button(

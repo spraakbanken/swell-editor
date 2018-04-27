@@ -51,8 +51,19 @@ export function App(store: Store<Model.State>): () => VNode {
 
   Store.location_connect(Model.locationStore(store))
 
-  const p = store.get().manual
-  p && Model.setManualTo(store, p)
+  {
+    const state = store.get()
+    const page = state.manual
+    page && Model.setManualTo(store, page)
+
+    if (state.start_mode) {
+      if (/anon/.test(state.start_mode)) {
+        store.update({mode: Model.modes.anonymization})
+      } else if (/norm/.test(state.start_mode)) {
+        store.update({mode: Model.modes.normalization})
+      }
+    }
+  }
 
   Model.check_invariant(store)(store.get().graph.now)
 
