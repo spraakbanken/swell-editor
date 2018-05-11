@@ -59,7 +59,7 @@ export function initialBackendFetch(store: Store<State>) {
   if (state.backend && state.essay) {
     function get(last_route: string, h: (res: any) => void) {
       Utils.GET(
-        `${state.backend}/essay/${state.essay}${last_route}`,
+        `${state.backend}${state.essay}${last_route}`,
         res_str => {
           try {
             h(JSON.parse(res_str))
@@ -114,7 +114,7 @@ export function savePeriodicallyToBackend(store: Store<State>) {
       console.log('saving...')
       store.update({version: undefined})
       Utils.POST(
-        `${state.backend}/essay/${state.essay}/${state.version + 1}`,
+        `${state.backend}${state.essay}/${state.version + 1}`,
         state.graph.now,
         res_str => {
           try {
@@ -142,7 +142,7 @@ export function savePeriodicallyToBackend(store: Store<State>) {
     const state = store.get()
     if (state.backend && state.essay && Object.keys(state.errors).length == 0) {
       Utils.POST(
-        `${state.backend}/essay/${state.essay}/status`,
+        `${state.backend}${state.essay}/status`,
         {done},
         () => void 0,
         (err, code) =>
