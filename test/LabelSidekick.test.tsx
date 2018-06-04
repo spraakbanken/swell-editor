@@ -21,7 +21,7 @@ describe('Dropdown', () => {
 
   it('cycles on arrow down', () => {
     const dom = enzyme.shallow(
-      <Dropdown taxonomy={taxonomy} selected={[]} onChange={() => void 0} />
+      <Dropdown mode="anonymization" taxonomy={taxonomy} selected={[]} onChange={() => void 0} />
     )
     for (let i = 0; i < 6; i++) {
       chai.assert.equal(dom.state().cursor, i)
@@ -32,7 +32,7 @@ describe('Dropdown', () => {
 
   it('cycles on arrow up', () => {
     const dom = enzyme.shallow(
-      <Dropdown taxonomy={taxonomy} selected={[]} onChange={() => void 0} />
+      <Dropdown mode="anonymization" taxonomy={taxonomy} selected={[]} onChange={() => void 0} />
     )
     for (let i = 5; i >= 0; i--) {
       chai.assert.equal(dom.state().cursor, (i + 1) % 6)
@@ -46,6 +46,7 @@ describe('Dropdown', () => {
     let times = 0
     const dom = enzyme.shallow(
       <Dropdown
+        mode="anonymization"
         taxonomy={taxonomy}
         selected={[]}
         onChange={(...args: any[]) => ((called = args), ++times)}
@@ -86,6 +87,7 @@ describe('Dropdown', () => {
     let times = 0
     const dom = enzyme.shallow(
       <Dropdown
+        mode="anonymization"  
         taxonomy={taxonomy}
         selected={[]}
         onChange={(...args: any[]) => ((called = args), ++times)}
@@ -112,6 +114,7 @@ describe('Dropdown', () => {
     let times = 0
     const dom = enzyme.shallow(
       <Dropdown
+        mode="anonymization"
         taxonomy={taxonomy}
         selected={[]}
         onChange={(...args: any[]) => ((called = args), ++times)}
@@ -138,6 +141,7 @@ describe('Dropdown', () => {
     let times = 0
     const dom = enzyme.shallow(
       <Dropdown
+        mode="anonymization"
         taxonomy={taxonomy}
         selected={[]}
         onChange={(...args: any[]) => ((called = args), ++times)}
@@ -159,6 +163,7 @@ describe('Dropdown', () => {
     let times = 0
     const dom = enzyme.shallow(
       <Dropdown
+        mode="anonymization"
         taxonomy={taxonomy}
         selected={[]}
         onChange={(...args: any[]) => ((called = args), ++times)}
