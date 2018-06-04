@@ -46,11 +46,18 @@ const LabelSidekickStyle = style({
       marginRight: '10px',
       margin: 0,
       padding: 1,
+      display : "flex",
+      flexDirection: 'column',
+      maxHeight : "92vh",
     },
     '& > * > button': {
       width: '47%',
       marginBottom: '5px',
     },
+    '& .taxonomy': {
+      overflowY: "auto"
+
+    }
   },
 })
 
@@ -120,6 +127,57 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
 
     const liberal_re = (s: string) => new RegExp(Utils.str_map(s, c => c + '-?').join(''), 'i')
 
+    const entry_span = (label: string, c?: number) => {
+      const classes = (cursor == c ? ' cursor' : '') + (isSelected(label) ? ' selected' : '')
+      return (
+        <span
+          className={'entry' + classes}
+          onMouseOver={evt => c && this.setState({cursor: c})}
+          onMouseDown={e => {
+            toggle(label)
+            e.preventDefault()
+          }}>
+          {label}
+        </span>
+      )
+    }
+
+    const list = Utils.expr(() => {
+      let c = 0
+      return (
+        <ul className="taxonomy" ref="taxonomy">
+          {selected.filter(isDigit).map(i => <li key={'d' + i}>{entry_span(i + '')}</li>)}
+          {taxonomy.map((g, i) => (
+            <li key={i}>
+              <b>{g.group}</b>
+              <ul>
+                {g.entries.map((e, i) => {
+                  return (
+                    <li ref={"tax_item" + c} key={i} title={e.desc}>
+                      {entry_span(e.label, c++)}
+                    </li>
+                  )
+                })}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      )
+    })
+    const scrollToCursor = (cursor : number) => {
+      const parent = (this.refs["taxonomy"] as any)
+      const height = parent.clientHeight + parent.scrollTop
+      const parentTop = parent.offsetTop
+      const offsetTop = (this.refs["tax_item" + cursor] as any).offsetTop - parentTop
+
+      if((offsetTop + 50) > height) {
+        parent.scrollTop = offsetTop
+      } else if(offsetTop - 30 < parent.scrollTop ) {
+        parent.scrollTop = offsetTop - 30
+      }
+    }
+    
+
     const input = (
       <input
         ref={e => {
@@ -147,16 +205,24 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
               unset(selected[selected.length - 1])
             }
           } else if (e.key === 'ArrowDown') {
-            this.setState({cursor: new_cursor(cursor + 1, 1)})
+            const c = new_cursor(cursor + 1, 1)
+            this.setState({cursor: c})
+            scrollToCursor(c)
             e.preventDefault()
           } else if (e.key === 'ArrowUp') {
-            this.setState({cursor: new_cursor(cursor - 1, -1)})
+            const c = new_cursor(cursor - 1, -1)
+            this.setState({cursor: c})
+            scrollToCursor(c)
             e.preventDefault()
           } else if (e.key === 'Tab') {
             if(e.shiftKey) {
-              this.setState({cursor: new_cursor(cursor - 1, -1, liberal_re(t.value))})
+              const c = new_cursor(cursor - 1, -1, liberal_re(t.value))
+              this.setState({cursor: c})
+              scrollToCursor(c)
             } else {
-              this.setState({cursor: new_cursor(cursor + 1, 1, liberal_re(t.value))})
+              const c = new_cursor(cursor + 1, 1, liberal_re(t.value))
+              this.setState({cursor: c})
+              scrollToCursor(c)
             }
             e.preventDefault()
           } else if (!e.altKey && !e.ctrlKey && !e.metaKey) {
@@ -167,43 +233,6 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
       />
     )
 
-    const entry_span = (label: string, c?: number) => {
-      const classes = (cursor == c ? ' cursor' : '') + (isSelected(label) ? ' selected' : '')
-      return (
-        <span
-          className={'entry' + classes}
-          onMouseOver={evt => c && this.setState({cursor: c})}
-          onMouseDown={e => {
-            toggle(label)
-            e.preventDefault()
-          }}>
-          {label}
-        </span>
-      )
-    }
-
-    const list = Utils.expr(() => {
-      let c = 0
-      return (
-        <ul>
-          {selected.filter(isDigit).map(i => <li key={'d' + i}>{entry_span(i + '')}</li>)}
-          {taxonomy.map((g, i) => (
-            <li key={i}>
-              <b>{g.group}</b>
-              <ul>
-                {g.entries.map((e, i) => {
-                  return (
-                    <li key={i} title={e.desc}>
-                      {entry_span(e.label, c++)}
-                    </li>
-                  )
-                })}
-              </ul>
-            </li>
-          ))}
-        </ul>
-      )
-    })
 
     return (
       <React.Fragment>
