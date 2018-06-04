@@ -59,6 +59,7 @@ interface DropdownProps {
   selected: string[]
   onChange(label: string, value: boolean): void
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
+  mode : Model.Mode
 }
 interface DropdownState {
   cursor: number
@@ -74,7 +75,7 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
 
   render() {
     const props = this.props
-    const {taxonomy, selected} = this.props
+    const {taxonomy, selected, mode} = this.props
     const {cursor} = this.state
     const labels = Utils.flatMap(taxonomy, g => g.entries.map(e => e.label))
 
@@ -129,7 +130,7 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
             window.scrollTo(x, y)
           }
         }}
-        placeholder="Enter label..."
+        placeholder={ mode == 'normalization' ? "Enter filter text" : "Filter / numeric label" }
         onKeyDown={e => {
           const t = e.target as HTMLInputElement
           if (e.key === 'Enter' || e.key === ' ') {
@@ -152,7 +153,11 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
             this.setState({cursor: new_cursor(cursor - 1, -1)})
             e.preventDefault()
           } else if (e.key === 'Tab') {
-            this.setState({cursor: new_cursor(cursor + 1, 1, liberal_re(t.value))})
+            if(e.shiftKey) {
+              this.setState({cursor: new_cursor(cursor - 1, -1, liberal_re(t.value))})
+            } else {
+              this.setState({cursor: new_cursor(cursor + 1, 1, liberal_re(t.value))})
+            }
             e.preventDefault()
           } else if (!e.altKey && !e.ctrlKey && !e.metaKey) {
             this.setState({cursor: new_cursor(cursor, 1, liberal_re(t.value + e.key))})
@@ -227,7 +232,7 @@ export function LabelSidekick({
     const labels = Utils.uniq(Utils.flatMap(edges, e => e.labels))
     return (
       <div
-        className={'sidekick box ' + LabelSidekickStyle + ' ' + ReactUtils.clean_ul}
+        className={'sidekick box ' + LabelSidekickStyle + ' ' + ReactUtils.clean_ul + ' ' + 'mode-' + mode}
         onMouseDown={e => {
           e.stopPropagation()
           e.preventDefault()
@@ -244,6 +249,7 @@ export function LabelSidekick({
         <Dropdown
           taxonomy={taxonomy}
           selected={labels}
+          mode={mode}
           onChange={(label, value) =>
             advance(() =>
               edge_ids.forEach(id =>
@@ -259,7 +265,7 @@ export function LabelSidekick({
             if (action) {
               Model.performAction(store, action)
             }
-            e.preventDefault()
+            // e.preventDefault()
           }}
         />
       </div>
