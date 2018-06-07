@@ -203,6 +203,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
   const anon_mode = Model.inAnonMode(store)
 
   const g = Model.currentGraph(store)
+  const visibleGraph = Model.visibleGraph(store)
 
   const advance = Model.make_history_advance_function(store)
 
@@ -317,8 +318,8 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
           />
         </div>
         {state.show.image_link && ImageWebserviceAddresses(visible_graph, anon_mode)}
-        {state.show.graph && <pre className="box pre-box">{Utils.show(g)}</pre>}
-        {state.show.diff && <pre className="box pre-box">{Utils.show(G.enrichen(g))}</pre>}
+        {state.show.graph && <pre className="box pre-box">{Utils.show(visibleGraph)}</pre>}
+        {state.show.diff && <pre className="box pre-box">{Utils.show(G.enrichen(visibleGraph))}</pre>}
         {state.show.examples && (
           <div className="TopPad">
             <em>Examples:</em>

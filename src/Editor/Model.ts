@@ -105,6 +105,7 @@ export function initialBackendFetch(store: Store<State>) {
 export function savePeriodicallyToBackend(store: Store<State>) {
   const save = Utils.debounce(1000, () => {
     const state = store.get()
+    const graph = store.get().mode == "anonymization" ? visibleGraph(store) : state.graph.now
     if (
       state.version !== undefined &&
       state.backend &&
@@ -115,7 +116,7 @@ export function savePeriodicallyToBackend(store: Store<State>) {
       store.update({version: undefined})
       Utils.POST(
         `${state.backend}${state.essay}/${state.version + 1}`,
-        state.graph.now,
+        graph,
         res_str => {
           try {
             const res = JSON.parse(res_str)

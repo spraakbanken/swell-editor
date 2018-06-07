@@ -69,7 +69,7 @@ The url hash contains two fields for talking to a backend: `backend` and `essay`
 The `backend` should a base64 encoded url. You can set this from the developer console like this:
 
 ```typescript
-store.update({backend: 'https://spraakbanken.gu.se/swell/dev-backend/annotation', essay: 'K0Rv'})
+store.update({backend: 'https://spraakbanken.gu.se/swell/dev-backend/annotation/essay/', essay: 'K0Rv'})
 ```
 
 The store is only fetched on page load, so you'll need to reload the page after setting this.
