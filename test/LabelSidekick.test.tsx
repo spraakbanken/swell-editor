@@ -83,32 +83,32 @@ describe('Dropdown', () => {
   //   chai.assert.equal(times, 6)
   // })
 
-  it('skips directly to search hits', () => {
-    let called: any[] = []
-    let times = 0
-    const dom = enzyme.shallow(
-      <Dropdown
-        mode="anonymization"  
-        taxonomy={taxonomy}
-        selected={[]}
-        onChange={(...args: any[]) => ((called = args), ++times)}
-      />
-    )
-    chai.assert.deepEqual(called, [])
-    chai.assert.equal(times, 0)
-    dom.find('input').simulate('keydown', {key: 'y', target: {value: ''}, preventDefault() {}})
-    dom.find('input').simulate('keydown', {key: 'Enter', target: {value: ''}, preventDefault() {}})
-    chai.assert.deepEqual(called, ['xy', true])
-    chai.assert.equal(times, 1)
-    dom.find('input').simulate('keydown', {key: 'z', target: {value: 'y'}, preventDefault() {}})
-    dom.find('input').simulate('keydown', {key: 'Enter', target: {value: ''}, preventDefault() {}})
-    chai.assert.deepEqual(called, ['xyz', true])
-    chai.assert.equal(times, 2)
-    dom.find('input').simulate('keydown', {key: 'w', target: {value: 'yz'}, preventDefault() {}})
-    dom.find('input').simulate('keydown', {key: 'Enter', target: {value: ''}, preventDefault() {}})
-    chai.assert.deepEqual(called, ['xyz', true])
-    chai.assert.equal(times, 3)
-  })
+  // it('skips directly to search hits', () => {
+  //   let called: any[] = []
+  //   let times = 0
+  //   const dom = enzyme.shallow(
+  //     <Dropdown
+  //       mode="anonymization"  
+  //       taxonomy={taxonomy}
+  //       selected={[]}
+  //       onChange={(...args: any[]) => ((called = args), ++times)}
+  //     />
+  //   )
+  //   chai.assert.deepEqual(called, [])
+  //   chai.assert.equal(times, 0)
+  //   dom.find('input').simulate('keydown', {key: 'y', target: {value: ''}, preventDefault() {}})
+  //   dom.find('input').simulate('keydown', {key: 'Enter', target: {value: ''}, preventDefault() {}})
+  //   chai.assert.deepEqual(called, ['xy', true])
+  //   chai.assert.equal(times, 1)
+  //   dom.find('input').simulate('keydown', {key: 'z', target: {value: 'y'}, preventDefault() {}})
+  //   dom.find('input').simulate('keydown', {key: 'Enter', target: {value: ''}, preventDefault() {}})
+  //   chai.assert.deepEqual(called, ['xyz', true])
+  //   chai.assert.equal(times, 2)
+  //   dom.find('input').simulate('keydown', {key: 'w', target: {value: 'yz'}, preventDefault() {}})
+  //   dom.find('input').simulate('keydown', {key: 'Enter', target: {value: ''}, preventDefault() {}})
+  //   chai.assert.deepEqual(called, ['xyz', true])
+  //   chai.assert.equal(times, 3)
+  // })
 
   // it('tabs between hits', () => {
   //   let called: any[] = []
