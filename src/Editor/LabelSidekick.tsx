@@ -41,8 +41,9 @@ const LabelSidekickStyle = style({
       marginLeft: 0,
     },
     '&': {
-      zIndex: 2,
-      position: 'relative',
+      zIndex: 20,
+      position: 'sticky',
+      top: 0,
       marginRight: '10px',
       margin: 0,
       padding: 1,
@@ -226,7 +227,9 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
             }
             e.preventDefault()
           } else if (!e.altKey && !e.ctrlKey && !e.metaKey) {
-            this.setState({cursor: new_cursor(cursor, 1, liberal_re(t.value + e.key))})
+            const c = new_cursor(cursor, 1, liberal_re(t.value + e.key))
+            scrollToCursor(c)
+            this.setState({cursor: c})
           }
           this.props.onKeyDown && this.props.onKeyDown(e)
         }}
