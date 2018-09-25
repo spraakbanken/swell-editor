@@ -365,7 +365,7 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
                   }
                   onMouseDown={e => {
                     if (onSelect) {
-                      onSelect([token_id], e.button != 0)
+                      onSelect([token_id], !e.shiftKey && !e.ctrlKey && !e.metaKey)
                       e.stopPropagation()
                       e.preventDefault()
                     }
@@ -431,7 +431,7 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
                 onMouseDown={e => {
                   //console.log('ul mousedown')
                   if (onSelect) {
-                    onSelect(edges[d.id].ids, e.button != 0)
+                    onSelect(edges[d.id].ids, !e.shiftKey && !e.ctrlKey && !e.metaKey)
                     e.preventDefault()
                     e.stopPropagation()
                   }
