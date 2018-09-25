@@ -65,7 +65,7 @@ const GraphViewStyle = style(
         ...csstips.horizontal,
         ...csstips.centerJustified,
       },
-      '& > ul > .bottom': {
+      '& > ul > .bottom, & > ul > .top': {
         marginTop: `${px(3)}`,
         marginBottom: `${px(3)}`,
       },
@@ -83,10 +83,14 @@ const GraphViewStyle = style(
       },
       '& ins': {
         color: '#383',
+        backgroundColor: '#cfc',
+        borderRadius: '.3em',
         textDecoration: 'none',
       },
       '& del': {
         color: '#a00',
+        backgroundColor: '#fcd',
+        borderRadius: '.3em',
         textDecoration: 'none',
       },
       '& .GreyPath': {
