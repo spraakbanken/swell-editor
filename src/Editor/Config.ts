@@ -39,7 +39,7 @@ export type Taxonomy = {
   }[]
 }[]
 
-const last = 'gen ort sensitive'.split(' ')
+const last = 'gen def ort sensitive'.split(' ')
 const digits = /^\d+$/
 
 function anonymization_label_order(label: string): number {
@@ -55,7 +55,7 @@ function anonymization_label_order(label: string): number {
 const anonymization = [
   {
     group: 'Morphology',
-    entries: [{label: 'gen', desc: 'gender'}],
+    entries: [{label: 'gen', desc: 'gender'}, {label: 'def', desc: 'definite'}],
   },
   {
     group: 'Errors',
@@ -73,15 +73,6 @@ const anonymization = [
     ],
   },
   {
-    group: 'Institutions',
-    entries: [
-      {label: 'institution', desc: ''},
-      {label: 'school', desc: ''},
-      {label: 'work', desc: ''},
-      {label: 'other_institution', desc: ''},
-    ],
-  },
-  {
     group: 'Geographic data',
     entries: [
       {label: 'country_of_origin', desc: ''},
@@ -91,9 +82,18 @@ const anonymization = [
       {label: 'city-SWE', desc: ''},
       {label: 'city', desc: 'city including villages'},
       {label: 'area', desc: ''},
-      {label: 'street', desc: ''},
+      {label: 'place', desc: ''},
       {label: 'geo', desc: 'forest, lake, mountain, etc'},
       {label: 'street_nr', desc: 'street number'},
+    ],
+  },
+  {
+    group: 'Institutions',
+    entries: [
+      {label: 'institution', desc: ''},
+      {label: 'school', desc: ''},
+      {label: 'work', desc: ''},
+      {label: 'other_institution', desc: ''},
     ],
   },
   {
