@@ -339,7 +339,6 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
   const c = Utils.count<string>()
   return (
     <div
-      onContextMenu={e => e.preventDefault()}
       className={`${GraphViewStyle} ${ReactUtils.clean_ul} ${ReactUtils.Unselectable} graphView`}>
       {rd.map((d, i) =>
         ReactUtils.thunk(
