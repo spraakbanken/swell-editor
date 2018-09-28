@@ -84,7 +84,6 @@ const topStyle = style({
       height: 'auto',
       paddingBottom: '1em',
       minWidth: '250px',
-      maxWidth: '800px',
       lineHeight: '1.5em',
       fontFamily: "'Lato', sans-serif",
     },
@@ -497,7 +496,7 @@ function ImageWebserviceAddresses(g: Graph, anon_mode: boolean) {
   return (
     <pre
       className={'box pre-box ' + ReactUtils.Unselectable}
-      style={{whiteSpace: 'pre-wrap', overflowX: 'hidden'}}
+      style={{whiteSpace: 'normal', wordBreak: 'break-all', overflowX: 'hidden'}}
       draggable={true}
       onDragStart={e => {
         e.dataTransfer.setData('text/plain', md)
