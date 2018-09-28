@@ -68,7 +68,6 @@ const topStyle = style({
       marginBottom: '5px',
     },
     '& .content': {
-      maxWidth: '800px',
       height: '100%',
     },
     '& .menu div': {
@@ -82,8 +81,10 @@ const topStyle = style({
     },
     '& .CodeMirror': {
       border: '1px solid #ddd',
-      height: '300px',
+      height: 'auto',
+      paddingBottom: '1em',
       minWidth: '250px',
+      maxWidth: '800px',
       lineHeight: '1.5em',
       fontFamily: "'Lato', sans-serif",
     },
@@ -319,7 +320,9 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
         </div>
         {state.show.image_link && ImageWebserviceAddresses(visible_graph, anon_mode)}
         {state.show.graph && <pre className="box pre-box">{Utils.show(visibleGraph)}</pre>}
-        {state.show.diff && <pre className="box pre-box">{Utils.show(G.enrichen(visibleGraph))}</pre>}
+        {state.show.diff && (
+          <pre className="box pre-box">{Utils.show(G.enrichen(visibleGraph))}</pre>
+        )}
         {state.show.examples && (
           <div className="TopPad">
             <em>Examples:</em>
