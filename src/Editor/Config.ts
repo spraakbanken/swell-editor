@@ -105,7 +105,7 @@ const anonymization = [
   },
   {
     group: 'Age',
-    entries: [{label: 'age', desc: ''}],
+    entries: [{label: 'age_digits', desc: ''}, {label: 'age_string', desc: ''}],
   },
   {
     group: 'Dates',
@@ -114,6 +114,7 @@ const anonymization = [
       {label: 'month-digit', desc: ''},
       {label: 'month-word', desc: ''},
       {label: 'year', desc: ''},
+      {label: 'date_digits', desc: 'numerical date represenation, delimiters are retained'},
     ],
   },
   {
@@ -124,6 +125,7 @@ const anonymization = [
       {label: 'personid_nr', desc: ''},
       {label: 'account_nr', desc: ''},
       {label: 'license_nr', desc: ''},
+      {label: 'other_nr_seq', desc: 'a sequence of numbers'},
       {label: 'url', desc: ''},
       {label: 'extra', desc: ''},
     ],
