@@ -74,10 +74,9 @@ There are also shortcuts to these which you find by hovering them.
 You can also go directly to the next group which has any modifications (skipping pairs
 that are the same) by clicking _prev mod_ and _next mod_.
 
-When left-clicking a word the selection for other words remains. Thus if you want to
-make a "new" selection you must first deselect. Deselect by clicking outside
-the graph. You can also make a new selection by right-clicking on a word. That will
-make only that word be selected.
+Clicking a word will select it; clicking the link will select the words in that group.
+In order to select multiple words, hold Ctrl or ⌘ while clicking.
+Deselect by clicking outside the graph.
   `,
   G.compact_to_graph(`Their was a problem yesteray .//There:O was a problem yesterday:O .`),
   G.compact_to_graph(`Their was a problem yesteray .//There was a problem yesterday .`)
@@ -93,7 +92,7 @@ We will now look at a little bit more complicated link structures.
 Compound errors (over-compounding and over-splitting) introduce links that are 2-1 and 1-2
 (from two source words to one target word, and vice versa.)
 
-Correct the sentence below by changing _highlight_ to _high light_ and _compounderrors_ to _compound errors_ and you will see that you get 2-1 and 1-2 links.
+Correct the sentence below by changing _high light_ to _highlight_ and _compounderrors_ to _compound errors_ and you will see that you get 2-1 and 1-2 links.
 
 Mark a group to label it. When you put a label on these all three linked words (for example: _highlight_, _high_ and _light_) share the label.
 Put labels on both linked groups (_O-COMP_).
