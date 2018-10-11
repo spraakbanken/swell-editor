@@ -5,6 +5,7 @@ import * as record from '../record'
 import {Token, Span} from './Token'
 import * as T from './Token'
 import {Lens, Store} from 'reactive-lens'
+import {pseudonymize} from 'pseudonymization'
 
 import {Diff, Dragged, Dropped} from './Diff'
 import * as D from './Diff'
@@ -1220,12 +1221,13 @@ export function anonymize(graph: Graph): Graph {
   const target: Token[] = Utils.flatMap(g.target, t => {
     const e = Utils.getUnsafe(em, t.id)
     if (e.labels.length) {
+      // If the edge has labels.
       if (first(e.id)) {
-        const tokens = e.labels.map(text => Token(text + ' ', 't' + i++))
+        const target = Token(pseudonymize(t.text, e.labels) + ' ', 't' + i++)
+        console.log(target)
         const source_ids = e.ids.filter(i => Utils.getUnsafe(tm, i).side == 'source')
-        const target_ids = tokens.map(t => t.id)
-        edges.push(Edge([...source_ids, ...target_ids], e.labels, true))
-        return tokens
+        edges.push(Edge([...source_ids, target.id], e.labels, true))
+        return [target]
       } else {
         return []
       }
