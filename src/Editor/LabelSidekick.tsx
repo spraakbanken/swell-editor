@@ -47,18 +47,17 @@ const LabelSidekickStyle = style({
       marginRight: '10px',
       margin: 0,
       padding: 1,
-      display : "flex",
+      display: 'flex',
       flexDirection: 'column',
-      maxHeight : "92vh",
+      maxHeight: '92vh',
     },
     '& > * > button': {
       width: '47%',
       marginBottom: '5px',
     },
     '& .taxonomy': {
-      overflowY: "auto"
-
-    }
+      overflowY: 'auto',
+    },
   },
 })
 
@@ -67,7 +66,7 @@ interface DropdownProps {
   selected: string[]
   onChange(label: string, value: boolean): void
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
-  mode : Model.Mode
+  mode: Model.Mode
 }
 interface DropdownState {
   cursor: number
@@ -154,7 +153,7 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
               <ul>
                 {g.entries.map((e, i) => {
                   return (
-                    <li ref={"tax_item" + c} key={i} title={e.desc}>
+                    <li ref={'tax_item' + c} key={i} title={e.desc}>
                       {entry_span(e.label, c++)}
                     </li>
                   )
@@ -165,19 +164,18 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
         </ul>
       )
     })
-    const scrollToCursor = (cursor : number) => {
-      const parent = (this.refs["taxonomy"] as any)
+    const scrollToCursor = (cursor: number) => {
+      const parent = this.refs['taxonomy'] as any
       const height = parent.clientHeight + parent.scrollTop
       const parentTop = parent.offsetTop
-      const offsetTop = (this.refs["tax_item" + cursor] as any).offsetTop - parentTop
+      const offsetTop = (this.refs['tax_item' + cursor] as any).offsetTop - parentTop
 
-      if((offsetTop + 50) > height) {
+      if (offsetTop + 50 > height) {
         parent.scrollTop = offsetTop
-      } else if(offsetTop - 30 < parent.scrollTop ) {
+      } else if (offsetTop - 30 < parent.scrollTop) {
         parent.scrollTop = offsetTop - 30
       }
     }
-    
 
     const input = (
       <input
@@ -189,7 +187,7 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
             window.scrollTo(x, y)
           }
         }}
-        placeholder={ mode == 'normalization' ? "Enter filter text" : "Filter / numeric label" }
+        placeholder={mode == 'normalization' ? 'Enter filter text' : 'Filter / numeric label'}
         onKeyDown={e => {
           const t = e.target as HTMLInputElement
           if (e.key === 'Enter' || e.key === ' ') {
@@ -216,7 +214,7 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
             scrollToCursor(c)
             e.preventDefault()
           } else if (e.key === 'Tab') {
-            if(e.shiftKey) {
+            if (e.shiftKey) {
               const c = new_cursor(cursor - 1, -1, liberal_re(t.value))
               this.setState({cursor: c})
               scrollToCursor(c)
@@ -235,7 +233,6 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
         }}
       />
     )
-
 
     return (
       <React.Fragment>
@@ -264,7 +261,9 @@ export function LabelSidekick({
     const labels = Utils.uniq(Utils.flatMap(edges, e => e.labels))
     return (
       <div
-        className={'sidekick box ' + LabelSidekickStyle + ' ' + ReactUtils.clean_ul + ' ' + 'mode-' + mode}
+        className={
+          'sidekick box ' + LabelSidekickStyle + ' ' + ReactUtils.clean_ul + ' ' + 'mode-' + mode
+        }
         onMouseDown={e => {
           e.stopPropagation()
           e.preventDefault()
@@ -283,13 +282,16 @@ export function LabelSidekick({
           selected={labels}
           mode={mode}
           onChange={(label, value) =>
-            advance(() =>
+            advance(() => {
               edge_ids.forEach(id =>
                 graph.modify(g =>
                   G.modify_labels(g, id, labels => Utils.set_modify(labels, label, value))
                 )
               )
-            )
+              if (mode == 'anonymization') {
+                graph.modify(g => G.connect(g, edge_ids))
+              }
+            })
           }
           onKeyDown={e => {
             const key = (e.altKey || e.metaKey ? 'Alt-' : '') + (e.shiftKey ? 'Shift-' : '') + e.key
