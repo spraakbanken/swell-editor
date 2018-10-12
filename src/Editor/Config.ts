@@ -31,6 +31,10 @@ const order_changing_labels: Record<string, true> = {
   OINV: true,
 }
 
+const temporary_labels: Record<string, true> = {
+  'OBS!': true,
+}
+
 export type Taxonomy = {
   group: string
   entries: {
@@ -331,6 +335,7 @@ const november_2017_pilot_taxonomy: Taxonomy = [
 
 export const config = {
   order_changing_labels,
+  temporary_labels,
   examples,
   image_ws_url,
   taxonomy: {anonymization, normalization},

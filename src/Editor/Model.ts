@@ -9,6 +9,7 @@ import * as record from '../record'
 import * as Manual from './Manual'
 
 import {Taxonomy, config} from './Config'
+import {validateLabels} from './Validate'
 export {Taxonomy} from './Config'
 
 export interface State {
@@ -104,8 +105,9 @@ export function initialBackendFetch(store: Store<State>) {
 
 export function savePeriodicallyToBackend(store: Store<State>) {
   const save = Utils.debounce(1000, () => {
+    validateLabels(store)
     const state = store.get()
-    const graph = store.get().mode == "anonymization" ? visibleGraph(store) : state.graph.now
+    const graph = store.get().mode == 'anonymization' ? visibleGraph(store) : state.graph.now
     if (
       state.version !== undefined &&
       state.backend &&
@@ -140,6 +142,7 @@ export function savePeriodicallyToBackend(store: Store<State>) {
     .at('now')
     .ondiff((g1, g2) => G.equal(g1, g2) || save())
   store.at('done').ondiff(done => {
+    validateLabels(store)
     const state = store.get()
     if (state.backend && state.essay && Object.keys(state.errors).length == 0) {
       Utils.POST(
