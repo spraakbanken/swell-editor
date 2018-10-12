@@ -289,7 +289,7 @@ export function LabelSidekick({
                 )
               )
               if (mode == 'anonymization') {
-                graph.modify(g => G.connect(g, edge_ids))
+                graph.modify(g => (value ? G.connect(g, edge_ids) : G.revert(g, edge_ids)))
               }
             })
           }
