@@ -1,5 +1,5 @@
-import {Store} from 'reactive-lens'
-import {State, flagError} from './Model'
+import {Store, Undo} from 'reactive-lens'
+import {State, flagError, init} from './Model'
 import {config} from './Config'
 import {used_labels} from './../Graph/Graph'
 
@@ -37,8 +37,8 @@ export const Invalid: (message: string) => ValidationResult = message => ({valid
     target: [{id: 'b0', text: 'x '}],
     edges: {'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: ['OBS!'], manual: false}}
   }
-  graphValidationRules[0].check({graph: {now: g_obs}}, {done: true}) // => {valid: false, message: 'OBS!'}
-  graphValidationRules[0].check({graph: {now: g_obs}}, {done: false}) // => {valid: true}
+  validationRules[0].check({...init, graph: Undo.init(g_obs), done: true}) // => {valid: false, message: 'OBS!'}
+  validationRules[0].check({...init, graph: Undo.init(g_obs), done: false}) // => {valid: true}
 
 */
 const validationRules: ValidationRule<State>[] = [

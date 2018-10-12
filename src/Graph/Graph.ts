@@ -1117,25 +1117,15 @@ export function sentence_groups<K extends string>(gs: Record<K, Graph>): Record<
     source: [{id: 's0', text: 'x '}, {id: 's1', text: 'y '}],
     target: [{id: 't0', text: 'x '}, {id: 't1', text: 'y '}],
     edges: {
-      'e-s0-t0': {
-        id: 'e-s0-t0',
-        ids: ['s0', 't0'],
-        labels: ['A', 'B'],
-      },
-      'e-s1-t1': {
-        id: 'e-s1-t1',
-        ids: ['s1', 't1'],
-        labels: ['A'],
-      },
+      'e-s0-t0': {id: 'e-s0-t0', ids: ['s0', 't0'], labels: ['A', 'B'], manual: false},
+      'e-s1-t1': {id: 'e-s1-t1', ids: ['s1', 't1'], labels: ['A'], manual: false},
     }
   }
   used_labels(g).sort() // => ['A', 'B']
 
 */
 export function used_labels(g: Graph): string[] {
-  const usedLabels = new Set()
-  record.forEach(g.edges, (edge, id) => edge.labels.forEach(l => usedLabels.add(l)))
-  return [...usedLabels]
+  return Utils.uniq(Utils.flatMap(Object.values(g.edges), e => e.labels))
 }
 
 /** Modify the labels at an identifier
