@@ -26,6 +26,7 @@ import {GraphView} from '../GraphView'
 import * as GV from '../GraphView'
 
 import * as Manual from './Manual'
+import {validation_transaction} from './Validate'
 
 typestyle.cssRaw(`
 body > div {
@@ -375,7 +376,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             )}
             {state.done !== undefined &&
               Button(state.done ? 'not done' : 'done', 'toggle between done and not done', () =>
-                store.at('done').modify(b => !b)
+                validation_transaction(store, s => s.at('done').modify(b => !b))
               )}
             {toggle_button('options', 'options')}
           </div>
