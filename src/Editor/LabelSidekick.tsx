@@ -289,7 +289,14 @@ export function LabelSidekick({
                 )
               )
               if (mode == 'anonymization') {
-                graph.modify(g => (value ? G.connect(g, edge_ids) : G.revert(g, edge_ids)))
+                if (value) {
+                  // When adding a label, also connect the selected tokens.
+                  // TODO: Only per consecutive series within the set of selected tokens?
+                  graph.modify(g => G.connect(g, edge_ids))
+                } else if (labels.length <= 1) {
+                  // When there was only one label and we are removing it, revert the connection made before.
+                  graph.modify(g => G.revert(g, edge_ids))
+                }
               }
             })
           }
