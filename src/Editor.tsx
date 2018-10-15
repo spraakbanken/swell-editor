@@ -84,9 +84,7 @@ export function App(store: Store<Model.State>): () => VNode {
   Model.savePeriodicallyToBackend(store)
 
   // for transcription mode then change here to make the source code mirror not be readOnly
-  const cms = record.create(G.sides, side =>
-    CM.GraphEditingCM(store, side, side == 'source' && !!store.get().backend)
-  )
+  const cms = record.create(G.sides, side => CM.GraphEditingCM(store, side))
   return () => View(store, cms)
 }
 
