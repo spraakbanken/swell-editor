@@ -17,6 +17,7 @@ import * as Model from './Model'
 import {DropZone} from './DropZone'
 import * as CM from './CodeMirror'
 import {config, Taxonomy} from './Config'
+import {validation_transaction} from './Validate'
 
 const LabelSidekickStyle = style({
   ...Utils.debugName('LabelSidekickStyle'),
@@ -282,28 +283,29 @@ export function LabelSidekick({
           selected={labels}
           mode={mode}
           onChange={(label, value) =>
-            advance(() => {
-              edge_ids.forEach(id =>
-                graph.modify(g =>
-                  G.modify_labels(g, id, labels => Utils.set_modify(labels, label, value))
-                )
-              )
-              if (mode == 'anonymization') {
-                if (value) {
-                  // When adding a label, also connect the selected tokens.
-                  // TODO: Only per consecutive series within the set of selected tokens?
+            validation_transaction(store, store =>
+              advance(() => {
+                edge_ids.forEach(id =>
                   graph.modify(g =>
-                    G.group_consecutive(g, edges, 'source').reduce(
-                      (g, es) => G.connect(g, es.map(e => e.id)),
-                      g
-                    )
+                    G.modify_labels(g, id, labels => Utils.set_modify(labels, label, value))
                   )
-                } else if (labels.length <= 1) {
-                  // When there was only one label and we are removing it, revert the connection made before.
-                  graph.modify(g => G.revert(g, edge_ids))
+                )
+                if (mode == 'anonymization') {
+                  if (value) {
+                    // When adding a label, also connect the selected tokens.
+                    graph.modify(g =>
+                      G.group_consecutive(g, edges, 'source').reduce(
+                        (g, es) => G.connect(g, es.map(e => e.id)),
+                        g
+                      )
+                    )
+                  } else if (labels.length <= 1) {
+                    // When there was only one label and we are removing it, revert the connection made before.
+                    graph.modify(g => G.revert(g, edge_ids))
+                  }
                 }
-              }
-            })
+              })
+            )
           }
           onKeyDown={e => {
             const key = (e.altKey || e.metaKey ? 'Alt-' : '') + (e.shiftKey ? 'Shift-' : '') + e.key

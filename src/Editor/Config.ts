@@ -37,6 +37,7 @@ const temporary_labels: Record<string, true> = {
 
 export type Taxonomy = {
   group: string
+  additional?: true
   entries: {
     label: string
     desc: string
@@ -56,13 +57,15 @@ function anonymization_label_order(label: string): number {
   }
 }
 
-const anonymization = [
+const anonymization: Taxonomy = [
   {
     group: 'Morphology',
+    additional: true,
     entries: [{label: 'gen', desc: 'gender'}, {label: 'def', desc: 'definite'}],
   },
   {
     group: 'Errors',
+    additional: true,
     entries: [{label: 'ort', desc: 'orthography'}],
   },
   {
@@ -136,6 +139,7 @@ const anonymization = [
   },
   {
     group: 'Mark',
+    additional: true,
     entries: [
       {label: 'prof', desc: 'profession'},
       {label: 'edu', desc: 'education, courses'},

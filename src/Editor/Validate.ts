@@ -1,8 +1,9 @@
+import * as R from 'ramda'
 import {Store, Undo} from 'reactive-lens'
-import {State, flagError, init, flagWarning} from './Model'
+import {State, flagError, init, flagWarning, modes} from './Model'
 import {config} from './Config'
 import * as G from '../Graph'
-import * as T from '../Graph/Token'
+import * as Utils from '../Utils'
 
 /** A validation rule is specified over a data type T and optionally a context type C.
 
@@ -46,30 +47,73 @@ const Error: (message: string) => Result = message => ({severity: Severity.ERROR
 
 /** Validation rules for app state.
 
-  const g_obs = {
+  const g0 = {
     source: [{id: 'a0', text: 'x '}],
     target: [{id: 'b0', text: 'x '}],
     edges: {'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: ['OBS!'], manual: false}}
   }
-  validationRules[0].check({...init, graph: Undo.init(g_obs), done: true}) // => [{severity: Severity.ERROR, message: 'OBS!'}]
-  validationRules[0].check({...init, graph: Undo.init(g_obs), done: false}) // => []
+  validationRules[0].check({...init, graph: Undo.init(g0), mode: 'anonymization', done: true}) // => [{severity: Severity.ERROR, message: 'OBS!'}]
+  validationRules[0].check({...init, graph: Undo.init(g0), mode: 'anonymization', done: false}) // => []
+
+  const g1 = {
+    source: [{id: 'a0', text: 'x '}],
+    target: [{id: 'b0', text: 'y '}],
+    edges: {'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: [], manual: false}}
+  }
+  validationRules[1].check({...init, graph: Undo.init(g1)}) // => [{severity: Severity.WARNING, message: '"y"'}]
+
+  const g2 = {
+    source: [{id: 'a0', text: 'x '}],
+    target: [{id: 'b0', text: 'x '}],
+    edges: {'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: ['firstname:female', 'region', 'OBS!', 'gen', 'ort'], manual: false}}
+  }
+  validationRules[2].check({...init, graph: Undo.init(g2), mode: 'anonymization'}) // => [{severity: Severity.ERROR, message: '"x" cannot have firstname:female and region'}]
 
 */
 const validationRules: Rule<State>[] = [
   Rule('Temporary tags not allowed in completed normalization', state => {
     const usedTempLabels = G.used_labels(state.graph.now).filter(l => l in config.temporary_labels)
-    return state.done && usedTempLabels.length ? [Error([...usedTempLabels].join(','))] : []
+    return state.mode == modes.anonymization && state.done && usedTempLabels.length
+      ? [Error([...usedTempLabels].join(','))]
+      : []
   }),
-  Rule('Normalization missing a label', state =>
-    // Get edges without labels.
-    Object.values(state.graph.now.edges)
-      .filter(edge => edge.labels.length == 0)
-      // Pick the ones where source and target differ.
-      .map(edge => G.partition_ids(state.graph.now)(edge))
-      .filter(({source, target}) => T.text(source) != T.text(target))
-      // Make a warning for each such edge.
-      .map(({source, target}) => Warning(`"${T.text(target)}"`))
+  Rule(
+    'Normalization missing a label',
+    state =>
+      // Get edges without labels.
+      state.mode != modes.normalization
+        ? []
+        : Object.values(state.graph.now.edges)
+            .filter(edge => edge.labels.length == 0)
+            // Pick the ones where source and target differ.
+            .map(edge => G.partition_ids(state.graph.now)(edge))
+            .filter(({source, target}) => G.text(source) != G.text(target))
+            // Make a warning for each such edge.
+            .map(({source, target}) => Warning(`"${G.text(target).trim()}"`))
   ),
+  Rule('Too many main labels', state => {
+    if (state.mode != modes.anonymization) {
+      return []
+    }
+    const g = state.graph.now
+    const edge_map = G.edge_map(g)
+    // "Main labels" are those which do not belong to an additional group.
+    const mainLabels = Utils.flatten(
+      config.taxonomy.anonymization
+        .filter(group => !group.additional)
+        .map(group => group.entries.map(R.path(['label'])))
+    )
+    // Check the edge for each token, if it has multiple main labels.
+    const emits: Result[] = []
+    g.source.forEach(({id, text}) => {
+      const edge = edge_map.get(id)
+      let usedMainLabels = edge ? R.intersection(edge.labels, mainLabels) : []
+      if (usedMainLabels.length > 1) {
+        emits.push(Error(`"${text.trim()}" cannot have ${usedMainLabels.join(' and ')}`))
+      }
+    })
+    return emits
+  }),
 ]
 
 /** Go through our rules and flag errors for any invalidations. */
