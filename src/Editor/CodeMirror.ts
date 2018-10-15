@@ -47,7 +47,15 @@ export interface Cursor {
   anchor: number
 }
 
-export function GraphEditingCM(store: Store<State>, side: G.Side, readOnly = false): CMVN {
+// Functions for testing whether a given change is allowed.
+export type ChangeCheck = (change: CodeMirror.EditorChangeCancellable) => boolean
+
+export function GraphEditingCM(
+  store: Store<State>,
+  side: G.Side,
+  checkChange?: ChangeCheck,
+  readOnly = false
+): CMVN {
   /* Note that we don't show the last character of the graph in the code mirror.
   It must necessarily be whitespace anyway. */
   const graph = Model.graphStore(store)
@@ -106,13 +114,23 @@ export function GraphEditingCM(store: Store<State>, side: G.Side, readOnly = fal
     }
   }
 
-  cm.on('beforeChange', (_, change) => {
+  cm.on('beforeChange', (editor, change) => {
     if (change.origin == 'undo') {
       change.cancel()
       undo()
     } else if (change.origin == 'redo') {
       change.cancel()
       redo()
+    }
+    // Why is removed not set? Set it.
+    if (change.origin.substr(1) == 'delete') {
+      change.removed = editor
+        .getDoc()
+        .getRange(change.from, change.to)
+        .split('\n')
+    }
+    if (checkChange && !checkChange(change)) {
+      change.cancel()
     }
   })
 
