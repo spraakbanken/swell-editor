@@ -1,34 +1,48 @@
 import {Store, Undo} from 'reactive-lens'
-import {State, flagError, init} from './Model'
+import {State, flagError, init, flagWarning} from './Model'
 import {config} from './Config'
-import {used_labels} from './../Graph/Graph'
+import * as G from '../Graph'
+import * as T from '../Graph/Token'
 
 /** A validation rule is specified over a data type T and optionally a context type C.
 
 The context is meant to provide circumstances that the rule may take into account, like parts of app state. */
-export interface ValidationRule<T> {
+interface Rule<T> {
   readonly name: string
-  readonly check: ValidationCheck<T>
+  readonly check: Check<T>
 }
 
-function ValidationRule<T>(name: string, check: ValidationCheck<T>): ValidationRule<T> {
+function Rule<T>(name: string, check: Check<T>): Rule<T> {
   return {name, check}
 }
 
 /** The validation check function takes the data to validate and a context object. */
-export type ValidationCheck<T> = (data: T) => ValidationResult
+type Check<T> = (data: T) => Result[]
 
 /** The validation will either pass, or fail with a message. */
-export type ValidationResult = {valid: true} | {valid: false; message: string}
+export type Result = {severity: Severity; message: string}
 
-/** A valid result. */
-export const Valid: ValidationResult = {valid: true}
-/** Create an invalid result.
-  
-  Invalid('foo') // => {valid: false, message: 'foo'}
+export enum Severity {
+  WARNING = 'warning',
+  ERROR = 'error',
+}
+
+/** Create a validation warning.
+
+  Warning('foo') // => {severity: Severity.WARNING, message: 'foo'}
 
 */
-export const Invalid: (message: string) => ValidationResult = message => ({valid: false, message})
+const Warning: (message: string) => Result = message => ({
+  severity: Severity.WARNING,
+  message,
+})
+
+/** Create a validation error.
+
+  Error('foo') // => {severity: Severity.ERROR, message: 'foo'}
+
+*/
+const Error: (message: string) => Result = message => ({severity: Severity.ERROR, message})
 
 /** Validation rules for app state.
 
@@ -37,26 +51,38 @@ export const Invalid: (message: string) => ValidationResult = message => ({valid
     target: [{id: 'b0', text: 'x '}],
     edges: {'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: ['OBS!'], manual: false}}
   }
-  validationRules[0].check({...init, graph: Undo.init(g_obs), done: true}) // => {valid: false, message: 'OBS!'}
-  validationRules[0].check({...init, graph: Undo.init(g_obs), done: false}) // => {valid: true}
+  validationRules[0].check({...init, graph: Undo.init(g_obs), done: true}) // => [{severity: Severity.ERROR, message: 'OBS!'}]
+  validationRules[0].check({...init, graph: Undo.init(g_obs), done: false}) // => []
 
 */
-const validationRules: ValidationRule<State>[] = [
-  ValidationRule('Temporary tags not allowed in completed normalization', state => {
-    const usedTempLabels = used_labels(state.graph.now).filter(l => l in config.temporary_labels)
-    return state.done && usedTempLabels.length ? Invalid([...usedTempLabels].join(',')) : Valid
+const validationRules: Rule<State>[] = [
+  Rule('Temporary tags not allowed in completed normalization', state => {
+    const usedTempLabels = G.used_labels(state.graph.now).filter(l => l in config.temporary_labels)
+    return state.done && usedTempLabels.length ? [Error([...usedTempLabels].join(','))] : []
   }),
+  Rule('Normalization missing a label', state =>
+    // Get edges without labels.
+    Object.values(state.graph.now.edges)
+      .filter(edge => edge.labels.length == 0)
+      // Pick the ones where source and target differ.
+      .map(edge => G.partition_ids(state.graph.now)(edge))
+      .filter(({source, target}) => T.text(source) != T.text(target))
+      // Make a warning for each such edge.
+      .map(({source, target}) => Warning(`"${T.text(target)}"`))
+  ),
 ]
 
 /** Go through our rules and flag errors for any invalidations. */
 export function validateState(store: Store<State>) {
+  // Clear warnings. (Errors are directly visible and must be removed manually.)
+  store.at('warnings').set({})
   const state = store.get()
-  for (let rule of validationRules) {
-    let result = rule.check(state)
-    if (!result.valid) {
-      flagError(store, `${rule.name}: ${result.message}`)
-    }
-  }
+  validationRules.forEach(rule => {
+    rule.check(state).forEach(result => {
+      let flag = result.severity == Severity.ERROR ? flagError : flagWarning
+      flag(store, `${rule.name}: ${result.message}`)
+    })
+  })
 }
 
 /** Make changes, validate new state and revert changes if the result is invalid. */
@@ -70,9 +96,10 @@ export function validation_transaction(store: Store<State>, f: (s: Store<State>)
     // Validate new state.
     validateState(store)
     const errors = store.at('errors').get()
+    const warnings = store.at('warnings').get()
     // If the changes result in invalid state, revert to ingoing state but with errors added.
     if (Object.keys(errors).length) {
-      store.set({...prev, errors})
+      store.set({...prev, errors, warnings})
     }
   })
 }

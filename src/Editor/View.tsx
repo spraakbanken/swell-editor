@@ -370,8 +370,16 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
           </div>
           <div>
             {!!state.backurl && (
-              <a style={{margin: '3px 8px', fontSize: '0.9em', opacity: 0.8}} href={state.backurl}>
-                back{' '}
+              <a
+                style={{margin: '3px 8px', fontSize: '0.9em', opacity: 0.8}}
+                href={state.backurl}
+                onClick={e => {
+                  const warnings = Object.keys(store.at('warnings').get())
+                  if (warnings.length && !confirm(warnings.join('\n') + '\n\nLeave anyway?')) {
+                    e.preventDefault()
+                  }
+                }}>
+                back
               </a>
             )}
             {state.done !== undefined &&

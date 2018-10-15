@@ -23,6 +23,8 @@ export interface State {
 
   /** error messages */
   readonly errors: Record<string, true>
+  /** warnings are like errors but should not prevent actions */
+  readonly warnings: Record<string, true>
 
   /** for hot module reloading, bumped at each reload and used to make sure thunked components get updated */
   readonly generation: number
@@ -179,6 +181,7 @@ export const init: State = {
   side_restriction: undefined,
   generation: 0,
   errors: {},
+  warnings: {},
   mode: modes.normalization,
   taxonomy: config.taxonomy,
   show: {},
@@ -204,6 +207,10 @@ export function check_invariant(store: Store<State>): (g: Graph) => void {
 
 export function flagError(store: Store<State>, msg: string) {
   store.at('errors').update({[msg]: true})
+}
+
+export function flagWarning(store: Store<State>, msg: string) {
+  store.at('warnings').update({[msg]: true})
 }
 
 export function setManualTo(store: Store<State>, slug: string | undefined) {
