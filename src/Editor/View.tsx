@@ -170,15 +170,22 @@ const topStyle = style({
     '& button:last-child': {
       marginRight: 0,
     },
-    '& .error': {
+    '& .error, & .warning': {
       whiteSpace: 'pre-wrap',
-      backgroundColor: '#f2dede',
-      borderColor: '#ebccd1',
-      color: '#a94442',
       padding: '15px',
       marginBottom: '20px',
       border: '1px solid transparent',
       borderRadius: '4px',
+    },
+    '& .error': {
+      backgroundColor: '#f2dede',
+      borderColor: '#ebccd1',
+      color: '#a94442',
+    },
+    '& .warning': {
+      backgroundColor: '#f2e9de',
+      borderColor: '#ebebd1',
+      color: '#a99942',
     },
     '& .float_right > *': {
       float: 'right',
@@ -284,7 +291,8 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
 
     return (
       <div className="content">
-        {ShowErrors(store.at('errors'))}
+        {ShowMessages(store.at('errors'))}
+        {ShowMessages(store.at('warnings'), true)}
         {manual_part()}
         {state.show.source_text && (
           <div>
@@ -477,16 +485,18 @@ function RestrictionButtons(store: Store<G.Side | undefined>): VNode[] {
   return options.map(k => Button(name(k), '', () => store.set(k), store.get() !== k))
 }
 
-function ShowErrors(store: Store<Record<string, true>>) {
+function ShowMessages(store: Store<Record<string, true>>, transient = false) {
   return record.traverse(store.get(), (_, msg) => (
-    <div className="error" key={msg}>
-      <Close
-        title="dismiss"
-        onMouseDown={e => {
-          store.via(Lens.key(msg)).set(undefined)
-          e.preventDefault()
-        }}
-      />
+    <div className={transient ? 'warning' : 'error'} key={msg}>
+      {!transient && (
+        <Close
+          title="dismiss"
+          onMouseDown={e => {
+            store.via(Lens.key(msg)).set(undefined)
+            e.preventDefault()
+          }}
+        />
+      )}
 
       {msg}
     </div>
