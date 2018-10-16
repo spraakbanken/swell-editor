@@ -292,7 +292,12 @@ export function LabelSidekick({
                 if (value) {
                   // When adding a label, also connect the selected tokens.
                   // TODO: Only per consecutive series within the set of selected tokens?
-                  graph.modify(g => G.connect(g, edge_ids))
+                  graph.modify(g =>
+                    G.group_consecutive(g, edges, 'source').reduce(
+                      (g, es) => G.connect(g, es.map(e => e.id)),
+                      g
+                    )
+                  )
                 } else if (labels.length <= 1) {
                   // When there was only one label and we are removing it, revert the connection made before.
                   graph.modify(g => G.revert(g, edge_ids))

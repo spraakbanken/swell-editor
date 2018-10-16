@@ -335,6 +335,22 @@ export function contiguous(xs: number[]): boolean {
   return xs.every((x, i) => i == 0 || xs[i - 1] + 1 == x)
 }
 
+/** Sort and partition a series into groups of contiguous items.
+
+  group_contiguous([1, 4, 2, 5], R.identity) // => [[1, 2], [4, 5]]
+  group_contiguous(['d', 'a', 'b'], t => t.charCodeAt(0)) // => [['a', 'b'], ['d']]
+
+*/
+export function group_contiguous<A>(xs: A[], cmp: ((x: A) => number)) {
+  const groups: A[][] = []
+  xs.sort((a, b) => cmp(a) - cmp(b)).forEach(x => {
+    let g = groups[groups.length - 1]
+    // Contiguous with the last group, or create a new one?
+    g && cmp(g[g.length - 1]) + 1 == cmp(x) ? g.push(x) : groups.push([x])
+  })
+  return groups
+}
+
 /** Flatten an array of arrays */
 export function flatten<A>(xss: A[][]): A[] {
   return ([] as A[]).concat(...xss)

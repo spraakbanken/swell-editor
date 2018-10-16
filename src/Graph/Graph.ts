@@ -626,6 +626,35 @@ export function disconnect(g: Graph, ids: string[]): Graph {
   }
 }
 
+/** Get the index of the first token of an edge.
+
+  const g = init('apa bepa cepa ')
+  const e = g.edges['e-s1-t1']
+  edge_first_index(g, e, 'source') // => 1
+
+ */
+export function edge_first_index(g: Graph, edge: Edge, side: Side): number | undefined {
+  return edge.ids
+    .map(id => token_map(g).get(id) as SidedIndex)
+    .filter(si => si.side == side)
+    .map(si => si.index)
+    .shift()
+}
+
+/** Group edges into groups of consecutive tokens.
+
+  const g = init('apa bepa cepa depa ')
+  const es = [g.edges['e-s0-t0'], g.edges['e-s1-t1'], g.edges['e-s3-t3']]
+  group_consecutive(g, es, 'source') // => [[es[0], es[1]], [es[2]]]
+
+ */
+export function group_consecutive(g: Graph, edges: Edge[], side: Side) {
+  return Utils.group_contiguous(edges, e => {
+    let i = edge_first_index(g, e, side)
+    return i !== undefined ? i : -1
+  })
+}
+
 interface CharIdPair {
   char: string
   id?: string
