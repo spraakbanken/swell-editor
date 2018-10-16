@@ -1201,14 +1201,14 @@ export function normalize_whitespace(g: Graph, ws = ' '): Graph {
 
 /** Ignores the target text completly, only looks at the source tokens and their
 edge groups and copies them to target if there is not label, otherwise replaces them
-with the label
+with a pseudonym
 
 Source ids are preserved but target ids are generated
 
   target_texts(anonymize(from_unaligned({
-    source: [{text: 'Hej ', labels: []}, {text: 'Maria ', labels: ['Person1']}],
+    source: [{text: 'Hej ', labels: []}, {text: 'Maria ', labels: ['region']}],
     target: []
-  }))) // => ['Hej ', 'Person1 ']
+  }))) // => ['Hej ', 'Region ']
 
 */
 export function anonymize(graph: Graph): Graph {
@@ -1223,9 +1223,12 @@ export function anonymize(graph: Graph): Graph {
     if (e.labels.length) {
       // If the edge has labels.
       if (first(e.id)) {
-        const target = Token(pseudonymize(t.text, e.labels) + ' ', 't' + i++)
-        console.log(target)
         const source_ids = e.ids.filter(i => Utils.getUnsafe(tm, i).side == 'source')
+        const source_text = T.text(g.source.filter(s => source_ids.includes(s.id)))
+        // Text and labels will be passed on to pseudonymize().
+        // The source token id is used to distinguish when multiple tokens have the same text.
+        const pn = pseudonymizeToken(source_text, e.labels, source_ids.join(' ')) + ' '
+        const target = Token(pn, 't' + i++)
         edges.push(Edge([...source_ids, target.id], e.labels, true))
         return [target]
       } else {
@@ -1239,6 +1242,17 @@ export function anonymize(graph: Graph): Graph {
     }
   })
   return {source: g.source, target, edges: edge_record(edges)}
+}
+
+/** Remember which pseudonym we got for a certain token. */
+const pseudonymizeTokenStore: Map<string, string> = new Map()
+
+/** Get a pseudonym and remember it next time. */
+export function pseudonymizeToken(text: string, labels: string[], key: string) {
+  const store_key = `${key} ${labels.join(' ')}`
+  if (!pseudonymizeTokenStore.has(store_key))
+    pseudonymizeTokenStore.set(store_key, pseudonymize(text, labels))
+  return pseudonymizeTokenStore.get(store_key)
 }
 
 export function anonymize_when(b: boolean | undefined): (graph: Graph) => Graph {
