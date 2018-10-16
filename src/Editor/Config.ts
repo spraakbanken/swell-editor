@@ -188,35 +188,14 @@ export const normalization: Taxonomy = [
   {
     group: 'Morphological',
     entries: [
-      {
-        label: 'M-F',
-        desc: 'Deviant morphosyntactic category',
-      },
-      {
-        label: 'M-DEF',
-        desc: 'Deviation in definite/indefinite forms,',
-      },
-      {
-        label: 'M-NUM',
-        desc: 'Deviation in number agreement',
-      },
-      {
-        label: 'M-GEN',
-        desc: 'gender error ',
-      },
-      {
-        label: 'M-AGR',
-        desc: '? Note! This code need to be tested whether we should keep it.',
-      },
-      {
-        label: 'M-INFL',
-        desc:
-          'Deviant paradigm selection, but interpreted to be in accordance with a morpho-syntactic form in Swedish; overgeneralization',
-      },
-      {
-        label: 'M-VERB',
-        desc: 'Covers all deviations with verbs and verb groups, incl aspect',
-      },
+      {label: 'M-CASE', desc: 'Case'},
+      {label: 'M-DEF', desc: 'Deviation in definite/indefinite forms'},
+      {label: 'M-GEND', desc: 'Gender error'},
+      {label: 'M-KOMP', desc: 'Comparison error'},
+      {label: 'M-NUM', desc: 'Deviation in number agreement'},
+      {label: 'M-VERB', desc: 'Covers all deviations with verbs and verb groups, incl aspect'},
+      {label: 'M-F', desc: 'Deviant form but correct category, incl adverb'},
+      {label: 'M-Other', desc: 'Other morphological deviation'},
     ],
   },
   {
