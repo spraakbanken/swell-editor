@@ -507,6 +507,18 @@ function ShowErrors(store: Store<Record<string, true>>) {
 function ShowMessages(store: Store<Model.Message[]>) {
   return store.get().map((message, i) => (
     <div className={message.severity} key={i}>
+      {// Errors should prevent action, so error messages indicate an error that has not actually happened.
+      // They will disappear on the next validation, but we should also let the user dismiss them manually.
+      message.severity == Severity.ERROR && (
+        <Close
+          title="dismiss"
+          onMouseDown={e => {
+            store.modify(ms => ms.slice(0, i).concat(ms.slice(i + 1)))
+            e.preventDefault()
+          }}
+        />
+      )}
+
       {message.message}
     </div>
   ))
