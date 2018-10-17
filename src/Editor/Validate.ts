@@ -1,6 +1,6 @@
 import * as R from 'ramda'
-import {Store, Undo} from 'reactive-lens'
-import {State, flagError, init, flagWarning, modes} from './Model'
+import {Store, Undo, Lens} from 'reactive-lens'
+import {State, init, modes, clearValidationMessages, flagValidationMessage} from './Model'
 import {config} from './Config'
 import * as G from '../Graph'
 import * as Utils from '../Utils'
@@ -118,13 +118,11 @@ const validationRules: Rule<State>[] = [
 
 /** Go through our rules and flag errors for any invalidations. */
 export function validateState(store: Store<State>) {
-  // Clear warnings. (Errors are directly visible and must be removed manually.)
-  store.at('warnings').set({})
+  clearValidationMessages(store)
   const state = store.get()
   validationRules.forEach(rule => {
     rule.check(state).forEach(result => {
-      let flag = result.severity == Severity.ERROR ? flagError : flagWarning
-      flag(store, `${rule.name}: ${result.message}`)
+      flagValidationMessage(store, `${rule.name}: ${result.message}`, result.severity)
     })
   })
 }
@@ -139,11 +137,11 @@ export function validation_transaction(store: Store<State>, f: (s: Store<State>)
     f(store)
     // Validate new state.
     validateState(store)
-    const errors = store.at('errors').get()
-    const warnings = store.at('warnings').get()
-    // If the changes result in invalid state, revert to ingoing state but with errors added.
-    if (Object.keys(errors).length) {
-      store.set({...prev, errors, warnings})
+    const validation_messages = store.at('validation_messages').get()
+    const errors = validation_messages.filter(msg => msg.severity == Severity.ERROR)
+    // If the changes result in invalid state, revert to ingoing state but with messages added.
+    if (errors !== undefined && Object.keys(errors).length) {
+      store.set({...prev, validation_messages})
     }
   })
 }

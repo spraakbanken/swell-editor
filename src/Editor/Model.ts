@@ -9,7 +9,7 @@ import * as record from '../record'
 import * as Manual from './Manual'
 
 import {Taxonomy, config} from './Config'
-import {validateState} from './Validate'
+import {validateState, Severity} from './Validate'
 export {Taxonomy} from './Config'
 
 export interface State {
@@ -21,10 +21,11 @@ export interface State {
   readonly mode: Mode
   readonly taxonomy: Record<Mode, Taxonomy>
 
-  /** error messages */
+  /** Error messages stay until manually closed. */
   readonly errors: Record<string, true>
-  /** warnings are like errors but should not prevent actions */
-  readonly warnings: Record<string, true>
+
+  /** Validation messages are transient, they are updated dynamically. */
+  readonly validation_messages: Message[]
 
   /** for hot module reloading, bumped at each reload and used to make sure thunked components get updated */
   readonly generation: number
@@ -43,6 +44,11 @@ export interface State {
   readonly version?: number
 
   readonly done?: boolean
+}
+
+export interface Message {
+  message: string
+  severity: Severity
 }
 
 export function disconnectBackend(store: Store<State>, k: () => void) {
@@ -181,7 +187,7 @@ export const init: State = {
   side_restriction: undefined,
   generation: 0,
   errors: {},
-  warnings: {},
+  validation_messages: [],
   mode: modes.normalization,
   taxonomy: config.taxonomy,
   show: {},
@@ -209,8 +215,12 @@ export function flagError(store: Store<State>, msg: string) {
   store.at('errors').update({[msg]: true})
 }
 
-export function flagWarning(store: Store<State>, msg: string) {
-  store.at('warnings').update({[msg]: true})
+export function flagValidationMessage(store: Store<State>, message: string, severity: Severity) {
+  store.at('validation_messages').modify(msgs => [...msgs, {message, severity}])
+}
+
+export function clearValidationMessages(store: Store<State>) {
+  store.at('validation_messages').set([])
 }
 
 export function setManualTo(store: Store<State>, slug: string | undefined) {

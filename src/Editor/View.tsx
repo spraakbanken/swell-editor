@@ -26,7 +26,7 @@ import {GraphView} from '../GraphView'
 import * as GV from '../GraphView'
 
 import * as Manual from './Manual'
-import {validation_transaction} from './Validate'
+import {validation_transaction, Severity} from './Validate'
 
 typestyle.cssRaw(`
 body > div {
@@ -291,8 +291,8 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
 
     return (
       <div className="content">
-        {ShowMessages(store.at('errors'))}
-        {ShowMessages(store.at('warnings'), true)}
+        {ShowErrors(store.at('errors'))}
+        {ShowMessages(store.at('validation_messages'))}
         {manual_part()}
         {state.show.source_text && (
           <div>
@@ -382,8 +382,11 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
                 style={{margin: '3px 8px', fontSize: '0.9em', opacity: 0.8}}
                 href={state.backurl}
                 onClick={e => {
-                  const warnings = Object.keys(store.at('warnings').get())
-                  if (warnings.length && !confirm(warnings.join('\n') + '\n\nLeave anyway?')) {
+                  const messages = store.at('validation_messages').get()
+                  if (
+                    messages.length &&
+                    !confirm(messages.map(m => m.message).join('\n') + '\n\nLeave anyway?')
+                  ) {
                     e.preventDefault()
                   }
                 }}>
@@ -485,20 +488,26 @@ function RestrictionButtons(store: Store<G.Side | undefined>): VNode[] {
   return options.map(k => Button(name(k), '', () => store.set(k), store.get() !== k))
 }
 
-function ShowMessages(store: Store<Record<string, true>>, transient = false) {
+function ShowErrors(store: Store<Record<string, true>>) {
   return record.traverse(store.get(), (_, msg) => (
-    <div className={transient ? 'warning' : 'error'} key={msg}>
-      {!transient && (
-        <Close
-          title="dismiss"
-          onMouseDown={e => {
-            store.via(Lens.key(msg)).set(undefined)
-            e.preventDefault()
-          }}
-        />
-      )}
+    <div className="error" key={msg}>
+      <Close
+        title="dismiss"
+        onMouseDown={e => {
+          store.via(Lens.key(msg)).set(undefined)
+          e.preventDefault()
+        }}
+      />
 
       {msg}
+    </div>
+  ))
+}
+
+function ShowMessages(store: Store<Model.Message[]>) {
+  return store.get().map((message, i) => (
+    <div className={message.severity} key={i}>
+      {message.message}
     </div>
   ))
 }
