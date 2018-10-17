@@ -324,6 +324,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             selectedIds={Object.keys(state.selected)}
             generation={state.generation}
             onSelect={(ids, only) => Model.onSelect(store, ids, only)}
+            highlight={[{id: 'e-s2-t81', severity: Severity.WARNING}]}
           />
         </div>
         {state.show.image_link && ImageWebserviceAddresses(visible_graph, anon_mode)}

@@ -7,6 +7,7 @@ import * as record from './record'
 
 import {VNode} from './ReactUtils'
 import * as ReactUtils from './ReactUtils'
+import {Severity} from './Editor/Validate'
 
 const intended_font_size = 16
 const px = (i: number) => `${i / intended_font_size}em`
@@ -107,6 +108,16 @@ const GraphViewStyle = style(
         strokeWidth: px(12),
         fill: 'none',
       },
+      '& .RedPath': {
+        stroke: '#e66',
+        strokeWidth: px(12),
+        fill: 'none',
+      },
+      '& .YellowPath': {
+        stroke: '#ed6',
+        strokeWidth: px(12),
+        fill: 'none',
+      },
 
       '& .MustacheZ': {
         zIndex: -1,
@@ -163,6 +174,10 @@ const GraphViewStyle = style(
 
 const greyPath = (manual: boolean) => 'GreyPath ' + (manual ? 'Manual' : 'Auto')
 const whitePath = 'WhitePath'
+const highlightPaths: {[s: string]: string} = {
+  [Severity.ERROR]: 'RedPath',
+  [Severity.WARNING]: 'YellowPath',
+}
 
 const make_brows = (manual: boolean) => {
   const mustache_side = PixelPath('M 0 0.90 C 0 1.1 1 0.85 1 1.15', greyPath(manual))
@@ -264,6 +279,7 @@ export interface LineMeta {
   id: string
   manual: boolean
   hover: boolean
+  highlight?: Severity
 }
 
 function Column(column: G.Line<LineMeta>[], rel: VNode | null | false = null): VNode {
@@ -273,6 +289,8 @@ function Column(column: G.Line<LineMeta>[], rel: VNode | null | false = null): V
 
   const top = column.filter(line => line.meta.id == endpoint_id)
   const below = column.filter(line => line.meta.id != endpoint_id)
+  const highlight_class = (h: Severity | undefined) =>
+    h === undefined ? whitePath : highlightPaths[h]
   return (
     <div className="RelativeSVG">
       {rel}
@@ -289,7 +307,10 @@ function Column(column: G.Line<LineMeta>[], rel: VNode | null | false = null): V
                 Line(line, greyPath(line.meta.manual) + ' ' + (line.meta.hover ? ' hover ' : ''))
               ),
               ...top.map(line =>
-                Line(line, whitePath + (below.length == 0 ? ' CoversNothing' : ''))
+                Line(
+                  line,
+                  highlight_class(line.meta.highlight) + (below.length == 0 ? ' CoversNothing' : '')
+                )
               ),
               ...top.map(line =>
                 Line(line, greyPath(line.meta.manual) + ' ' + (line.meta.hover ? ' hover ' : ''))
@@ -312,6 +333,14 @@ export interface GraphViewProps {
   side?: G.Side
   /** for hot module reloading, bumped at each reload and used to make sure thunked components get updated */
   generation?: number
+  /** edges or tokens to highlight */
+  highlight?: Highlight[]
+}
+
+export interface Highlight {
+  /** edge or token id */
+  id: string
+  severity: Severity
 }
 
 export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewProps> {
@@ -324,16 +353,22 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
     selectedIds,
     side,
     generation,
+    highlight,
   } = props
   const selected_ids = selectedIds || []
   const edges = graph.edges
   const rd0 = G.enrichen(graph, orderChangingLabel)
   const rd = G.restrict_to_side(rd0, side)
-  const grids = G.mapGrids(G.DiffToGrid(rd), ({id}) => ({
-    id,
-    manual: graph.edges[id].manual === true,
-    hover: hoverId === id,
-  }))
+  const grids = G.mapGrids(
+    G.DiffToGrid(rd),
+    ({id}) =>
+      ({
+        id,
+        manual: graph.edges[id].manual === true,
+        hover: hoverId === id,
+        highlight: Utils.onDefined(highlight && highlight.find(h => h.id == id), h => h.severity),
+      } as LineMeta)
+  )
   const u = grids.upper
   const l = grids.lower
   const c = Utils.count<string>()
@@ -410,7 +445,15 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
                       y0: 0,
                       x1: 0.5,
                       y1: 1,
-                      meta: {id: d.id, manual: d.manual, hover: d.id === hoverId},
+                      meta: {
+                        id: d.id,
+                        manual: d.manual,
+                        hover: d.id === hoverId,
+                        highlight: Utils.onDefined(
+                          highlight && highlight.find(h => h.id == d.id),
+                          h => h.severity
+                        ),
+                      },
                     },
                   ]
                 : []

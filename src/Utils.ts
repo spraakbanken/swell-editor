@@ -1032,6 +1032,18 @@ export function getUnsafe<K, V>(m: Map<K, V>, k: K): V {
   return m.get(k) || raise(`Key missing: ${k}`)
 }
 
+/** Do f(o) unless o is undefined.
+
+  onDefined('a', x => x + x) // => 'aa'
+  let a = ['a'].find(x => x == 'b')
+  onDefined(a, x => x + x) // => undefined
+  onDefined(a, x => x + x, 'b') // => 'b'
+
+ */
+export function onDefined<A, B>(o: A | undefined, f: (x: A) => B, def?: B): B | undefined {
+  return o !== undefined ? f(o as A) : def
+}
+
 export function any(...bs: boolean[]): boolean {
   for (const b of bs) {
     if (b) {
