@@ -35,14 +35,16 @@ const temporary_labels: Record<string, true> = {
   'OBS!': true,
 }
 
-export type Taxonomy = {
+export type TaxonomyGroup = {
   group: string
   additional?: true
   entries: {
     label: string
     desc: string
   }[]
-}[]
+}
+
+export type Taxonomy = TaxonomyGroup[]
 
 const last = 'gen def ort sensitive'.split(' ')
 const digits = /^\d+$/
@@ -344,4 +346,30 @@ export const config = {
   image_ws_url,
   taxonomy: {anonymization, normalization},
   anonymization_label_order,
+}
+
+/** What group does this label belong to?
+
+  (label_group('ort') as TaxonomyGroup).group // => 'Errors'
+  label_group('quux') // => null
+
+ */
+export function label_group(label: string): TaxonomyGroup | null {
+  return (
+    config.taxonomy.anonymization.find(
+      group => !!group.entries.find(entry => entry.label == label)
+    ) || null
+  )
+}
+
+/** Is this a label from one of the "additional" groups?
+
+  is_label_additional('ort') // => true
+  is_label_additional('surname') // => false
+  is_label_additional('quux') // => null
+
+*/
+export function is_label_additional(label: string): boolean | null {
+  const tg = label_group(label)
+  return tg ? !!tg.additional : null
 }

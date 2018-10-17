@@ -16,7 +16,7 @@ import {State} from './Model'
 import * as Model from './Model'
 import {DropZone} from './DropZone'
 import * as CM from './CodeMirror'
-import {config, Taxonomy} from './Config'
+import {Taxonomy, is_label_additional} from './Config'
 import {validation_transaction} from './Validate'
 
 const LabelSidekickStyle = style({
@@ -290,7 +290,8 @@ export function LabelSidekick({
                     G.modify_labels(g, id, labels => Utils.set_modify(labels, label, value))
                   )
                 )
-                if (mode == 'anonymization') {
+                // Auto-group consecutive tokens when setting main categories in anonymization.
+                if (mode == 'anonymization' && !is_label_additional(label)) {
                   if (value) {
                     // When adding a label, also connect the selected tokens.
                     graph.modify(g =>
