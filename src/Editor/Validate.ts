@@ -68,6 +68,18 @@ const Error: (message: string) => Result = message => ({severity: Severity.ERROR
   }
   validationRules[2].check({...init, graph: Undo.init(g2), mode: 'anonymization'}) // => [{severity: Severity.ERROR, message: '"x" cannot have firstname:female and region'}]
 
+  const g3 = {
+    source: [{id: 'a0', text: 'x '}, {id: 'a1', text: 'y '}],
+    target: [{id: 'b0', text: 'x '}, {id: 'b1', text: 'y '}],
+    edges: {
+      'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: ['firstname:female'], manual: false},
+      'e-a1-b1': {id: 'e-a1-b1', ids: ['a1', 'b1'], labels: ['firstname:female', '1'], manual: false},
+    }
+  }
+  validationRules[3].check({...init, graph: Undo.init(g3), mode: 'anonymization', done: true}) // => [{severity: Severity.ERROR, message: '"x"'}]
+  validationRules[3].check({...init, graph: Undo.init(g3), done: true}) // => []
+  validationRules[3].check({...init, graph: Undo.init(g3), mode: 'anonymization'}) // => []
+
 */
 const validationRules: Rule<State>[] = [
   Rule('Temporary tags not allowed when done', state => {
@@ -108,6 +120,26 @@ const validationRules: Rule<State>[] = [
         : []
       if (usedMainLabels.length > 1) {
         emits.push(Error(`"${text.trim()}" cannot have ${usedMainLabels.join(' and ')}`))
+      }
+    })
+    return emits
+  }),
+  Rule('Running number missing', state => {
+    if (state.mode != modes.anonymization || !state.done) {
+      return []
+    }
+    const g = state.graph.now
+    const edge_map = G.edge_map(g)
+    const emits: Result[] = []
+    g.source.forEach(({id, text}) => {
+      const edge = edge_map.get(id)
+      // Has base label but no number label.
+      if (
+        edge &&
+        edge.labels.filter(l => label_order(l) == LabelOrder.BASE).length &&
+        edge.labels.filter(l => label_order(l) == LabelOrder.NUM).length == 0
+      ) {
+        emits.push(Error(`"${text.trim()}"`))
       }
     })
     return emits
