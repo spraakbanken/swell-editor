@@ -66,7 +66,7 @@ const Error: (message: string) => Result = message => ({severity: Severity.ERROR
     target: [{id: 'b0', text: 'x '}],
     edges: {'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: ['firstname:female', 'region', 'OBS!', 'gen', 'ort'], manual: false}}
   }
-  validationRules[2].check({...init, graph: Undo.init(g2), mode: 'anonymization'}) // => [{severity: Severity.ERROR, message: '"x" cannot have firstname:female and region'}]
+  validationRules[2].check({...init, graph: Undo.init(g2), mode: 'anonymization'}) // => [{severity: Severity.ERROR, message: '"x"'}]
 
   const g3 = {
     source: [{id: 'a0', text: 'x '}, {id: 'a1', text: 'y '}],
@@ -114,69 +114,59 @@ const validationRules: Rule<State>[] = [
             // Make a warning for each such edge.
             .map(({source, target}) => Warning(`"${G.text(target).trim()}"`))
   ),
-  Rule('Too many main labels', state => {
-    if (state.mode != modes.anonymization) {
-      return []
-    }
-    const g = state.graph.now
-    const edge_map = G.edge_map(g)
-    // Check the edge for each token, if it has multiple main labels.
-    const emits: Result[] = []
-    g.source.forEach(({id, text}) => {
-      const edge = edge_map.get(id)
-      let usedMainLabels = edge
-        ? edge.labels.filter(l => {
-            const find = find_label(l)
-            return find && find.taxonomy == 'anonymization' && label_order(l) == LabelOrder.BASE
-          })
-        : []
-      if (usedMainLabels.length > 1) {
-        emits.push(Error(`"${text.trim()}" cannot have ${usedMainLabels.join(' and ')}`))
-      }
-    })
-    return emits
-  }),
-  Rule('Running number missing', state => {
-    if (state.mode != modes.anonymization || !state.done) {
-      return []
-    }
-    const g = state.graph.now
-    const edge_map = G.edge_map(g)
-    const emits: Result[] = []
-    g.source.forEach(({id, text}) => {
-      const edge = edge_map.get(id)
-      // Has base label but no number label.
-      if (
-        edge &&
-        edge.labels.filter(l => label_order(l) == LabelOrder.BASE).length &&
+  Rule(
+    'Too many main labels',
+    edge_check(
+      state => state.mode == modes.anonymization,
+      edge =>
+        edge.labels.filter(l => {
+          const find = find_label(l)
+          return find && find.taxonomy == 'anonymization' && label_order(l) == LabelOrder.BASE
+        }).length > 1
+    )
+  ),
+  Rule(
+    'Running number missing',
+    edge_check(
+      state => state.mode == modes.anonymization && !!state.done,
+      edge =>
+        edge.labels.filter(l => label_order(l) == LabelOrder.BASE).length > 0 &&
         edge.labels.filter(l => label_order(l) == LabelOrder.NUM).length == 0
-      ) {
-        emits.push(Error(`"${text.trim()}"`))
-      }
-    })
-    return emits
-  }),
-  Rule('Running number used alone', state => {
-    if (state.mode != modes.anonymization || !state.done) {
-      return []
-    }
-    const g = state.graph.now
-    const edge_map = G.edge_map(g)
-    const emits: Result[] = []
-    g.source.forEach(({id, text}) => {
-      const edge = edge_map.get(id)
-      // Has number label but no base label.
-      if (
-        edge &&
-        edge.labels.filter(l => label_order(l) == LabelOrder.NUM).length &&
+    )
+  ),
+  Rule(
+    'Running number used alone',
+    edge_check(
+      state => state.mode == modes.anonymization && !!state.done,
+      edge =>
+        edge.labels.filter(l => label_order(l) == LabelOrder.NUM).length > 0 &&
         edge.labels.filter(l => label_order(l) == LabelOrder.BASE).length == 0
-      ) {
-        emits.push(Error(`"${text.trim()}"`))
+    )
+  ),
+]
+
+/** Create a check function from a generic condition (whether to run the rule at all) and a specific edge condition. */
+function edge_check(
+  /** Generic condition; whether to run the rule at all. */
+  cond: (state: State) => boolean,
+  check: (edge: G.Edge) => boolean,
+  resulter: (m: string) => Result = Error
+): Check<State> {
+  return state => {
+    // Exit early if generic condition fails.
+    if (!cond(state)) return []
+    const edge_map = G.edge_map(state.graph.now)
+    const emits: Result[] = []
+    // Emit an error for each edge where the edge condition fails.
+    state.graph.now.source.forEach(({id, text}) => {
+      const edge = edge_map.get(id)
+      if (edge && check(edge)) {
+        emits.push(resulter(`"${text.trim()}"`))
       }
     })
     return emits
-  }),
-]
+  }
+}
 
 /** Go through our rules and flag errors for any invalidations. */
 export function validateState(store: Store<State>) {
