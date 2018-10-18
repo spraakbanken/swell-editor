@@ -80,6 +80,18 @@ const Error: (message: string) => Result = message => ({severity: Severity.ERROR
   validationRules[3].check({...init, graph: Undo.init(g3), done: true}) // => []
   validationRules[3].check({...init, graph: Undo.init(g3), mode: 'anonymization'}) // => []
 
+  const g4 = {
+    source: [{id: 'a0', text: 'x '}, {id: 'a1', text: 'y '}],
+    target: [{id: 'b0', text: 'x '}, {id: 'b1', text: 'y '}],
+    edges: {
+      'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: ['1'], manual: false},
+      'e-a1-b1': {id: 'e-a1-b1', ids: ['a1', 'b1'], labels: ['firstname:female', '1'], manual: false},
+    }
+  }
+  validationRules[4].check({...init, graph: Undo.init(g4), mode: 'anonymization', done: true}) // => [{severity: Severity.ERROR, message: '"x"'}]
+  validationRules[4].check({...init, graph: Undo.init(g4), done: true}) // => []
+  validationRules[4].check({...init, graph: Undo.init(g4), mode: 'anonymization'}) // => []
+
 */
 const validationRules: Rule<State>[] = [
   Rule('Temporary tags not allowed when done', state => {
@@ -138,6 +150,26 @@ const validationRules: Rule<State>[] = [
         edge &&
         edge.labels.filter(l => label_order(l) == LabelOrder.BASE).length &&
         edge.labels.filter(l => label_order(l) == LabelOrder.NUM).length == 0
+      ) {
+        emits.push(Error(`"${text.trim()}"`))
+      }
+    })
+    return emits
+  }),
+  Rule('Running number used alone', state => {
+    if (state.mode != modes.anonymization || !state.done) {
+      return []
+    }
+    const g = state.graph.now
+    const edge_map = G.edge_map(g)
+    const emits: Result[] = []
+    g.source.forEach(({id, text}) => {
+      const edge = edge_map.get(id)
+      // Has number label but no base label.
+      if (
+        edge &&
+        edge.labels.filter(l => label_order(l) == LabelOrder.NUM).length &&
+        edge.labels.filter(l => label_order(l) == LabelOrder.BASE).length == 0
       ) {
         emits.push(Error(`"${text.trim()}"`))
       }
