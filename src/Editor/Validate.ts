@@ -2,6 +2,7 @@ import {Store, Undo} from 'reactive-lens'
 import {State, init, modes, clearValidationMessages, flagValidationMessage} from './Model'
 import {LabelOrder, label_order, find_label} from './Config'
 import * as G from '../Graph'
+import * as record from '../record'
 
 /** A validation rule is specified over a data type T and optionally a context type C.
 
@@ -50,8 +51,8 @@ const Error: (message: string) => Result = message => ({severity: Severity.ERROR
     target: [{id: 'b0', text: 'x '}],
     edges: {'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: ['OBS!'], manual: false}}
   }
-  validationRules[0].check({...init, graph: Undo.init(g0), mode: 'anonymization', done: true}) // => [{severity: Severity.ERROR, message: 'OBS!'}]
-  validationRules[0].check({...init, graph: Undo.init(g0), mode: 'normalization', done: true}) // => [{severity: Severity.ERROR, message: 'OBS!'}]
+  validationRules[0].check({...init, graph: Undo.init(g0), mode: 'anonymization', done: true}) // => [{severity: Severity.ERROR, message: '"x"'}]
+  validationRules[0].check({...init, graph: Undo.init(g0), mode: 'normalization', done: true}) // => [{severity: Severity.ERROR, message: '"x"'}]
   validationRules[0].check({...init, graph: Undo.init(g0), mode: 'anonymization', done: false}) // => []
 
   const g1 = {
@@ -59,7 +60,7 @@ const Error: (message: string) => Result = message => ({severity: Severity.ERROR
     target: [{id: 'b0', text: 'y '}],
     edges: {'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: [], manual: false}}
   }
-  validationRules[1].check({...init, graph: Undo.init(g1)}) // => [{severity: Severity.WARNING, message: '"y"'}]
+  validationRules[1].check({...init, graph: Undo.init(g1)}) // => [{severity: Severity.WARNING, message: '"x"'}]
 
   const g2 = {
     source: [{id: 'a0', text: 'x '}],
@@ -94,25 +95,20 @@ const Error: (message: string) => Result = message => ({severity: Severity.ERROR
 
 */
 const validationRules: Rule<State>[] = [
-  Rule('Temporary tags not allowed when done', state => {
-    const usedTempLabels = G.used_labels(state.graph.now).filter(
-      l => label_order(l) == LabelOrder.TEMP
+  Rule(
+    'Temporary tags not allowed when done',
+    edge_check(
+      state => !!state.done,
+      edge => edge.labels.filter(l => label_order(l) == LabelOrder.TEMP).length > 0
     )
-    return state.done && usedTempLabels.length ? [Error([...usedTempLabels].join(','))] : []
-  }),
+  ),
   Rule(
     'Normalization missing a label',
-    state =>
-      // Get edges without labels.
-      state.mode != modes.normalization
-        ? []
-        : Object.values(state.graph.now.edges)
-            .filter(edge => edge.labels.length == 0)
-            // Pick the ones where source and target differ.
-            .map(edge => G.partition_ids(state.graph.now)(edge))
-            .filter(({source, target}) => G.text(source) != G.text(target))
-            // Make a warning for each such edge.
-            .map(({source, target}) => Warning(`"${G.text(target).trim()}"`))
+    edge_check(
+      state => state.mode == modes.normalization,
+      (edge, source, target) => G.text(source) != G.text(target) && edge.labels.length == 0,
+      Severity.WARNING
+    )
   ),
   Rule(
     'Too many main labels',
@@ -147,21 +143,20 @@ const validationRules: Rule<State>[] = [
 
 /** Create a check function from a generic condition (whether to run the rule at all) and a specific edge condition. */
 function edge_check(
-  /** Generic condition; whether to run the rule at all. */
   cond: (state: State) => boolean,
-  check: (edge: G.Edge) => boolean,
-  resulter: (m: string) => Result = Error
+  check: (edge: G.Edge, source: G.Token[], target: G.Token[]) => boolean,
+  severity: Severity = Severity.ERROR
 ): Check<State> {
   return state => {
     // Exit early if generic condition fails.
     if (!cond(state)) return []
-    const edge_map = G.edge_map(state.graph.now)
-    const emits: Result[] = []
     // Emit an error for each edge where the edge condition fails.
-    state.graph.now.source.forEach(({id, text}) => {
-      const edge = edge_map.get(id)
-      if (edge && check(edge)) {
-        emits.push(resulter(`"${text.trim()}"`))
+    const emits: Result[] = []
+    record.map(state.graph.now.edges, edge => {
+      const {source, target} = G.partition_ids(state.graph.now)(edge)
+      if (edge && check(edge, source, target)) {
+        // Use the supplied resulter, or create an Error by default.
+        emits.push({message: `"${G.text(source).trim()}"`, severity})
       }
     })
     return emits
