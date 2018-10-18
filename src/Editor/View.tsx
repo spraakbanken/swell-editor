@@ -292,7 +292,6 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
     return (
       <div className="content">
         {ShowErrors(store.at('errors'))}
-        {ShowMessages(store.at('validation_messages'))}
         {manual_part()}
         {state.show.source_text && (
           <div>
@@ -326,6 +325,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             onSelect={(ids, only) => Model.onSelect(store, ids, only)}
           />
         </div>
+        {ShowMessages(store.at('validation_messages'))}
         {state.show.image_link && ImageWebserviceAddresses(visible_graph, anon_mode)}
         {state.show.graph && <pre className="box pre-box">{Utils.show(visibleGraph)}</pre>}
         {state.show.diff && (
