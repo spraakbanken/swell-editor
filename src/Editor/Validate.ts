@@ -4,6 +4,7 @@ import {State, init, modes, clearValidationMessages, flagValidationMessage} from
 import {config} from './Config'
 import * as G from '../Graph'
 import * as Utils from '../Utils'
+import {is_label_additional} from './Config.doctest'
 
 /** A validation rule is specified over a data type T and optionally a context type C.
 
@@ -97,17 +98,11 @@ const validationRules: Rule<State>[] = [
     }
     const g = state.graph.now
     const edge_map = G.edge_map(g)
-    // "Main labels" are those which do not belong to an additional group.
-    const mainLabels = Utils.flatten(
-      config.taxonomy.anonymization
-        .filter(group => !group.additional)
-        .map(group => group.entries.map(R.path(['label'])))
-    )
     // Check the edge for each token, if it has multiple main labels.
     const emits: Result[] = []
     g.source.forEach(({id, text}) => {
       const edge = edge_map.get(id)
-      let usedMainLabels = edge ? R.intersection(edge.labels, mainLabels) : []
+      let usedMainLabels = edge ? edge.labels.filter(l => !is_label_additional(l)) : []
       if (usedMainLabels.length > 1) {
         emits.push(Error(`"${text.trim()}" cannot have ${usedMainLabels.join(' and ')}`))
       }

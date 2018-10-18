@@ -37,10 +37,10 @@ const temporary_labels: Record<string, true> = {
 
 export type TaxonomyGroup = {
   group: string
-  additional?: true
   entries: {
     label: string
     desc: string
+    additional?: true
   }[]
 }
 
@@ -62,13 +62,14 @@ function anonymization_label_order(label: string): number {
 const anonymization: Taxonomy = [
   {
     group: 'Morphology',
-    additional: true,
-    entries: [{label: 'gen', desc: 'gender'}, {label: 'def', desc: 'definite'}],
+    entries: [
+      {label: 'gen', desc: 'gender', additional: true},
+      {label: 'def', desc: 'definite', additional: true},
+    ],
   },
   {
     group: 'Errors',
-    additional: true,
-    entries: [{label: 'ort', desc: 'orthography'}],
+    entries: [{label: 'ort', desc: 'orthography', additional: true}],
   },
   {
     group: 'Names',
@@ -141,12 +142,11 @@ const anonymization: Taxonomy = [
   },
   {
     group: 'Mark',
-    additional: true,
     entries: [
       {label: 'prof', desc: 'profession'},
       {label: 'edu', desc: 'education, courses'},
       {label: 'sensitive', desc: ''},
-      {label: 'OBS!', desc: 'Attention'},
+      {label: 'OBS!', desc: 'Attention', additional: true},
     ],
   },
 ]
@@ -351,25 +351,29 @@ export const config = {
 /** What group does this label belong to?
 
   (label_group('ort') as TaxonomyGroup).group // => 'Errors'
-  label_group('quux') // => null
+  label_group('quux') // => undefined
 
  */
-export function label_group(label: string): TaxonomyGroup | null {
-  return (
-    config.taxonomy.anonymization.find(
-      group => !!group.entries.find(entry => entry.label == label)
-    ) || null
+export function label_group(label: string): TaxonomyGroup | undefined {
+  return config.taxonomy.anonymization.find(
+    group => !!group.entries.find(entry => entry.label == label)
   )
 }
 
-/** Is this a label from one of the "additional" groups?
+/** Is this label marked as "additional"?
 
+  is_label_additional('gen') // => true
+  is_label_additional('def') // => true
   is_label_additional('ort') // => true
+  is_label_additional('OBS!') // => true
   is_label_additional('surname') // => false
-  is_label_additional('quux') // => null
+  is_label_additional('sensitive') // => false
+  is_label_additional('quux') // => false
 
 */
-export function is_label_additional(label: string): boolean | null {
-  const tg = label_group(label)
-  return tg ? !!tg.additional : null
+export function is_label_additional(label: string): boolean {
+  // Whether there is a group which has an entry which has the right label and is additional.
+  return !!config.taxonomy.anonymization.find(
+    g => !!g.entries.find(e => e.label == label && !!e.additional)
+  )
 }
