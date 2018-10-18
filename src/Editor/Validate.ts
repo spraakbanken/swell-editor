@@ -54,6 +54,7 @@ const Error: (message: string) => Result = message => ({severity: Severity.ERROR
     edges: {'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: ['OBS!'], manual: false}}
   }
   validationRules[0].check({...init, graph: Undo.init(g0), mode: 'anonymization', done: true}) // => [{severity: Severity.ERROR, message: 'OBS!'}]
+  validationRules[0].check({...init, graph: Undo.init(g0), mode: 'normalization', done: true}) // => [{severity: Severity.ERROR, message: 'OBS!'}]
   validationRules[0].check({...init, graph: Undo.init(g0), mode: 'anonymization', done: false}) // => []
 
   const g1 = {
@@ -72,11 +73,9 @@ const Error: (message: string) => Result = message => ({severity: Severity.ERROR
 
 */
 const validationRules: Rule<State>[] = [
-  Rule('Temporary tags not allowed in completed normalization', state => {
+  Rule('Temporary tags not allowed when done', state => {
     const usedTempLabels = G.used_labels(state.graph.now).filter(l => l in config.temporary_labels)
-    return state.mode == modes.anonymization && state.done && usedTempLabels.length
-      ? [Error([...usedTempLabels].join(','))]
-      : []
+    return state.done && usedTempLabels.length ? [Error([...usedTempLabels].join(','))] : []
   }),
   Rule(
     'Normalization missing a label',
