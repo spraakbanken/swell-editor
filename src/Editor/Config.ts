@@ -345,7 +345,7 @@ export const config = {
   order_changing_labels,
   examples,
   image_ws_url,
-  taxonomy: {anonymization, normalization} as {[key: string]: Taxonomy},
+  taxonomy: {anonymization, normalization},
 }
 
 /** What group does this label belong to?
@@ -368,7 +368,7 @@ export interface TaxonomyFind {
 
 export function find_label(label: string): TaxonomyFind | undefined {
   for (let taxonomy in config.taxonomy) {
-    for (let group of config.taxonomy[taxonomy]) {
+    for (let group of (config.taxonomy as {[mode: string]: Taxonomy})[taxonomy]) {
       let entry = group.entries.find(entry => entry.label == label)
       if (entry !== undefined) return {taxonomy, group: group.group, entry}
     }

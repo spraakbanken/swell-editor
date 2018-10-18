@@ -113,7 +113,6 @@ export function initialBackendFetch(store: Store<State>) {
 
 export function savePeriodicallyToBackend(store: Store<State>) {
   const save = Utils.debounce(1000, () => {
-    validateState(store)
     const state = store.get()
     const graph = store.get().mode == 'anonymization' ? visibleGraph(store) : state.graph.now
     if (
