@@ -1,6 +1,6 @@
 import {Store, Undo} from 'reactive-lens'
 import {State, init, modes, clearValidationMessages, flagValidationMessage} from './Model'
-import {LabelOrder, label_order} from './Config'
+import {LabelOrder, label_order, find_label} from './Config'
 import * as G from '../Graph'
 
 /** A validation rule is specified over a data type T and optionally a context type C.
@@ -100,7 +100,12 @@ const validationRules: Rule<State>[] = [
     const emits: Result[] = []
     g.source.forEach(({id, text}) => {
       const edge = edge_map.get(id)
-      let usedMainLabels = edge ? edge.labels.filter(l => label_order(l) == LabelOrder.BASE) : []
+      let usedMainLabels = edge
+        ? edge.labels.filter(l => {
+            const find = find_label(l)
+            return find && find.taxonomy == 'anonymization' && label_order(l) == LabelOrder.BASE
+          })
+        : []
       if (usedMainLabels.length > 1) {
         emits.push(Error(`"${text.trim()}" cannot have ${usedMainLabels.join(' and ')}`))
       }
