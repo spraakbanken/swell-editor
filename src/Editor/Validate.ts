@@ -1,10 +1,7 @@
-import * as R from 'ramda'
-import {Store, Undo, Lens} from 'reactive-lens'
+import {Store, Undo} from 'reactive-lens'
 import {State, init, modes, clearValidationMessages, flagValidationMessage} from './Model'
-import {config} from './Config'
+import {LabelOrder, label_order} from './Config'
 import * as G from '../Graph'
-import * as Utils from '../Utils'
-import {is_label_additional} from './Config.doctest'
 
 /** A validation rule is specified over a data type T and optionally a context type C.
 
@@ -74,7 +71,9 @@ const Error: (message: string) => Result = message => ({severity: Severity.ERROR
 */
 const validationRules: Rule<State>[] = [
   Rule('Temporary tags not allowed when done', state => {
-    const usedTempLabels = G.used_labels(state.graph.now).filter(l => l in config.temporary_labels)
+    const usedTempLabels = G.used_labels(state.graph.now).filter(
+      l => label_order(l) == LabelOrder.TEMP
+    )
     return state.done && usedTempLabels.length ? [Error([...usedTempLabels].join(','))] : []
   }),
   Rule(
@@ -101,7 +100,7 @@ const validationRules: Rule<State>[] = [
     const emits: Result[] = []
     g.source.forEach(({id, text}) => {
       const edge = edge_map.get(id)
-      let usedMainLabels = edge ? edge.labels.filter(l => !is_label_additional(l)) : []
+      let usedMainLabels = edge ? edge.labels.filter(l => label_order(l) == LabelOrder.BASE) : []
       if (usedMainLabels.length > 1) {
         emits.push(Error(`"${text.trim()}" cannot have ${usedMainLabels.join(' and ')}`))
       }

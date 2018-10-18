@@ -8,7 +8,7 @@ import * as record from '../record'
 
 import * as Manual from './Manual'
 
-import {Taxonomy, config} from './Config'
+import {Taxonomy, config, label_order} from './Config'
 import {validateState, Severity} from './Validate'
 export {Taxonomy} from './Config'
 
@@ -322,7 +322,7 @@ export function visibleGraph(store: Store<State>) {
   const state = store.get()
   const g = currentGraph(store)
   if (inAnonMode(store)) {
-    return G.anonymize(G.sort_edge_labels(g, config.anonymization_label_order))
+    return G.anonymize(G.sort_edge_labels(g, label_order))
   } else if (state.subspan) {
     return G.subgraph(g, state.subspan)
   } else {

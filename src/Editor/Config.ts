@@ -31,45 +31,47 @@ const order_changing_labels: Record<string, true> = {
   OINV: true,
 }
 
-const temporary_labels: Record<string, true> = {
-  'OBS!': true,
-}
-
 export type TaxonomyGroup = {
   group: string
   entries: {
     label: string
     desc: string
-    additional?: true
   }[]
 }
 
 export type Taxonomy = TaxonomyGroup[]
 
-const last = 'gen def ort sensitive'.split(' ')
+const extra = 'gen def ort'.split(' ')
+const temporary = 'OBS!'.split(' ')
 const digits = /^\d+$/
 
-function anonymization_label_order(label: string): number {
-  if (-1 != last.indexOf(label)) {
-    return 2
+export enum LabelOrder {
+  BASE,
+  NUM,
+  EXTRA,
+  TEMP,
+}
+
+export function label_order(label: string): LabelOrder {
+  if (temporary.includes(label)) {
+    return LabelOrder.TEMP
+  } else if (extra.includes(label)) {
+    return LabelOrder.EXTRA
   } else if (digits.test(label)) {
-    return 1
+    return LabelOrder.NUM
   } else {
-    return 0
+    return LabelOrder.BASE
   }
 }
 
 const anonymization: Taxonomy = [
   {
     group: 'Morphology',
-    entries: [
-      {label: 'gen', desc: 'gender', additional: true},
-      {label: 'def', desc: 'definite', additional: true},
-    ],
+    entries: [{label: 'gen', desc: 'gender'}, {label: 'def', desc: 'definite'}],
   },
   {
     group: 'Errors',
-    entries: [{label: 'ort', desc: 'orthography', additional: true}],
+    entries: [{label: 'ort', desc: 'orthography'}],
   },
   {
     group: 'Names',
@@ -146,7 +148,7 @@ const anonymization: Taxonomy = [
       {label: 'prof', desc: 'profession'},
       {label: 'edu', desc: 'education, courses'},
       {label: 'sensitive', desc: ''},
-      {label: 'OBS!', desc: 'Attention', additional: true},
+      {label: 'OBS!', desc: 'Attention'},
     ],
   },
 ]
@@ -341,11 +343,9 @@ const november_2017_pilot_taxonomy: Taxonomy = [
 
 export const config = {
   order_changing_labels,
-  temporary_labels,
   examples,
   image_ws_url,
   taxonomy: {anonymization, normalization},
-  anonymization_label_order,
 }
 
 /** What group does this label belong to?
@@ -357,23 +357,5 @@ export const config = {
 export function label_group(label: string): TaxonomyGroup | undefined {
   return config.taxonomy.anonymization.find(
     group => !!group.entries.find(entry => entry.label == label)
-  )
-}
-
-/** Is this label marked as "additional"?
-
-  is_label_additional('gen') // => true
-  is_label_additional('def') // => true
-  is_label_additional('ort') // => true
-  is_label_additional('OBS!') // => true
-  is_label_additional('surname') // => false
-  is_label_additional('sensitive') // => false
-  is_label_additional('quux') // => false
-
-*/
-export function is_label_additional(label: string): boolean {
-  // Whether there is a group which has an entry which has the right label and is additional.
-  return !!config.taxonomy.anonymization.find(
-    g => !!g.entries.find(e => e.label == label && !!e.additional)
   )
 }

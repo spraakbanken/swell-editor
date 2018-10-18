@@ -14,9 +14,7 @@ import {Button} from '../ReactUtils'
 
 import {State} from './Model'
 import * as Model from './Model'
-import {DropZone} from './DropZone'
-import * as CM from './CodeMirror'
-import {Taxonomy, is_label_additional} from './Config'
+import {Taxonomy, label_order, LabelOrder} from './Config'
 import {validation_transaction} from './Validate'
 
 const LabelSidekickStyle = style({
@@ -291,7 +289,7 @@ export function LabelSidekick({
                   )
                 )
                 // Auto-group consecutive tokens when setting main categories in anonymization.
-                if (mode == 'anonymization' && !is_label_additional(label)) {
+                if (mode == 'anonymization' && label_order(label) == LabelOrder.BASE) {
                   if (value) {
                     // When adding a label, also connect the selected tokens.
                     graph.modify(g =>
