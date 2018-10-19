@@ -8,8 +8,8 @@ import * as record from '../record'
 
 import * as Manual from './Manual'
 
-import {Taxonomy, config, label_order} from './Config'
-import {validateState, Severity} from './Validate'
+import {Taxonomy, config, label_order, LabelOrder, find_label} from './Config'
+import {Severity, Rule, edge_check} from './Validate'
 export {Taxonomy} from './Config'
 
 export interface State {
@@ -208,6 +208,134 @@ export function check_invariant(store: Store<State>): (g: Graph) => void {
       store.at('graph').set(Undo.init(G.init('x')))
     }
   }
+}
+
+/** Validation rules for app state.
+
+  const g0 = {
+    source: [{id: 'a0', text: 'x '}],
+    target: [{id: 'b0', text: 'x '}],
+    edges: {'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: ['OBS!'], manual: false}}
+  }
+  validationRules[0].check({...init, graph: Undo.init(g0), mode: 'anonymization', done: true}) // => [{severity: Severity.ERROR, message: '"x"'}]
+  validationRules[0].check({...init, graph: Undo.init(g0), mode: 'normalization', done: true}) // => [{severity: Severity.ERROR, message: '"x"'}]
+  validationRules[0].check({...init, graph: Undo.init(g0), mode: 'anonymization', done: false}) // => []
+
+  const g1 = {
+    source: [{id: 'a0', text: 'x '}],
+    target: [{id: 'b0', text: 'y '}],
+    edges: {'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: [], manual: false}}
+  }
+  validationRules[1].check({...init, graph: Undo.init(g1)}) // => [{severity: Severity.WARNING, message: '"x"'}]
+
+  const g2 = {
+    source: [{id: 'a0', text: 'x '}],
+    target: [{id: 'b0', text: 'x '}],
+    edges: {'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: ['firstname:female', 'region', 'OBS!', 'gen', 'ort'], manual: false}}
+  }
+  validationRules[2].check({...init, graph: Undo.init(g2), mode: 'anonymization'}) // => [{severity: Severity.ERROR, message: '"x"'}]
+
+  const g3 = {
+    source: [{id: 'a0', text: 'x '}, {id: 'a1', text: 'y '}],
+    target: [{id: 'b0', text: 'x '}, {id: 'b1', text: 'y '}],
+    edges: {
+      'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: ['firstname:female'], manual: false},
+      'e-a1-b1': {id: 'e-a1-b1', ids: ['a1', 'b1'], labels: ['firstname:female', '1'], manual: false},
+    }
+  }
+  validationRules[3].check({...init, graph: Undo.init(g3), mode: 'anonymization', done: true}) // => [{severity: Severity.ERROR, message: '"x"'}]
+  validationRules[3].check({...init, graph: Undo.init(g3), done: true}) // => []
+  validationRules[3].check({...init, graph: Undo.init(g3), mode: 'anonymization'}) // => []
+
+  const g4 = {
+    source: [{id: 'a0', text: 'x '}, {id: 'a1', text: 'y '}],
+    target: [{id: 'b0', text: 'x '}, {id: 'b1', text: 'y '}],
+    edges: {
+      'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: ['1'], manual: false},
+      'e-a1-b1': {id: 'e-a1-b1', ids: ['a1', 'b1'], labels: ['firstname:female', '1'], manual: false},
+    }
+  }
+  validationRules[4].check({...init, graph: Undo.init(g4), mode: 'anonymization', done: true}) // => [{severity: Severity.ERROR, message: '"x"'}]
+  validationRules[4].check({...init, graph: Undo.init(g4), done: true}) // => []
+  validationRules[4].check({...init, graph: Undo.init(g4), mode: 'anonymization'}) // => []
+
+*/
+const validationRules: Rule<{state: State; g: G.Graph}>[] = [
+  Rule(
+    'Temporary tags not allowed when done',
+    edge_check(
+      state => !!state.done,
+      edge => edge.labels.filter(l => label_order(l) == LabelOrder.TEMP).length > 0
+    )
+  ),
+  Rule(
+    'Normalization missing a label',
+    edge_check(
+      state => state.mode == modes.normalization,
+      (edge, source, target) => G.text(source) != G.text(target) && edge.labels.length == 0,
+      Severity.WARNING
+    )
+  ),
+  Rule(
+    'Too many main labels',
+    edge_check(
+      state => state.mode == modes.anonymization,
+      edge =>
+        edge.labels.filter(l => {
+          const find = find_label(l)
+          return find && find.taxonomy == 'anonymization' && label_order(l) == LabelOrder.BASE
+        }).length > 1
+    )
+  ),
+  Rule(
+    'Running number missing',
+    edge_check(
+      state => state.mode == modes.anonymization && !!state.done,
+      edge =>
+        edge.labels.filter(l => label_order(l) == LabelOrder.BASE).length > 0 &&
+        edge.labels.filter(l => label_order(l) == LabelOrder.NUM).length == 0
+    )
+  ),
+  Rule(
+    'Running number used alone',
+    edge_check<State>(
+      state => state.mode == modes.anonymization && !!state.done,
+      edge =>
+        edge.labels.filter(l => label_order(l) == LabelOrder.NUM).length > 0 &&
+        edge.labels.filter(l => label_order(l) == LabelOrder.BASE).length == 0
+    )
+  ),
+]
+
+/** Go through our rules and flag errors for any invalidations. */
+export function validateState(store: Store<State>) {
+  clearValidationMessages(store)
+  const state = store.get()
+  const g = state.graph.now
+  validationRules.forEach(rule => {
+    rule.check({state, g}).forEach(result => {
+      flagValidationMessage(store, `${rule.name}: ${result.message}`, result.severity)
+    })
+  })
+}
+
+/** Make changes, validate new state and revert changes if the result is invalid. */
+export function validation_transaction(store: Store<State>, f: (s: Store<State>) => void): void {
+  // Avoid triggering listeners until we're done.
+  store.transaction(() => {
+    // Remember ingoing state.
+    const prev = store.get()
+    // Perform changes.
+    f(store)
+    // Validate new state.
+    validateState(store)
+    const validation_messages = store.at('validation_messages').get()
+    const errors = validation_messages.filter(msg => msg.severity == Severity.ERROR)
+    // If the changes result in invalid state, revert to ingoing state but with messages added.
+    if (errors !== undefined && Object.keys(errors).length) {
+      store.set({...prev, validation_messages})
+    }
+  })
 }
 
 export function flagError(store: Store<State>, msg: string) {
