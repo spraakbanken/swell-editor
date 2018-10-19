@@ -29,14 +29,14 @@ export function edge_check<S>(
   cond: (state: S) => boolean,
   check: (edge: G.Edge, source: G.Token[], target: G.Token[]) => boolean,
   severity: Severity = Severity.ERROR
-): Check<{state: S; g: G.Graph}> {
-  return ({state, g}) => {
+): Check<{state: S; graph: G.Graph}> {
+  return ({state, graph}) => {
     // Exit early if generic condition fails.
     if (!cond(state)) return []
     // Emit an error for each edge where the edge condition fails.
     const emits: Result[] = []
-    record.map(g.edges, edge => {
-      const {source, target} = G.partition_ids(g)(edge)
+    record.map(graph.edges, edge => {
+      const {source, target} = G.partition_ids(graph)(edge)
       if (edge && check(edge, source, target)) {
         // Use the supplied resulter, or create an Error by default.
         emits.push({message: `"${G.text(source).trim()}"`, severity})

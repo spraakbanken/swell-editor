@@ -212,55 +212,33 @@ export function check_invariant(store: Store<State>): (g: Graph) => void {
 
 /** Validation rules for app state.
 
-  const g0 = {
-    source: [{id: 'a0', text: 'x '}],
-    target: [{id: 'b0', text: 'x '}],
-    edges: {'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: ['OBS!'], manual: false}}
-  }
-  validationRules[0].check({...init, graph: Undo.init(g0), mode: 'anonymization', done: true}) // => [{severity: Severity.ERROR, message: '"x"'}]
-  validationRules[0].check({...init, graph: Undo.init(g0), mode: 'normalization', done: true}) // => [{severity: Severity.ERROR, message: '"x"'}]
-  validationRules[0].check({...init, graph: Undo.init(g0), mode: 'anonymization', done: false}) // => []
+  const graph = G.modify_labels(G.init('x'), 'e-s0-t0', () => ['OBS!'])
+  validationRules[0].check({graph, state: {...init, mode: 'anonymization', done: true}}) // => [{severity: Severity.ERROR, message: '"x"'}]
+  validationRules[0].check({graph, state: {...init, mode: 'normalization', done: true}}) // => [{severity: Severity.ERROR, message: '"x"'}]
+  validationRules[0].check({graph, state: {...init, mode: 'anonymization', done: false}}) // => []
 
-  const g1 = {
-    source: [{id: 'a0', text: 'x '}],
-    target: [{id: 'b0', text: 'y '}],
-    edges: {'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: [], manual: false}}
-  }
-  validationRules[1].check({...init, graph: Undo.init(g1)}) // => [{severity: Severity.WARNING, message: '"x"'}]
+  const graph = G.unaligned_modify_tokens(G.init('x'), 0, 1, 'y ')
+  validationRules[1].check({graph, state: {...init}}) // => [{severity: Severity.WARNING, message: '"x"'}]
 
-  const g2 = {
-    source: [{id: 'a0', text: 'x '}],
-    target: [{id: 'b0', text: 'x '}],
-    edges: {'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: ['firstname:female', 'region', 'OBS!', 'gen', 'ort'], manual: false}}
-  }
-  validationRules[2].check({...init, graph: Undo.init(g2), mode: 'anonymization'}) // => [{severity: Severity.ERROR, message: '"x"'}]
+  const graph = G.modify_labels(G.init('x'), 'e-s0-t0', () => ['firstname:female', 'region', 'OBS!', 'gen', 'ort'])
+  validationRules[2].check({graph, state: {...init, mode: 'anonymization'}}) // => [{severity: Severity.ERROR, message: '"x"'}]
 
-  const g3 = {
-    source: [{id: 'a0', text: 'x '}, {id: 'a1', text: 'y '}],
-    target: [{id: 'b0', text: 'x '}, {id: 'b1', text: 'y '}],
-    edges: {
-      'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: ['firstname:female'], manual: false},
-      'e-a1-b1': {id: 'e-a1-b1', ids: ['a1', 'b1'], labels: ['firstname:female', '1'], manual: false},
-    }
-  }
-  validationRules[3].check({...init, graph: Undo.init(g3), mode: 'anonymization', done: true}) // => [{severity: Severity.ERROR, message: '"x"'}]
-  validationRules[3].check({...init, graph: Undo.init(g3), done: true}) // => []
-  validationRules[3].check({...init, graph: Undo.init(g3), mode: 'anonymization'}) // => []
+  const g0 = G.init('x y')
+  const g1 = G.modify_labels(g0, 'e-s0-t0', () => ['firstname:female'])
+  const graph = G.modify_labels(g1, 'e-s1-t1', () => ['firstname:female', '1'])
+  validationRules[3].check({graph, state: {...init, mode: 'anonymization', done: true}}) // => [{severity: Severity.ERROR, message: '"x"'}]
+  validationRules[3].check({graph, state: {...init, mode: 'anonymization'}}) // => []
+  validationRules[3].check({graph, state: {...init, done: true}}) // => []
 
-  const g4 = {
-    source: [{id: 'a0', text: 'x '}, {id: 'a1', text: 'y '}],
-    target: [{id: 'b0', text: 'x '}, {id: 'b1', text: 'y '}],
-    edges: {
-      'e-a0-b0': {id: 'e-a0-b0', ids: ['a0', 'b0'], labels: ['1'], manual: false},
-      'e-a1-b1': {id: 'e-a1-b1', ids: ['a1', 'b1'], labels: ['firstname:female', '1'], manual: false},
-    }
-  }
-  validationRules[4].check({...init, graph: Undo.init(g4), mode: 'anonymization', done: true}) // => [{severity: Severity.ERROR, message: '"x"'}]
-  validationRules[4].check({...init, graph: Undo.init(g4), done: true}) // => []
-  validationRules[4].check({...init, graph: Undo.init(g4), mode: 'anonymization'}) // => []
+  const g0 = G.init('x y')
+  const g1 = G.modify_labels(g0, 'e-s0-t0', () => ['1'])
+  const graph = G.modify_labels(g1, 'e-s1-t1', () => ['firstname:female', '1'])
+  validationRules[4].check({graph, state: {...init, mode: 'anonymization', done: true}}) // => [{severity: Severity.ERROR, message: '"x"'}]
+  validationRules[4].check({graph, state: {...init, done: true}}) // => []
+  validationRules[4].check({graph, state: {...init, mode: 'anonymization'}}) // => []
 
 */
-const validationRules: Rule<{state: State; g: G.Graph}>[] = [
+const validationRules: Rule<{state: State; graph: G.Graph}>[] = [
   Rule(
     'Temporary tags not allowed when done',
     edge_check(
@@ -311,9 +289,9 @@ const validationRules: Rule<{state: State; g: G.Graph}>[] = [
 export function validateState(store: Store<State>) {
   clearValidationMessages(store)
   const state = store.get()
-  const g = state.graph.now
+  const graph = state.graph.now
   validationRules.forEach(rule => {
-    rule.check({state, g}).forEach(result => {
+    rule.check({state, graph}).forEach(result => {
       flagValidationMessage(store, `${rule.name}: ${result.message}`, result.severity)
     })
   })
@@ -332,7 +310,7 @@ export function validation_transaction(store: Store<State>, f: (s: Store<State>)
     const validation_messages = store.at('validation_messages').get()
     const errors = validation_messages.filter(msg => msg.severity == Severity.ERROR)
     // If the changes result in invalid state, revert to ingoing state but with messages added.
-    if (errors !== undefined && Object.keys(errors).length) {
+    if (errors.length > 0) {
       store.set({...prev, validation_messages})
     }
   })
