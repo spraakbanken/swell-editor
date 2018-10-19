@@ -254,7 +254,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
               const page = Manual.manual[slug]
               if (page) {
                 const anon_mode = page.mode == 'anonymization'
-                const m = G.anonymize_when(anon_mode)
+                const m = G.anonymize_when(anon_mode, Model.pseudonymizeToken)
                 return (
                   <React.Fragment>
                     {page.text}

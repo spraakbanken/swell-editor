@@ -5,7 +5,6 @@ import * as record from '../record'
 import {Token, Span} from './Token'
 import * as T from './Token'
 import {Lens, Store} from 'reactive-lens'
-import {pseudonymize} from 'pseudonymization'
 
 import {Diff, Dragged, Dropped} from './Diff'
 import * as D from './Diff'
@@ -1228,7 +1227,7 @@ Source ids are preserved but target ids are generated
   }))) // => ['Hej ', 'Region ']
 
 */
-export function anonymize(graph: Graph): Graph {
+export function anonymize(graph: Graph, pseudonymize: Pseudonymizer): Graph {
   const g = source_to_target(graph)
   let i = next_id(g)
   const em = edge_map(g)
@@ -1242,9 +1241,7 @@ export function anonymize(graph: Graph): Graph {
       if (first(e.id)) {
         const source_ids = e.ids.filter(i => Utils.getUnsafe(tm, i).side == 'source')
         const source_text = T.text(g.source.filter(s => source_ids.includes(s.id)))
-        // Text and labels will be passed on to pseudonymize().
-        // The source token id is used to distinguish when multiple tokens have the same text.
-        const pn = pseudonymizeToken(source_text, e.labels, source_ids.join(' ')) + ' '
+        const pn = pseudonymize(source_text, e.labels, source_ids.join(' ')) + ' '
         const target = Token(pn, 't' + i++)
         edges.push(Edge([...source_ids, target.id], e.labels, true))
         return [target]
@@ -1261,20 +1258,14 @@ export function anonymize(graph: Graph): Graph {
   return {source: g.source, target, edges: edge_record(edges)}
 }
 
-/** Remember which pseudonym we got for a certain token. */
-const pseudonymizeTokenStore: Map<string, string> = new Map()
-
-/** Get a pseudonym and remember it next time. */
-export function pseudonymizeToken(text: string, labels: string[], key: string) {
-  const store_key = `${key} ${labels.join(' ')}`
-  if (!pseudonymizeTokenStore.has(store_key))
-    pseudonymizeTokenStore.set(store_key, pseudonymize(text, labels))
-  return pseudonymizeTokenStore.get(store_key)
+export function anonymize_when(
+  b: boolean | undefined,
+  pseudonymize: Pseudonymizer
+): (graph: Graph) => Graph {
+  return graph => (b ? anonymize(graph, pseudonymize) : graph)
 }
 
-export function anonymize_when(b: boolean | undefined): (graph: Graph) => Graph {
-  return graph => (b ? anonymize(graph) : graph)
-}
+type Pseudonymizer = (text: string, labels: string[], key: string) => string
 
 /** Sets the target text to the source text, but preserving all labels */
 export function source_to_target(g: Graph): Graph {

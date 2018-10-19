@@ -1,6 +1,7 @@
 import * as React from 'react'
 import * as GV from './GraphView'
 import * as G from './Graph'
+import {pseudonymizeToken} from './Editor/Model'
 import {Image, ImageServer} from './ImageServer'
 
 import {Data, key, string_to_data} from './EditorTypes'
@@ -10,7 +11,7 @@ function data_to_react(data: Data): React.ReactElement<{}> {
   return React.createElement(
     'div',
     {className: 'NoManualBlue'},
-    GV.graphView(G.anonymize_when(data.anon_mode)(data.graph))
+    GV.graphView(G.anonymize_when(data.anon_mode, pseudonymizeToken)(data.graph))
   )
 }
 

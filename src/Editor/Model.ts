@@ -10,6 +10,7 @@ import * as Manual from './Manual'
 
 import {Taxonomy, config, label_order, LabelOrder, find_label} from './Config'
 import {Severity, Rule, edge_check} from './Validate'
+import {pseudonymize} from 'pseudonymization';
 export {Taxonomy} from './Config'
 
 export interface State {
@@ -427,12 +428,26 @@ export function visibleGraph(store: Store<State>) {
   const state = store.get()
   const g = currentGraph(store)
   if (inAnonMode(store)) {
-    return G.anonymize(G.sort_edge_labels(g, label_order))
+    return G.anonymize(G.sort_edge_labels(g, label_order), pseudonymizeToken)
   } else if (state.subspan) {
     return G.subgraph(g, state.subspan)
   } else {
     return g
   }
+}
+
+/** Remember which pseudonym we got for a certain token. */
+const pseudonymizeTokenStore: Map<string, string> = new Map()
+
+/** Get a pseudonym and remember it next time.
+
+Text and labels are passed on to pseudonymize().
+The source token id is used to distinguish when multiple tokens have the same text. */
+export function pseudonymizeToken(text: string, labels: string[], key: string): string {
+  const store_key = `${key} ${labels.join(' ')}`
+  if (!pseudonymizeTokenStore.has(store_key))
+    pseudonymizeTokenStore.set(store_key, pseudonymize(text, labels))
+  return pseudonymizeTokenStore.get(store_key)!
 }
 
 export function onSelect(store: Store<State>, ids: string[], only: boolean) {
