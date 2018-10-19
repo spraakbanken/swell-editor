@@ -26,6 +26,7 @@ import {GraphView} from '../GraphView'
 import * as GV from '../GraphView'
 
 import * as Manual from './Manual'
+import {Severity} from './Validate'
 
 typestyle.cssRaw(`
 body > div {
@@ -169,15 +170,22 @@ const topStyle = style({
     '& button:last-child': {
       marginRight: 0,
     },
-    '& .error': {
+    '& .error, & .warning': {
       whiteSpace: 'pre-wrap',
-      backgroundColor: '#f2dede',
-      borderColor: '#ebccd1',
-      color: '#a94442',
       padding: '15px',
       marginBottom: '20px',
       border: '1px solid transparent',
       borderRadius: '4px',
+    },
+    '& .error': {
+      backgroundColor: '#f2dede',
+      borderColor: '#ebccd1',
+      color: '#a94442',
+    },
+    '& .warning': {
+      backgroundColor: '#f2e9de',
+      borderColor: '#ebebd1',
+      color: '#a99942',
     },
     '& .float_right > *': {
       float: 'right',
@@ -317,6 +325,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             onSelect={(ids, only) => Model.onSelect(store, ids, only)}
           />
         </div>
+        {ShowMessages(store.at('validation_messages'))}
         {state.show.image_link && ImageWebserviceAddresses(visible_graph, anon_mode)}
         {state.show.graph && <pre className="box pre-box">{Utils.show(visibleGraph)}</pre>}
         {state.show.diff && (
@@ -369,13 +378,25 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
           </div>
           <div>
             {!!state.backurl && (
-              <a style={{margin: '3px 8px', fontSize: '0.9em', opacity: 0.8}} href={state.backurl}>
-                back{' '}
+              <a
+                style={{margin: '3px 8px', fontSize: '0.9em', opacity: 0.8}}
+                href={state.backurl}
+                onClick={e => {
+                  Model.validateState(store)
+                  const messages = store.at('validation_messages').get()
+                  if (
+                    messages.length &&
+                    !confirm(messages.map(m => m.message).join('\n') + '\n\nLeave anyway?')
+                  ) {
+                    e.preventDefault()
+                  }
+                }}>
+                back
               </a>
             )}
             {state.done !== undefined &&
               Button(state.done ? 'not done' : 'done', 'toggle between done and not done', () =>
-                store.at('done').modify(b => !b)
+                Model.validation_transaction(store, s => s.at('done').modify(b => !b))
               )}
             {toggle_button('options', 'options')}
           </div>
@@ -385,6 +406,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             <div className="box">
               {RestrictionButtons(store.at('side_restriction'))}
               <hr />
+              {Button('validate', '', () => Model.validateState(store))}
               {Button(
                 `${anon_mode ? 'disable' : 'enable'} anonymization view`,
                 '',
@@ -480,6 +502,26 @@ function ShowErrors(store: Store<Record<string, true>>) {
       />
 
       {msg}
+    </div>
+  ))
+}
+
+function ShowMessages(store: Store<Model.Message[]>) {
+  return store.get().map((message, i) => (
+    <div className={message.severity} key={i}>
+      {// Errors should prevent action, so error messages indicate an error that has not actually happened.
+      // They will disappear on the next validation, but we should also let the user dismiss them manually.
+      message.severity == Severity.ERROR && (
+        <Close
+          title="dismiss"
+          onMouseDown={e => {
+            store.modify(ms => ms.slice(0, i).concat(ms.slice(i + 1)))
+            e.preventDefault()
+          }}
+        />
+      )}
+
+      {message.message}
     </div>
   ))
 }

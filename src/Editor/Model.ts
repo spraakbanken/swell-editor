@@ -8,7 +8,8 @@ import * as record from '../record'
 
 import * as Manual from './Manual'
 
-import {Taxonomy, config} from './Config'
+import {Taxonomy, config, label_order, LabelOrder, find_label} from './Config'
+import {Severity, Rule, edge_check} from './Validate'
 export {Taxonomy} from './Config'
 
 export interface State {
@@ -20,8 +21,11 @@ export interface State {
   readonly mode: Mode
   readonly taxonomy: Record<Mode, Taxonomy>
 
-  /** error messages */
+  /** Error messages stay until manually closed. */
   readonly errors: Record<string, true>
+
+  /** Validation messages are transient, they are updated dynamically. */
+  readonly validation_messages: Message[]
 
   /** for hot module reloading, bumped at each reload and used to make sure thunked components get updated */
   readonly generation: number
@@ -40,6 +44,11 @@ export interface State {
   readonly version?: number
 
   readonly done?: boolean
+}
+
+export interface Message {
+  message: string
+  severity: Severity
 }
 
 export function disconnectBackend(store: Store<State>, k: () => void) {
@@ -105,7 +114,7 @@ export function initialBackendFetch(store: Store<State>) {
 export function savePeriodicallyToBackend(store: Store<State>) {
   const save = Utils.debounce(1000, () => {
     const state = store.get()
-    const graph = store.get().mode == "anonymization" ? visibleGraph(store) : state.graph.now
+    const graph = store.get().mode == 'anonymization' ? visibleGraph(store) : state.graph.now
     if (
       state.version !== undefined &&
       state.backend &&
@@ -140,6 +149,7 @@ export function savePeriodicallyToBackend(store: Store<State>) {
     .at('now')
     .ondiff((g1, g2) => G.equal(g1, g2) || save())
   store.at('done').ondiff(done => {
+    validateState(store)
     const state = store.get()
     if (state.backend && state.essay && Object.keys(state.errors).length == 0) {
       Utils.POST(
@@ -176,6 +186,7 @@ export const init: State = {
   side_restriction: undefined,
   generation: 0,
   errors: {},
+  validation_messages: [],
   mode: modes.normalization,
   taxonomy: config.taxonomy,
   show: {},
@@ -199,8 +210,122 @@ export function check_invariant(store: Store<State>): (g: Graph) => void {
   }
 }
 
+/** Validation rules for app state.
+
+  const graph = G.modify_labels(G.init('x'), 'e-s0-t0', () => ['OBS!'])
+  validationRules[0].check({graph, state: {...init, mode: 'anonymization', done: true}}) // => [{severity: Severity.ERROR, message: '"x"'}]
+  validationRules[0].check({graph, state: {...init, mode: 'normalization', done: true}}) // => [{severity: Severity.ERROR, message: '"x"'}]
+  validationRules[0].check({graph, state: {...init, mode: 'anonymization', done: false}}) // => []
+
+  const graph = G.unaligned_modify_tokens(G.init('x'), 0, 1, 'y ')
+  validationRules[1].check({graph, state: {...init}}) // => [{severity: Severity.WARNING, message: '"x"'}]
+
+  const graph = G.modify_labels(G.init('x'), 'e-s0-t0', () => ['firstname:female', 'region', 'OBS!', 'gen', 'ort'])
+  validationRules[2].check({graph, state: {...init, mode: 'anonymization'}}) // => [{severity: Severity.ERROR, message: '"x"'}]
+
+  const g0 = G.init('x y')
+  const g1 = G.modify_labels(g0, 'e-s0-t0', () => ['firstname:female'])
+  const graph = G.modify_labels(g1, 'e-s1-t1', () => ['firstname:female', '1'])
+  validationRules[3].check({graph, state: {...init, mode: 'anonymization', done: true}}) // => [{severity: Severity.ERROR, message: '"x"'}]
+  validationRules[3].check({graph, state: {...init, mode: 'anonymization'}}) // => []
+  validationRules[3].check({graph, state: {...init, done: true}}) // => []
+
+  const g0 = G.init('x y')
+  const g1 = G.modify_labels(g0, 'e-s0-t0', () => ['1'])
+  const graph = G.modify_labels(g1, 'e-s1-t1', () => ['firstname:female', '1'])
+  validationRules[4].check({graph, state: {...init, mode: 'anonymization', done: true}}) // => [{severity: Severity.ERROR, message: '"x"'}]
+  validationRules[4].check({graph, state: {...init, done: true}}) // => []
+  validationRules[4].check({graph, state: {...init, mode: 'anonymization'}}) // => []
+
+*/
+const validationRules: Rule<{state: State; graph: G.Graph}>[] = [
+  Rule(
+    'Temporary tags not allowed when done',
+    edge_check(
+      state => !!state.done,
+      edge => edge.labels.filter(l => label_order(l) == LabelOrder.TEMP).length > 0
+    )
+  ),
+  Rule(
+    'Normalization missing a label',
+    edge_check(
+      state => state.mode == modes.normalization,
+      (edge, source, target) => G.text(source) != G.text(target) && edge.labels.length == 0,
+      Severity.WARNING
+    )
+  ),
+  Rule(
+    'Too many main labels',
+    edge_check(
+      state => state.mode == modes.anonymization,
+      edge =>
+        edge.labels.filter(l => {
+          const find = find_label(l)
+          return find && find.taxonomy == 'anonymization' && label_order(l) == LabelOrder.BASE
+        }).length > 1
+    )
+  ),
+  Rule(
+    'Running number missing',
+    edge_check(
+      state => state.mode == modes.anonymization && !!state.done,
+      edge =>
+        edge.labels.filter(l => label_order(l) == LabelOrder.BASE).length > 0 &&
+        edge.labels.filter(l => label_order(l) == LabelOrder.NUM).length == 0
+    )
+  ),
+  Rule(
+    'Running number used alone',
+    edge_check<State>(
+      state => state.mode == modes.anonymization && !!state.done,
+      edge =>
+        edge.labels.filter(l => label_order(l) == LabelOrder.NUM).length > 0 &&
+        edge.labels.filter(l => label_order(l) == LabelOrder.BASE).length == 0
+    )
+  ),
+]
+
+/** Go through our rules and flag errors for any invalidations. */
+export function validateState(store: Store<State>) {
+  clearValidationMessages(store)
+  const state = store.get()
+  const graph = state.graph.now
+  validationRules.forEach(rule => {
+    rule.check({state, graph}).forEach(result => {
+      flagValidationMessage(store, `${rule.name}: ${result.message}`, result.severity)
+    })
+  })
+}
+
+/** Make changes, validate new state and revert changes if the result is invalid. */
+export function validation_transaction(store: Store<State>, f: (s: Store<State>) => void): void {
+  // Avoid triggering listeners until we're done.
+  store.transaction(() => {
+    // Remember ingoing state.
+    const prev = store.get()
+    // Perform changes.
+    f(store)
+    // Validate new state.
+    validateState(store)
+    const validation_messages = store.at('validation_messages').get()
+    const errors = validation_messages.filter(msg => msg.severity == Severity.ERROR)
+    // If the changes result in invalid state, revert to ingoing state but with messages added.
+    if (errors.length > 0) {
+      store.set({...prev, validation_messages})
+    }
+  })
+}
+
 export function flagError(store: Store<State>, msg: string) {
   store.at('errors').update({[msg]: true})
+}
+
+export function flagValidationMessage(store: Store<State>, message: string, severity: Severity) {
+  store.at('validation_messages').modify(msgs => [...msgs, {message, severity}])
+}
+
+export function clearValidationMessages(store: Store<State>) {
+  store.at('validation_messages').set([])
 }
 
 export function setManualTo(store: Store<State>, slug: string | undefined) {
@@ -302,7 +427,7 @@ export function visibleGraph(store: Store<State>) {
   const state = store.get()
   const g = currentGraph(store)
   if (inAnonMode(store)) {
-    return G.anonymize(G.sort_edge_labels(g, config.anonymization_label_order))
+    return G.anonymize(G.sort_edge_labels(g, label_order))
   } else if (state.subspan) {
     return G.subgraph(g, state.subspan)
   } else {

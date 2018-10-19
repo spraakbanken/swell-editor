@@ -31,28 +31,40 @@ const order_changing_labels: Record<string, true> = {
   OINV: true,
 }
 
-export type Taxonomy = {
+export type TaxonomyGroup = {
   group: string
   entries: {
     label: string
     desc: string
   }[]
-}[]
+}
 
-const last = 'gen def ort sensitive'.split(' ')
+export type Taxonomy = TaxonomyGroup[]
+
+const extra = 'gen def ort'.split(' ')
+const temporary = 'OBS!'.split(' ')
 const digits = /^\d+$/
 
-function anonymization_label_order(label: string): number {
-  if (-1 != last.indexOf(label)) {
-    return 2
+export enum LabelOrder {
+  BASE,
+  NUM,
+  EXTRA,
+  TEMP,
+}
+
+export function label_order(label: string): LabelOrder {
+  if (temporary.includes(label)) {
+    return LabelOrder.TEMP
+  } else if (extra.includes(label)) {
+    return LabelOrder.EXTRA
   } else if (digits.test(label)) {
-    return 1
+    return LabelOrder.NUM
   } else {
-    return 0
+    return LabelOrder.BASE
   }
 }
 
-const anonymization = [
+const anonymization: Taxonomy = [
   {
     group: 'Morphology',
     entries: [{label: 'gen', desc: 'gender'}, {label: 'def', desc: 'definite'}],
@@ -334,5 +346,31 @@ export const config = {
   examples,
   image_ws_url,
   taxonomy: {anonymization, normalization},
-  anonymization_label_order,
+}
+
+/** What group does this label belong to?
+
+  (label_group('ort') as TaxonomyGroup).group // => 'Errors'
+  label_group('quux') // => undefined
+
+ */
+export function label_group(label: string): TaxonomyGroup | undefined {
+  return config.taxonomy.anonymization.find(
+    group => !!group.entries.find(entry => entry.label == label)
+  )
+}
+
+export interface TaxonomyFind {
+  taxonomy: string
+  group: string
+  entry: {label: string; desc: string}
+}
+
+export function find_label(label: string): TaxonomyFind | undefined {
+  for (let taxonomy in config.taxonomy) {
+    for (let group of (config.taxonomy as {[mode: string]: Taxonomy})[taxonomy]) {
+      let entry = group.entries.find(entry => entry.label == label)
+      if (entry !== undefined) return {taxonomy, group: group.group, entry}
+    }
+  }
 }
