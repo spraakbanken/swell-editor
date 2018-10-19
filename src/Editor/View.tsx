@@ -26,7 +26,7 @@ import {GraphView} from '../GraphView'
 import * as GV from '../GraphView'
 
 import * as Manual from './Manual'
-import {validation_transaction, Severity, validateState} from './Validate'
+import {Severity} from './Validate'
 
 typestyle.cssRaw(`
 body > div {
@@ -382,7 +382,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
                 style={{margin: '3px 8px', fontSize: '0.9em', opacity: 0.8}}
                 href={state.backurl}
                 onClick={e => {
-                  validateState(store)
+                  Model.validateState(store)
                   const messages = store.at('validation_messages').get()
                   if (
                     messages.length &&
@@ -396,7 +396,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             )}
             {state.done !== undefined &&
               Button(state.done ? 'not done' : 'done', 'toggle between done and not done', () =>
-                validation_transaction(store, s => s.at('done').modify(b => !b))
+                Model.validation_transaction(store, s => s.at('done').modify(b => !b))
               )}
             {toggle_button('options', 'options')}
           </div>
@@ -406,7 +406,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             <div className="box">
               {RestrictionButtons(store.at('side_restriction'))}
               <hr />
-              {Button('validate', '', () => validateState(store))}
+              {Button('validate', '', () => Model.validateState(store))}
               {Button(
                 `${anon_mode ? 'disable' : 'enable'} anonymization view`,
                 '',

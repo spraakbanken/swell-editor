@@ -15,7 +15,6 @@ import {Button} from '../ReactUtils'
 import {State} from './Model'
 import * as Model from './Model'
 import {Taxonomy, label_order, LabelOrder} from './Config'
-import {validation_transaction} from './Validate'
 
 const LabelSidekickStyle = style({
   ...Utils.debugName('LabelSidekickStyle'),
@@ -281,7 +280,7 @@ export function LabelSidekick({
           selected={labels}
           mode={mode}
           onChange={(label, value) =>
-            validation_transaction(store, store =>
+            Model.validation_transaction(store, store =>
               advance(() => {
                 edge_ids.forEach(id =>
                   graph.modify(g =>
