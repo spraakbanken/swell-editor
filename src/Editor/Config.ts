@@ -41,7 +41,7 @@ export type TaxonomyGroup = {
 
 export type Taxonomy = TaxonomyGroup[]
 
-const extra = 'gen def ort'.split(' ')
+const extra = 'gen def pl ort'.split(' ')
 const temporary = 'OBS!'.split(' ')
 const digits = /^\d+$/
 
@@ -67,7 +67,11 @@ export function label_order(label: string): LabelOrder {
 const anonymization: Taxonomy = [
   {
     group: 'Morphology',
-    entries: [{label: 'gen', desc: 'gender'}, {label: 'def', desc: 'definite'}],
+    entries: [
+      {label: 'gen', desc: 'genitive'},
+      {label: 'def', desc: 'definite'},
+      {label: 'pl', desc: 'plural'},
+    ],
   },
   {
     group: 'Errors',
