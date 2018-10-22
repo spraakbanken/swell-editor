@@ -40,7 +40,7 @@ export const BorderCell = style(
   }
 )
 
-export const ManualPathColour = '#6699cc'
+export const ManualPathColour = '#6699ee'
 
 const GraphViewStyle = style(
   Utils.debugName('GraphViewStyle'),
@@ -65,7 +65,7 @@ const GraphViewStyle = style(
         ...csstips.horizontal,
         ...csstips.centerJustified,
       },
-      '& > ul > .bottom': {
+      '& > ul > .bottom, & > ul > .top': {
         marginTop: `${px(3)}`,
         marginBottom: `${px(3)}`,
       },
@@ -83,10 +83,14 @@ const GraphViewStyle = style(
       },
       '& ins': {
         color: '#383',
+        backgroundColor: '#cfc',
+        borderRadius: '.3em',
         textDecoration: 'none',
       },
       '& del': {
         color: '#a00',
+        backgroundColor: '#fcd',
+        borderRadius: '.3em',
         textDecoration: 'none',
       },
       '& .GreyPath': {
@@ -99,7 +103,7 @@ const GraphViewStyle = style(
       },
       '& .GreyPath.Manual': {
         stroke: ManualPathColour,
-        strokeWidth: px(4),
+        strokeWidth: px(8),
         fill: 'none',
       },
       '& .WhitePath': {
