@@ -40,7 +40,7 @@ export const BorderCell = style(
   }
 )
 
-export const ManualPathColour = '#6699cc'
+export const ManualPathColour = '#6699ee'
 
 const GraphViewStyle = style(
   Utils.debugName('GraphViewStyle'),
@@ -103,7 +103,7 @@ const GraphViewStyle = style(
       },
       '& .GreyPath.Manual': {
         stroke: ManualPathColour,
-        strokeWidth: px(4),
+        strokeWidth: px(8),
         fill: 'none',
       },
       '& .WhitePath': {
