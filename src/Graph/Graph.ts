@@ -1228,7 +1228,7 @@ Source ids are preserved but target ids are generated
 
 */
 export function anonymize(graph: Graph, pseudonymize: Pseudonymizer): Graph {
-  const g = source_to_target(graph)
+  const g = source_to_target(graph, false)
   let i = next_id(g)
   const em = edge_map(g)
   const tm = token_map(g)
@@ -1268,7 +1268,7 @@ export function anonymize_when(
 type Pseudonymizer = (text: string, labels: string[], key: string) => string
 
 /** Sets the target text to the source text, but preserving all labels */
-export function source_to_target(g: Graph): Graph {
+export function source_to_target(g: Graph, make_manual: boolean = true): Graph {
   let i = next_id(g)
   const rename_map: Record<string, string> = {}
   const target = g.source.map(s => {
@@ -1286,7 +1286,7 @@ export function source_to_target(g: Graph): Graph {
       }
     })
     if (ids.length > 0) {
-      return [Edge(ids, e.labels, true)]
+      return [Edge(ids, e.labels, make_manual)]
     } else {
       return []
     }
