@@ -93,6 +93,10 @@ const GraphViewStyle = style(
         borderRadius: '.3em',
         textDecoration: 'none',
       },
+      '.NoManualBlue & ins, .NoManualBlue & del': {
+        color: 'inherit',
+        backgroundColor: '#eee',
+      },
       '& .GreyPath': {
         stroke: '#999',
         strokeWidth: px(4),
