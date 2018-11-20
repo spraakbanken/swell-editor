@@ -41,7 +41,7 @@ export type TaxonomyGroup = {
 
 export type Taxonomy = TaxonomyGroup[]
 
-const extra = 'gen def pl ort'.split(' ')
+const extra = 'gen def pl'.split(' ')
 const temporary = 'OBS!'.split(' ')
 const digits = /^\d+$/
 
@@ -72,10 +72,6 @@ const anonymization: Taxonomy = [
       {label: 'def', desc: 'definite'},
       {label: 'pl', desc: 'plural'},
     ],
-  },
-  {
-    group: 'Errors',
-    entries: [{label: 'ort', desc: 'orthography'}],
   },
   {
     group: 'Names',
@@ -370,7 +366,7 @@ export const config = {
 
 /** What group does this label belong to?
 
-  (label_group('ort') as TaxonomyGroup).group // => 'Errors'
+  (label_group('country') as TaxonomyGroup).group // => 'Geographic data'
   label_group('quux') // => undefined
 
  */
