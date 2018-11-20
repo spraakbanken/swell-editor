@@ -164,7 +164,12 @@ export const normalization: Taxonomy = [
     entries: [
       {
         label: 'L',
-        desc: 'Wrong word',
+        desc:
+          'Wrong word or phrase. Includes even phrasal verbs and reflexives with missing particle/reflexive marker',
+      },
+      {
+        label: 'L-M',
+        desc: 'Missing content word',
       },
       {
         label: 'L-REF',
@@ -172,7 +177,7 @@ export const normalization: Taxonomy = [
       },
       {
         label: 'L-DER',
-        desc: 'Deviant derivational affix used',
+        desc: 'Deviant (existisng!) derivational affix used',
       },
       {
         label: 'L-ID',
@@ -180,7 +185,7 @@ export const normalization: Taxonomy = [
       },
       {
         label: 'L-FL',
-        desc: 'Non-Swedish word',
+        desc: 'Foreign word (not conventionally used in Swedish)',
       },
     ],
   },
@@ -189,11 +194,11 @@ export const normalization: Taxonomy = [
     entries: [
       {
         label: 'O',
-        desc: 'Orthographic / spelling error',
+        desc: 'Orthographic/spelling error',
       },
       {
         label: 'O-CAP',
-        desc: 'Error with capitalization (upper / lower)',
+        desc: 'Error with capitalization (upper/lower)',
       },
       {
         label: 'O-COMP',
@@ -204,14 +209,24 @@ export const normalization: Taxonomy = [
   {
     group: 'Morphological',
     entries: [
-      {label: 'M-CASE', desc: 'Case'},
+      {
+        label: 'M-CASE',
+        desc: 'Corrections regarding the use of genitive (nouns) and dative forms (pronouns)',
+      },
       {label: 'M-DEF', desc: 'Deviation in definite/indefinite forms'},
-      {label: 'M-GEND', desc: 'Gender error'},
-      {label: 'M-KOMP', desc: 'Comparison error'},
-      {label: 'M-NUM', desc: 'Deviation in number agreement'},
-      {label: 'M-VERB', desc: 'Covers all deviations with verbs and verb groups, incl aspect'},
-      {label: 'M-F', desc: 'Deviant form but correct category, incl adverb'},
-      {label: 'M-Other', desc: 'Other morphological deviation'},
+      {label: 'M-GEND', desc: 'Correction regarding grammatical gender'},
+      {label: 'M-NUM', desc: 'Deviation in number agreement. May apply to groups of words'},
+      {label: 'M-VERB', desc: 'Covers deviations in the verb phrase, i.e. aspect, tense, mode'},
+      {label: 'M-F', desc: 'Deviant paradigm selection, but correct grammatical category'},
+      {
+        label: 'M-ADJ/ADV',
+        desc: 'Corrections concerning the confusions of adjective and adverbial endings',
+      },
+      {
+        label: 'M-Other',
+        desc:
+          'Ambiguous cases with several possible target hypotheses – to be applied when there are no convincing arguments for any other morphological code',
+      },
     ],
   },
   {
@@ -223,7 +238,8 @@ export const normalization: Taxonomy = [
       },
       {
         label: 'S-M',
-        desc: 'Word, phrase missing',
+        desc:
+          'Grammatical word missing, e.g. particle, reflexive pronoun, connector, auxiliary verbs',
       },
       {
         label: 'S-R',
@@ -231,7 +247,7 @@ export const normalization: Taxonomy = [
       },
       {
         label: 'S-adv',
-        desc: 'Word order error with adverbial placement',
+        desc: 'Word order error involving adverbial placement',
       },
       {
         label: 'S-finV',
@@ -239,7 +255,7 @@ export const normalization: Taxonomy = [
       },
       {
         label: 'S-WO',
-        desc: 'Word or phrase order - other',
+        desc: 'Word or phrase order – other',
       },
     ],
   },
@@ -269,7 +285,7 @@ export const normalization: Taxonomy = [
     entries: [
       {
         label: 'X',
-        desc: 'impossible to interpret the writer’s intention ',
+        desc: 'Impossible to interpret the writer’s intention',
       },
     ],
   },
