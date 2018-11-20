@@ -376,6 +376,10 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             {Button('undo', '', history.undo, history.canUndo())}
             {Button('redo', '', history.redo, history.canRedo())}
           </div>
+          <div style={{fontWeight: 'bold'}}>
+            Svala {anon_mode ? 'anonymization' : 'normalization'}{' '}
+            {store.at('essay').get() ? `– essay ${store.at('essay').get()}` : ''}
+          </div>
           <div>
             {!!state.backurl && (
               <a
