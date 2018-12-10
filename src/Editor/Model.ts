@@ -427,6 +427,7 @@ export function compactStore(store: Store<State>): Store<G.SourceTarget<string>>
 export function visibleGraph(store: Store<State>) {
   const state = store.get()
   const g = currentGraph(store)
+
   if (inAnonMode(store)) {
     return G.anonymize(G.sort_edge_labels(g, label_order), pseudonymizeToken)
   } else if (state.subspan) {

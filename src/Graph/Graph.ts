@@ -15,6 +15,8 @@ export const opposite = (s: Side): Side => (s === 'source' ? 'target' : 'source'
 
 export const sides = ['source', 'target'] as Side[]
 
+export const sidecase = <T>(side: Side, s: T, t: T): T => (side === 'source' ? s : t)
+
 export function mapSides<A, B>(g: SourceTarget<A>, f: (a: A, side: Side) => B): SourceTarget<B> {
   return {source: f(g.source, 'source'), target: f(g.target, 'target')}
 }
@@ -381,16 +383,22 @@ export function next_id(g: Graph): number {
   show(unaligned_modify(g, 16, 16, ' !')) // => ['test ', 'graph ', 'hello ', '! ']
 
 Indexes are character offsets (use CodeMirror's doc.posFromIndex and doc.indexFromPos to convert) */
-export function unaligned_modify(g: Graph, from: number, to: number, text: string): Graph {
-  const tokens = target_texts(g)
+export function unaligned_modify(
+  g: Graph,
+  from: number,
+  to: number,
+  text: string,
+  side: Side = 'target'
+): Graph {
+  const tokens = get_side_texts(g, side)
   const {token: from_token, offset: from_ix} = T.token_at(tokens, from)
   const pre = (tokens[from_token] || '').slice(0, from_ix)
-  if (to === target_text(g).length) {
-    return unaligned_modify_tokens(g, from_token, g.target.length, pre + text)
+  if (to === get_side_text(g, side).length) {
+    return unaligned_modify_tokens(g, from_token, g[side].length, pre + text, side)
   } else {
     const {token: to_token, offset: to_ix} = T.token_at(tokens, to)
     const post = (tokens[to_token] || '').slice(to_ix)
-    return unaligned_modify_tokens(g, from_token, to_token + 1, pre + text + post)
+    return unaligned_modify_tokens(g, from_token, to_token + 1, pre + text + post, side)
   }
 }
 
@@ -416,37 +424,47 @@ export function unaligned_modify(g: Graph, from: number, to: number, text: strin
   ids(unaligned_modify_tokens(g, 0, 0, 'this '))     // => 't3 t0 t1 t2'
   ids(unaligned_modify_tokens(g, 0, 1, 'this '))     // => 't3 t1 t2'
   ids(unaligned_modify_tokens(g, 0, 1, 'this'))      // => 't3 t2'
+  const showS = (g: Graph) => g.source.map(t => t.text)
+  const idsS = (g: Graph) => g.source.map(t => t.id).join(' ')
+  showS(unaligned_modify_tokens(g, 0, 0, 'this ', 'source')) // => ['this ', 'test ', 'graph ', 'hello ']
+  idsS(unaligned_modify_tokens(g, 0, 0, 'this ', 'source'))  // => 's3 s0 s1 s2'
 
 Indexes are token offsets */
-export function unaligned_modify_tokens(g: Graph, from: number, to: number, text: string): Graph {
-  if (from < 0 || to < 0 || from > g.target.length || to > g.target.length || from > to) {
+export function unaligned_modify_tokens(
+  g: Graph,
+  from: number,
+  to: number,
+  text: string,
+  side: Side = 'target'
+): Graph {
+  if (from < 0 || to < 0 || from > g[side].length || to > g[side].length || from > to) {
     throw new Error('Invalid coordinates ' + Utils.show({g, from, to, text}))
   }
   if (text.match(/^\s+$/)) {
     // replacement text is only whitespace: need to find some token to put it on
     if (from > 0) {
-      return unaligned_modify_tokens(g, from - 1, to, g.target[from - 1].text + text)
-    } else if (to < g.target.length) {
-      return unaligned_modify_tokens(g, from, to + 1, text + g.target[to].text)
+      return unaligned_modify_tokens(g, from - 1, to, g[side][from - 1].text + text, side)
+    } else if (to < g[side].length) {
+      return unaligned_modify_tokens(g, from, to + 1, text + g[side][to].text, side)
     } else {
       // console.warn('Introducing whitespace into empty graph')
     }
   }
-  if (text.match(/\S$/) && to < g.target.length) {
+  if (text.match(/\S$/) && to < g[side].length) {
     // if replacement text does not end with whitespace, grab the next word as well
-    return unaligned_modify_tokens(g, from, to + 1, text + g.target[to].text)
+    return unaligned_modify_tokens(g, from, to + 1, text + g[side][to].text, side)
   }
 
-  if (from > 0 && from == g.target.length && to === g.target.length) {
+  if (from > 0 && from == g[side].length && to === g[side].length) {
     // we're adding a word at the end but the last token might not end in whitespace:
     // glue them together
 
-    return unaligned_modify_tokens(g, from - 1, to, g.target[from - 1].text + text)
+    return unaligned_modify_tokens(g, from - 1, to, g[side][from - 1].text + text, side)
   }
 
   const id_offset = next_id(g)
-  const tokens = T.tokenize(text).map((t, i) => Token(t, 't' + (id_offset + i)))
-  const [target, removed] = Utils.splice(g.target, from, to - from, ...tokens)
+  const tokens = T.tokenize(text).map((t, i) => Token(t, side[0] + (id_offset + i)))
+  const [new_tokens, removed] = Utils.splice(g[side], from, to - from, ...tokens)
   const ids_removed = new Set(removed.map(t => t.id))
   const new_edge_ids = new Set<string>(tokens.map(t => t.id))
   const new_edge_labels = new Set<string>()
@@ -465,7 +483,7 @@ export function unaligned_modify_tokens(g: Graph, from: number, to: number, text
     const e = Edge([...new_edge_ids], [...new_edge_labels], new_edge_manual)
     edges[e.id] = e
   }
-  return {source: g.source, target, edges}
+  return {...g, [side]: new_tokens, edges}
 }
 
 export function modify(g: Graph, from: number, to: number, text: string): Graph {
@@ -502,11 +520,11 @@ export function rearrange(g: Graph, begin: number, end: number, dest: number): G
   return align(unaligned_rearrange(g, begin, end, dest))
 }
 
-export function unaligned_set_target(g: Graph, text: string): Graph {
-  const text0 = target_text(g)
+export function unaligned_set_side(g: Graph, side: Side, text: string): Graph {
+  const text0 = get_side_text(g, side)
   const {from, to} = Utils.edit_range(text0, text)
   const new_text = text.slice(from, text.length - (text0.length - to))
-  return unaligned_modify(g, from, to, new_text)
+  return unaligned_modify(g, from, to, new_text, side)
 }
 
 /**
@@ -520,15 +538,15 @@ export function unaligned_set_target(g: Graph, text: string): Graph {
 
 */
 export function set_target(g: Graph, text: string): Graph {
-  return align(unaligned_set_target(g, text))
+  return align(unaligned_set_side(g, 'target', text))
 }
 
 export function set_source(g: Graph, text: string): Graph {
-  return align(unaligned_invert(unaligned_set_target(unaligned_invert(g), text)))
+  return align(unaligned_set_side(g, 'source', text))
 }
 
 export function set_side(g: Graph, side: Side, text: string): Graph {
-  return (side === 'source' ? set_source : set_target)(g, text)
+  return sidecase(side, set_source, set_target)(g, text)
 }
 
 export function get_side_text(g: Graph, side: Side): string {
