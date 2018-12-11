@@ -1224,7 +1224,7 @@ Source ids are preserved but target ids are generated
   target_texts(anonymize(from_unaligned({
     source: [{text: 'Hej ', labels: []}, {text: 'Maria ', labels: ['region']}],
     target: []
-  }))) // => ['Hej ', 'Region ']
+  }), (text, labels, key) => `${labels.join('-')}-X')) // => ['Hej ', 'region-X ']
 
 */
 export function anonymize(graph: Graph, pseudonymize: Pseudonymizer): Graph {
