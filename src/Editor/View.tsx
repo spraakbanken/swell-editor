@@ -363,7 +363,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
   function header() {
     const history = Model.history(store)
 
-    const options = ['graph', 'diff', 'image_link', 'examples'] as Model.Show[]
+    const options = ['graph', 'diff', 'examples'] as Model.Show[]
 
     const toggle = (show: Model.Show) => show_store(show).modify(b => (b ? undefined : true))
 
