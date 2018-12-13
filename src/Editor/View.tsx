@@ -312,7 +312,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
           </div>
         )}
         <div
-          className={(hovering ? ' hovering' : '') + (anon_mode ? ' NoManualBlue' : '')}
+          className={(hovering ? ' hovering' : '') + (anon_mode ? 'anon NoManualBlue' : 'norm')}
           style={{minHeight: '10em'}}>
           <GraphView
             side={state.side_restriction}

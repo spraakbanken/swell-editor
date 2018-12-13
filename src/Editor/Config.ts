@@ -45,6 +45,7 @@ const extra = 'gen def pl'.split(' ')
 const temporary = 'OBS!'.split(' ')
 const digits = /^\d+$/
 
+/** An ordered set of label categories. */
 export enum LabelOrder {
   BASE,
   NUM,
@@ -52,6 +53,7 @@ export enum LabelOrder {
   TEMP,
 }
 
+/** Maps a label to a category in LabelOrder. */
 export function label_order(label: string): LabelOrder {
   if (temporary.includes(label)) {
     return LabelOrder.TEMP
@@ -62,6 +64,14 @@ export function label_order(label: string): LabelOrder {
   } else {
     return LabelOrder.BASE
   }
+}
+
+/** Sorting function for labels. */
+export function label_sort(a: string, b: string): number {
+  const tax = (l: string) =>
+    find_label(l) ? ['anonymization', 'normalization'].indexOf(find_label(l)!.taxonomy) : 0
+  const tax_sort = tax(a) - tax(b)
+  return tax_sort !== 0 ? tax_sort : label_order(a) - label_order(b)
 }
 
 const anonymization: Taxonomy = [

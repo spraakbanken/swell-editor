@@ -7,6 +7,7 @@ import * as record from './record'
 
 import {VNode} from './ReactUtils'
 import * as ReactUtils from './ReactUtils'
+import {find_label, label_order, LabelOrder, label_sort} from './Editor/Config'
 
 const intended_font_size = 16
 const px = (i: number) => `${i / intended_font_size}em`
@@ -164,6 +165,10 @@ const GraphViewStyle = style(
         width: '100%',
         height: '100%',
         position: 'absolute',
+      },
+
+      '.anon & .label-normalization, .norm & .label-anonymization': {
+        color: '#999',
       },
     },
   }
@@ -345,6 +350,12 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
   const u = grids.upper
   const l = grids.lower
   const c = Utils.count<string>()
+  const label_class = (l: string) =>
+    find_label(l)
+      ? 'label-' + find_label(l)!.taxonomy
+      : label_order(l) === LabelOrder.NUM
+        ? 'label-anonymization'
+        : ''
   return (
     <div
       className={`${GraphViewStyle} ${ReactUtils.clean_ul} ${ReactUtils.Unselectable} graphView`}>
@@ -381,7 +392,7 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
                 </span>
               )
             }
-            const labels = graph.edges[d.id].labels.filter(lbl => lbl.length > 0)
+            const labels = graph.edges[d.id].labels.filter(lbl => lbl.length > 0).sort(label_sort)
             const brow_threshold = side ? (labels.length > 0 ? 0 : 1) : 1
             const [s, t] = Utils.expr((): [VNode, VNode] => {
               switch (d.edit) {
@@ -428,7 +439,13 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
               labels.length > 0 &&
                 show_label_now && (
                   <div className={BorderCell + ' ' + hoverClass(hoverId, d.id) + obs_class}>
-                    <div>{labels.map((l, i) => <span key={i}>{l}</span>)}</div>
+                    <div>
+                      {labels.map((l, i) => (
+                        <span key={i} className={label_class(l)}>
+                          {l}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )
             )
