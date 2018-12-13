@@ -411,11 +411,8 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
               {RestrictionButtons(store.at('side_restriction'))}
               <hr />
               {Button('validate', '', () => Model.validateState(store))}
-              {Button(
-                `${anon_mode ? 'disable' : 'enable'} anonymization view`,
-                '',
-                () => store.at('mode').modify(Model.nextMode),
-                !state.backend
+              {Button(`${anon_mode ? 'disable' : 'enable'} anonymization view`, '', () =>
+                store.at('mode').modify(Model.nextMode)
               )}
               <hr />
               {Button(
