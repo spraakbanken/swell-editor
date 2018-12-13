@@ -27,6 +27,7 @@ import * as GV from '../GraphView'
 
 import * as Manual from './Manual'
 import {Severity} from './Validate'
+import {opposite} from '../Graph/Graph'
 
 typestyle.cssRaw(`
 body > div {
@@ -362,7 +363,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
   function header() {
     const history = Model.history(store)
 
-    const options = ['graph', 'diff', 'image_link', 'examples', 'source_text'] as Model.Show[]
+    const options = ['graph', 'diff', 'examples'] as Model.Show[]
 
     const toggle = (show: Model.Show) => show_store(show).modify(b => (b ? undefined : true))
 
@@ -408,23 +409,24 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
         {state.show.options && (
           <div className="menu">
             <div className="box">
+              {toggle_button('source_text')}
               {RestrictionButtons(store.at('side_restriction'))}
               <hr />
               {Button('validate', '', () => Model.validateState(store))}
               {Button(
-                `${anon_mode ? 'disable' : 'enable'} anonymization view`,
+                `switch to ${anon_mode ? 'normalization' : 'anonymization'}`,
                 '',
                 () => store.at('mode').modify(Model.nextMode),
                 !state.backend
               )}
               <hr />
+              {options.map(s => toggle_button(s))}
+              <hr />
               {Button(
-                show_hide_str(state.manual !== undefined) + 'manual',
+                state.manual === undefined ? 'help' : 'exit help',
                 'toggle showing manual',
                 () => Model.setManualTo(store, state.manual ? undefined : 'manual')
               )}
-              <hr />
-              {options.map(s => toggle_button(s))}
             </div>
           </div>
         )}
@@ -489,9 +491,15 @@ function show_hide_str(b: boolean | undefined) {
 }
 
 function RestrictionButtons(store: Store<G.Side | undefined>): VNode[] {
-  const options = [undefined, ...G.sides]
-  const name = (k?: string) => 'view ' + (k === undefined ? 'both sides' : k + ' only')
-  return options.map(k => Button(name(k), '', () => store.set(k), store.get() !== k))
+  return G.sides.map(k =>
+    Button(
+      show_hide_str(store.get() !== opposite(k)) + `${k} in graph`,
+      '',
+      // Undefined means show both.
+      () => store.set(store.get() === undefined ? opposite(k) : undefined),
+      store.get() !== k
+    )
+  )
 }
 
 function ShowErrors(store: Store<Record<string, true>>) {
