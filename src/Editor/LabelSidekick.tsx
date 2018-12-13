@@ -40,7 +40,7 @@ const LabelSidekickStyle = style({
     },
     '&': {
       zIndex: 20,
-      position: 'sticky',
+      position: ['-webkit-sticky', 'sticky'],
       top: 0,
       marginRight: '10px',
       margin: 0,
