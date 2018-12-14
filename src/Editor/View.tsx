@@ -223,14 +223,18 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
       <div className="main" style={{minHeight: '18em'}}>
         {Manual.slugs.map(slug => (
           <span key={slug}>
-            <ReactUtils.A
-              title={slug.replace('_', ' ')}
-              text={slug.replace('_', ' ')}
-              onMouseDown={e => {
-                e.stopPropagation()
-                Model.setManualTo(store, slug)
-              }}
-            />{' '}
+            {state.manual === slug ? (
+              slug.replace('_', ' ')
+            ) : (
+              <ReactUtils.A
+                title={slug.replace('_', ' ')}
+                text={slug.replace('_', ' ')}
+                onMouseDown={e => {
+                  e.stopPropagation()
+                  Model.setManualTo(store, slug)
+                }}
+              />
+            )}{' '}
           </span>
         ))}
         {manual_page && (
