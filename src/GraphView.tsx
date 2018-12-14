@@ -1,9 +1,8 @@
 import * as React from 'react'
-import * as G from './Graph'
+import * as G from './Graph/Graph'
 import {style} from 'typestyle'
 import * as csstips from 'csstips'
 import * as Utils from './Utils'
-import * as record from './record'
 
 import {VNode} from './ReactUtils'
 import * as ReactUtils from './ReactUtils'

@@ -1,6 +1,5 @@
 import * as CodeMirror from 'codemirror'
-import * as React from 'react'
-import {Store, Lens, Undo} from 'reactive-lens'
+import {Store} from 'reactive-lens'
 import * as Utils from '../Utils'
 
 import {Graph} from '../Graph'

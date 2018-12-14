@@ -1,8 +1,7 @@
 import * as React from 'react'
-import {Store, Lens, Undo} from 'reactive-lens'
+import {Store, Lens} from 'reactive-lens'
 import {style} from 'typestyle'
 import * as typestyle from 'typestyle'
-import * as csstips from 'csstips'
 
 import {Graph} from '../Graph'
 import * as G from '../Graph'
@@ -27,7 +26,7 @@ import * as GV from '../GraphView'
 
 import * as Manual from './Manual'
 import {Severity} from './Validate'
-import {opposite} from '../Graph/Graph'
+import {opposite} from '../Graph/GraphCore'
 
 typestyle.cssRaw(`
 body > div {

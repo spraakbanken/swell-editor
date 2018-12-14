@@ -1,9 +1,6 @@
 import * as R from 'ramda'
-import {Diff, Dragged, Dropped} from './Diff'
-import {Graph} from './Graph'
 import * as D from './Diff'
-import * as G from './Graph'
-import * as L from './Lines'
+import * as G from './GraphCore'
 
 import * as Utils from '../Utils'
 import * as record from '../record'
@@ -11,7 +8,7 @@ import * as record from '../record'
 export type NavigationKind = 'boring' | 'interesting'
 
 export function navigate(
-  g: Graph,
+  g: G.Graph,
   selected_edges: string[],
   dir: 'next' | 'prev',
   kind: NavigationKind,
@@ -48,7 +45,7 @@ export function navigate(
 }
 
 export function navigate_token_ids(
-  g: Graph,
+  g: G.Graph,
   selected_ids: string[],
   dir: 'next' | 'prev',
   kind: NavigationKind,

@@ -1,16 +1,13 @@
 import * as React from 'react'
 import {Store} from 'reactive-lens'
-import * as G from './Graph'
-import * as R from 'ramda'
-import {style, types} from 'typestyle'
-import * as csstips from 'csstips'
+import * as G from '../Graph'
 import * as Pilot from './PilotData'
-import * as Utils from './Utils'
+import * as Utils from '../Utils'
 import {GraphSegments} from './PilotData'
-import * as GV from './GraphView'
+import * as GV from '../GraphView'
 
-import {VNode} from './ReactUtils'
-import * as ReactUtils from './ReactUtils'
+import {VNode} from '../ReactUtils'
+import * as ReactUtils from '../ReactUtils'
 
 export interface State {
   readonly graph_segments: GraphSegments

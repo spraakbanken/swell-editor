@@ -1,6 +1,5 @@
-import * as React from 'react'
 import * as G from '../Graph'
-import {md} from '../Slides'
+import {md} from '../Doc/Slides'
 import {VNode} from '../ReactUtils'
 
 type Mode = 'anonymization' | 'normalization'

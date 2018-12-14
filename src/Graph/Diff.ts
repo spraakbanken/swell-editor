@@ -3,7 +3,6 @@ import {Token} from './Token'
 import * as T from './Token'
 
 import * as Utils from '../Utils'
-import {TokenDiff} from '../Utils'
 import * as record from '../record'
 
 export interface Dropped {

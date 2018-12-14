@@ -6,7 +6,6 @@ import {Token, Span} from './Token'
 import * as T from './Token'
 import {Lens, Store} from 'reactive-lens'
 
-import {Diff, Dragged, Dropped} from './Diff'
 import * as D from './Diff'
 
 export type Side = 'source' | 'target'
@@ -587,7 +586,7 @@ export function unaligned_revert(g: Graph, edge_ids: string[]): Graph {
           const t = {...d.source, id: 't' + supply++}
           const e = Edge([s.id, t.id], [])
           edges[e.id] = e
-          return [Dragged(s, e.id, false), Dropped(t, e.id, false)]
+          return [D.Dragged(s, e.id, false), D.Dropped(t, e.id, false)]
         } else {
           return [d]
         }
@@ -739,7 +738,7 @@ export function align(g: Graph): Graph {
 interface ScoreDiffPair {
   score: number
   // A reversed list of the way back (Instead of constructing it from back links)
-  diff: Utils.LazySnocList<Diff>
+  diff: Utils.LazySnocList<D.Diff>
 }
 
 /** Calculate the (graphView) diff
@@ -815,7 +814,7 @@ the diff algorithm before but the results were subpar, see #32
 export function calculate_diff(
   g: Graph,
   order_changing_label: (s: string) => boolean = () => false
-): Diff[] {
+): D.Diff[] {
   const m = edge_map(g)
   const lookup = (tok: Token) => m.get(tok.id) as Edge
 
@@ -919,8 +918,8 @@ export function calculate_diff(
   split_up_edits(diff, _ => false) // => diff
 
 */
-export function split_up_edits(ds: Diff[], audit = (edge_id: string) => true): Diff[] {
-  return Utils.flatMap<Diff, Diff>(ds, d => {
+export function split_up_edits(ds: D.Diff[], audit = (edge_id: string) => true): D.Diff[] {
+  return Utils.flatMap<D.Diff, D.Diff>(ds, d => {
     if (d.edit == 'Edited' && audit(d.id)) {
       return [
         ...d.source.map(t => D.Dragged(t, d.id, d.manual)),
@@ -935,11 +934,14 @@ export function split_up_edits(ds: Diff[], audit = (edge_id: string) => true): D
 export function calculate_dnd_diff(
   g: Graph,
   order_changing_label: (s: string) => boolean = () => false
-): (Dragged | Dropped)[] {
+): (D.Dragged | D.Dropped)[] {
   return split_up_edits(calculate_diff(g, order_changing_label)) as any
 }
 
-export function from_dnd_diff(diff: (Dragged | Dropped)[], edges0: Record<string, Edge>): Graph {
+export function from_dnd_diff(
+  diff: (D.Dragged | D.Dropped)[],
+  edges0: Record<string, Edge>
+): Graph {
   const source = [] as Token[]
   const target = [] as Token[]
   const edges = R.clone(edges0)
@@ -963,7 +965,7 @@ export function from_dnd_diff(diff: (Dragged | Dropped)[], edges0: Record<string
   g2 // => g
 
 */
-export function diff_to_graph(diff: Diff[], edges: Record<string, Edge>): Graph {
+export function diff_to_graph(diff: D.Diff[], edges: Record<string, Edge>): Graph {
   return align(from_dnd_diff(split_up_edits(diff) as any, edges))
 }
 

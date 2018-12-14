@@ -1,9 +1,7 @@
 import * as puppeteer from 'puppeteer'
 
-import * as Model from '../src/Editor/Model'
 import * as Utils from '../src/Utils'
 
-import * as cp from 'child_process'
 import * as fs from 'fs'
 
 import * as chai from 'chai'

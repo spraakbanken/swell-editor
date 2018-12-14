@@ -1,14 +1,11 @@
 import * as React from 'react'
-import {Store, Lens, Undo} from 'reactive-lens'
+import {Store} from 'reactive-lens'
 import {style} from 'typestyle'
-import * as csstips from 'csstips'
 
-import {Graph} from '../Graph'
 import * as G from '../Graph'
 import * as Utils from '../Utils'
 import * as record from '../record'
 
-import {VNode} from '../ReactUtils'
 import * as ReactUtils from '../ReactUtils'
 import {Button} from '../ReactUtils'
 

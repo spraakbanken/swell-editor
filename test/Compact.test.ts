@@ -1,15 +1,9 @@
-import {qc} from './Common'
-import {Gen} from 'proptest'
 import * as QC from 'proptest'
 
-import {graph, graph_with_tokens} from './Common'
+import {graph, graph_with_tokens, qc} from './Common'
 
 import * as G from '../src/Graph'
-import {Graph} from '../src/Graph'
 import * as Utils from '../src/Utils'
-import {range} from '../src/Utils'
-
-import * as assert from 'assert'
 
 qc('roundtrip graph<->string', graph, (g, p) =>
   p.equals(G.compact_to_graph(G.graph_to_compact(g)), g)

@@ -1,14 +1,11 @@
-import * as R from 'ramda'
 import * as React from 'react'
 import {Store} from 'reactive-lens'
-import {style, types} from 'typestyle'
-import * as csstips from 'csstips'
+import {style} from 'typestyle'
 
-import * as G from './Graph'
-import * as GV from './GraphView'
-import * as Utils from './Utils'
+import * as G from '../Graph'
+import * as GV from '../GraphView'
 
-import {VNode} from './ReactUtils'
+import {VNode} from '../ReactUtils'
 
 declare var require: any
 const Remarkable = require('remarkable')
@@ -145,11 +142,11 @@ const logos = () => (
   <React.Fragment>
     <img
       style={{position: 'absolute', bottom: '1rem', right: '1rem'}}
-      src={require('../talk/hws/logo_sb.jpg')}
+      src={require('../../talk/hws/logo_sb.jpg')}
     />
     <img
       style={{position: 'absolute', bottom: '1rem', left: '1rem'}}
-      src={require('../talk/hws/logo_gu.png')}
+      src={require('../../talk/hws/logo_gu.png')}
     />
   </React.Fragment>
 )
@@ -332,7 +329,7 @@ export function View(store: Store<State>): VNode {
     ${(
       <img
         style={{position: 'absolute', top: '-15%', left: '-0%', width: '130%', zIndex: -1}}
-        src={require('../talk/trac-issues.png')}
+        src={require('../../talk/trac-issues.png')}
       />
     )}
   `)
@@ -341,7 +338,7 @@ export function View(store: Store<State>): VNode {
     ${(
       <img
         style={{position: 'absolute', top: '-72%', left: '-45%', width: '200%', zIndex: -1}}
-        src={require('../talk/trac-issue.png')}
+        src={require('../../talk/trac-issue.png')}
       />
     )}
   `)
@@ -350,7 +347,7 @@ export function View(store: Store<State>): VNode {
     ${(
       <img
         style={{position: 'absolute', top: '-15%', left: '-25%', width: '120%', zIndex: -1}}
-        src={require('../talk/trac-issue.png')}
+        src={require('../../talk/trac-issue.png')}
       />
     )}
   `)
