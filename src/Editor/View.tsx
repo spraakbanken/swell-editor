@@ -16,7 +16,7 @@ import {State} from './Model'
 import * as Model from './Model'
 import {DropZone} from './DropZone'
 import * as CM from './CodeMirror'
-import {config} from './Config'
+import {config, label_class, label_sort} from './Config'
 
 import * as EditorTypes from '../EditorTypes'
 
@@ -326,6 +326,8 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             onHover={anon_mode ? undefined : hover_id => store.update({hover_id})}
             selectedIds={Object.keys(state.selected)}
             generation={state.generation}
+            labelClasser={label_class}
+            labelSort={label_sort}
             onSelect={(ids, only) => Model.onSelect(store, ids, only)}
           />
         </div>

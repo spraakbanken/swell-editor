@@ -400,3 +400,11 @@ export function find_label(label: string): TaxonomyFind | undefined {
     }
   }
 }
+
+export function label_class(l: string) {
+  return find_label(l)
+    ? 'label-' + find_label(l)!.taxonomy
+    : label_order(l) === LabelOrder.NUM
+      ? 'label-anonymization'
+      : ''
+}
