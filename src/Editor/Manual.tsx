@@ -176,6 +176,7 @@ page(
 # Revert
 
 There is normal undo functionality on Ctrl-Z and redo on Ctrl-Y which works with linear history.
+(Keep the cursor in the text area in order to use these keyboard shortcuts.)
 
 Sometimes it is more useful to revert at a specific selection in the graph.
 In the example below some changes have been made to the text but we would like to revert them.
@@ -193,7 +194,7 @@ page(
 Word movement can be tracked by changing the text and then selecting the words and grouping them.
 You can do this by erasing the word and then rewriting it or by using standard copy and paste functionality.
 
-A quicker way is to have the cursor on the word and use Alt-n and Alt-p for transposing the word onto the **n**ext and the **p**revious word.
+A quicker way is to have the cursor on the word and use Alt-O and Alt-P (⌘-O and ⌘-P on Mac) for transposing the word backward and forward, respectively.
 If the cursor is on many words (select many words in the editor by using the mouse or shift and arrow keys) they will be moved in unison.
 
 Try these different approaches to move _was_ and _his son_ into their correct places.
@@ -212,26 +213,30 @@ page(
 In anonymization mode there is no target text to edit.
 Data about the entities are put directly onto the edge groups.
 
-Each entity needs a unique number. The label editor allows adding numbers besides
-the predefined categories of labels. Give Alice number 1 and Bob number 2.
-Put other labels as appropriate. Remember that _Alice's_ is in genitive.
+Add labels as appropriate on the named entities in the example.
+For each labeling, a pseudonym is generated for the target token.
+To keep pseudonymization consistent, each distinct entity needs a unique number.
+The label editor allows adding numbers besides the predefined categories of labels.
+Give Alice number 1, Bob number 2 and Paris number 3.
+Use morphology labels to denote features like genitive.
 
 In the demo mode you can toggle between the anonymization view and normalization
-view with _enable/disable anonymization view_.
+view with _switch to anonymization/normalization_.
 
-The views _source only_ and _target only_ which are accessible under _show options_
-can be helpful when doing the anonymization: they make the view more compact
-and the _target only_ view can work as assistance to verify that the text
+The buttons _show/hide source/target in graph_ which are accessible under _show options_
+can be helpful when doing the anonymization, as they make the view more compact.
+Hiding the source side can work as assistance to verify that the text
 actually reads as anonymized.
   `,
   G.compact_to_graph(`
 Alice and Bob went to Paris . Alice's wallet was stolen . //
-Alice:'firstname:female':1 and Bob:'firstname:male':2 went to Paris:city . Alice's:'firstname:female':1:gen wallet was stolen .
+Alice:'firstname:female':1 and Bob:'firstname:male':2 went to Paris:city:3 . Alice's:'firstname:female':1:gen wallet was stolen .
 `),
   undefined,
   'anonymization'
 )
 
+/* Uncomment in https://github.com/spraakbanken/swell-editor/issues/92
 page(
   'image_links',
   md`
@@ -258,5 +263,6 @@ The actual markdown containing the link to the image looks like this:
   G.init('The graph'),
   undefined
 )
+*/
 
 slugs.push('print')
