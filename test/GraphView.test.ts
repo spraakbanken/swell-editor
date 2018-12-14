@@ -1,8 +1,4 @@
-import {qc} from './Common'
-
-import {graph, insert_text} from './Common'
-
-import {enzyme} from './Common'
+import {enzyme, graph, qc} from './Common'
 
 import * as GV from '../src/GraphView'
 import * as Utils from '../src/Utils'

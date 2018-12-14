@@ -1,6 +1,5 @@
 import {Store, Lens, Undo} from 'reactive-lens'
 
-import {Graph} from '../Graph'
 import * as G from '../Graph'
 
 import * as Utils from '../Utils'
@@ -11,10 +10,9 @@ import * as Manual from './Manual'
 import {Taxonomy, config, label_order, LabelOrder, find_label} from './Config'
 import {Severity, Rule, edge_check} from './Validate'
 import {pseudonymize} from 'pseudonymization';
-export {Taxonomy} from './Config'
 
 export interface State {
-  readonly graph: Undo<Graph>
+  readonly graph: Undo<G.Graph>
   readonly hover_id?: string
   readonly selected: Record<string, true>
   readonly subspan?: G.Subspan
@@ -193,7 +191,7 @@ export const init: State = {
   show: {},
 }
 
-export function check_invariant(store: Store<State>): (g: Graph) => void {
+export function check_invariant(store: Store<State>): (g: G.Graph) => void {
   return g => {
     const inv = G.check_invariant(g)
     if (inv !== 'ok') {
@@ -368,7 +366,7 @@ export function setSelection(store: Store<State>, ids: string[]) {
   })
 }
 
-export function deselect_removed_ids(graph: Graph, selected0: Record<string, true>) {
+export function deselect_removed_ids(graph: G.Graph, selected0: Record<string, true>) {
   const em = G.edge_map(graph)
   const present = (s: string) => em.has(s)
   const selected = record.filter(selected0, (_, id) => present(id))
@@ -403,7 +401,7 @@ export function history(store: Store<State>) {
   }
 }
 
-export function graphStore(store: Store<State>): Store<Graph> {
+export function graphStore(store: Store<State>): Store<G.Graph> {
   return store.at('graph').at('now')
 }
 
@@ -483,7 +481,7 @@ export function onSelect(store: Store<State>, ids: string[], only: boolean) {
 export function make_history_advance_function(store: Store<State>) {
   const graph = store.at('graph')
   const now = graph.at('now')
-  return (k: (g0: Graph) => void) =>
+  return (k: (g0: G.Graph) => void) =>
     store.transaction(() => {
       const g0 = now.get()
       k(g0)
@@ -567,7 +565,7 @@ export const actionKeyboard: Record<ActionOnSelected, string> = {
 }
 
 function navigate(direction: 'next' | 'prev', kind: G.NavigationKind) {
-  return ({graph, selected}: {graph: Graph; selected: string[]}) => {
+  return ({graph, selected}: {graph: G.Graph; selected: string[]}) => {
     return {
       type: 'selection' as 'selection',
       selected:
@@ -584,8 +582,8 @@ function navigate(direction: 'next' | 'prev', kind: G.NavigationKind) {
 
 const act_on_selected: {
   [K in ActionOnSelected]: (
-    gs: {graph: Graph; selected: string[]}
-  ) => Graph | {type: 'selection'; selected: string[]}
+    gs: {graph: G.Graph; selected: string[]}
+  ) => G.Graph | {type: 'selection'; selected: string[]}
 } = {
   revert({graph, selected}) {
     const edge_ids = G.token_ids_to_edge_ids(graph, selected)

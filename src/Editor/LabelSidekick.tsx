@@ -1,18 +1,13 @@
 import * as React from 'react'
-import {Store, Lens, Undo} from 'reactive-lens'
+import {Store} from 'reactive-lens'
 import {style} from 'typestyle'
-import * as csstips from 'csstips'
 
-import {Graph} from '../Graph'
 import * as G from '../Graph'
 import * as Utils from '../Utils'
 import * as record from '../record'
 
-import {VNode} from '../ReactUtils'
 import * as ReactUtils from '../ReactUtils'
-import {Button} from '../ReactUtils'
 
-import {State} from './Model'
 import * as Model from './Model'
 import {Taxonomy, label_order, LabelOrder} from './Config'
 
@@ -246,7 +241,7 @@ export function LabelSidekick({
   taxonomy,
   mode,
 }: {
-  store: Store<State>
+  store: Store<Model.State>
   taxonomy: Taxonomy
   mode: Model.Mode
 }) {
@@ -268,7 +263,7 @@ export function LabelSidekick({
         }}>
         <div>
           {Model.actionButtons[mode].map(action =>
-            Button(
+            ReactUtils.Button(
               Model.actionButtonNames[action],
               Model.actionDescriptions[action] + `\n\nShortcut: ${Model.actionKeyboard[action]}`,
               () => Model.performAction(store, action)

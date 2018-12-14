@@ -3,11 +3,9 @@ import * as G from './Graph'
 import {style} from 'typestyle'
 import * as csstips from 'csstips'
 import * as Utils from './Utils'
-import * as record from './record'
 
 import {VNode} from './ReactUtils'
 import * as ReactUtils from './ReactUtils'
-import {find_label, label_order, LabelOrder, label_sort} from './Editor/Config'
 
 const intended_font_size = 16
 const px = (i: number) => `${i / intended_font_size}em`
@@ -323,6 +321,8 @@ export interface GraphViewProps {
   hoverId?: string
   selectedIds?: string[]
   side?: G.Side
+  labelClasser?: (label: string) => string
+  labelSort?: (a: string, b: string) => number
   /** for hot module reloading, bumped at each reload and used to make sure thunked components get updated */
   generation?: number
 }
@@ -336,6 +336,8 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
     hoverId,
     selectedIds,
     side,
+    labelClasser,
+    labelSort,
     generation,
   } = props
   const selected_ids = selectedIds || []
@@ -350,12 +352,6 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
   const u = grids.upper
   const l = grids.lower
   const c = Utils.count<string>()
-  const label_class = (l: string) =>
-    find_label(l)
-      ? 'label-' + find_label(l)!.taxonomy
-      : label_order(l) === LabelOrder.NUM
-        ? 'label-anonymization'
-        : ''
   return (
     <div
       className={`${GraphViewStyle} ${ReactUtils.clean_ul} ${ReactUtils.Unselectable} graphView`}>
@@ -392,7 +388,7 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
                 </span>
               )
             }
-            const labels = graph.edges[d.id].labels.filter(lbl => lbl.length > 0).sort(label_sort)
+            const labels = graph.edges[d.id].labels.filter(lbl => lbl.length > 0).sort(labelSort)
             const brow_threshold = side ? (labels.length > 0 ? 0 : 1) : 1
             const [s, t] = Utils.expr((): [VNode, VNode] => {
               switch (d.edit) {
@@ -441,7 +437,7 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
                   <div className={BorderCell + ' ' + hoverClass(hoverId, d.id) + obs_class}>
                     <div>
                       {labels.map((l, i) => (
-                        <span key={i} className={label_class(l)}>
+                        <span key={i} className={labelClasser ? labelClasser(l) : ''}>
                           {l}
                         </span>
                       ))}

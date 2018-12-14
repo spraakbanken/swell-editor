@@ -1,7 +1,4 @@
-import * as React from 'react'
-import {Store, Lens, Undo} from 'reactive-lens'
-
-import {Graph} from './Graph'
+import {Store, Undo} from 'reactive-lens'
 import * as G from './Graph'
 import * as Utils from './Utils'
 import * as record from './record'
