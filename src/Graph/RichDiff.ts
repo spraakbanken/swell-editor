@@ -1,23 +1,20 @@
-import {Edited, Dragged, Dropped} from './Diff'
 import * as D from './Diff'
-import {Graph} from '.'
-import * as G from '.'
 import * as T from './Token'
-import {TokenDiff} from '../Utils'
 import * as Utils from '../Utils'
+import {Graph, calculate_diff, init, modify, partition_ids, rearrange, Side, target_text} from './Graph'
 
 export type RichDiff =
-  | Edited & {index: number} & {target_diffs: TokenDiff[]; source_diffs: TokenDiff[]}
-  | Dragged & {index: number} & {source_diff: TokenDiff}
-  | Dropped & {index: number} & {target_diff: TokenDiff}
+  | D.Edited & {index: number} & {target_diffs: Utils.TokenDiff[]; source_diffs: Utils.TokenDiff[]}
+  | D.Dragged & {index: number} & {source_diff: Utils.TokenDiff}
+  | D.Dropped & {index: number} & {target_diff: Utils.TokenDiff}
 
 /** Enrichen a diff with detailed intra-token diffs
 
-  const g = G.init('aporna bepa cepa depa', true)
-  const gr = G.rearrange(g, 1, 2, 0)
-  G.target_text(gr) // => 'bepa cepa aporna depa '
-  const gm = G.modify(gr, 10, 10, 'h')
-  G.target_text(gm) // => 'bepa cepa haporna depa '
+  const g = init('aporna bepa cepa depa', true)
+  const gr = rearrange(g, 1, 2, 0)
+  target_text(gr) // => 'bepa cepa aporna depa '
+  const gm = modify(gr, 10, 10, 'h')
+  target_text(gm) // => 'bepa cepa haporna depa '
   const rd = enrichen(gm)
   const expected_rd0 = {
     edit: 'Dragged',
@@ -34,8 +31,8 @@ export function enrichen(
   g: Graph,
   order_changing_label: (s: string) => boolean = () => false
 ): RichDiff[] {
-  const diff = G.calculate_diff(g, order_changing_label)
-  const partition = G.partition_ids(g)
+  const diff = calculate_diff(g, order_changing_label)
+  const partition = partition_ids(g)
   return D.Index(diff).map((d: D.IndexedDiff) => {
     switch (d.edit) {
       case 'Edited':
@@ -72,7 +69,7 @@ export function enrichen(
   })
 }
 
-export function restrict_to_side(rd: RichDiff[], side?: G.Side): RichDiff[] {
+export function restrict_to_side(rd: RichDiff[], side?: Side): RichDiff[] {
   if (side === 'source') {
     return rd
       .filter(d => d.edit != 'Dropped')

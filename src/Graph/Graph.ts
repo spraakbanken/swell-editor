@@ -750,7 +750,7 @@ locations that all should be close to each other. This was done using
 the diff algorithm before but the results were subpar, see #32
 
 
-  const expect: Diff[] = [
+  const expect: D.Diff[] = [
     {
       edit: 'Dragged',
       source: {text: 'apa ', id: 's0'},
@@ -781,7 +781,7 @@ the diff algorithm before but the results were subpar, see #32
   const g = calculate_diff(rearrange(init('apa bepa cepa ', true), 1, 2, 0))
   g // => expect
 
-  const expect: Diff[] = [
+  const expect: D.Diff[] = [
     {
       edit: 'Edited',
       source: [{text: 'apa ', id: 's0'}],
@@ -886,7 +886,7 @@ export function calculate_diff(
 
 /**
 
-  const diff: Diff[] = [
+  const diff: D.Diff[] = [
     {
       edit: 'Edited',
       source: [{text: 'a ', id: 's0'}],
@@ -905,7 +905,7 @@ export function calculate_diff(
       manual: true
     }
   ]
-  const expected: Diff[] = [
+  const expected: D.Diff[] = [
     {edit: 'Dragged', source: {text: 'a ', id: 's0'}, id: 'e0', manual: true},
     {edit: 'Dropped', target: {text: 'b ', id: 't0'}, id: 'e0', manual: true},
     {edit: 'Dragged', source: {text: 'c ', id: 's1'}, id: 'e1', manual: true},

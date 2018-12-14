@@ -1,6 +1,5 @@
 import * as R from 'ramda'
-import {Diff, IndexedDiff} from './Diff'
-import * as D from './Diff'
+import {Diff, IndexedDiff, mass_centers, Index} from './Diff'
 import * as record from '../record'
 import * as Utils from '../Utils'
 
@@ -37,11 +36,11 @@ export interface ProtoLine {
 export type ProtoLines = {id: string; center_of_mass: number; lines: ProtoLine[]}[]
 
 export function ProtoLines(diff: Diff[], keep: 'Dragged' | 'Dropped'): ProtoLines {
-  const centers = D.mass_centers(diff)
+  const centers = mass_centers(diff)
   return R.sortBy(
     r => r.lines.length,
     record.traverse(
-      R.groupBy(d => d.id, D.Index(diff)) as Record<string, IndexedDiff[]>,
+      R.groupBy(d => d.id, Index(diff)) as Record<string, IndexedDiff[]>,
       (ds, id) => {
         const center_of_mass = centers[ds[0].id]
         const lines = ds

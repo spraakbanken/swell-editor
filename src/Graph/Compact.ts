@@ -4,8 +4,7 @@ import * as pchar from 'parser-ts/lib/char'
 import * as pstr from 'parser-ts/lib/string'
 
 import * as T from './Token'
-import * as G from './GraphCore'
-import {Graph, SourceTarget} from './GraphCore'
+import * as G from './Graph'
 
 import * as Utils from '../Utils'
 import * as record from '../record'
@@ -215,7 +214,7 @@ const identify = (prefix: string, us: Unit[]) =>
 // to try to preserve the user-supplied id
 // one problem is possible name-collision
 
-function to_unaligned_graph(stu: SourceTargetUnits): Graph {
+function to_unaligned_graph(stu: SourceTargetUnits): G.Graph {
   const s = identify('s', stu.source)
   const t = identify('t', stu.target)
   const uf = Utils.PolyUnionFind<Link>()
@@ -255,7 +254,7 @@ function to_unaligned_graph(stu: SourceTargetUnits): Graph {
 
 /**
 
-  const norm = (g: Graph) => G.normalize(g)
+  const norm = (g: G.Graph) => G.normalize(g)
   const s1 = parse_strict(`b~ cc d`)
   const t1 = parse_strict(`b cc d~`)
   norm(units_to_graph(s1, t1)) // => norm(units_to_graph(t1, s1))
@@ -281,7 +280,7 @@ function to_unaligned_graph(stu: SourceTargetUnits): Graph {
   norm(units_to_graph(s4, t4)) // => norm(units_to_graph(t4, s4))
 
 */
-export function units_to_graph(source: Unit[], target: Unit[]): Graph {
+export function units_to_graph(source: Unit[], target: Unit[]): G.Graph {
   return G.align(to_unaligned_graph({source, target}))
 }
 
@@ -318,7 +317,7 @@ export function units_to_string(units: Unit[], sep = ' ' as ' ' | '_') {
   return units.map(unit_to_string).join(sep)
 }
 
-type SourceTargetUnits = SourceTarget<Unit[]>
+type SourceTargetUnits = G.SourceTarget<Unit[]>
 
 /**
 
@@ -333,7 +332,7 @@ type SourceTargetUnits = SourceTarget<Unit[]>
   }) // => proto_graph_to_units(G.init('word', true))
 
 */
-export function proto_graph_to_units(g: Graph): SourceTargetUnits {
+export function proto_graph_to_units(g: G.Graph): SourceTargetUnits {
   const em = Utils.chain(G.edge_map(g), m => (id: string): G.Edge =>
     m.get(id) || Utils.raise(`Token id ${id} not in edge map`)
   )
@@ -414,11 +413,11 @@ function remove_unused_ids(stu: SourceTargetUnits): SourceTargetUnits {
   return G.mapSides(stu, units => units.map(u => ({...u, ids: u.ids.filter(id => count(id) > 0)})))
 }
 
-export function graph_to_units(g: Graph): SourceTarget<Unit[]> {
+export function graph_to_units(g: G.Graph): G.SourceTarget<Unit[]> {
   return minimize(proto_graph_to_units(g))
 }
 
-function safe_compact_to_graph(s: string): Graph | undefined {
+function safe_compact_to_graph(s: string): G.Graph | undefined {
   const [source_string, target_string] = s.split('//', 2)
   if (source_string && target_string) {
     const source = safe_parse(source_string)
@@ -429,12 +428,12 @@ function safe_compact_to_graph(s: string): Graph | undefined {
   }
 }
 
-export function graph_to_compact(g: Graph): string {
+export function graph_to_compact(g: G.Graph): string {
   const stu = graph_to_units(g)
   return units_to_string(stu.source) + '//' + units_to_string(stu.target)
 }
 
-export function compact_to_graph(s: string): Graph {
+export function compact_to_graph(s: string): G.Graph {
   return (
     safe_compact_to_graph(s) || Utils.raise('not a valid compact representation ' + Utils.show(s))
   )

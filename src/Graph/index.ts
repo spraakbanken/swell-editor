@@ -1,4 +1,4 @@
-export * from './GraphCore'
+export * from './Graph'
 export * from './Diff'
 export * from './Lines'
 export * from './RichDiff'

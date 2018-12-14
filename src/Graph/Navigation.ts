@@ -1,6 +1,6 @@
 import * as R from 'ramda'
 import * as D from './Diff'
-import * as G from './GraphCore'
+import * as G from './Graph'
 
 import * as Utils from '../Utils'
 import * as record from '../record'

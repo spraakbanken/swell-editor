@@ -1,18 +1,14 @@
 import * as React from 'react'
 import {Store, Lens} from 'reactive-lens'
-import {style} from 'typestyle'
 import * as typestyle from 'typestyle'
 
-import {Graph} from '../Graph'
 import * as G from '../Graph'
 import * as Utils from '../Utils'
 import * as record from '../record'
 
-import {VNode} from '../ReactUtils'
 import * as ReactUtils from '../ReactUtils'
-import {Close, Button} from '../ReactUtils'
+import {Close, Button, VNode} from '../ReactUtils'
 
-import {State} from './Model'
 import * as Model from './Model'
 import {DropZone} from './DropZone'
 import * as CM from './CodeMirror'
@@ -21,12 +17,10 @@ import {config, label_class, label_sort} from './Config'
 import * as EditorTypes from '../EditorTypes'
 
 import {LabelSidekick} from './LabelSidekick'
-import {GraphView} from '../GraphView'
 import * as GV from '../GraphView'
 
 import * as Manual from './Manual'
 import {Severity} from './Validate'
-import {opposite} from '../Graph/GraphCore'
 
 typestyle.cssRaw(`
 body > div {
@@ -37,7 +31,7 @@ body > div {
 const header_height = '32px'
 const footer_height = '26px'
 
-const topStyle = style({
+const topStyle = typestyle.style({
   ...Utils.debugName('topStyle'),
   fontFamily: 'lato, sans-serif, DejaVu Sans',
   color: '#222',
@@ -201,7 +195,7 @@ const topStyle = style({
   },
 })
 
-export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
+export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): VNode {
   // console.timeEnd('draw')
   // console.log('redraw')
   // console.time('draw')
@@ -264,11 +258,11 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
                     {page.text}
                     <i>Initial view:</i>
                     <div className={anon_mode ? ' NoManualBlue' : ''}>
-                      <GraphView graph={m(page.graph)} />
+                      <GV.GraphView graph={m(page.graph)} />
                     </div>
                     <i>Target view:</i>
                     <div className={anon_mode ? ' NoManualBlue' : ''}>
-                      <GraphView graph={m(page.target)} />
+                      <GV.GraphView graph={m(page.target)} />
                     </div>
                     <ReactUtils.A
                       title={'Try this!'}
@@ -318,7 +312,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
         <div
           className={(hovering ? ' hovering' : '') + (anon_mode ? 'anon NoManualBlue' : 'norm')}
           style={{minHeight: '10em'}}>
-          <GraphView
+          <GV.GraphView
             side={state.side_restriction}
             orderChangingLabel={s => config.order_changing_labels[s]}
             graph={visible_graph}
@@ -498,10 +492,10 @@ function show_hide_str(b: boolean | undefined) {
 function RestrictionButtons(store: Store<G.Side | undefined>): VNode[] {
   return G.sides.map(k =>
     Button(
-      show_hide_str(store.get() !== opposite(k)) + `${k} in graph`,
+      show_hide_str(store.get() !== G.opposite(k)) + `${k} in graph`,
       '',
       // Undefined means show both.
-      () => store.set(store.get() === undefined ? opposite(k) : undefined),
+      () => store.set(store.get() === undefined ? G.opposite(k) : undefined),
       store.get() !== k
     )
   )
@@ -543,7 +537,7 @@ function ShowMessages(store: Store<Model.Message[]>) {
   ))
 }
 
-function ImageWebserviceAddresses(g: Graph, anon_mode: boolean) {
+function ImageWebserviceAddresses(g: G.Graph, anon_mode: boolean) {
   const escape = (s: string) =>
     encodeURIComponent(s)
       .replace('(', '%28')
@@ -565,7 +559,7 @@ function ImageWebserviceAddresses(g: Graph, anon_mode: boolean) {
   )
 }
 
-export function Summary(g: Graph) {
+export function Summary(g: G.Graph) {
   const label_edge_map: Record<string, G.Edge[]> = {}
   record.forEach(g.edges, e => e.labels.forEach(l => Utils.push(label_edge_map, l, e)))
   const m = G.token_map(g)

@@ -2,15 +2,12 @@ import * as CodeMirror from 'codemirror'
 import {Store} from 'reactive-lens'
 import * as Utils from '../Utils'
 
-import {Graph} from '../Graph'
 import * as G from '../Graph'
 import * as GV from '../GraphView'
 
-import {VNode} from '../ReactUtils'
 import * as ReactUtils from '../ReactUtils'
 
 import * as Model from './Model'
-import {State} from './Model'
 
 interface cmResize {
   (cm: CodeMirror.Editor, opts?: any): CodeMirror.Editor
@@ -22,7 +19,7 @@ export const ManualMarkClassName = 'ManualMark'
 export const HoverClassName = 'Hover'
 
 export interface CMVN {
-  node: VNode
+  node: ReactUtils.VNode
   cm: CodeMirror.Editor
 }
 
@@ -50,7 +47,7 @@ export interface Cursor {
 export type ChangeCheck = (change: CodeMirror.EditorChangeCancellable) => boolean
 
 export function GraphEditingCM(
-  store: Store<State>,
+  store: Store<Model.State>,
   side: G.Side,
   checkChange?: ChangeCheck,
   readOnly = false
@@ -240,7 +237,7 @@ export function GraphEditingCM(
   return {node, cm}
 }
 
-function PositionUtils(cm: CodeMirror.Editor, graph: Store<Graph>, side: G.Side) {
+function PositionUtils(cm: CodeMirror.Editor, graph: Store<G.Graph>, side: G.Side) {
   class Edge {
     constructor(public readonly edge: G.Edge | null) {}
   }

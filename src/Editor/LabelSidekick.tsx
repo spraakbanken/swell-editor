@@ -7,9 +7,7 @@ import * as Utils from '../Utils'
 import * as record from '../record'
 
 import * as ReactUtils from '../ReactUtils'
-import {Button} from '../ReactUtils'
 
-import {State} from './Model'
 import * as Model from './Model'
 import {Taxonomy, label_order, LabelOrder} from './Config'
 
@@ -243,7 +241,7 @@ export function LabelSidekick({
   taxonomy,
   mode,
 }: {
-  store: Store<State>
+  store: Store<Model.State>
   taxonomy: Taxonomy
   mode: Model.Mode
 }) {
@@ -265,7 +263,7 @@ export function LabelSidekick({
         }}>
         <div>
           {Model.actionButtons[mode].map(action =>
-            Button(
+            ReactUtils.Button(
               Model.actionButtonNames[action],
               Model.actionDescriptions[action] + `\n\nShortcut: ${Model.actionKeyboard[action]}`,
               () => Model.performAction(store, action)
