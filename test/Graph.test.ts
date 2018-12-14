@@ -1,14 +1,10 @@
-import {qc} from './Common'
 import * as QC from 'proptest'
-import {Gen} from 'proptest'
 
-import {graph, insert_text} from './Common'
+import {graph, insert_text, qc} from './Common'
 
 import * as G from '../src/Graph'
-import {Graph} from '../src/Graph'
 import * as record from '../src/record'
 import * as Utils from '../src/Utils'
-import {range} from '../src/Utils'
 
 qc('invariant', graph, (g, p) => p.equals(G.check_invariant(g), 'ok'))
 
@@ -73,7 +69,7 @@ describe('unaligned_invert', () =>
   qc('is involutive', graph, (g, p) => p.equals(G.unaligned_invert(G.unaligned_invert(g)), g)))
 
 interface Modify {
-  g: Graph
+  g: G.Graph
   from: number
   to: number
   text: string

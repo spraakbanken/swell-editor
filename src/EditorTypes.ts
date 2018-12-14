@@ -1,6 +1,5 @@
 import * as R from 'ramda'
 import * as G from './Graph'
-import * as Model from './Editor/Model'
 
 export interface Data {
   graph: G.Graph

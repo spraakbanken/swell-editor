@@ -1,5 +1,5 @@
 import {View, State} from './Article'
-import {Image, ImageServer} from './ImageServer'
+import {Image, ImageServer} from '../Image/ImageServer'
 
 function string_to_data(query_string: string): State {
   return {only: parseInt(query_string, 10) || 0}

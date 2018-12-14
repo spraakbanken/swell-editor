@@ -1,10 +1,8 @@
 import * as React from 'react'
-import * as G from '../Graph'
-import {Graph} from '../Graph'
 
 import * as Utils from '../Utils'
 
-import * as png from '../png'
+import * as png from '../Image/png'
 import {Data, key} from '../EditorTypes'
 
 import {style} from 'typestyle'

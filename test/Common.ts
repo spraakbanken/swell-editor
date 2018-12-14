@@ -14,7 +14,6 @@ export {enzyme}
 
 import * as R from 'ramda'
 import * as G from '../src/Graph'
-import {Graph} from '../src/Graph'
 import * as Utils from '../src/Utils'
 
 export const arrayOf = <A>(l: number, u: number, g: Gen<A>) =>
@@ -32,7 +31,7 @@ export const token_text = QC.concat([ws0, word, ws1])
 export const insert_text: Gen<string> = QC.concat([ws0, stringOf(0, 3, QC.ascii), ws0])
 
 // Generate a random graph
-export const graph_with_tokens = (token_text: Gen<string>): Gen<Graph> =>
+export const graph_with_tokens = (token_text: Gen<string>): Gen<G.Graph> =>
   QC.pos
     .pow(2 / 3)
     .replicate(2)

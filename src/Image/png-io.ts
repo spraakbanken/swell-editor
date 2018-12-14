@@ -1,4 +1,4 @@
-import * as Utils from './Utils'
+import * as Utils from '../Utils'
 import {onFile} from './png'
 
 import * as minimist from 'minimist'

@@ -1,10 +1,8 @@
-import * as R from 'ramda'
+import * as G from '../Graph'
+import * as Utils from '../Utils'
+import * as record from '../record'
 
-import * as G from './Graph'
-import * as Utils from './Utils'
-import * as record from './record'
-
-import {Store, Lens, Undo, Requests} from 'reactive-lens'
+import {Undo} from 'reactive-lens'
 
 declare var window: any
 declare var global: any
@@ -25,7 +23,7 @@ declare const require: (json_file: string) => any
 const pilot_data: Record<
   string,
   {graphs: Record<string, GraphState>}
-> = require('../pilot_data.json')
+> = require('../../pilot_data.json')
 
 export type Ok<A> = {ok: false; msg: string} | ({ok: true} & A)
 

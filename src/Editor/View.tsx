@@ -1,28 +1,22 @@
 import * as React from 'react'
-import {Store, Lens, Undo} from 'reactive-lens'
-import {style} from 'typestyle'
+import {Store, Lens} from 'reactive-lens'
 import * as typestyle from 'typestyle'
-import * as csstips from 'csstips'
 
-import {Graph} from '../Graph'
 import * as G from '../Graph'
 import * as Utils from '../Utils'
 import * as record from '../record'
 
-import {VNode} from '../ReactUtils'
 import * as ReactUtils from '../ReactUtils'
-import {Close, Button} from '../ReactUtils'
+import {Close, Button, VNode} from '../ReactUtils'
 
-import {State} from './Model'
 import * as Model from './Model'
 import {DropZone} from './DropZone'
 import * as CM from './CodeMirror'
-import {config} from './Config'
+import {config, label_class, label_sort} from './Config'
 
 import * as EditorTypes from '../EditorTypes'
 
 import {LabelSidekick} from './LabelSidekick'
-import {GraphView} from '../GraphView'
 import * as GV from '../GraphView'
 
 import * as Manual from './Manual'
@@ -37,7 +31,7 @@ body > div {
 const header_height = '32px'
 const footer_height = '26px'
 
-const topStyle = style({
+const topStyle = typestyle.style({
   ...Utils.debugName('topStyle'),
   fontFamily: 'lato, sans-serif, DejaVu Sans',
   color: '#222',
@@ -201,7 +195,7 @@ const topStyle = style({
   },
 })
 
-export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
+export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): VNode {
   // console.timeEnd('draw')
   // console.log('redraw')
   // console.time('draw')
@@ -222,14 +216,18 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
       <div className="main" style={{minHeight: '18em'}}>
         {Manual.slugs.map(slug => (
           <span key={slug}>
-            <ReactUtils.A
-              title={slug.replace('_', ' ')}
-              text={slug.replace('_', ' ')}
-              onMouseDown={e => {
-                e.stopPropagation()
-                Model.setManualTo(store, slug)
-              }}
-            />{' '}
+            {state.manual === slug ? (
+              slug.replace('_', ' ')
+            ) : (
+              <ReactUtils.A
+                title={slug.replace('_', ' ')}
+                text={slug.replace('_', ' ')}
+                onMouseDown={e => {
+                  e.stopPropagation()
+                  Model.setManualTo(store, slug)
+                }}
+              />
+            )}{' '}
           </span>
         ))}
         {manual_page && (
@@ -260,11 +258,11 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
                     {page.text}
                     <i>Initial view:</i>
                     <div className={anon_mode ? ' NoManualBlue' : ''}>
-                      <GraphView graph={m(page.graph)} />
+                      <GV.GraphView graph={m(page.graph)} />
                     </div>
                     <i>Target view:</i>
                     <div className={anon_mode ? ' NoManualBlue' : ''}>
-                      <GraphView graph={m(page.target)} />
+                      <GV.GraphView graph={m(page.target)} />
                     </div>
                     <ReactUtils.A
                       title={'Try this!'}
@@ -314,7 +312,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
         <div
           className={(hovering ? ' hovering' : '') + (anon_mode ? 'anon NoManualBlue' : 'norm')}
           style={{minHeight: '10em'}}>
-          <GraphView
+          <GV.GraphView
             side={state.side_restriction}
             orderChangingLabel={s => config.order_changing_labels[s]}
             graph={visible_graph}
@@ -322,6 +320,8 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
             onHover={anon_mode ? undefined : hover_id => store.update({hover_id})}
             selectedIds={Object.keys(state.selected)}
             generation={state.generation}
+            labelClasser={label_class}
+            labelSort={label_sort}
             onSelect={(ids, only) => Model.onSelect(store, ids, only)}
           />
         </div>
@@ -362,7 +362,7 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
   function header() {
     const history = Model.history(store)
 
-    const options = ['graph', 'diff', 'image_link', 'examples', 'source_text'] as Model.Show[]
+    const options = ['graph', 'diff', 'examples'] as Model.Show[]
 
     const toggle = (show: Model.Show) => show_store(show).modify(b => (b ? undefined : true))
 
@@ -408,20 +408,21 @@ export function View(store: Store<State>, cms: Record<G.Side, CM.CMVN>): VNode {
         {state.show.options && (
           <div className="menu">
             <div className="box">
+              {toggle_button('source_text')}
               {RestrictionButtons(store.at('side_restriction'))}
               <hr />
               {Button('validate', '', () => Model.validateState(store))}
-              {Button(`${anon_mode ? 'disable' : 'enable'} anonymization view`, '', () =>
+              {Button(`switch to ${anon_mode ? 'normalization' : 'anonymization'}`, '', () =>
                 store.at('mode').modify(Model.nextMode)
               )}
               <hr />
+              {options.map(s => toggle_button(s))}
+              <hr />
               {Button(
-                show_hide_str(state.manual !== undefined) + 'manual',
+                state.manual === undefined ? 'help' : 'exit help',
                 'toggle showing manual',
                 () => Model.setManualTo(store, state.manual ? undefined : 'manual')
               )}
-              <hr />
-              {options.map(s => toggle_button(s))}
             </div>
           </div>
         )}
@@ -486,9 +487,15 @@ function show_hide_str(b: boolean | undefined) {
 }
 
 function RestrictionButtons(store: Store<G.Side | undefined>): VNode[] {
-  const options = [undefined, ...G.sides]
-  const name = (k?: string) => 'view ' + (k === undefined ? 'both sides' : k + ' only')
-  return options.map(k => Button(name(k), '', () => store.set(k), store.get() !== k))
+  return G.sides.map(k =>
+    Button(
+      show_hide_str(store.get() !== G.opposite(k)) + `${k} in graph`,
+      '',
+      // Undefined means show both.
+      () => store.set(store.get() === undefined ? G.opposite(k) : undefined),
+      store.get() !== k
+    )
+  )
 }
 
 function ShowErrors(store: Store<Record<string, true>>) {
@@ -527,7 +534,7 @@ function ShowMessages(store: Store<Model.Message[]>) {
   ))
 }
 
-function ImageWebserviceAddresses(g: Graph, anon_mode: boolean) {
+function ImageWebserviceAddresses(g: G.Graph, anon_mode: boolean) {
   const escape = (s: string) =>
     encodeURIComponent(s)
       .replace('(', '%28')
@@ -549,7 +556,7 @@ function ImageWebserviceAddresses(g: Graph, anon_mode: boolean) {
   )
 }
 
-export function Summary(g: Graph) {
+export function Summary(g: G.Graph) {
   const label_edge_map: Record<string, G.Edge[]> = {}
   record.forEach(g.edges, e => e.labels.forEach(l => Utils.push(label_edge_map, l, e)))
   const m = G.token_map(g)

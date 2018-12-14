@@ -1,18 +1,11 @@
-import {qc, graph_one_space} from './Common'
-import {Gen} from 'proptest'
-import * as QC from 'proptest'
-import * as G from '../src/Graph'
+import {graph_one_space} from './Common'
 
-import * as iosaas from '../src/iosaas'
-import * as png from '../src/png'
-import * as ImageServer from '../src/ImageServer'
+import * as iosaas from '../src/Image/iosaas'
 import fetch from 'node-fetch'
 
 import 'mocha'
 import {expect} from 'chai'
 
-import * as http from 'http'
-import * as fs from 'fs'
 import * as Utils from '../src/Utils'
 
 describe('png metadata via webserver', async () => {
