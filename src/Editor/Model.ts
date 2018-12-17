@@ -9,7 +9,7 @@ import * as Manual from './Manual'
 
 import {Taxonomy, config, label_order, LabelOrder, find_label} from './Config'
 import {Severity, Rule, edge_check} from './Validate'
-import {pseudonymize} from 'pseudonymization';
+import {pseudonymize} from 'pseudonymization'
 
 export interface State {
   readonly graph: Undo<G.Graph>
@@ -110,43 +110,47 @@ export function initialBackendFetch(store: Store<State>) {
   }
 }
 
-export function savePeriodicallyToBackend(store: Store<State>) {
-  const save = Utils.debounce(1000, () => {
-    const state = store.get()
-    const graph = store.get().mode == 'anonymization' ? visibleGraph(store) : state.graph.now
-    if (
-      state.version !== undefined &&
-      state.backend &&
-      state.essay &&
-      Object.keys(state.errors).length == 0
-    ) {
-      console.log('saving...')
-      store.update({version: undefined})
-      Utils.POST(
-        `${state.backend}${state.essay}/${state.version + 1}`,
-        graph,
-        res_str => {
-          try {
-            const res = JSON.parse(res_str)
-            const version = res.version
-            if (version !== undefined && typeof version === 'number') {
-              console.log({version})
-              store.update({version})
-            } else {
-              flagError(store, `No version confirmation in ${Utils.show(res)}`)
-            }
-          } catch (e) {
-            flagError(store, `Error ${e.toString} when responding to ${res_str}`)
+export function save(store: Store<State>) {
+  const state = store.get()
+  const graph = store.get().mode == 'anonymization' ? visibleGraph(store) : state.graph.now
+  if (
+    state.version !== undefined &&
+    state.backend &&
+    state.essay &&
+    Object.keys(state.errors).length == 0
+  ) {
+    console.log('saving...')
+    store.update({version: undefined})
+    Utils.POST(
+      `${state.backend}${state.essay}/${state.version + 1}`,
+      graph,
+      res_str => {
+        try {
+          const res = JSON.parse(res_str)
+          const version = res.version
+          if (version !== undefined && typeof version === 'number') {
+            console.log({version})
+            store.update({version})
+          } else {
+            flagError(store, `No version confirmation in ${Utils.show(res)}`)
           }
-        },
-        (err, code) => flagError(store, `Error ${code} when saving: ${Utils.show(err)}`)
-      )
-    }
+        } catch (e) {
+          flagError(store, `Error ${e.toString} when responding to ${res_str}`)
+        }
+      },
+      (err, code) => flagError(store, `Error ${code} when saving: ${Utils.show(err)}`)
+    )
+  }
+}
+
+export function savePeriodicallyToBackend(store: Store<State>) {
+  const debounced_save = Utils.debounce(1000, () => {
+    !inAnonfixMode(store) && save(store)
   })
   store
     .at('graph')
     .at('now')
-    .ondiff((g1, g2) => G.equal(g1, g2) || save())
+    .ondiff((g1, g2) => G.equal(g1, g2) || debounced_save())
   store.at('done').ondiff(done => {
     validateState(store)
     const state = store.get()
@@ -392,6 +396,10 @@ export function inAnonMode(store: Store<State>) {
   return store.get().mode === modes.anonymization
 }
 
+export function inAnonfixMode(store: Store<State>) {
+  return /norm/.test(store.get().start_mode as string) && inAnonMode(store)
+}
+
 export function history(store: Store<State>) {
   return {
     undo: () => store.at('graph').modify(Undo.undo),
@@ -433,6 +441,38 @@ export function visibleGraph(store: Store<State>) {
   } else {
     return g
   }
+}
+
+export function anonfixGraph(graph: G.Graph) {
+  // TODO: Real deep copy
+  let g = {...graph}
+  const p = G.partition_ids(g)
+  const tm = G.token_map(g)
+  // For new anonymizations, overwrite source with pseudonymized target.
+  record.forEach(g.edges, (edge, eid) => {
+    const st = p(edge)
+    // Only look at anonymizations.
+    if (!edge.labels.some(l => !!find_label(l) && find_label(l)!.taxonomy === 'anonymization')) {
+      return
+    }
+    // If source and target differ, this is a new anonymization.
+    if (!Utils.shallow_array_eq(G.source_texts(st), G.target_texts(st))) {
+      // Replace the first token with the pseudonymization.
+      const first_source_token = st.source.shift()
+      if (first_source_token === undefined) {
+        console.log('first source token undefined', edge, st)
+        return
+      }
+      const i = tm.get(first_source_token.id)!.index
+      g = G.modify_tokens(g, i, i + 1, G.target_text(st))
+      // Remove any subsequent tokens (e.g. "Park Road" in "Glenister Park Road")
+      st.source.forEach(t => {
+        const i = tm.get(t.id)!.index
+        g = G.modify_tokens(g, i, i + 1, '')
+      })
+    }
+  })
+  return g
 }
 
 /** Remember which pseudonym we got for a certain token. */

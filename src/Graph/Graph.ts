@@ -234,7 +234,7 @@ export function token_ids_to_edge_ids(g: Graph, ids: string[]): string[] {
   partition_ids(g)(e) // => {source, target}
 
 */
-export function partition_ids(g: Graph): (edge: Edge) => {source: Token[]; target: Token[]} {
+export function partition_ids(g: Graph): (edge: Edge) => SourceTarget<Token[]> {
   const sm = source_map(g)
   const tm = target_map(g)
   return (edge: Edge) => {
@@ -281,7 +281,7 @@ export function token_map(g: Graph): Map<string, SidedIndex> {
   m.has('t0') // => false
 
 */
-export function source_map(g: Graph): Map<string, number> {
+export function source_map(g: SourceTarget<Token[]>): Map<string, number> {
   return new Map(g.source.map((s, i) => [s.id, i] as [string, number]))
 }
 
@@ -294,7 +294,7 @@ export function source_map(g: Graph): Map<string, number> {
   m.has('s0') // => false
 
 */
-export function target_map(g: Graph): Map<string, number> {
+export function target_map(g: SourceTarget<Token[]>): Map<string, number> {
   return new Map(g.target.map((t, i) => [t.id, i] as [string, number]))
 }
 
@@ -324,7 +324,7 @@ export function related(g: Graph, index: number): string[] {
   target_text(init('apa bepa cepa ')) // => 'apa bepa cepa '
 
 */
-export function target_text(g: Graph): string {
+export function target_text(g: SourceTarget<T.Text[]>): string {
   return T.text(g.target)
 }
 
@@ -333,7 +333,7 @@ export function target_text(g: Graph): string {
   source_text(init('apa bepa cepa ')) // => 'apa bepa cepa '
 
 */
-export function source_text(g: Graph): string {
+export function source_text(g: SourceTarget<T.Text[]>): string {
   return T.text(g.source)
 }
 
@@ -342,7 +342,7 @@ export function source_text(g: Graph): string {
   target_texts(init('apa bepa cepa ')) // => ['apa ', 'bepa ', 'cepa ']
 
 */
-export function target_texts(g: Graph): string[] {
+export function target_texts(g: SourceTarget<T.Text[]>): string[] {
   return T.texts(g.target)
 }
 
@@ -351,7 +351,7 @@ export function target_texts(g: Graph): string[] {
   source_texts(init('apa bepa cepa ')) // => ['apa ', 'bepa ', 'cepa ']
 
 */
-export function source_texts(g: Graph): string[] {
+export function source_texts(g: SourceTarget<T.Text[]>): string[] {
   return T.texts(g.source)
 }
 

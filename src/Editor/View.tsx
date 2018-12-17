@@ -398,10 +398,23 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
                 back
               </a>
             )}
-            {state.done !== undefined &&
-              Button(state.done ? 'not done' : 'done', 'toggle between done and not done', () =>
-                Model.validation_transaction(store, s => s.at('done').modify(b => !b))
-              )}
+            {/*state.done !== undefined &&
+              (!Model.inAnonfixMode(store)
+                ? Button(state.done ? 'not done' : 'done', 'toggle between done and not done', () =>
+                    Model.validation_transaction(store, s => s.at('done').modify(b => !b))
+                  )
+                : */ Button(
+              'save',
+              'save anonymization fix-up',
+              () =>
+                Model.validation_transaction(store, s => {
+                  s
+                    .at('graph')
+                    .at('now')
+                    .modify(g => Model.anonfixGraph(g))
+                })
+              /*)*/
+            )}
             {toggle_button('options', 'options')}
           </div>
         </div>
@@ -412,8 +425,11 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
               {RestrictionButtons(store.at('side_restriction'))}
               <hr />
               {Button('validate', '', () => Model.validateState(store))}
-              {Button(`switch to ${anon_mode ? 'normalization' : 'anonymization'}`, '', () =>
-                store.at('mode').modify(Model.nextMode)
+              {Button(
+                `switch to ${anon_mode ? 'normalization' : 'anonymization'}`,
+                '',
+                () => store.at('mode').modify(Model.nextMode),
+                !state.backend || /norm/.test(state.start_mode as string)
               )}
               <hr />
               {options.map(s => toggle_button(s))}
