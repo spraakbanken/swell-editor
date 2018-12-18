@@ -398,23 +398,27 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
                 back
               </a>
             )}
-            {/*state.done !== undefined &&
+            {state.done !== undefined &&
               (!Model.inAnonfixMode(store)
                 ? Button(state.done ? 'not done' : 'done', 'toggle between done and not done', () =>
                     Model.validation_transaction(store, s => s.at('done').modify(b => !b))
                   )
-                : */ Button(
-              'save',
-              'save anonymization fix-up',
-              () =>
-                Model.validation_transaction(store, s => {
-                  s
-                    .at('graph')
-                    .at('now')
-                    .modify(g => Model.anonfixGraph(g))
-                })
-              /*)*/
-            )}
+                : Button('save', 'save anonymization fix-up', () => {
+                    Model.validation_transaction(store, s => {
+                      console.log(
+                        'graph to save',
+                        s
+                          .at('graph')
+                          .at('now')
+                          .get()
+                      )
+                      s
+                        .at('graph')
+                        .at('now')
+                        .modify(g => Model.anonfixGraph(Model.visibleGraph(store)))
+                    })
+                    Model.save(store)
+                  }))}
             {toggle_button('options', 'options')}
           </div>
         </div>

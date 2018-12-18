@@ -160,6 +160,23 @@ export function init_from(tokens: string[], manual = false): Graph {
   })
 }
 
+/** Clone a graph
+
+  const g = init('apa bepa')
+  const g2 = clone(g)                       // => g
+  g2 == g                                   // => false
+  g2.source == g.source                     // => false
+  g2.edges['e-s0-t0'] == g.edges['e-s0-t0'] // => false
+
+ */
+export function clone(graph: Graph): Graph {
+  return {
+    source: graph.source.map(x => x),
+    target: graph.target.map(x => x),
+    edges: record.map(graph.edges, x => ({...x})),
+  }
+}
+
 /** Initialize a graph from unaligned tokens
 
   from_unaligned({
@@ -485,12 +502,24 @@ export function unaligned_modify_tokens(
   return {...g, [side]: new_tokens, edges}
 }
 
-export function modify(g: Graph, from: number, to: number, text: string): Graph {
-  return align(unaligned_modify(g, from, to, text))
+export function modify(
+  g: Graph,
+  from: number,
+  to: number,
+  text: string,
+  side: Side = 'target'
+): Graph {
+  return align(unaligned_modify(g, from, to, text, side))
 }
 
-export function modify_tokens(g: Graph, from: number, to: number, text: string): Graph {
-  return align(unaligned_modify_tokens(g, from, to, text))
+export function modify_tokens(
+  g: Graph,
+  from: number,
+  to: number,
+  text: string,
+  side: Side = 'target'
+): Graph {
+  return align(unaligned_modify_tokens(g, from, to, text, side))
 }
 
 /** Moves a slice of the target tokens and puts it at a new destination.
@@ -1261,7 +1290,7 @@ export function anonymize(graph: Graph, pseudonymize: Pseudonymizer): Graph {
       if (first(e.id)) {
         const source_ids = e.ids.filter(i => Utils.getUnsafe(tm, i).side == 'source')
         const source_text = T.text(g.source.filter(s => source_ids.includes(s.id)))
-        const pn = pseudonymize(source_text, e.labels, source_ids.join(' ')) + ' '
+        const pn = pseudonymize(source_text, e.labels, '') + ' '
         const target = Token(pn, 't' + i++)
         edges.push(Edge([...source_ids, target.id], e.labels, true))
         return [target]

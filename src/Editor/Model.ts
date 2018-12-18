@@ -430,11 +430,22 @@ export function compactStore(store: Store<State>): Store<G.SourceTarget<string>>
   )
 }
 
+function hasAnonLabels(edge: G.Edge): boolean {
+  return edge.labels.some(l => !!find_label(l) && find_label(l)!.taxonomy === 'anonymization')
+}
+
+/** Remember which pseudonym we got for a certain label combination. */
+const pseudonymizeTokenStore: Map<string, string> = new Map()
+
 export function visibleGraph(store: Store<State>) {
   const state = store.get()
   const g = currentGraph(store)
 
   if (inAnonMode(store)) {
+    // When first entering anon, add the pseudonymizations of any already anonymized edges to the store.
+    if (pseudonymizeTokenStore.size === 0) {
+      initPseudonymizeTokenStore(pseudonymizeTokenStore, g)
+    }
     return G.anonymize(G.sort_edge_labels(g, label_order), pseudonymizeToken)
   } else if (state.subspan) {
     return G.subgraph(g, state.subspan)
@@ -443,47 +454,52 @@ export function visibleGraph(store: Store<State>) {
   }
 }
 
+/** Initialize ps store with current target texts. */
+function initPseudonymizeTokenStore(pstore: Map<string, string>, graph: G.Graph): void {
+  const partition = G.partition_ids(graph)
+  // Go through anonymized edges.
+  record.forEach(record.filter(graph.edges, hasAnonLabels), edge => {
+    const st = partition(edge)
+    // Add the target text for each label combination.
+    const store_key = edge.labels.join(' ')
+    pstore.set(store_key, G.target_text(st))
+  })
+}
+
+/** Apply anonymization fix-up, by copying new pseudonymizations to source. */
 export function anonfixGraph(graph: G.Graph) {
-  // TODO: Real deep copy
-  let g = {...graph}
+  let g = G.clone(graph)
   const p = G.partition_ids(g)
   const tm = G.token_map(g)
   // For new anonymizations, overwrite source with pseudonymized target.
-  record.forEach(g.edges, (edge, eid) => {
+  record.forEach(record.filter(g.edges, hasAnonLabels), (edge, eid) => {
     const st = p(edge)
-    // Only look at anonymizations.
-    if (!edge.labels.some(l => !!find_label(l) && find_label(l)!.taxonomy === 'anonymization')) {
-      return
-    }
     // If source and target differ, this is a new anonymization.
     if (!Utils.shallow_array_eq(G.source_texts(st), G.target_texts(st))) {
       // Replace the first token with the pseudonymization.
       const first_source_token = st.source.shift()
       if (first_source_token === undefined) {
-        console.log('first source token undefined', edge, st)
         return
       }
       const i = tm.get(first_source_token.id)!.index
-      g = G.modify_tokens(g, i, i + 1, G.target_text(st))
+      g = G.modify_tokens(g, i, i + 1, G.target_text(st), 'source')
       // Remove any subsequent tokens (e.g. "Park Road" in "Glenister Park Road")
       st.source.forEach(t => {
         const i = tm.get(t.id)!.index
-        g = G.modify_tokens(g, i, i + 1, '')
+        g = G.modify_tokens(g, i, i + 1, '', 'source')
       })
+    } else {
     }
   })
   return g
 }
-
-/** Remember which pseudonym we got for a certain token. */
-const pseudonymizeTokenStore: Map<string, string> = new Map()
 
 /** Get a pseudonym and remember it next time.
 
 Text and labels are passed on to pseudonymize().
 The source token id is used to distinguish when multiple tokens have the same text. */
 export function pseudonymizeToken(text: string, labels: string[], key: string): string {
-  const store_key = `${key} ${labels.join(' ')}`
+  const store_key = `${key}${labels.join(' ')}`
   if (!pseudonymizeTokenStore.has(store_key))
     pseudonymizeTokenStore.set(store_key, pseudonymize(text, labels))
   return pseudonymizeTokenStore.get(store_key)!
