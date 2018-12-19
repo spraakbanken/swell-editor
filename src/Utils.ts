@@ -271,6 +271,48 @@ export function numsort(xs: number[]): number[] {
   return xs.slice().sort((u, v) => u - v)
 }
 
+export type Comparator<A> = (a: A, b: A) => number
+
+/** Chain multiple comparators into one.
+
+For each pair, the returned comparator tries each sub-comparator until one returns non-0.
+
+  // Sort first by length, then by number of vowels, and finally (default) alphabetically
+  const xs = ['one', 'two', 'three', 'four', 'five']
+  const cmp_length = (a: string, b: string) => a.length - b.length
+  const cmp_vowels = (a: string, b: string) => a.match(/[aeiou]/g)!.length - b.match(/[aeiou]/g)!.length
+  xs.sort(chain_cmps(cmp_length, cmp_vowels)) // => ['two', 'one', 'five', 'four', 'three']
+ */
+export function chain_cmps<A>(...cmps: Comparator<A>[]): Comparator<A> {
+  return (a, b) => {
+    let ret = 0
+    for (const cmp of [...cmps, cmp_order]) {
+      ret = cmp(a, b)
+      if (ret != 0) break
+    }
+    return ret
+  }
+}
+
+/** Compare using < and >.
+
+  cmp_order('a', 'c') // => -1
+  cmp_order('c', 'c') // => 0
+  cmp_order('c', 'a') // => 1
+ */
+export function cmp_order<A>(a: A, b: A): -1 | 0 | 1 {
+  return a > b ? 1 : a < b ? -1 : 0
+}
+
+/** Creates a comparator which applies some function on both elements and compares the results.
+
+  mkcmp(a => a.length)('abc', 'abcde')       // => -2
+  mkcmp(a => a.length)('abc', 'abcde', true) // => 2
+ */
+export function mkcmp<A>(f: (a: A) => any, negate = false): Comparator<A> {
+  return (a: A, b: A): number => (negate ? f(b) - f(a) : f(a) - f(b))
+}
+
 /** Trims initial whitespace */
 export function ltrim(s: string): string {
   const m = s.match(/^\s*(.*)$/)

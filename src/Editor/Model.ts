@@ -7,7 +7,7 @@ import * as record from '../record'
 
 import * as Manual from './Manual'
 
-import {Taxonomy, config, label_order, LabelOrder, find_label} from './Config'
+import {Taxonomy, config, label_order, LabelOrder, label_taxonomy} from './Config'
 import {Severity, Rule, edge_check} from './Validate'
 import {pseudonymize} from 'pseudonymization'
 
@@ -262,10 +262,9 @@ const validationRules: Rule<{state: State; graph: G.Graph}>[] = [
     edge_check(
       state => state.mode == modes.anonymization,
       edge =>
-        edge.labels.filter(l => {
-          const find = find_label(l)
-          return find && find.taxonomy == 'anonymization' && label_order(l) == LabelOrder.BASE
-        }).length > 1
+        edge.labels.filter(
+          l => label_taxonomy(l) === 'anonymization' && label_order(l) == LabelOrder.BASE
+        ).length > 1
     )
   ),
   Rule(
@@ -431,7 +430,7 @@ export function compactStore(store: Store<State>): Store<G.SourceTarget<string>>
 }
 
 function isAnonLabel(label: string): boolean {
-  return !isNaN(Number(label)) || (!!find_label(label) && find_label(label)!.taxonomy === 'anonymization')
+  return !isNaN(Number(label)) || label_taxonomy(label) === 'anonymization'
 }
 
 /** Remember which pseudonym we got for a certain label combination. */
@@ -501,9 +500,15 @@ export function anonfixGraph(graph: G.Graph) {
 Text and labels are passed on to pseudonymize().
 The source token id is used to distinguish when multiple tokens have the same text. */
 export function pseudonymizeToken(text: string, labels: string[], key: string): string {
-  const store_key = labels.filter(isAnonLabel).sort().join(' ')
+  const anonLabels = labels.filter(isAnonLabel)
+  const store_key = anonLabels.sort().join(' ')
+  // G.anonymize will call us even if only norm labels.
+  // TODO: Bring all anonymization-specific code from Graph to here.
+  if (!store_key) {
+    return text
+  }
   if (!pseudonymizeTokenStore.has(store_key))
-    pseudonymizeTokenStore.set(store_key, pseudonymize(text, labels))
+    pseudonymizeTokenStore.set(store_key, pseudonymize(text, anonLabels))
   return pseudonymizeTokenStore.get(store_key)!
 }
 
