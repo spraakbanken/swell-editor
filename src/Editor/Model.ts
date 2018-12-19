@@ -463,6 +463,8 @@ function initPseudonymizeTokenStore(pstore: Map<string, string>, graph: G.Graph)
     // Add the target text for each label combination.
     pstore.set(edge.labels.sort().join(' '), G.target_text(st))
   })
+  // If there were no anonymizations, at least set a dummy so size > 0.
+  pstore.set('_init', '')
 }
 
 /** Apply anonymization fix-up, by copying new pseudonymizations to source. */
@@ -482,8 +484,9 @@ export function anonfixGraph(graph: G.Graph) {
       }
       const i = tm.get(first_source_token.id)!.index
       g = G.modify_tokens(g, i, i + 1, G.target_text(st), 'source')
-      // Remove any subsequent tokens (e.g. "Park Road" in "Glenister Park Road")
-      st.source.forEach(t => {
+      // Remove any subsequent tokens (e.g. "Park Road" in "Glenister Park Road").
+      // Go backwards to keep indexes safe.
+      st.source.reverse().forEach(t => {
         const i = tm.get(t.id)!.index
         g = G.modify_tokens(g, i, i + 1, '', 'source')
       })
