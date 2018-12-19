@@ -461,8 +461,7 @@ function initPseudonymizeTokenStore(pstore: Map<string, string>, graph: G.Graph)
   record.forEach(record.filter(graph.edges, hasAnonLabels), edge => {
     const st = partition(edge)
     // Add the target text for each label combination.
-    const store_key = edge.labels.join(' ')
-    pstore.set(store_key, G.target_text(st))
+    pstore.set(edge.labels.sort().join(' '), G.target_text(st))
   })
 }
 
@@ -499,7 +498,7 @@ export function anonfixGraph(graph: G.Graph) {
 Text and labels are passed on to pseudonymize().
 The source token id is used to distinguish when multiple tokens have the same text. */
 export function pseudonymizeToken(text: string, labels: string[], key: string): string {
-  const store_key = `${key}${labels.join(' ')}`
+  const store_key = labels.sort().join(' ')
   if (!pseudonymizeTokenStore.has(store_key))
     pseudonymizeTokenStore.set(store_key, pseudonymize(text, labels))
   return pseudonymizeTokenStore.get(store_key)!
