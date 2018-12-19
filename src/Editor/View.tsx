@@ -399,26 +399,10 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
               </a>
             )}
             {state.done !== undefined &&
-              (!Model.inAnonfixMode(store)
-                ? Button(state.done ? 'not done' : 'done', 'toggle between done and not done', () =>
-                    Model.validation_transaction(store, s => s.at('done').modify(b => !b))
-                  )
-                : Button('save', 'save anonymization fix-up', () => {
-                    Model.validation_transaction(store, s => {
-                      console.log(
-                        'graph to save',
-                        s
-                          .at('graph')
-                          .at('now')
-                          .get()
-                      )
-                      s
-                        .at('graph')
-                        .at('now')
-                        .modify(g => Model.anonfixGraph(Model.visibleGraph(store)))
-                    })
-                    Model.save(store)
-                  }))}
+              !Model.inAnonfixMode(store) &&
+              Button(state.done ? 'not done' : 'done', 'toggle between done and not done', () =>
+                Model.validation_transaction(store, s => s.at('done').modify(b => !b))
+              )}
             {toggle_button('options', 'options')}
           </div>
         </div>
@@ -432,7 +416,22 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
               {Button(
                 `switch to ${anon_mode ? 'normalization' : 'anonymization'}`,
                 '',
-                () => store.at('mode').modify(Model.nextMode),
+                Model.inAnonfixMode(store)
+                  ? () => {
+                      // Overwrite source tokens, then save.
+                      Model.validation_transaction(store, s => {
+                        s
+                          .at('graph')
+                          .at('now')
+                          .modify(g => Model.anonfixGraph(Model.visibleGraph(store)))
+                      })
+                      Model.save(store)
+                      // After save, switch mode.
+                      const unsub = store
+                        .at('version')
+                        .ondiff(() => store.at('mode').modify(Model.nextMode) && unsub())
+                    }
+                  : () => store.at('mode').modify(Model.nextMode),
                 !state.backend || /norm/.test(state.start_mode as string)
               )}
               <hr />
