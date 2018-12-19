@@ -430,8 +430,8 @@ export function compactStore(store: Store<State>): Store<G.SourceTarget<string>>
   )
 }
 
-function hasAnonLabels(edge: G.Edge): boolean {
-  return edge.labels.some(l => !!find_label(l) && find_label(l)!.taxonomy === 'anonymization')
+function isAnonLabel(label: string): boolean {
+  return !isNaN(Number(label)) || (!!find_label(label) && find_label(label)!.taxonomy === 'anonymization')
 }
 
 /** Remember which pseudonym we got for a certain label combination. */
@@ -458,7 +458,7 @@ export function visibleGraph(store: Store<State>) {
 function initPseudonymizeTokenStore(pstore: Map<string, string>, graph: G.Graph): void {
   const partition = G.partition_ids(graph)
   // Go through anonymized edges.
-  record.forEach(record.filter(graph.edges, hasAnonLabels), edge => {
+  record.forEach(record.filter(graph.edges, e => e.labels.some(isAnonLabel)), edge => {
     const st = partition(edge)
     // Add the target text for each label combination.
     pstore.set(edge.labels.sort().join(' '), G.target_text(st))
@@ -473,7 +473,7 @@ export function anonfixGraph(graph: G.Graph) {
   const p = G.partition_ids(g)
   const tm = G.token_map(g)
   // For new anonymizations, overwrite source with pseudonymized target.
-  record.forEach(record.filter(g.edges, hasAnonLabels), (edge, eid) => {
+  record.forEach(record.filter(g.edges, e => e.labels.some(isAnonLabel)), (edge, eid) => {
     const st = p(edge)
     // If source and target differ, this is a new anonymization.
     if (!Utils.shallow_array_eq(G.source_texts(st), G.target_texts(st))) {
@@ -501,7 +501,7 @@ export function anonfixGraph(graph: G.Graph) {
 Text and labels are passed on to pseudonymize().
 The source token id is used to distinguish when multiple tokens have the same text. */
 export function pseudonymizeToken(text: string, labels: string[], key: string): string {
-  const store_key = labels.sort().join(' ')
+  const store_key = labels.filter(isAnonLabel).sort().join(' ')
   if (!pseudonymizeTokenStore.has(store_key))
     pseudonymizeTokenStore.set(store_key, pseudonymize(text, labels))
   return pseudonymizeTokenStore.get(store_key)!
