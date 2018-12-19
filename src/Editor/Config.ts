@@ -395,6 +395,9 @@ export interface TaxonomyFind {
 }
 
 export function find_label(label: string): TaxonomyFind | undefined {
+  if (!isNaN(Number(label))) {
+    return {taxonomy: 'anonymization', group: 'Number', entry: {label, desc: 'number'}}
+  }
   for (let taxonomy in config.taxonomy) {
     for (let group of (config.taxonomy as {[mode: string]: Taxonomy})[taxonomy]) {
       let entry = group.entries.find(entry => entry.label == label)

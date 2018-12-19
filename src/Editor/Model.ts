@@ -7,7 +7,7 @@ import * as record from '../record'
 
 import * as Manual from './Manual'
 
-import {Taxonomy, config, label_order, LabelOrder, label_taxonomy} from './Config'
+import {Taxonomy, config, label_order, LabelOrder, label_taxonomy, label_sort} from './Config'
 import {Severity, Rule, edge_check} from './Validate'
 import {pseudonymize} from 'pseudonymization'
 
@@ -430,7 +430,7 @@ export function compactStore(store: Store<State>): Store<G.SourceTarget<string>>
 }
 
 function isAnonLabel(label: string): boolean {
-  return !isNaN(Number(label)) || label_taxonomy(label) === 'anonymization'
+  return label_taxonomy(label) === 'anonymization'
 }
 
 /** Remember which pseudonym we got for a certain label combination. */
@@ -500,8 +500,8 @@ export function anonfixGraph(graph: G.Graph) {
 Text and labels are passed on to pseudonymize().
 The source token id is used to distinguish when multiple tokens have the same text. */
 export function pseudonymizeToken(text: string, labels: string[], key: string): string {
-  const anonLabels = labels.filter(isAnonLabel)
-  const store_key = anonLabels.sort().join(' ')
+  const anonLabels = labels.filter(isAnonLabel).sort(label_sort)
+  const store_key = anonLabels.join(' ')
   // G.anonymize will call us even if only norm labels.
   // TODO: Bring all anonymization-specific code from Graph to here.
   if (!store_key) {
