@@ -48,10 +48,9 @@ Source ids are preserved but target ids are generated.
   ptexts[2]               // => 'and '
   ptexts[3] !== ptexts[0] // => true
 
-TODO: Try replacing source_to_target with clone. Helps with labels and word order in anonfix?
 */
 export function anonymize(graph: G.Graph, pstore: Store<Pseudonyms>): G.Graph {
-  const g = G.source_to_target(graph, false)
+  const g = G.clone(graph)
   let i = G.next_id(g)
   const em = G.edge_map(g)
   const tm = G.token_map(g)
