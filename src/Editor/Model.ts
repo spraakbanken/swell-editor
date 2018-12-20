@@ -7,9 +7,9 @@ import * as record from '../record'
 
 import * as Manual from './Manual'
 
-import {Taxonomy, config, label_order, LabelOrder, label_taxonomy, label_sort} from './Config'
+import {Taxonomy, config, label_order, LabelOrder, label_taxonomy} from './Config'
 import {Severity, Rule, edge_check} from './Validate'
-import {pseudonymize} from 'pseudonymization'
+import {init_pstore, anonymize, Pseudonyms} from './Anonymization'
 
 export interface State {
   readonly graph: Undo<G.Graph>
@@ -33,6 +33,9 @@ export interface State {
 
   /** are we reading the user manual? */
   readonly manual?: string
+
+  /** Pseudonyms are remembered by label combination, e.g. "city 2" => "Zürich". */
+  readonly pseudonyms: Pseudonyms
 
   readonly backurl?: string
   readonly backend?: string
@@ -193,6 +196,7 @@ export const init: State = {
   mode: modes.normalization,
   taxonomy: config.taxonomy,
   show: {},
+  pseudonyms: {},
 }
 
 export function check_invariant(store: Store<State>): (g: G.Graph) => void {
@@ -429,12 +433,9 @@ export function compactStore(store: Store<State>): Store<G.SourceTarget<string>>
   )
 }
 
-function isAnonLabel(label: string): boolean {
-  return label_taxonomy(label) === 'anonymization'
+export function initPseudonymizations(store: Store<State>): void {
+  store.at('pseudonyms').set(init_pstore(currentGraph(store)))
 }
-
-/** Remember which pseudonym we got for a certain label combination. */
-const pseudonymizeTokenStore: Map<string, string> = new Map()
 
 export function visibleGraph(store: Store<State>) {
   const state = store.get()
@@ -442,74 +443,12 @@ export function visibleGraph(store: Store<State>) {
 
   if (inAnonMode(store)) {
     // When first entering anon, add the pseudonymizations of any already anonymized edges to the store.
-    if (pseudonymizeTokenStore.size === 0) {
-      initPseudonymizeTokenStore(pseudonymizeTokenStore, g)
-    }
-    return G.anonymize(G.sort_edge_labels(g, label_order), pseudonymizeToken)
+    return anonymize(G.sort_edge_labels(g, label_order), store.at('pseudonyms'))
   } else if (state.subspan) {
     return G.subgraph(g, state.subspan)
   } else {
     return g
   }
-}
-
-/** Initialize ps store with current target texts. */
-function initPseudonymizeTokenStore(pstore: Map<string, string>, graph: G.Graph): void {
-  const partition = G.partition_ids(graph)
-  // Go through anonymized edges.
-  record.forEach(record.filter(graph.edges, e => e.labels.some(isAnonLabel)), edge => {
-    const st = partition(edge)
-    // Add the target text for each label combination.
-    pstore.set(edge.labels.sort().join(' '), G.target_text(st))
-  })
-  // If there were no anonymizations, at least set a dummy so size > 0.
-  pstore.set('_init', '')
-}
-
-/** Apply anonymization fix-up, by copying new pseudonymizations to source. */
-export function anonfixGraph(graph: G.Graph) {
-  let g = G.clone(graph)
-  const p = G.partition_ids(g)
-  const tm = G.token_map(g)
-  // For new anonymizations, overwrite source with pseudonymized target.
-  record.forEach(record.filter(g.edges, e => e.labels.some(isAnonLabel)), (edge, eid) => {
-    const st = p(edge)
-    // If source and target differ, this is a new anonymization.
-    if (!Utils.shallow_array_eq(G.source_texts(st), G.target_texts(st))) {
-      // Replace the first token with the pseudonymization.
-      const first_source_token = st.source.shift()
-      if (first_source_token === undefined) {
-        return
-      }
-      const i = tm.get(first_source_token.id)!.index
-      g = G.modify_tokens(g, i, i + 1, G.target_text(st), 'source')
-      // Remove any subsequent tokens (e.g. "Park Road" in "Glenister Park Road").
-      // Go backwards to keep indexes safe.
-      st.source.reverse().forEach(t => {
-        const i = tm.get(t.id)!.index
-        g = G.modify_tokens(g, i, i + 1, '', 'source')
-      })
-    } else {
-    }
-  })
-  return g
-}
-
-/** Get a pseudonym and remember it next time.
-
-Text and labels are passed on to pseudonymize().
-The source token id is used to distinguish when multiple tokens have the same text. */
-export function pseudonymizeToken(text: string, labels: string[], key: string): string {
-  const anonLabels = labels.filter(isAnonLabel).sort(label_sort)
-  const store_key = anonLabels.join(' ')
-  // G.anonymize will call us even if only norm labels.
-  // TODO: Bring all anonymization-specific code from Graph to here.
-  if (!store_key) {
-    return text
-  }
-  if (!pseudonymizeTokenStore.has(store_key))
-    pseudonymizeTokenStore.set(store_key, pseudonymize(text, anonLabels))
-  return pseudonymizeTokenStore.get(store_key)!
 }
 
 export function onSelect(store: Store<State>, ids: string[], only: boolean) {

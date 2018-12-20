@@ -21,6 +21,7 @@ import * as GV from '../GraphView'
 
 import * as Manual from './Manual'
 import {Severity} from './Validate'
+import {anonymize_when, anonfixGraph} from './Anonymization'
 
 typestyle.cssRaw(`
 body > div {
@@ -252,17 +253,17 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
               const page = Manual.manual[slug]
               if (page) {
                 const anon_mode = page.mode == 'anonymization'
-                const m = G.anonymize_when(anon_mode, Model.pseudonymizeToken)
+                const m = anonymize_when(anon_mode)
                 return (
                   <React.Fragment>
                     {page.text}
                     <i>Initial view:</i>
                     <div className={anon_mode ? ' NoManualBlue' : ''}>
-                      <GV.GraphView graph={m(page.graph)} />
+                      <GV.GraphView graph={m(page.graph, store.at('pseudonyms'))} />
                     </div>
                     <i>Target view:</i>
                     <div className={anon_mode ? ' NoManualBlue' : ''}>
-                      <GV.GraphView graph={m(page.target)} />
+                      <GV.GraphView graph={m(page.target, store.at('pseudonyms'))} />
                     </div>
                     <ReactUtils.A
                       title={'Try this!'}
@@ -427,7 +428,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
                         s
                           .at('graph')
                           .at('now')
-                          .modify(g => Model.anonfixGraph(Model.visibleGraph(store)))
+                          .modify(g => anonfixGraph(Model.visibleGraph(store)))
                       })
                       if (store.at('done').get()) {
                         Model.save(store)

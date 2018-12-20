@@ -1264,58 +1264,6 @@ export function normalize_whitespace(g: Graph, ws = ' '): Graph {
   return {...g, source: g.source.map(on_tok), target: g.target.map(on_tok)}
 }
 
-/** Ignores the target text completly, only looks at the source tokens and their
-edge groups and copies them to target if there is not label, otherwise replaces them
-with a pseudonym
-
-Source ids are preserved but target ids are generated
-
-  target_texts(anonymize(from_unaligned({
-    source: [{text: 'Hej ', labels: []}, {text: 'Maria ', labels: ['region']}],
-    target: []
-  }), (text, labels, key) => `${labels.join('-')}-X')) // => ['Hej ', 'region-X ']
-
-*/
-export function anonymize(graph: Graph, pseudonymize: Pseudonymizer): Graph {
-  const g = source_to_target(graph, false)
-  let i = next_id(g)
-  const em = edge_map(g)
-  const tm = token_map(g)
-  const first = Utils.unique_check<string>()
-  const edges: Edge[] = []
-  const target: Token[] = Utils.flatMap(g.target, t => {
-    const e = Utils.getUnsafe(em, t.id)
-    if (e.labels.length) {
-      // If the edge has labels.
-      if (first(e.id)) {
-        const source_ids = e.ids.filter(i => Utils.getUnsafe(tm, i).side == 'source')
-        const source_text = T.text(g.source.filter(s => source_ids.includes(s.id)))
-        const pn = pseudonymize(source_text, e.labels, '') + ' '
-        const target = Token(pn, 't' + i++)
-        edges.push(Edge([...source_ids, target.id], e.labels, true))
-        return [target]
-      } else {
-        return []
-      }
-    } else {
-      if (first(e.id)) {
-        edges.push(e)
-      }
-      return [t]
-    }
-  })
-  return {source: g.source, target, edges: edge_record(edges)}
-}
-
-export function anonymize_when(
-  b: boolean | undefined,
-  pseudonymize: Pseudonymizer
-): (graph: Graph) => Graph {
-  return graph => (b ? anonymize(graph, pseudonymize) : graph)
-}
-
-type Pseudonymizer = (text: string, labels: string[], key: string) => string
-
 /** Sets the target text to the source text, but preserving all labels */
 export function source_to_target(g: Graph, make_manual: boolean = true): Graph {
   let i = next_id(g)

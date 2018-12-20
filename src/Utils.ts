@@ -306,11 +306,11 @@ export function cmp_order<A>(a: A, b: A): -1 | 0 | 1 {
 
 /** Creates a comparator which applies some function on both elements and compares the results.
 
-  mkcmp(a => a.length)('abc', 'abcde')       // => -2
-  mkcmp(a => a.length)('abc', 'abcde', true) // => 2
+  mkcmp((a: string) => a.length)('abc', 'abcde')       // => -1
+  mkcmp((a: string) => a.length, true)('abc', 'abcde') // => 1
  */
 export function mkcmp<A>(f: (a: A) => any, negate = false): Comparator<A> {
-  return (a: A, b: A): number => (negate ? f(b) - f(a) : f(a) - f(b))
+  return (a: A, b: A): number => (negate ? -1 : 1) * cmp_order(f(a), f(b))
 }
 
 /** Trims initial whitespace */
