@@ -432,6 +432,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
                       })
                       if (store.at('done').get()) {
                         Model.save(store)
+                        Model.report(store, 'Anonymization changed')
                         // After save, switch mode.
                         const unsub = store.at('version').ondiff(() => {
                           store.at('mode').modify(Model.nextMode)

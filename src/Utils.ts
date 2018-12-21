@@ -819,7 +819,7 @@ export function POST(
     }
   }
   r.open('POST', url, true)
-  // r.withCredentials = true
+  r.withCredentials = true
   r.setRequestHeader('Content-Type', 'application/json')
   r.send(JSON.stringify(data))
 }
@@ -842,7 +842,7 @@ export function GET(
     }
   }
   r.open('GET', url, true)
-  // r.withCredentials = true
+  r.withCredentials = true
   r.setRequestHeader('Content-Type', 'application/json')
   r.send()
 }

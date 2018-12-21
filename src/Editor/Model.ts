@@ -9,7 +9,7 @@ import * as Manual from './Manual'
 
 import {Taxonomy, config, label_order, LabelOrder, label_taxonomy} from './Config'
 import {Severity, Rule, edge_check} from './Validate'
-import {init_pstore, anonymize, Pseudonyms} from './Anonymization'
+import {init_pstore, anonymize, Pseudonyms, is_anon_label} from './Anonymization'
 
 export interface State {
   readonly graph: Undo<G.Graph>
@@ -146,6 +146,17 @@ export function save(store: Store<State>) {
   }
 }
 
+/** Report an exception to the backend message log. */
+export function report(store: Store<State>, message: string) {
+  const state = store.get()
+  Utils.POST(
+    `${state.backend}${state.essay}/report`,
+    message,
+    () => {},
+    (err, code) => flagError(store, `Error ${code} when reporting "${message}": ${Utils.show(err)}`)
+  )
+}
+
 export function savePeriodicallyToBackend(store: Store<State>) {
   const debounced_save = Utils.debounce(1000, () => {
     !inAnonfixMode(store) && save(store)
@@ -276,7 +287,7 @@ const validationRules: Rule<{state: State; graph: G.Graph}>[] = [
     edge_check(
       state => state.mode == modes.anonymization && !!state.done,
       edge =>
-        edge.labels.filter(l => label_order(l) == LabelOrder.BASE).length > 0 &&
+        edge.labels.filter(l => is_anon_label(l) && label_order(l) == LabelOrder.BASE).length > 0 &&
         edge.labels.filter(l => label_order(l) == LabelOrder.NUM).length == 0
     )
   ),
@@ -286,7 +297,7 @@ const validationRules: Rule<{state: State; graph: G.Graph}>[] = [
       state => state.mode == modes.anonymization && !!state.done,
       edge =>
         edge.labels.filter(l => label_order(l) == LabelOrder.NUM).length > 0 &&
-        edge.labels.filter(l => label_order(l) == LabelOrder.BASE).length == 0
+        edge.labels.filter(l => is_anon_label(l) && label_order(l) == LabelOrder.BASE).length == 0
     )
   ),
 ]
