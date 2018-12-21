@@ -49,17 +49,19 @@ export function anonymize(graph: G.Graph, pstore: Store<Pseudonyms>): G.Graph {
   const em = G.edge_map(g)
   const tm = G.token_map(g)
   const first = Utils.unique_check<string>()
-  const ps = pseudonymizer(pstore)
   const edges: G.Edge[] = []
   const target: G.Token[] = Utils.flatMap(g.target, t => {
     const e = Utils.getUnsafe(em, t.id)
     // If the edge has anon labels.
-    if (e.labels.filter(is_anon_label).length) {
+    const anonLabels = sort_anon_labels(e.labels)
+    if (anonLabels.length) {
       if (first(e.id)) {
         const source_ids = e.ids.filter(i => Utils.getUnsafe(tm, i).side == 'source')
         const source_text = G.text(g.source.filter(s => source_ids.includes(s.id)))
-        const pn = Utils.end_with_space(ps(source_text, e.labels))
-        const target = G.Token(pn, 't' + i++)
+        // Ensure a pseudonymization in the store.
+        const pp = pstore.at(anonLabels.join(' '))
+        if (pp.get() === undefined) pp.set(pseudonymize(source_text, anonLabels))
+        const target = G.Token(Utils.end_with_space(pp.get()), 't' + i++)
         edges.push(G.Edge([...source_ids, target.id], e.labels, true))
         return [target]
       } else {
@@ -81,18 +83,6 @@ export function anonymize_when(
   return (graph, pstore) => (b ? anonymize(graph, pstore) : graph)
 }
 
-/** Makes a pseudonymize function with memory. */
-export function pseudonymizer(store: Store<Pseudonyms>) {
-  return (text: string, labels: string[]) => {
-    const anonLabels = sort_anon_labels(labels)
-    const store_key = anonLabels.join(' ')
-    const ps = store.get()
-    if (ps[store_key] === undefined)
-      store.modify(ps => ({...ps, [store_key]: pseudonymize(text, anonLabels)}))
-    return store.at(store_key).get()
-  }
-}
-
 /** Apply anonymization fix-up, by copying new pseudonymizations to source. */
 export function anonfixGraph(graph: G.Graph) {
   let g = G.clone(graph)
@@ -108,12 +98,12 @@ export function anonfixGraph(graph: G.Graph) {
       if (first_source_token === undefined) {
         return
       }
-      const i = tm.get(first_source_token.id)!.index
+      const i = Utils.getUnsafe(tm, first_source_token.id).index
       g = G.modify_tokens(g, i, i + 1, G.target_text(st), 'source')
       // Remove any subsequent tokens (e.g. "Park Road" in "Glenister Park Road").
       // Go backwards to keep indexes safe.
       st.source.reverse().forEach(t => {
-        const i = tm.get(t.id)!.index
+        const i = Utils.getUnsafe(tm, t.id).index
         g = G.modify_tokens(g, i, i + 1, '', 'source')
       })
     } else {
