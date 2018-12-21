@@ -28,26 +28,20 @@ export function init_pstore(graph: G.Graph): Pseudonyms {
   return out
 }
 
-/** Ignores the target text completly, only looks at the source tokens and their
-edge groups and copies them to target if there is no label, otherwise replaces them
-with a pseudonym.
+/**  Replaces the target tokens of anonymization-labeled edges with pseudonymizations.
 
-Source ids are preserved but target ids are generated.
-
+  const g0 = G.init('Sweden Suiden and Denmark')
+  const g1 = G.modify_labels(g0, 'e-s0-t0', () => ['country', '1'])
+  const g2 = G.modify_labels(g1, 'e-s1-t1', () => ['country', '1'])
+  const g3 = G.modify_labels(g2, 'e-s2-t2', () => ['foobar'])
+  const g = G.modify_labels(g3, 'e-s3-t3', () => ['country', '2'])
   const pstore = Store.init({}) as Store<Record<string, string>>
-  const ptexts = G.target_texts(anonymize(G.from_unaligned({
-    source: [
-      {text: 'Sweden ', labels: ['country', '1']},
-      {text: 'Sweden ', labels: ['country', '1']},
-      {text: 'and ', labels: ['foobar']},
-      {text: 'Denmark ', labels: ['country', '2']},
-    ],
-    target: []
-  }), pstore))
+  const p = anonymize(g, pstore)
+  const ptexts = G.target_texts(p)
   ptexts[1] === ptexts[0] // => true
   ptexts[2]               // => 'and '
   ptexts[3] !== ptexts[0] // => true
-
+  Utils.shallow_array_eq(g.source, p.source) // => true
 */
 export function anonymize(graph: G.Graph, pstore: Store<Pseudonyms>): G.Graph {
   const g = G.clone(graph)
