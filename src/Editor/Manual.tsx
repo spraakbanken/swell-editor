@@ -194,7 +194,7 @@ page(
 Word movement can be tracked by changing the text and then selecting the words and grouping them.
 You can do this by erasing the word and then rewriting it or by using standard copy and paste functionality.
 
-A quicker way is to have the cursor on the word and use Alt-O and Alt-P (⌘-O and ⌘-P on Mac) for transposing the word backward and forward, respectively.
+A quicker way is to have the cursor on the word and use Alt-&larr; and Alt-&rarr; (⌘-&larr; and ⌘-&rarr; on Mac) for transposing the word backward and forward, respectively.
 If the cursor is on many words (select many words in the editor by using the mouse or shift and arrow keys) they will be moved in unison.
 
 Try these different approaches to move _was_ and _his son_ into their correct places.

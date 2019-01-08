@@ -9,8 +9,6 @@ import 'codemirror/lib/codemirror.css'
 import 'lato-font/css/lato-font.min.css'
 import 'dejavu-fonts-ttf/ttf/DejaVuSans.ttf'
 
-import * as bowser from 'bowser'
-
 import {State} from './Editor/Model'
 import * as Model from './Editor/Model'
 import * as CM from './Editor/CodeMirror'
@@ -20,12 +18,6 @@ export const init = Model.init
 
 export function App(store: Store<Model.State>): () => VNode {
   const global = window as any
-
-  if (bowser.name != 'Chrome') {
-    store.at('errors').update({
-      [`You are using an unsupported browser (${bowser.name}), only Chrome is supported.`]: true,
-    })
-  }
 
   global.store = store
   global.reset = (v0: string = '') => {

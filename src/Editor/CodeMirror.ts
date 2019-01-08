@@ -64,10 +64,10 @@ export function GraphEditingCM(
     'Ctrl-Y': redo,
     'Cmd-Z': undo,
     'Cmd-Y': redo,
-    'Alt-P': transpose(1),
-    'Alt-O': transpose(-1),
-    'Cmd-P': transpose(1),
-    'Cmd-O': transpose(-1),
+    'Alt-Right': transpose(1),
+    'Alt-Left': transpose(-1),
+    'Cmd-Right': transpose(1),
+    'Cmd-Left': transpose(-1),
   }
 
   const {cm, node} = CM({extraKeys, tabindex: 3, readOnly})

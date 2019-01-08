@@ -363,12 +363,10 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
   function header() {
     const history = Model.history(store)
 
-    const options = ['graph', 'diff', 'examples'] as Model.Show[]
-
     const toggle = (show: Model.Show) => show_store(show).modify(b => (b ? undefined : true))
 
-    const toggle_button = (show: Model.Show, label = show.replace('_', ' ')) =>
-      Button(show_hide_str(state.show[show]) + label, '', () => toggle(show), undefined, true)
+    const toggle_button = (show: Model.Show, enabled?: boolean, label = show.replace('_', ' ')) =>
+      Button(show_hide_str(state.show[show]) + label, '', () => toggle(show), enabled, true)
 
     return (
       <React.Fragment>
@@ -404,7 +402,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
               Button(state.done ? 'not done' : 'done', 'toggle between done and not done', () =>
                 Model.validation_transaction(store, s => s.at('done').modify(b => !b))
               )}
-            {toggle_button('options', 'options')}
+            {toggle_button('options')}
           </div>
         </div>
         {state.show.options && (
@@ -445,7 +443,10 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
                 !state.backend || /norm/.test(state.start_mode as string)
               )}
               <hr />
-              {options.map(s => toggle_button(s))}
+              {toggle_button('graph')}
+              {toggle_button('diff')}
+              {// Examples destroy essays.
+              toggle_button('examples', !state.backend)}
               <hr />
               {Button(
                 state.manual === undefined ? 'help' : 'exit help',
