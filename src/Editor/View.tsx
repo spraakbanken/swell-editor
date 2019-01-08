@@ -429,12 +429,12 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
                           .modify(g => anonfixGraph(Model.visibleGraph(store)))
                       })
                       if (store.at('done').get()) {
+                        store.at('done').set(norm_done)
                         Model.save(store)
                         Model.report(store, 'Anonymization changed')
                         // After save, switch mode.
                         const unsub = store.at('version').ondiff(() => {
                           store.at('mode').modify(Model.nextMode)
-                          store.at('done').set(norm_done)
                           unsub()
                         })
                       }
