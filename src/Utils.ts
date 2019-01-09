@@ -814,13 +814,15 @@ export function POST(
     if (r.readyState == 4 && r.status == 200) {
       k(r.response)
     }
-    if (r.readyState == 4 && r.status > 200) {
+    if (r.readyState == 4 && r.status >= 300) {
       k_err(r.response, r.status)
     }
   }
   r.open('POST', url, true)
   r.withCredentials = true
   r.setRequestHeader('Content-Type', 'application/json')
+  const csrftoken = get_cookie('csrftoken')
+  csrftoken && r.setRequestHeader('X-CSRFToken', csrftoken)
   r.send(JSON.stringify(data))
 }
 
@@ -845,6 +847,14 @@ export function GET(
   r.withCredentials = true
   r.setRequestHeader('Content-Type', 'application/json')
   r.send()
+}
+
+export function get_cookie(name: string): string | undefined {
+  for (const cookie of document.cookie.split(/\s*;\s*/)) {
+    if (cookie.substring(0, name.length + 1) === name + '=') {
+      return decodeURIComponent(cookie.substring(name.length + 1))
+    }
+  }
 }
 
 /** Debounce from underscore.js

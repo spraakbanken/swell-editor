@@ -151,7 +151,7 @@ export function report(store: Store<State>, message: string) {
   const state = store.get()
   Utils.POST(
     `${state.backend}${state.essay}/report`,
-    message,
+    {message},
     () => {},
     (err, code) => flagError(store, `Error ${code} when reporting "${message}": ${Utils.show(err)}`)
   )
