@@ -46,25 +46,32 @@ export function init_pstore(graph: G.Graph): Pseudonyms {
 export function anonymize(graph: G.Graph, pstore: Store<Pseudonyms>): G.Graph {
   const g = G.clone(graph)
   let i = G.next_id(g)
+  const em = G.edge_map(g)
   const tm = G.token_map(g)
-  const pi = G.partition_ids(g)
-  const target: G.Token[] = []
+  const first = Utils.unique_check<string>()
   const edges: G.Edge[] = []
-  record.forEach(g.edges, e => {
+  const target: G.Token[] = Utils.flatMap(g.target, t => {
+    const e = Utils.getUnsafe(em, t.id)
     // If the edge has anon labels.
     const anonLabels = sort_anon_labels(e.labels)
     if (anonLabels.length) {
-      const source_ids = e.ids.filter(i => Utils.getUnsafe(tm, i).side == 'source')
-      const source_text = G.text(g.source.filter(s => source_ids.includes(s.id)))
-      // Ensure a pseudonymization in the store.
-      const pp = pstore.at(anonLabels.join(' '))
-      if (pp.get() === undefined) pp.set(pseudonymize(source_text, anonLabels))
-      const t = G.Token(Utils.end_with_space(pp.get()), 't' + i++)
-      edges.push(G.Edge([...source_ids, t.id], e.labels, true))
-      target.push(t)
+      if (first(e.id)) {
+        const source_ids = e.ids.filter(i => Utils.getUnsafe(tm, i).side == 'source')
+        const source_text = G.text(g.source.filter(s => source_ids.includes(s.id)))
+        // Ensure a pseudonymization in the store.
+        const pp = pstore.at(anonLabels.join(' '))
+        if (pp.get() === undefined) pp.set(pseudonymize(source_text, anonLabels))
+        const target = G.Token(Utils.end_with_space(pp.get()), 't' + i++)
+        edges.push(G.Edge([...source_ids, target.id], e.labels, true))
+        return [target]
+      } else {
+        return []
+      }
     } else {
-      edges.push(e)
-      target.push(...pi(e).target)
+      if (first(e.id)) {
+        edges.push(e)
+      }
+      return [t]
     }
   })
   return {source: g.source, target, edges: G.edge_record(edges)}

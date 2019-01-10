@@ -73,7 +73,7 @@
     "reporter": ["html", "text"]
   },
   "scripts": {
-    "png-io": "ts-node src/Image/png-io.ts",
+    "png-io": "ts-node src/png-io.ts",
     "iosaas": "ts-node src/Image/iosaas.ts --serve",
     "serve": "parcel $(ts-node src/generate_index.ts ${App:-Editor})",
     "build":
