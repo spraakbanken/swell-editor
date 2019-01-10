@@ -21,6 +21,7 @@ import * as GV from '../GraphView'
 
 import * as Manual from './Manual'
 import {Severity} from './Validate'
+import {anonymize_when, anonfixGraph} from './Anonymization'
 
 typestyle.cssRaw(`
 body > div {
@@ -252,17 +253,17 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
               const page = Manual.manual[slug]
               if (page) {
                 const anon_mode = page.mode == 'anonymization'
-                const m = G.anonymize_when(anon_mode, Model.pseudonymizeToken)
+                const m = anonymize_when(anon_mode)
                 return (
                   <React.Fragment>
                     {page.text}
                     <i>Initial view:</i>
                     <div className={anon_mode ? ' NoManualBlue' : ''}>
-                      <GV.GraphView graph={m(page.graph)} />
+                      <GV.GraphView graph={m(page.graph, store.at('pseudonyms'))} />
                     </div>
                     <i>Target view:</i>
                     <div className={anon_mode ? ' NoManualBlue' : ''}>
-                      <GV.GraphView graph={m(page.target)} />
+                      <GV.GraphView graph={m(page.target, store.at('pseudonyms'))} />
                     </div>
                     <ReactUtils.A
                       title={'Try this!'}
@@ -397,6 +398,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
               </a>
             )}
             {state.done !== undefined &&
+              !Model.inAnonfixMode(store) &&
               Button(state.done ? 'not done' : 'done', 'toggle between done and not done', () =>
                 Model.validation_transaction(store, s => s.at('done').modify(b => !b))
               )}
@@ -413,8 +415,32 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
               {Button(
                 `switch to ${anon_mode ? 'normalization' : 'anonymization'}`,
                 '',
-                () => store.at('mode').modify(Model.nextMode),
-                !state.backend
+                Model.inAnonfixMode(store)
+                  ? () => {
+                      // The done status needs to go from false to true at validation.
+                      const norm_done = store.at('done').get()
+                      store.at('done').set(false)
+                      // Overwrite source tokens, then save.
+                      Model.validation_transaction(store, s => {
+                        s.at('done').set(true)
+                        s
+                          .at('graph')
+                          .at('now')
+                          .modify(g => anonfixGraph(Model.visibleGraph(store)))
+                      })
+                      if (store.at('done').get()) {
+                        store.at('done').set(norm_done)
+                        Model.save(store)
+                        Model.report(store, 'Anonymization changed')
+                        // After save, switch mode.
+                        const unsub = store.at('version').ondiff(() => {
+                          store.at('mode').modify(Model.nextMode)
+                          unsub()
+                        })
+                      }
+                    }
+                  : () => store.at('mode').modify(Model.nextMode),
+                !state.backend || /norm/.test(state.start_mode as string)
               )}
               <hr />
               {toggle_button('graph')}

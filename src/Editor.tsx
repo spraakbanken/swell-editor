@@ -54,6 +54,11 @@ export function App(store: Store<Model.State>): () => VNode {
     }
   }
 
+  // Reset/detect pseudonyms when switching to anonymization mode.
+  store
+    .at('mode')
+    .ondiff(mode => mode === Model.modes.anonymization && Model.initPseudonymizations(store))
+
   Model.check_invariant(store)(store.get().graph.now)
 
   global.trigger_invariant_error = () => {

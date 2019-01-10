@@ -160,6 +160,23 @@ export function init_from(tokens: string[], manual = false): Graph {
   })
 }
 
+/** Clone a graph
+
+  const g = init('apa bepa')
+  const g2 = clone(g)                       // => g
+  g2 == g                                   // => false
+  g2.source == g.source                     // => false
+  g2.edges['e-s0-t0'] == g.edges['e-s0-t0'] // => false
+
+ */
+export function clone(graph: Graph): Graph {
+  return {
+    source: graph.source.map(x => x),
+    target: graph.target.map(x => x),
+    edges: record.map(graph.edges, x => ({...x})),
+  }
+}
+
 /** Initialize a graph from unaligned tokens
 
   from_unaligned({
@@ -234,7 +251,7 @@ export function token_ids_to_edge_ids(g: Graph, ids: string[]): string[] {
   partition_ids(g)(e) // => {source, target}
 
 */
-export function partition_ids(g: Graph): (edge: Edge) => {source: Token[]; target: Token[]} {
+export function partition_ids(g: Graph): (edge: Edge) => SourceTarget<Token[]> {
   const sm = source_map(g)
   const tm = target_map(g)
   return (edge: Edge) => {
@@ -281,7 +298,7 @@ export function token_map(g: Graph): Map<string, SidedIndex> {
   m.has('t0') // => false
 
 */
-export function source_map(g: Graph): Map<string, number> {
+export function source_map(g: SourceTarget<Token[]>): Map<string, number> {
   return new Map(g.source.map((s, i) => [s.id, i] as [string, number]))
 }
 
@@ -294,7 +311,7 @@ export function source_map(g: Graph): Map<string, number> {
   m.has('s0') // => false
 
 */
-export function target_map(g: Graph): Map<string, number> {
+export function target_map(g: SourceTarget<Token[]>): Map<string, number> {
   return new Map(g.target.map((t, i) => [t.id, i] as [string, number]))
 }
 
@@ -324,7 +341,7 @@ export function related(g: Graph, index: number): string[] {
   target_text(init('apa bepa cepa ')) // => 'apa bepa cepa '
 
 */
-export function target_text(g: Graph): string {
+export function target_text(g: SourceTarget<T.Text[]>): string {
   return T.text(g.target)
 }
 
@@ -333,7 +350,7 @@ export function target_text(g: Graph): string {
   source_text(init('apa bepa cepa ')) // => 'apa bepa cepa '
 
 */
-export function source_text(g: Graph): string {
+export function source_text(g: SourceTarget<T.Text[]>): string {
   return T.text(g.source)
 }
 
@@ -342,7 +359,7 @@ export function source_text(g: Graph): string {
   target_texts(init('apa bepa cepa ')) // => ['apa ', 'bepa ', 'cepa ']
 
 */
-export function target_texts(g: Graph): string[] {
+export function target_texts(g: SourceTarget<T.Text[]>): string[] {
   return T.texts(g.target)
 }
 
@@ -351,7 +368,7 @@ export function target_texts(g: Graph): string[] {
   source_texts(init('apa bepa cepa ')) // => ['apa ', 'bepa ', 'cepa ']
 
 */
-export function source_texts(g: Graph): string[] {
+export function source_texts(g: SourceTarget<T.Text[]>): string[] {
   return T.texts(g.source)
 }
 
@@ -485,12 +502,24 @@ export function unaligned_modify_tokens(
   return {...g, [side]: new_tokens, edges}
 }
 
-export function modify(g: Graph, from: number, to: number, text: string): Graph {
-  return align(unaligned_modify(g, from, to, text))
+export function modify(
+  g: Graph,
+  from: number,
+  to: number,
+  text: string,
+  side: Side = 'target'
+): Graph {
+  return align(unaligned_modify(g, from, to, text, side))
 }
 
-export function modify_tokens(g: Graph, from: number, to: number, text: string): Graph {
-  return align(unaligned_modify_tokens(g, from, to, text))
+export function modify_tokens(
+  g: Graph,
+  from: number,
+  to: number,
+  text: string,
+  side: Side = 'target'
+): Graph {
+  return align(unaligned_modify_tokens(g, from, to, text, side))
 }
 
 /** Moves a slice of the target tokens and puts it at a new destination.
@@ -1234,58 +1263,6 @@ export function normalize_whitespace(g: Graph, ws = ' '): Graph {
   const on_tok = (s: Token) => Token((s.text.match(/\S+/) || [''])[0] + ws, s.id)
   return {...g, source: g.source.map(on_tok), target: g.target.map(on_tok)}
 }
-
-/** Ignores the target text completly, only looks at the source tokens and their
-edge groups and copies them to target if there is not label, otherwise replaces them
-with a pseudonym
-
-Source ids are preserved but target ids are generated
-
-  target_texts(anonymize(from_unaligned({
-    source: [{text: 'Hej ', labels: []}, {text: 'Maria ', labels: ['region']}],
-    target: []
-  }), (text, labels, key) => `${labels.join('-')}-X')) // => ['Hej ', 'region-X ']
-
-*/
-export function anonymize(graph: Graph, pseudonymize: Pseudonymizer): Graph {
-  const g = source_to_target(graph, false)
-  let i = next_id(g)
-  const em = edge_map(g)
-  const tm = token_map(g)
-  const first = Utils.unique_check<string>()
-  const edges: Edge[] = []
-  const target: Token[] = Utils.flatMap(g.target, t => {
-    const e = Utils.getUnsafe(em, t.id)
-    if (e.labels.length) {
-      // If the edge has labels.
-      if (first(e.id)) {
-        const source_ids = e.ids.filter(i => Utils.getUnsafe(tm, i).side == 'source')
-        const source_text = T.text(g.source.filter(s => source_ids.includes(s.id)))
-        const pn = pseudonymize(source_text, e.labels, source_ids.join(' ')) + ' '
-        const target = Token(pn, 't' + i++)
-        edges.push(Edge([...source_ids, target.id], e.labels, true))
-        return [target]
-      } else {
-        return []
-      }
-    } else {
-      if (first(e.id)) {
-        edges.push(e)
-      }
-      return [t]
-    }
-  })
-  return {source: g.source, target, edges: edge_record(edges)}
-}
-
-export function anonymize_when(
-  b: boolean | undefined,
-  pseudonymize: Pseudonymizer
-): (graph: Graph) => Graph {
-  return graph => (b ? anonymize(graph, pseudonymize) : graph)
-}
-
-type Pseudonymizer = (text: string, labels: string[], key: string) => string
 
 /** Sets the target text to the source text, but preserving all labels */
 export function source_to_target(g: Graph, make_manual: boolean = true): Graph {

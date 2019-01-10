@@ -271,6 +271,48 @@ export function numsort(xs: number[]): number[] {
   return xs.slice().sort((u, v) => u - v)
 }
 
+export type Comparator<A> = (a: A, b: A) => number
+
+/** Chain multiple comparators into one.
+
+For each pair, the returned comparator tries each sub-comparator until one returns non-0.
+
+  // Sort first by length, then by number of vowels, and finally (default) alphabetically
+  const xs = ['one', 'two', 'three', 'four', 'five']
+  const cmp_length = (a: string, b: string) => a.length - b.length
+  const cmp_vowels = (a: string, b: string) => a.match(/[aeiou]/g)!.length - b.match(/[aeiou]/g)!.length
+  xs.sort(chain_cmps(cmp_length, cmp_vowels)) // => ['two', 'one', 'five', 'four', 'three']
+ */
+export function chain_cmps<A>(...cmps: Comparator<A>[]): Comparator<A> {
+  return (a, b) => {
+    let ret = 0
+    for (const cmp of [...cmps, cmp_order]) {
+      ret = cmp(a, b)
+      if (ret != 0) break
+    }
+    return ret
+  }
+}
+
+/** Compare using < and >.
+
+  cmp_order('a', 'c') // => -1
+  cmp_order('c', 'c') // => 0
+  cmp_order('c', 'a') // => 1
+ */
+export function cmp_order<A>(a: A, b: A): -1 | 0 | 1 {
+  return a > b ? 1 : a < b ? -1 : 0
+}
+
+/** Creates a comparator which applies some function on both elements and compares the results.
+
+  mkcmp((a: string) => a.length)('abc', 'abcde')       // => -1
+  mkcmp((a: string) => a.length, true)('abc', 'abcde') // => 1
+ */
+export function mkcmp<A>(f: (a: A) => any, negate = false): Comparator<A> {
+  return (a: A, b: A): number => (negate ? -1 : 1) * cmp_order(f(a), f(b))
+}
+
 /** Trims initial whitespace */
 export function ltrim(s: string): string {
   const m = s.match(/^\s*(.*)$/)
@@ -772,13 +814,15 @@ export function POST(
     if (r.readyState == 4 && r.status == 200) {
       k(r.response)
     }
-    if (r.readyState == 4 && r.status > 200) {
+    if (r.readyState == 4 && r.status >= 300) {
       k_err(r.response, r.status)
     }
   }
   r.open('POST', url, true)
   r.withCredentials = true
   r.setRequestHeader('Content-Type', 'application/json')
+  const csrftoken = get_cookie('csrftoken')
+  csrftoken && r.setRequestHeader('X-CSRFToken', csrftoken)
   r.send(JSON.stringify(data))
 }
 
@@ -803,6 +847,14 @@ export function GET(
   r.withCredentials = true
   r.setRequestHeader('Content-Type', 'application/json')
   r.send()
+}
+
+export function get_cookie(name: string): string | undefined {
+  for (const cookie of document.cookie.split(/\s*;\s*/)) {
+    if (cookie.substring(0, name.length + 1) === name + '=') {
+      return decodeURIComponent(cookie.substring(name.length + 1))
+    }
+  }
 }
 
 /** Debounce from underscore.js

@@ -1,3 +1,5 @@
+import {chain_cmps, mkcmp, cmp_order, Comparator} from '../Utils'
+
 const image_ws_url = 'https://ws.spraakbanken.gu.se/ws/swell'
 
 export interface Example {
@@ -67,12 +69,12 @@ export function label_order(label: string): LabelOrder {
 }
 
 /** Sorting function for labels. */
-export function label_sort(a: string, b: string): number {
-  const tax = (l: string) =>
-    find_label(l) ? ['anonymization', 'normalization'].indexOf(find_label(l)!.taxonomy) : 0
-  const tax_sort = tax(a) - tax(b)
-  return tax_sort !== 0 ? tax_sort : label_order(a) - label_order(b)
-}
+// Sort first by taxonomy, then label type, and finally alphabetically.
+export const label_sort: Comparator<string> = chain_cmps(
+  mkcmp(label_taxonomy),
+  mkcmp(label_order),
+  cmp_order
+)
 
 const anonymization: Taxonomy = [
   {
@@ -393,6 +395,9 @@ export interface TaxonomyFind {
 }
 
 export function find_label(label: string): TaxonomyFind | undefined {
+  if (!isNaN(Number(label))) {
+    return {taxonomy: 'anonymization', group: 'Number', entry: {label, desc: 'number'}}
+  }
   for (let taxonomy in config.taxonomy) {
     for (let group of (config.taxonomy as {[mode: string]: Taxonomy})[taxonomy]) {
       let entry = group.entries.find(entry => entry.label == label)
@@ -401,9 +406,14 @@ export function find_label(label: string): TaxonomyFind | undefined {
   }
 }
 
+/** Get the taxonomy domain (editor mode) of a label. */
+export function label_taxonomy(label: string): string | null {
+  return find_label(label) ? find_label(label)!.taxonomy : null
+}
+
 export function label_class(l: string) {
-  return find_label(l)
-    ? 'label-' + find_label(l)!.taxonomy
+  return label_taxonomy(l)
+    ? 'label-' + label_taxonomy(l)
     : label_order(l) === LabelOrder.NUM
       ? 'label-anonymization'
       : ''

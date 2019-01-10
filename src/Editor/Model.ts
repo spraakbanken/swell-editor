@@ -7,9 +7,9 @@ import * as record from '../record'
 
 import * as Manual from './Manual'
 
-import {Taxonomy, config, label_order, LabelOrder, find_label} from './Config'
+import {Taxonomy, config, label_order, LabelOrder, label_taxonomy} from './Config'
 import {Severity, Rule, edge_check} from './Validate'
-import {pseudonymize} from 'pseudonymization';
+import {init_pstore, anonymize, Pseudonyms, is_anon_label} from './Anonymization'
 
 export interface State {
   readonly graph: Undo<G.Graph>
@@ -33,6 +33,9 @@ export interface State {
 
   /** are we reading the user manual? */
   readonly manual?: string
+
+  /** Pseudonyms are remembered by label combination, e.g. "city 2" => "Zürich". */
+  readonly pseudonyms: Pseudonyms
 
   readonly backurl?: string
   readonly backend?: string
@@ -110,43 +113,58 @@ export function initialBackendFetch(store: Store<State>) {
   }
 }
 
-export function savePeriodicallyToBackend(store: Store<State>) {
-  const save = Utils.debounce(1000, () => {
-    const state = store.get()
-    const graph = store.get().mode == 'anonymization' ? visibleGraph(store) : state.graph.now
-    if (
-      state.version !== undefined &&
-      state.backend &&
-      state.essay &&
-      Object.keys(state.errors).length == 0
-    ) {
-      console.log('saving...')
-      store.update({version: undefined})
-      Utils.POST(
-        `${state.backend}${state.essay}/${state.version + 1}`,
-        graph,
-        res_str => {
-          try {
-            const res = JSON.parse(res_str)
-            const version = res.version
-            if (version !== undefined && typeof version === 'number') {
-              console.log({version})
-              store.update({version})
-            } else {
-              flagError(store, `No version confirmation in ${Utils.show(res)}`)
-            }
-          } catch (e) {
-            flagError(store, `Error ${e.toString} when responding to ${res_str}`)
+export function save(store: Store<State>) {
+  const state = store.get()
+  const graph = store.get().mode == 'anonymization' ? visibleGraph(store) : state.graph.now
+  if (
+    state.version !== undefined &&
+    state.backend &&
+    state.essay &&
+    Object.keys(state.errors).length == 0
+  ) {
+    console.log('saving...')
+    store.update({version: undefined})
+    Utils.POST(
+      `${state.backend}${state.essay}/${state.version + 1}`,
+      graph,
+      res_str => {
+        try {
+          const res = JSON.parse(res_str)
+          const version = res.version
+          if (version !== undefined && typeof version === 'number') {
+            console.log({version})
+            store.update({version})
+          } else {
+            flagError(store, `No version confirmation in ${Utils.show(res)}`)
           }
-        },
-        (err, code) => flagError(store, `Error ${code} when saving: ${Utils.show(err)}`)
-      )
-    }
+        } catch (e) {
+          flagError(store, `Error ${e.toString} when responding to ${res_str}`)
+        }
+      },
+      (err, code) => flagError(store, `Error ${code} when saving: ${Utils.show(err)}`)
+    )
+  }
+}
+
+/** Report an exception to the backend message log. */
+export function report(store: Store<State>, message: string) {
+  const state = store.get()
+  Utils.POST(
+    `${state.backend}${state.essay}/report`,
+    {message},
+    () => {},
+    (err, code) => flagError(store, `Error ${code} when reporting "${message}": ${Utils.show(err)}`)
+  )
+}
+
+export function savePeriodicallyToBackend(store: Store<State>) {
+  const debounced_save = Utils.debounce(1000, () => {
+    !inAnonfixMode(store) && save(store)
   })
   store
     .at('graph')
     .at('now')
-    .ondiff((g1, g2) => G.equal(g1, g2) || save())
+    .ondiff((g1, g2) => G.equal(g1, g2) || debounced_save())
   store.at('done').ondiff(done => {
     validateState(store)
     const state = store.get()
@@ -189,6 +207,7 @@ export const init: State = {
   mode: modes.normalization,
   taxonomy: config.taxonomy,
   show: {},
+  pseudonyms: {},
 }
 
 export function check_invariant(store: Store<State>): (g: G.Graph) => void {
@@ -258,10 +277,9 @@ const validationRules: Rule<{state: State; graph: G.Graph}>[] = [
     edge_check(
       state => state.mode == modes.anonymization,
       edge =>
-        edge.labels.filter(l => {
-          const find = find_label(l)
-          return find && find.taxonomy == 'anonymization' && label_order(l) == LabelOrder.BASE
-        }).length > 1
+        edge.labels.filter(
+          l => label_taxonomy(l) === 'anonymization' && label_order(l) == LabelOrder.BASE
+        ).length > 1
     )
   ),
   Rule(
@@ -269,7 +287,7 @@ const validationRules: Rule<{state: State; graph: G.Graph}>[] = [
     edge_check(
       state => state.mode == modes.anonymization && !!state.done,
       edge =>
-        edge.labels.filter(l => label_order(l) == LabelOrder.BASE).length > 0 &&
+        edge.labels.filter(l => is_anon_label(l) && label_order(l) == LabelOrder.BASE).length > 0 &&
         edge.labels.filter(l => label_order(l) == LabelOrder.NUM).length == 0
     )
   ),
@@ -279,7 +297,7 @@ const validationRules: Rule<{state: State; graph: G.Graph}>[] = [
       state => state.mode == modes.anonymization && !!state.done,
       edge =>
         edge.labels.filter(l => label_order(l) == LabelOrder.NUM).length > 0 &&
-        edge.labels.filter(l => label_order(l) == LabelOrder.BASE).length == 0
+        edge.labels.filter(l => is_anon_label(l) && label_order(l) == LabelOrder.BASE).length == 0
     )
   ),
 ]
@@ -392,6 +410,10 @@ export function inAnonMode(store: Store<State>) {
   return store.get().mode === modes.anonymization
 }
 
+export function inAnonfixMode(store: Store<State>) {
+  return /norm/.test(store.get().start_mode as string) && inAnonMode(store)
+}
+
 export function history(store: Store<State>) {
   return {
     undo: () => store.at('graph').modify(Undo.undo),
@@ -422,31 +444,22 @@ export function compactStore(store: Store<State>): Store<G.SourceTarget<string>>
   )
 }
 
+export function initPseudonymizations(store: Store<State>): void {
+  store.at('pseudonyms').set(init_pstore(currentGraph(store)))
+}
+
 export function visibleGraph(store: Store<State>) {
   const state = store.get()
   const g = currentGraph(store)
 
   if (inAnonMode(store)) {
-    return G.anonymize(G.sort_edge_labels(g, label_order), pseudonymizeToken)
+    // When first entering anon, add the pseudonymizations of any already anonymized edges to the store.
+    return anonymize(G.sort_edge_labels(g, label_order), store.at('pseudonyms'))
   } else if (state.subspan) {
     return G.subgraph(g, state.subspan)
   } else {
     return g
   }
-}
-
-/** Remember which pseudonym we got for a certain token. */
-const pseudonymizeTokenStore: Map<string, string> = new Map()
-
-/** Get a pseudonym and remember it next time.
-
-Text and labels are passed on to pseudonymize().
-The source token id is used to distinguish when multiple tokens have the same text. */
-export function pseudonymizeToken(text: string, labels: string[], key: string): string {
-  const store_key = `${key} ${labels.join(' ')}`
-  if (!pseudonymizeTokenStore.has(store_key))
-    pseudonymizeTokenStore.set(store_key, pseudonymize(text, labels))
-  return pseudonymizeTokenStore.get(store_key)!
 }
 
 export function onSelect(store: Store<State>, ids: string[], only: boolean) {

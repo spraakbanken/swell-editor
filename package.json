@@ -78,8 +78,8 @@
     ]
   },
   "scripts": {
-    "png-io": "ts-node src/png-io.ts",
-    "iosaas": "ts-node src/iosaas.ts --serve",
+    "png-io": "ts-node src/Image/png-io.ts",
+    "iosaas": "ts-node src/Image/iosaas.ts --serve",
     "serve": "parcel $(ts-node src/generate_index.ts ${App:-Editor})",
     "build": "rm -rf dist/*; parcel build --public-url ./ $(ts-node src/generate_index.ts ${App:-Editor})",
     "deploy": "yarn run build && scp dist/* fkswell@k2.spraakdata.gu.se:/export/htdocs_sb/swell/dev",
