@@ -304,7 +304,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
             </div>
           </div>
         )}
-        {anon_mode || (
+        {state.mode === Model.modes.normalization && (
           <div className="TopPad">
             <em>Target text:</em>
             <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
@@ -376,7 +376,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
             {Button('redo', '', history.redo, history.canRedo())}
           </div>
           <div style={{fontWeight: 'bold'}}>
-            Svala {anon_mode ? 'anonymization' : 'normalization'}{' '}
+            Svala {Model.mode_label(state.mode)}{' '}
             {store.at('essay').get() ? `– essay ${store.at('essay').get()}` : ''}
           </div>
           <div>
@@ -413,7 +413,13 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
               <hr />
               {Button('validate', '', () => Model.validateState(store))}
               {Button(
-                `switch to ${anon_mode ? 'normalization' : 'anonymization'}`,
+                'switch to anonymization',
+                '',
+                () => store.at('mode').set(Model.modes.anonymization),
+                state.mode !== Model.modes.anonymization && !state.backend
+              )}
+              {Button(
+                'switch to normalization',
                 '',
                 Model.inAnonfixMode(store)
                   ? () => {
@@ -434,13 +440,20 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
                         Model.report(store, 'Anonymization changed')
                         // After save, switch mode.
                         const unsub = store.at('version').ondiff(() => {
-                          store.at('mode').modify(Model.nextMode)
+                          store.at('mode').set(Model.modes.normalization)
                           unsub()
                         })
                       }
                     }
-                  : () => store.at('mode').modify(Model.nextMode),
-                !state.backend || /norm/.test(state.start_mode as string)
+                  : () => store.at('mode').set(Model.modes.normalization),
+                state.mode !== Model.modes.normalization &&
+                  (!state.backend || /norm/.test(state.start_mode as string))
+              )}
+              {Button(
+                'switch to correction annotation',
+                '',
+                () => store.at('mode').set(Model.modes.correctannot),
+                state.mode !== Model.modes.correctannot && !state.backend
               )}
               <hr />
               {toggle_button('graph')}

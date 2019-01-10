@@ -184,15 +184,16 @@ export type Show = 'graph' | 'diff' | 'image_link' | 'examples' | 'source_text' 
 
 export const shows = ['graph', 'diff', 'image_link', 'examples', 'source_text'] as Show[]
 
-export type Mode = 'anonymization' | 'normalization'
+export type Mode = 'anonymization' | 'normalization' | 'correctannot'
 
 export const modes: Record<Mode, Mode> = {
   anonymization: 'anonymization',
   normalization: 'normalization',
+  correctannot: 'correctannot',
 }
 
-export function nextMode(m: Mode) {
-  return m === modes.anonymization ? modes.normalization : modes.anonymization
+export function mode_label(mode: Mode): string {
+  return mode == modes.correctannot ? 'correction annotation' : mode
 }
 
 export const init: State = {
@@ -411,7 +412,8 @@ export function inAnonMode(store: Store<State>) {
 }
 
 export function inAnonfixMode(store: Store<State>) {
-  return /norm/.test(store.get().start_mode as string) && inAnonMode(store)
+  const start_mode = store.get().start_mode as string
+  return start_mode && !/anon/.test(start_mode) && inAnonMode(store)
 }
 
 export function history(store: Store<State>) {
@@ -531,6 +533,7 @@ export const actionButtons: Record<Mode, ActionOnSelected[]> = {
     'revert',
     // 'deselect',
   ],
+  correctannot: ['prev', 'next', 'prev_mod', 'next_mod'],
   anonymization: ['prev', 'next', 'prev_mod', 'next_mod'],
 }
 
