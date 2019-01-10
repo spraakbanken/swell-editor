@@ -14,10 +14,13 @@ This tool is in active development, and described further here:
 * [Representation av avvikelseannotationer](https://spraakbanken.gu.se/swell/representation-2017/) (in Swedish)
 
 Slides, change slides with up and down arrows:
+
 * [SweLL meeting January 2018](https://spraakbanken.gu.se/swell/jan2018) (in Swedish, "print mode" on p)
 * [CLT retreat 2017](https://spraakbanken.gu.se/swell/clt-2017)
 * [L2 Clarin workshop 2017](https://spraakbanken.gu.se/swell/clarin-2017)
 * [En förhandstitt på verktyget för normalisering av andraspråkstexter](https://github.com/spraakbanken/swell-editor/blob/c13475d2e14a53a3e86e5b0f0861f9dbf5411af3/talk/hws/hws-talk.pdf) (pdf, in Swedish)
+
+![Build status](https://travis-ci.org/spraakbanken/swell-editor.svg?branch=master)
 
 ### Running the tool
 
@@ -69,7 +72,10 @@ The url hash contains two fields for talking to a backend: `backend` and `essay`
 The `backend` should a base64 encoded url. You can set this from the developer console like this:
 
 ```typescript
-store.update({backend: 'https://spraakbanken.gu.se/swell/dev-backend/annotation/essay/', essay: 'K0Rv'})
+store.update({
+  backend: 'https://spraakbanken.gu.se/swell/dev-backend/annotation/essay/',
+  essay: 'K0Rv',
+})
 ```
 
 The store is only fetched on page load, so you'll need to reload the page after setting this.
