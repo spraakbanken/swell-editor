@@ -72,9 +72,6 @@ export function edge_record(es: Edge[]): Record<string, Edge> {
   const g = {...g0, edges: {'oops': g0.edges['e-s0-t0']}}
   check_invariant(g) !== 'ok' // => true
 
-It's ok for edges to be connected with only tokens from one side,
-but should it be?
-
 */
 export function check_invariant(g: Graph): 'ok' | {violation: string; g: Graph} {
   try {

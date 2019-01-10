@@ -30,14 +30,16 @@ interface Edge {
 ## Invariant
 
 The graph is subject to an invariant (checked with the function `check_invariant`):
+
 * all defined identifiers are unique over the graph
 * all referenced identifiers exist
+* each tokens is referenced in one edge
 * text tokens match the regex `/\s*\S+\s+/`
 * the graph is aligned
 
 ## Example
 
-A graph with source and target texts each being `w1 w2 `:
+A graph with source and target texts each being `w1 w2`:
 
 ```javascript
 {
@@ -61,6 +63,7 @@ A graph with source and target texts each being `w1 w2 `:
 ```
 
 The source word `apa` automatically aligned with `bepa`, with the label `"A"`:
+
 ```javascript
 {
   "source": [{"id": "s0", "text": "apa "}],
@@ -118,4 +121,3 @@ type RichDiff =
 
 type TokenDiff = [-1 | 0 | 1 /* deleted, unmodified, inserted */, string][]
 ```
-
