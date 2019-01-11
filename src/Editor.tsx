@@ -46,11 +46,10 @@ export function App(store: Store<Model.State>): () => VNode {
     page && Model.setManualTo(store, page)
 
     if (state.start_mode) {
-      if (/anon/.test(state.start_mode)) {
-        store.update({mode: Model.modes.anonymization})
-      } else if (/norm/.test(state.start_mode)) {
-        store.update({mode: Model.modes.normalization})
-      }
+      // Inflate a shortname like "anon" to a real mode.
+      Object.values(Model.modes)
+        .filter(m => m.indexOf(state.start_mode!) === 0)
+        .forEach(m => console.log(m) || store.update({start_mode: m, mode: m}))
     }
   }
 
