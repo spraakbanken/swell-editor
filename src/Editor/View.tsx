@@ -19,7 +19,7 @@ import * as EditorTypes from '../EditorTypes'
 import {LabelSidekick} from './LabelSidekick'
 import * as GV from '../GraphView'
 
-import * as Manual from './Manual'
+import * as Manual from '../Doc/Manual'
 import {Severity} from './Validate'
 import {anonymize_when, anonfixGraph} from './Anonymization'
 

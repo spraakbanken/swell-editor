@@ -5,7 +5,7 @@ import * as G from '../Graph'
 import * as Utils from '../Utils'
 import * as record from '../record'
 
-import * as Manual from './Manual'
+import * as Manual from '../Doc/Manual'
 
 import {Taxonomy, config, label_order, LabelOrder, label_taxonomy} from './Config'
 import {Severity, Rule, edge_check} from './Validate'

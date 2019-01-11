@@ -1,6 +1,6 @@
 import * as G from '../Graph'
-import {md} from '../Doc/Slides'
 import {VNode} from '../ReactUtils'
+import {md} from './Markdown'
 
 type Mode = 'anonymization' | 'normalization'
 
