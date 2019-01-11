@@ -184,15 +184,21 @@ export type Show = 'graph' | 'diff' | 'image_link' | 'examples' | 'source_text' 
 
 export const shows = ['graph', 'diff', 'image_link', 'examples', 'source_text'] as Show[]
 
-export type Mode = 'anonymization' | 'normalization'
+export type Mode = 'anonymization' | 'normalization' | 'correctannot'
 
 export const modes: Record<Mode, Mode> = {
   anonymization: 'anonymization',
   normalization: 'normalization',
+  correctannot: 'correctannot',
 }
 
-export function nextMode(m: Mode) {
-  return m === modes.anonymization ? modes.normalization : modes.anonymization
+export function mode_label(mode: Mode): string {
+  return mode == modes.correctannot ? 'correction annotation' : mode
+}
+
+/** Are we limited to tagging, and not allowed to edit target text? */
+export function is_target_readonly(mode: Mode): boolean {
+  return [modes.anonymization, modes.correctannot].includes(mode)
 }
 
 export const init: State = {
@@ -411,7 +417,8 @@ export function inAnonMode(store: Store<State>) {
 }
 
 export function inAnonfixMode(store: Store<State>) {
-  return /norm/.test(store.get().start_mode as string) && inAnonMode(store)
+  const start_mode = store.get().start_mode as string
+  return start_mode && start_mode != modes.anonymization && inAnonMode(store)
 }
 
 export function history(store: Store<State>) {
@@ -455,7 +462,7 @@ export function visibleGraph(store: Store<State>) {
   if (inAnonMode(store)) {
     // When first entering anon, add the pseudonymizations of any already anonymized edges to the store.
     return anonymize(G.sort_edge_labels(g, label_order), store.at('pseudonyms'))
-  } else if (state.subspan) {
+  } else if (state.subspan && !is_target_readonly(state.mode)) {
     return G.subgraph(g, state.subspan)
   } else {
     return g
@@ -519,18 +526,8 @@ export type ActionOnSelected =
   | 'prev_mod'
 
 export const actionButtons: Record<Mode, ActionOnSelected[]> = {
-  normalization: [
-    'prev',
-    'next',
-    'prev_mod',
-    'next_mod',
-    'group',
-    'orphan',
-    // 'merge',
-    'auto',
-    'revert',
-    // 'deselect',
-  ],
+  normalization: ['prev', 'next', 'prev_mod', 'next_mod', 'group', 'orphan', 'auto', 'revert'],
+  correctannot: ['prev', 'next', 'prev_mod', 'next_mod', 'group', 'orphan', 'auto', 'revert'],
   anonymization: ['prev', 'next', 'prev_mod', 'next_mod'],
 }
 

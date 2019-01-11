@@ -165,8 +165,21 @@ const anonymization: Taxonomy = [
   },
 ]
 
-// Julia's updated taxonomy 19 April 2018
 export const normalization: Taxonomy = [
+  {
+    group: 'Unidentified',
+    entries: [
+      {
+        label: 'Uni',
+        desc: 'Error that cannot be categorized according to other codes',
+      },
+      {label: 'OBS!', desc: 'Attention'},
+    ],
+  },
+]
+
+// Julia's updated taxonomy 19 April 2018
+export const correctannot: Taxonomy = [
   {
     group: 'Lexical',
     entries: [
@@ -373,7 +386,7 @@ export const config = {
   order_changing_labels,
   examples,
   image_ws_url,
-  taxonomy: {anonymization, normalization},
+  taxonomy: {anonymization, normalization, correctannot},
 }
 
 /** What group does this label belong to?
@@ -409,12 +422,4 @@ export function find_label(label: string): TaxonomyFind | undefined {
 /** Get the taxonomy domain (editor mode) of a label. */
 export function label_taxonomy(label: string): string | null {
   return find_label(label) ? find_label(label)!.taxonomy : null
-}
-
-export function label_class(l: string) {
-  return label_taxonomy(l)
-    ? 'label-' + label_taxonomy(l)
-    : label_order(l) === LabelOrder.NUM
-      ? 'label-anonymization'
-      : ''
 }

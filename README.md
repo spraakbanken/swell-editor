@@ -80,7 +80,7 @@ store.update({
 
 The store is only fetched on page load, so you'll need to reload the page after setting this.
 
-The `start_mode` flag can be `norm` or `anon` and will start the editor in that mode.
+The `start_mode` flag can be `anon`, `norm` or `corr` and will start the editor in that mode.
 
 Note that while there is a backend connected it is not possible to change mode
 (anonymisation or normalisation) or edit the source text.
