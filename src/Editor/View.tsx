@@ -66,7 +66,7 @@ const topStyle = typestyle.style({
     '& .content': {
       height: '100%',
     },
-    '& .menu div': {
+    '& .menu .box': {
       position: 'absolute',
       top: header_height,
       right: 0,
@@ -448,8 +448,12 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
               {// Examples destroy essays.
               toggle_button('examples', !state.backend)}
               <hr />
+              {config.docs[state.mode] &&
+                record.traverse(config.docs[state.mode], (url, label) =>
+                  Button(`view ${label}`, '', () => window.open(url))
+                )}
               {Button(
-                state.manual === undefined ? 'help' : 'exit help',
+                state.manual === undefined ? 'manual' : 'exit manual',
                 'toggle showing manual',
                 () => Model.setManualTo(store, state.manual ? undefined : 'manual')
               )}

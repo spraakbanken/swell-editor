@@ -369,11 +369,25 @@ const november_2017_pilot_taxonomy: Taxonomy = [
   },
 ]
 
+const docs: Record<string, Record<string, string>> = {
+  anonymization: {
+    'anonymization guidelines':
+      'https://github.com/spraakbanken/swell-project/blob/master/Anonymization_guidelines.md',
+  },
+  normalization: {
+    'annotation guidelines':
+      'https://github.com/spraakbanken/swell-project/blob/master/Annotation_guidelines.md',
+    'error code book':
+      'https://github.com/spraakbanken/swell-project/blob/master/Error_code_book.md',
+  },
+}
+
 export const config = {
   order_changing_labels,
   examples,
   image_ws_url,
   taxonomy: {anonymization, normalization},
+  docs,
 }
 
 /** What group does this label belong to?
