@@ -423,11 +423,3 @@ export function find_label(label: string): TaxonomyFind | undefined {
 export function label_taxonomy(label: string): string | null {
   return find_label(label) ? find_label(label)!.taxonomy : null
 }
-
-export function label_class(l: string) {
-  return label_taxonomy(l)
-    ? 'label-' + label_taxonomy(l)
-    : label_order(l) === LabelOrder.NUM
-      ? 'label-anonymization'
-      : ''
-}

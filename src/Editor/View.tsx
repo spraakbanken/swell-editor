@@ -12,7 +12,7 @@ import {Close, Button, VNode} from '../ReactUtils'
 import * as Model from './Model'
 import {DropZone} from './DropZone'
 import * as CM from './CodeMirror'
-import {config, label_class, label_sort} from './Config'
+import {config, label_sort, label_taxonomy} from './Config'
 
 import * as EditorTypes from '../EditorTypes'
 
@@ -197,13 +197,9 @@ const topStyle = typestyle.style({
 })
 
 export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): VNode {
-  // console.timeEnd('draw')
-  // console.log('redraw')
-  // console.time('draw')
-
   const state = store.get()
   const graph = Model.graphStore(store)
-  const anon_mode = Model.inAnonMode(store)
+  const readonly = Model.is_target_readonly(state.mode)
 
   const g = Model.currentGraph(store)
   const visibleGraph = Model.visibleGraph(store)
@@ -252,17 +248,16 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
             {Manual.slugs.map(slug => {
               const page = Manual.manual[slug]
               if (page) {
-                const anon_mode = page.mode == 'anonymization'
-                const m = anonymize_when(anon_mode)
+                const m = anonymize_when(page.mode == 'anonymization')
                 return (
                   <React.Fragment>
                     {page.text}
                     <i>Initial view:</i>
-                    <div className={anon_mode ? ' NoManualBlue' : ''}>
+                    <div className={Model.is_target_readonly(page.mode) ? ' NoManualBlue' : ''}>
                       <GV.GraphView graph={m(page.graph, store.at('pseudonyms'))} />
                     </div>
                     <i>Target view:</i>
-                    <div className={anon_mode ? ' NoManualBlue' : ''}>
+                    <div className={Model.is_target_readonly(page.mode) ? ' NoManualBlue' : ''}>
                       <GV.GraphView graph={m(page.target, store.at('pseudonyms'))} />
                     </div>
                     <ReactUtils.A
@@ -304,30 +299,31 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
             </div>
           </div>
         )}
-        {state.mode === Model.modes.normalization && (
+        {readonly || (
           <div className="TopPad">
             <em>Target text:</em>
             <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
           </div>
         )}
         <div
-          className={(hovering ? ' hovering' : '') + (anon_mode ? 'anon NoManualBlue' : 'norm')}
+          className={(hovering ? ' hovering' : '') + (readonly ? 'NoManualBlue' : '')}
           style={{minHeight: '10em'}}>
           <GV.GraphView
+            mode={state.mode}
             side={state.side_restriction}
             orderChangingLabel={s => config.order_changing_labels[s]}
             graph={visible_graph}
-            hoverId={anon_mode ? undefined : state.hover_id}
-            onHover={anon_mode ? undefined : hover_id => store.update({hover_id})}
+            hoverId={readonly ? undefined : state.hover_id}
+            onHover={readonly ? undefined : hover_id => store.update({hover_id})}
             selectedIds={Object.keys(state.selected)}
             generation={state.generation}
-            labelClasser={label_class}
+            labelMode={label_taxonomy}
             labelSort={label_sort}
             onSelect={(ids, only) => Model.onSelect(store, ids, only)}
           />
         </div>
         {ShowMessages(store.at('validation_messages'))}
-        {state.show.image_link && ImageWebserviceAddresses(visible_graph, anon_mode)}
+        {state.show.image_link && ImageWebserviceAddresses(visible_graph, Model.inAnonMode(store))}
         {state.show.graph && <pre className="box pre-box">{Utils.show(visibleGraph)}</pre>}
         {state.show.diff && (
           <pre className="box pre-box">{Utils.show(G.enrichen(visibleGraph))}</pre>
@@ -368,6 +364,14 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
     const toggle_button = (show: Model.Show, enabled?: boolean, label = show.replace('_', ' ')) =>
       Button(show_hide_str(state.show[show]) + label, '', () => toggle(show), enabled, true)
 
+    const mode_switcher = (mode: Model.Mode, enabled: boolean = true, cb?: () => void) =>
+      Button(
+        `switch to ${Model.mode_label(mode)}`,
+        '',
+        cb ? cb : () => store.at('mode').set(mode),
+        state.mode !== mode && enabled
+      )
+
     return (
       <React.Fragment>
         <div style={{display: 'flex', justifyContent: 'space-between', width: '100%'}}>
@@ -376,8 +380,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
             {Button('redo', '', history.redo, history.canRedo())}
           </div>
           <div style={{fontWeight: 'bold'}}>
-            Svala {Model.mode_label(state.mode)}{' '}
-            {store.at('essay').get() ? `– essay ${store.at('essay').get()}` : ''}
+            Svala {Model.mode_label(state.mode)} {state.essay ? `– essay ${state.essay}` : ''}
           </div>
           <div>
             {!!state.backurl && (
@@ -412,15 +415,10 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
               {RestrictionButtons(store.at('side_restriction'))}
               <hr />
               {Button('validate', '', () => Model.validateState(store))}
-              {Button(
-                'switch to anonymization',
-                '',
-                () => store.at('mode').set(Model.modes.anonymization),
-                state.mode !== Model.modes.anonymization && !state.backend
-              )}
-              {Button(
-                'switch to normalization',
-                '',
+              {mode_switcher(Model.modes.anonymization, !state.backend)}
+              {mode_switcher(
+                Model.modes.normalization,
+                !state.backend || /norm/.test(state.start_mode as string),
                 Model.inAnonfixMode(store)
                   ? () => {
                       // The done status needs to go from false to true at validation.
@@ -446,16 +444,9 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
                         })
                       }
                     }
-                  : () => store.at('mode').set(Model.modes.normalization),
-                state.mode !== Model.modes.normalization &&
-                  (!state.backend || /norm/.test(state.start_mode as string))
+                  : () => store.at('mode').set(Model.modes.normalization)
               )}
-              {Button(
-                'switch to correction annotation',
-                '',
-                () => store.at('mode').set(Model.modes.correctannot),
-                state.mode !== Model.modes.correctannot && !state.backend
-              )}
+              {mode_switcher(Model.modes.correctannot, !state.backend)}
               <hr />
               {toggle_button('graph')}
               {toggle_button('diff')}

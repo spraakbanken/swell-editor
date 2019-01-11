@@ -196,6 +196,11 @@ export function mode_label(mode: Mode): string {
   return mode == modes.correctannot ? 'correction annotation' : mode
 }
 
+/** Are we limited to tagging, and not allowed to edit target text? */
+export function is_target_readonly(mode: Mode): boolean {
+  return [modes.anonymization, modes.correctannot].includes(mode)
+}
+
 export const init: State = {
   graph: Undo.init(G.init('')),
   hover_id: undefined,
@@ -457,7 +462,7 @@ export function visibleGraph(store: Store<State>) {
   if (inAnonMode(store)) {
     // When first entering anon, add the pseudonymizations of any already anonymized edges to the store.
     return anonymize(G.sort_edge_labels(g, label_order), store.at('pseudonyms'))
-  } else if (state.subspan) {
+  } else if (state.subspan && !is_target_readonly(state.mode)) {
     return G.subgraph(g, state.subspan)
   } else {
     return g

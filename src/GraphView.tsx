@@ -165,8 +165,8 @@ const GraphViewStyle = style(
         position: 'absolute',
       },
 
-      '.anon & .label-normalization, .norm & .label-anonymization': {
-        color: '#999',
+      '& .label.blurred': {
+        color: '#ccc',
       },
     },
   }
@@ -320,8 +320,9 @@ export interface GraphViewProps {
   onSelect?: OnSelect
   hoverId?: string
   selectedIds?: string[]
+  mode?: string
   side?: G.Side
-  labelClasser?: (label: string) => string
+  labelMode?: (label: string) => string | null
   labelSort?: (a: string, b: string) => number
   /** for hot module reloading, bumped at each reload and used to make sure thunked components get updated */
   generation?: number
@@ -335,8 +336,9 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
     onSelect,
     hoverId,
     selectedIds,
+    mode,
     side,
-    labelClasser,
+    labelMode,
     labelSort,
     generation,
   } = props
@@ -366,6 +368,7 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
             e: edges[d.id],
             selected_status: edges[d.id].ids.map(x => selected_ids.some(id => id === x)),
             generation,
+            mode,
             side,
           },
           d.id + '#' + c.inc(d.id),
@@ -437,7 +440,11 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
                   <div className={BorderCell + ' ' + hoverClass(hoverId, d.id) + obs_class}>
                     <div>
                       {labels.map((l, i) => (
-                        <span key={i} className={labelClasser ? labelClasser(l) : ''}>
+                        <span
+                          key={i}
+                          className={
+                            'label ' + (labelMode && labelMode(l) !== mode ? 'blurred' : '')
+                          }>
                           {l}
                         </span>
                       ))}
