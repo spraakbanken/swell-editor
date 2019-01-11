@@ -364,12 +364,39 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
     const toggle_button = (show: Model.Show, enabled?: boolean, label = show.replace('_', ' ')) =>
       Button(show_hide_str(state.show[show]) + label, '', () => toggle(show), enabled, true)
 
-    const mode_switcher = (mode: Model.Mode, enabled: boolean = true, cb?: () => void) =>
+    const exit_reanonymization = (mode: Model.Mode) => {
+      // The done status needs to go from false to true at validation.
+      const real_done = store.at('done').get()
+      store.at('done').set(false)
+      // Overwrite source tokens, then save.
+      Model.validation_transaction(store, s => {
+        s.at('done').set(true)
+        s
+          .at('graph')
+          .at('now')
+          .set(anonfixGraph(Model.visibleGraph(store)))
+      })
+      const validation_success = store.at('done').get()
+      store.at('done').set(real_done)
+      if (validation_success) {
+        Model.save(store)
+        Model.report(store, 'Anonymization changed during ' + mode)
+        // After save, switch mode.
+        const unsub = store.at('version').ondiff(() => {
+          store.at('mode').set(mode)
+          unsub()
+        })
+      }
+    }
+
+    const mode_switcher = (mode: Model.Mode, enable_in_any_mode: boolean = false) =>
       Button(
         `switch to ${Model.mode_label(mode)}`,
         '',
-        cb ? cb : () => store.at('mode').set(mode),
-        state.mode !== mode && enabled
+        Model.inAnonfixMode(store)
+          ? () => exit_reanonymization(mode)
+          : () => store.at('mode').set(mode),
+        state.mode !== mode && (!state.backend || state.start_mode == mode || enable_in_any_mode)
       )
 
     return (
@@ -415,38 +442,9 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
               {RestrictionButtons(store.at('side_restriction'))}
               <hr />
               {Button('validate', '', () => Model.validateState(store))}
-              {mode_switcher(Model.modes.anonymization, !state.backend)}
-              {mode_switcher(
-                Model.modes.normalization,
-                !state.backend || /norm/.test(state.start_mode as string),
-                Model.inAnonfixMode(store)
-                  ? () => {
-                      // The done status needs to go from false to true at validation.
-                      const norm_done = store.at('done').get()
-                      store.at('done').set(false)
-                      // Overwrite source tokens, then save.
-                      Model.validation_transaction(store, s => {
-                        s.at('done').set(true)
-                        s
-                          .at('graph')
-                          .at('now')
-                          .modify(g => anonfixGraph(Model.visibleGraph(store)))
-                      })
-                      const validation_success = store.at('done').get()
-                      store.at('done').set(norm_done)
-                      if (validation_success) {
-                        Model.save(store)
-                        Model.report(store, 'Anonymization changed')
-                        // After save, switch mode.
-                        const unsub = store.at('version').ondiff(() => {
-                          store.at('mode').set(Model.modes.normalization)
-                          unsub()
-                        })
-                      }
-                    }
-                  : () => store.at('mode').set(Model.modes.normalization)
-              )}
-              {mode_switcher(Model.modes.correctannot, !state.backend)}
+              {mode_switcher(Model.modes.anonymization, true)}
+              {mode_switcher(Model.modes.normalization)}
+              {mode_switcher(Model.modes.correctannot)}
               <hr />
               {toggle_button('graph')}
               {toggle_button('diff')}

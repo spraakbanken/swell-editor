@@ -418,7 +418,7 @@ export function inAnonMode(store: Store<State>) {
 
 export function inAnonfixMode(store: Store<State>) {
   const start_mode = store.get().start_mode as string
-  return start_mode && !/anon/.test(start_mode) && inAnonMode(store)
+  return start_mode && start_mode != modes.anonymization && inAnonMode(store)
 }
 
 export function history(store: Store<State>) {
