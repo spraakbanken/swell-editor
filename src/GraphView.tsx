@@ -92,9 +92,9 @@ const GraphViewStyle = style(
         borderRadius: '.3em',
         textDecoration: 'none',
       },
-      '.NoManualBlue & ins, .NoManualBlue & del': {
+      '&.anonymization ins, &.anonymization del': {
         color: 'inherit',
-        backgroundColor: '#eee',
+        backgroundColor: 'inherit',
       },
       '& .GreyPath': {
         stroke: '#999',
@@ -356,7 +356,13 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
   const c = Utils.count<string>()
   return (
     <div
-      className={`${GraphViewStyle} ${ReactUtils.clean_ul} ${ReactUtils.Unselectable} graphView`}>
+      className={[
+        GraphViewStyle,
+        ReactUtils.clean_ul,
+        ReactUtils.Unselectable,
+        mode,
+        'graphView',
+      ].join(' ')}>
       {rd.map((d, i) =>
         ReactUtils.thunk(
           {
