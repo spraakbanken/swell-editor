@@ -86,12 +86,14 @@ export function App(store: Store<Model.State>): () => VNode {
       (change.text ? change.text.join() : '') + (change.removed ? change.removed.join() : '')
     )
 
+  const targetChangeCheck: CM.ChangeCheck = () => !Model.is_target_readonly(store.at('mode').get())
+
   // for transcription mode then change here to make the source code mirror not be readOnly
   const cms = record.create(G.sides, side =>
     CM.GraphEditingCM(
       store,
       side,
-      side == 'source' && !!store.get().backend ? allowWhitespace : undefined
+      !store.get().backend ? undefined : side == 'target' ? targetChangeCheck : allowWhitespace
     )
   )
   return () => View(store, cms)

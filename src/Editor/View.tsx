@@ -291,9 +291,9 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
         {ShowErrors(store.at('errors'))}
         {manual_part()}
         {state.show.source_text && (
-          <div>
+          <div className="TopPad">
             <em>Source text:</em>
-            <div className={'TopPad ' + (hovering ? 'cm-hovering' : '')}>{cms.source.node}</div>
+            <div className={hovering ? 'cm-hovering' : ''}>{cms.source.node}</div>
             <div>
               {!!state.backend ||
                 Button('copy to target', '', () =>
@@ -302,7 +302,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
             </div>
           </div>
         )}
-        {readonly || (
+        {state.show.target_text && (
           <div className="TopPad">
             <em>Target text:</em>
             <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
@@ -452,6 +452,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
           <div className="menu">
             <div className="box">
               {toggle_button('source_text')}
+              {toggle_button('target_text')}
               {RestrictionButtons(store.at('side_restriction'))}
               <hr />
               {Button('validate', '', () => Model.validateState(store))}

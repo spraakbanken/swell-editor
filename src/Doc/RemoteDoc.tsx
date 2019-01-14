@@ -11,7 +11,7 @@ export function remote_doc(url: string, show: (content: Element) => void): void 
         return show(message('Could not parse remote document.'))
       }
       // Remove the "swell-project" header
-      const h1 = body && body.querySelector('h1')
+      const h1 = body.querySelector('h1')
       h1 && h1.remove()
       show(body)
     },

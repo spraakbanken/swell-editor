@@ -182,9 +182,23 @@ export function savePeriodicallyToBackend(store: Store<State>) {
   })
 }
 
-export type Show = 'graph' | 'diff' | 'image_link' | 'examples' | 'source_text' | 'options'
+export type Show =
+  | 'graph'
+  | 'diff'
+  | 'image_link'
+  | 'examples'
+  | 'source_text'
+  | 'target_text'
+  | 'options'
 
-export const shows = ['graph', 'diff', 'image_link', 'examples', 'source_text'] as Show[]
+export const shows = [
+  'graph',
+  'diff',
+  'image_link',
+  'examples',
+  'source_text',
+  'target_text',
+] as Show[]
 
 export type Mode = 'anonymization' | 'normalization' | 'correctannot'
 
