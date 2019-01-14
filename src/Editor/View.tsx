@@ -66,7 +66,7 @@ const topStyle = typestyle.style({
     '& .content': {
       height: '100%',
     },
-    '& .menu div': {
+    '& .menu .box': {
       position: 'absolute',
       top: header_height,
       right: 0,
@@ -115,6 +115,9 @@ const topStyle = typestyle.style({
       fontSize: '0.85em',
 
       padding: '0.25em',
+    },
+    '& .doc img': {
+      maxWidth: '100%',
     },
     '& .TopPad': {
       paddingTop: '1em',
@@ -350,6 +353,16 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
             ))}
           </div>
         )}
+        {state.doc && (
+          <div className="box doc">
+            <Close onMouseDown={() => store.at('doc').set(undefined)} title="Close" />
+            {Button('open in new window', '', () => {
+              window.open(state.doc)
+              store.at('doc').set(undefined)
+            })}
+            {state.doc_node && <div dangerouslySetInnerHTML={{__html: state.doc_node.outerHTML}} />}
+          </div>
+        )}
       </div>
     )
   }
@@ -451,8 +464,12 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
               {// Examples destroy essays.
               toggle_button('examples', !state.backend)}
               <hr />
+              {config.docs[state.mode] &&
+                record.traverse(config.docs[state.mode], (url, label) =>
+                  Button(`view ${label}`, '', () => store.at('doc').set(url))
+                )}
               {Button(
-                state.manual === undefined ? 'help' : 'exit help',
+                state.manual === undefined ? 'manual' : 'exit manual',
                 'toggle showing manual',
                 () => Model.setManualTo(store, state.manual ? undefined : 'manual')
               )}

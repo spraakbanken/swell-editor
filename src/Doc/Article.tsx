@@ -9,8 +9,7 @@ import * as GV from '../GraphView'
 import * as Utils from '../Utils'
 
 import {VNode} from '../ReactUtils'
-
-import {md} from './Slides'
+import {md} from './Markdown'
 
 export interface State {
   only?: number

@@ -13,6 +13,7 @@ import {State} from './Editor/Model'
 import * as Model from './Editor/Model'
 import * as CM from './Editor/CodeMirror'
 import {View} from './Editor/View'
+import {remote_doc} from './Doc/RemoteDoc'
 
 export const init = Model.init
 
@@ -57,6 +58,10 @@ export function App(store: Store<Model.State>): () => VNode {
   store
     .at('mode')
     .ondiff(mode => mode === Model.modes.anonymization && Model.initPseudonymizations(store))
+
+  const load = (url: string) => remote_doc(url, content => store.at('doc_node').set(content))
+  store.at('doc').ondiff(url => (url ? load(url) : store.at('doc_node').set(undefined)))
+  store.at('mode').ondiff(() => store.at('doc').set(undefined))
 
   Model.check_invariant(store)(store.get().graph.now)
 

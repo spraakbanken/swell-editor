@@ -382,11 +382,27 @@ const november_2017_pilot_taxonomy: Taxonomy = [
   },
 ]
 
+function doc_url(title: string): string {
+  return 'https://spraakbanken.github.io/swell-project/' + title
+}
+
+const docs: Record<string, Record<string, string>> = {
+  anonymization: {
+    'anonymization guidelines': doc_url('Anonymization_guidelines'),
+  },
+  normalization: {
+    'annotation guidelines': doc_url(
+      'SweLL correction annotation_guidelines and code book (SweLL-taxonomy)'
+    ),
+  },
+}
+
 export const config = {
   order_changing_labels,
   examples,
   image_ws_url,
   taxonomy: {anonymization, normalization, correctannot},
+  docs,
 }
 
 /** What group does this label belong to?
