@@ -354,6 +354,12 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
             ))}
           </div>
         )}
+        {state.doc && (
+          <div className="doc">
+          <h1>Doc</h1>
+          {state.doc}
+          </div>
+        )}
       </div>
     )
   }
@@ -450,7 +456,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
               <hr />
               {config.docs[state.mode] &&
                 record.traverse(config.docs[state.mode], (url, label) =>
-                  Button(`view ${label}`, '', () => window.open(url))
+                  Button(`view ${label}`, '', () => store.at('doc').set(url))
                 )}
               {Button(
                 state.manual === undefined ? 'manual' : 'exit manual',

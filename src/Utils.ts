@@ -830,9 +830,7 @@ export function POST(
 export function GET(
   url: string,
   k: (response: any) => void,
-  k_err: (response: any, code: number) => void = () => {
-    return
-  }
+  k_err: (response: any, code: number) => void = () => undefined
 ): void {
   const r = new XMLHttpRequest()
   r.onreadystatechange = () => {

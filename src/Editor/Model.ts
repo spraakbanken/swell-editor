@@ -30,6 +30,7 @@ export interface State {
   readonly generation: number
 
   readonly show: Partial<Record<Show, true>>
+  readonly doc?: string
 
   /** are we reading the user manual? */
   readonly manual?: string
