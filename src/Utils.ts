@@ -800,38 +800,20 @@ export function store_join(store: Store<string[]>): Store<string> {
   return store.via(Lens.iso((ss: string[]) => ss.join(' '), s => s.split(/\s+/g)))
 }
 
-/** POST request */
-export function POST(
-  url: string,
-  data: any,
-  k: (response: any) => void,
-  k_err: (response: any, code: number) => void = () => {
-    return
-  }
-): void {
-  const r = new XMLHttpRequest()
-  r.onreadystatechange = () => {
-    if (r.readyState == 4 && r.status == 200) {
-      k(r.response)
-    }
-    if (r.readyState == 4 && r.status >= 300) {
-      k_err(r.response, r.status)
-    }
-  }
-  r.open('POST', url, true)
-  r.withCredentials = true
-  r.setRequestHeader('Content-Type', 'application/json')
-  const csrftoken = get_cookie('csrftoken')
-  csrftoken && r.setRequestHeader('X-CSRFToken', csrftoken)
-  r.send(JSON.stringify(data))
+export interface RequestOptions {
+  method: 'GET' | 'POST'
+  contentType?: 'json' | 'text'
+  withCredentials?: boolean
+  headers?: Record<string, any>[]
+  data?: any
 }
 
-/** GET request */
-export function GET(
+export function request(
   url: string,
+  options: RequestOptions,
   k: (response: any) => void,
-  k_err: (response: any, code: number) => void = () => undefined
-): void {
+  k_err: (response: any, code: number) => void = () => {}
+) {
   const r = new XMLHttpRequest()
   r.onreadystatechange = () => {
     if (r.readyState == 4 && r.status == 200) {
@@ -841,10 +823,42 @@ export function GET(
       k_err(r.response, r.status)
     }
   }
-  r.open('GET', url, true)
-  r.withCredentials = true
-  r.setRequestHeader('Content-Type', 'application/json')
-  r.send()
+  r.open(options.method, url, true)
+  r.withCredentials = !!options.withCredentials
+  options.contentType == 'json' && r.setRequestHeader('Content-Type', 'application/json')
+  r.send(options.data)
+}
+
+/** POST request */
+export function POST(
+  url: string,
+  data: any,
+  k: (response: any) => void,
+  k_err: (response: any, code: number) => void = () => {}
+): void {
+  const csrftoken = get_cookie('csrftoken')
+  const options: RequestOptions = {
+    method: 'POST',
+    contentType: 'json',
+    withCredentials: true,
+    headers: csrftoken ? [{'X-CSRFToken': csrftoken}] : [],
+    data: JSON.stringify(data),
+  }
+  request(url, options, k, k_err)
+}
+
+/** GET request */
+export function GET(
+  url: string,
+  k: (response: any) => void,
+  k_err: (response: any, code: number) => void = () => {}
+): void {
+  const options: RequestOptions = {
+    method: 'GET',
+    contentType: 'json',
+    withCredentials: true,
+  }
+  request(url, options, k, k_err)
 }
 
 export function get_cookie(name: string): string | undefined {

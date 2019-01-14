@@ -116,6 +116,9 @@ const topStyle = typestyle.style({
 
       padding: '0.25em',
     },
+    '& .doc img': {
+      maxWidth: '100%',
+    },
     '& .TopPad': {
       paddingTop: '1em',
     },
@@ -355,9 +358,13 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
           </div>
         )}
         {state.doc && (
-          <div className="doc">
-          <h1>Doc</h1>
-          {state.doc}
+          <div className="box doc">
+            <Close onMouseDown={e => store.at('doc').set(undefined)} title="Close" />
+            {Button('open in new window', '', () => {
+              window.open(store.at('doc').get())
+              store.at('doc').set(undefined)
+            })}
+            {store.at('doc_node').get()}
           </div>
         )}
       </div>

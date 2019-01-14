@@ -2,6 +2,7 @@ import {Store, Lens, Undo} from 'reactive-lens'
 
 import * as G from '../Graph'
 
+import { VNode } from '../ReactUtils';
 import * as Utils from '../Utils'
 import * as record from '../record'
 
@@ -31,6 +32,7 @@ export interface State {
 
   readonly show: Partial<Record<Show, true>>
   readonly doc?: string
+  readonly doc_node?: VNode // TODO Replace VNode dependency with Element
 
   /** are we reading the user manual? */
   readonly manual?: string
