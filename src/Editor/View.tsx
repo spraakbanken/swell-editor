@@ -359,12 +359,12 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
         )}
         {state.doc && (
           <div className="box doc">
-            <Close onMouseDown={e => store.at('doc').set(undefined)} title="Close" />
+            <Close onMouseDown={() => store.at('doc').set(undefined)} title="Close" />
             {Button('open in new window', '', () => {
-              window.open(store.at('doc').get())
+              window.open(state.doc)
               store.at('doc').set(undefined)
             })}
-            {store.at('doc_node').get()}
+            {state.doc_node && <div dangerouslySetInnerHTML={{__html: state.doc_node.outerHTML}} />}
           </div>
         )}
       </div>

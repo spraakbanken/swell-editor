@@ -62,6 +62,7 @@ export function App(store: Store<Model.State>): () => VNode {
 
   const load = (url: string) => remote_doc(url, content => store.at('doc_node').set(content))
   store.at('doc').ondiff(url => (url ? load(url) : store.at('doc_node').set(undefined)))
+  store.at('mode').ondiff(() => store.at('doc').set(undefined))
 
   Model.check_invariant(store)(store.get().graph.now)
 
