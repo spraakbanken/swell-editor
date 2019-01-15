@@ -54,10 +54,15 @@ export function App(store: Store<Model.State>): () => VNode {
     }
   }
 
-  // Reset/detect pseudonyms when switching to anonymization mode.
-  store
-    .at('mode')
-    .ondiff(mode => mode === Model.modes.anonymization && Model.initPseudonymizations(store))
+  store.at('mode').ondiff(mode => {
+    // Reset/detect pseudonyms when switching to anonymization mode.
+    mode === Model.modes.anonymization && Model.initPseudonymizations(store)
+    // Adjust UI to mode.
+    store.at('show').update({
+      target_text: Model.is_target_readonly(mode) ? undefined : true,
+      source_text: undefined,
+    })
+  })
 
   const load = (url: string) => remote_doc(url, content => store.at('doc_node').set(content))
   store.at('doc').ondiff(url => (url ? load(url) : store.at('doc_node').set(undefined)))

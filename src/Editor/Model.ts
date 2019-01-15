@@ -228,7 +228,9 @@ export const init: State = {
   validation_messages: [],
   mode: modes.normalization,
   taxonomy: config.taxonomy,
-  show: {},
+  show: {
+    target_text: true,
+  },
   pseudonyms: {},
 }
 
