@@ -83,7 +83,7 @@ export function App(store: Store<Model.State>): () => VNode {
 
   const allowWhitespace: CM.ChangeCheck = change =>
     !/\S/.test(
-      (change.text ? change.text.join() : '') + (change.removed ? change.removed.join() : '')
+      (change.text ? change.text.join('') : '') + (change.removed ? change.removed.join('') : '')
     )
 
   const targetChangeCheck: CM.ChangeCheck = () => !Model.is_target_readonly(store.at('mode').get())

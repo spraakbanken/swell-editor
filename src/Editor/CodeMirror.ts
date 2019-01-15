@@ -72,7 +72,7 @@ export function GraphEditingCM(
 
   const {cm, node} = CM({extraKeys, tabindex: 3, readOnly})
   defaultTabBehaviour(cm)
-  cm.setValue(G.get_side_text(graph.get(), side))
+  cm.setValue(G.get_side_text(Model.viewGraph(store), side))
 
   const {Index} = PositionUtils(cm, graph, side)
 
@@ -125,7 +125,8 @@ export function GraphEditingCM(
         .getRange(change.from, change.to)
         .split('\n')
     }
-    if (checkChange && !checkChange(change)) {
+    // Only check manual user-made changes. Programmatic changes should set the origin to @ignore.
+    if (checkChange && change.origin !== '@ignore' && !checkChange(change)) {
       change.cancel()
     }
   })
@@ -156,7 +157,7 @@ export function GraphEditingCM(
   )
 
   function do_texts_differ(): undefined | {graph_text: string; editor_text: string} {
-    const graph_text = G.text(graph.get()[side]).slice(0, -1)
+    const graph_text = G.get_side_text(Model.viewGraph(store), side).slice(0, -1)
     const editor_text = cm.getDoc().getValue()
     if (graph_text !== editor_text) {
       return {graph_text, editor_text}
@@ -183,10 +184,7 @@ export function GraphEditingCM(
     if (t) {
       const {from, to, insert} = Utils.edit_range(t.editor_text, t.graph_text)
       const doc = cm.getDoc()
-      cm.operation(() => {
-        doc.setSelection(doc.posFromIndex(from), doc.posFromIndex(to))
-        doc.replaceSelection(insert)
-      })
+      doc.replaceRange(insert, doc.posFromIndex(from), doc.posFromIndex(to), '@ignore')
     }
   }
 
@@ -203,7 +201,7 @@ export function GraphEditingCM(
       cm.operation(() => {
         const doc = cm.getDoc()
         doc.getAllMarks().map(m => m.clear())
-        const g = graph.get()
+        const g = Model.viewGraph(store)
         const em = G.edge_map(g)
         const hover_id = store.get().hover_id
         let i = 0

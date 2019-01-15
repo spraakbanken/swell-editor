@@ -471,18 +471,19 @@ export function initPseudonymizations(store: Store<State>): void {
   store.at('pseudonyms').set(init_pstore(currentGraph(store)))
 }
 
+/** The graph, possibly transformed to be viewed (anonymized). */
+export function viewGraph(store: Store<State>) {
+  return inAnonMode(store)
+    ? anonymize(G.sort_edge_labels(currentGraph(store), label_order), store.at('pseudonyms'))
+    : currentGraph(store)
+}
+
+/** The relevant portion of the graph. */
 export function visibleGraph(store: Store<State>) {
   const state = store.get()
-  const g = currentGraph(store)
+  const g = viewGraph(store)
 
-  if (inAnonMode(store)) {
-    // When first entering anon, add the pseudonymizations of any already anonymized edges to the store.
-    return anonymize(G.sort_edge_labels(g, label_order), store.at('pseudonyms'))
-  } else if (state.subspan && !is_target_readonly(state.mode)) {
-    return G.subgraph(g, state.subspan)
-  } else {
-    return g
-  }
+  return state.subspan && !is_target_readonly(state.mode) ? G.subgraph(g, state.subspan) : g
 }
 
 export function onSelect(store: Store<State>, ids: string[], only: boolean) {
