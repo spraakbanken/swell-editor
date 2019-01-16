@@ -67,36 +67,44 @@ export function raw_diff<A>(
 }
 
 interface Deleted<A> {
+  /** -1: There was a deletion. */
   change: -1
+  /** What was deleted. */
   a: A
 }
 
 interface Constant<A, B> {
+  /** 0: There is no change in the representations of a and b. */
   change: 0
+  /** The unchanged element in its original form. */
   a: A
+  /** The unchanged element in its new form. */
   b: B
 }
 
 interface Inserted<B> {
+  /** 1: There was an insertion. */
   change: 1
+  /** What was inserted. */
   b: B
 }
 
 export type Change<A, B> = Deleted<A> | Constant<A, B> | Inserted<B>
 
-/** Hetrogenuous diff
+/** Heterogeneous diff
 
-  const abca = 'abca'.split('')
-  const BAC = 'BAC'.split('')
+  const abcca = 'abcca'.split('')
+  const BACC = 'BACC'.split('')
   const lower = (s: string) => s.toLowerCase()
   const expect = [
     {change: -1, a: 'a'},
     {change: 0, a: 'b', b: 'B'},
     {change: 1, b: 'A'},
     {change: 0, a: 'c', b: 'C'},
+    {change: 0, a: 'c', b: 'C'},
     {change: -1, a: 'a'}
   ] as Change<string, string>[]
-  hdiff(abca, BAC, lower, lower) // => expect
+  hdiff(abcca, BACC, lower, lower) // => expect
 
 */
 export function hdiff<A, B>(

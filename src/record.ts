@@ -51,6 +51,7 @@ export function lookup<K extends string, V>(x: Record<K, V>, k: K, def: V): V {
   return x[k] || def
 }
 
+/** Apply f on element k, or on def if element k is falsy (e.g. missing). */
 export function modify<K extends string, V>(x: Record<K, V>, k: K, def: V, f: (v: V) => V): V {
   return (x[k] = f(x[k] || def))
 }

@@ -717,19 +717,29 @@ function to_char_ids(token: Token): CharIdPair[] {
   return Utils.str_map(token.text, char => ({char, id: char === ' ' ? undefined : token.id}))
 }
 
+/** Create edges automatically between similar sequences of tokens.
+
+  const g0 = {...init('a bc d')}
+  const g = unaligned_set_side(g0, 'target', 'ab c d')
+  Object.values(align(g).edges).length // => 2
+*/
 export function align(g: Graph): Graph {
+  // Use a union-find to group characters into edges.
   const uf = Utils.PolyUnionFind<string>(u => u)
   const em = Utils.chain(edge_map(g), m => (id: string): Edge =>
     m.get(id) || Utils.raise(`Token id ${id} not in edge map`)
   )
 
   {
+    // Character by character, what was deleted and inserted?
     const chars = mapSides(g, tokens =>
       Utils.flatMap(tokens.filter(token => !em(token.id).manual), to_char_ids)
     )
-
     const char_diff = Utils.hdiff(chars.source, chars.target, u => u.char, u => u.char)
 
+    // For any unchanged character, unify its source and target tokens.
+    // If source is "a bc" and target is "ab c", all characters will be unified to the same group.
+    // The union-find operates over token ids, so an edge is represented by a "root" token id.
     char_diff.forEach(c => {
       if (c.change == 0) {
         // these undefined makes the alignment skip spaces.
@@ -741,6 +751,7 @@ export function align(g: Graph): Graph {
     })
   }
 
+  // Use manual edges as they are.
   const proto_edges = record.filter(g.edges, e => !!e.manual)
 
   const first = Utils.unique_check<string>()
@@ -748,14 +759,20 @@ export function align(g: Graph): Graph {
   mapSides(g, (tokens, side) =>
     tokens.forEach(token => {
       let e_repr = em(token.id)
+      // Skip manual edges, they have already been added.
       if (!e_repr.manual) {
+        // Use the labels from the old edge.
         const labels = first(e_repr.id) ? e_repr.labels : []
+        // New edges are temporarily keyed by the "root" token id.
+        // Merge a single-token edge into the edge that has the same "root" token.
+        // Or add as a new edge if there is no such edge yet.
         const e_token = Edge([token.id], labels, false)
         record.modify(proto_edges, uf.find(token.id), zero_edge, e => merge_edges(e, e_token))
       }
     })
   )
 
+  // Re-key edges.
   const edges = edge_record(record.traverse(proto_edges, e => e))
 
   return {...g, edges}
