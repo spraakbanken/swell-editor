@@ -510,12 +510,26 @@ export function drop_adjacent_equal<A>(xs: A[]): A[] {
 
 /** Union-find data structure operations */
 export interface UnionFind<A> {
+  /** What group does this belong to? */
   find(x: A): A
+  /** Make these belong to the same group. */
   union(x: A, y: A): A
+  /** Make these belong to the same group. */
   unions(xs: A[]): void
 }
 
-/** Make a union-find data structure */
+/** Make a union-find data structure
+
+  const uf = UnionFind()
+  uf.find(10) == uf.find(20) // => false
+  uf.union(10, 20)
+  uf.find(10) == uf.find(20) // => true
+  uf.union(20, 30)
+  uf.find(10) == uf.find(30) // => true
+  uf.unions([10, 40, 50])
+  uf.find(20) == uf.find(40) // => true
+  uf.find(20) == uf.find(50) // => true
+*/
 export function UnionFind(): UnionFind<number> {
   const rev = [] as number[]
   const find = (x: number) => {
@@ -542,12 +556,27 @@ export function UnionFind(): UnionFind<number> {
   return {find, union, unions}
 }
 
-/** Assign unique numbers to each distinct element */
+/** Assign unique numbers to each distinct element
+
+  const {un, num} = Renumber()
+  num('foo') // => 0
+  num('bar') // => 1
+  num('foo') // => 0
+  un(0) // => 'foo'
+  un(1) // => 'bar'
+  un(2) // => undefined
+
+  const {un, num} = Renumber<string>(a => a.toLowerCase())
+  num('foo') // => 0
+  num('FOO') // => 0
+  un(0) // => 'foo'
+*/
 export function Renumber<A>(serialize = (a: A) => JSON.stringify(a)) {
   const bw: Record<string, number> = {}
   const fw: Record<string, A> = {}
   let i = 0
   return {
+    /** What number does (the serialization of) this element have? */
     num(a: A) {
       const s = serialize(a)
       if (!(s in bw)) {
@@ -556,19 +585,31 @@ export function Renumber<A>(serialize = (a: A) => JSON.stringify(a)) {
       }
       return bw[s]
     },
+    /** What is the serialization of any element that has this number? */
     un(n: number) {
       return fw[n]
     },
   }
 }
 
-/** Make a polymorphic union-find data structure */
+/** Make a polymorphic union-find data structure
+
+  const uf = PolyUnionFind<string>(a => a.toLowerCase())
+  uf.repr('a') // => 0
+  uf.repr('A') // => 0
+  uf.find('a') // => 'a'
+  uf.find('A') // => 'a'
+  uf.find('a') == uf.find('b') // => false
+  uf.union('A', 'B')
+  uf.find('a') == uf.find('b') // => true
+*/
 export function PolyUnionFind<A>(
   serialize = (a: A) => JSON.stringify(a)
 ): UnionFind<A> & {repr: (a: A) => number} {
   const {un, num} = Renumber(serialize)
   const uf = UnionFind()
   return {
+    /** What number does the group of this element have? */
     repr: x => uf.find(num(x)),
     find: x => un(uf.find(num(x))),
     union: (x, y) => un(uf.union(num(x), num(y))),
