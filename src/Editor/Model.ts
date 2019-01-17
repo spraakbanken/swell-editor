@@ -532,6 +532,40 @@ export function make_history_advance_function(store: Store<State>) {
     })
 }
 
+export function setLabel(store: Store<State>, token_ids: string[], label: string, value: boolean) {
+  const edges = G.token_ids_to_edges(currentGraph(store), token_ids)
+  const graph = graphStore(store)
+  const edge_ids = edges.map(e => e.id)
+  const labels = Utils.uniq(Utils.flatMap(edges, e => e.labels))
+  const max_str = (xs: string[]) => Utils.maximum([0, ...xs.map(l => Number(l) || 0)])
+  // Add/remove label.
+  edge_ids.forEach(id =>
+    graph.modify(g => G.modify_labels(g, id, labels => Utils.set_modify(labels, label, value)))
+  )
+  // Auto-group consecutive tokens in anonymization.
+  if (store.get().mode == 'anonymization') {
+    if (value && label_order(label) == LabelOrder.BASE) {
+      // When adding a main label, also connect the selected tokens.
+      graph.modify(g =>
+        G.group_consecutive(g, edges, 'source').reduce(
+          (g, es) => G.connect(g, es.map(e => e.id)),
+          g
+        )
+      )
+      // The selected tokens may have new edges.
+      const edges_new = G.token_ids_to_edges(graph.get(), token_ids)
+      // Add next number.
+      let maxnum = Utils.maximum(record.traverse(graph.get().edges, e => max_str(e.labels)))
+      edges_new.forEach(e =>
+        graph.modify(g => G.modify_labels(g, e.id, l => [...l, String(++maxnum)]))
+      )
+    } else if (!value && labels.length <= 1) {
+      // When there was only one label and we are removing it, revert the connection made before.
+      graph.modify(g => G.revert(g, edge_ids))
+    }
+  }
+}
+
 export type ActionOnSelected =
   | 'revert'
   | 'auto'
