@@ -292,6 +292,16 @@ export function LabelSidekick({
                         g
                       )
                     )
+                    // The selected tokens may have new edges.
+                    const edges_new = G.token_ids_to_edges(graph.get(), selected)
+                    let maxnum = Utils.maximum(
+                      record.traverse(graph.get().edges, e =>
+                        Utils.maximum([0, ...e.labels.map(l => Number(l) || 0)])
+                      )
+                    )
+                    edges_new.forEach(e =>
+                      graph.modify(g => G.modify_labels(g, e.id, l => [...l, String(++maxnum)]))
+                    )
                   } else if (!value && labels.length <= 1) {
                     // When there was only one label and we are removing it, revert the connection made before.
                     graph.modify(g => G.revert(g, edge_ids))
