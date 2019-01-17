@@ -47,6 +47,7 @@ export function anonymize(graph: G.Graph, pstore: Store<Pseudonyms>): G.Graph {
   const g = G.clone(graph)
   let i = G.next_id(g)
   const em = G.edge_map(g)
+  const first = Utils.unique_check<string>()
   const pi = G.partition_ids(g)
   const target: G.Token[] = []
   const edges: G.Edge[] = []
@@ -54,6 +55,9 @@ export function anonymize(graph: G.Graph, pstore: Store<Pseudonyms>): G.Graph {
     const e = Utils.getUnsafe(em, source_token.id)
     // If the edge has anon labels.
     const anonLabels = sort_anon_labels(e.labels)
+    if (!first(e.id)) {
+      return
+    }
     if (anonLabels.length) {
       const source_text = G.text(pi(e).source)
       // Ensure a pseudonymization in the store.
