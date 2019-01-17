@@ -282,17 +282,17 @@ export function LabelSidekick({
                     G.modify_labels(g, id, labels => Utils.set_modify(labels, label, value))
                   )
                 )
-                // Auto-group consecutive tokens when setting main categories in anonymization.
-                if (mode == 'anonymization' && label_order(label) == LabelOrder.BASE) {
-                  if (value) {
-                    // When adding a label, also connect the selected tokens.
+                // Auto-group consecutive tokens in anonymization.
+                if (mode == 'anonymization') {
+                  if (value && label_order(label) == LabelOrder.BASE) {
+                    // When adding a main label, also connect the selected tokens.
                     graph.modify(g =>
                       G.group_consecutive(g, edges, 'source').reduce(
                         (g, es) => G.connect(g, es.map(e => e.id)),
                         g
                       )
                     )
-                  } else if (labels.length <= 1) {
+                  } else if (!value && labels.length <= 1) {
                     // When there was only one label and we are removing it, revert the connection made before.
                     graph.modify(g => G.revert(g, edge_ids))
                   }
