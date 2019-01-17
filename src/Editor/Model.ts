@@ -539,7 +539,7 @@ export function setLabel(store: Store<State>, token_ids: string[], label: string
   const labels = Utils.uniq(Utils.flatMap(edges, e => e.labels))
 
   // Add/remove label.
-  const is_num = (x: string) => /\d+/.test(x)
+  const is_num = (x: string) => /^\d+$/.test(x)
   const single_set_label = (labels: string[]) =>
     is_num(label)
       ? // New number replaces old number.
