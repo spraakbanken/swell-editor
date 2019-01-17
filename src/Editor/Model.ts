@@ -562,8 +562,10 @@ export function setLabel(store: Store<State>, token_ids: string[], label: string
       // Add next number.
       const strmax = (xs: string[]) => Utils.maximum([0, ...xs.map(l => Number(l) || 0)])
       let maxnum = Utils.maximum(record.traverse(graph.get().edges, e => strmax(e.labels)))
-      edges_new.forEach(e =>
-        graph.modify(g => G.modify_labels(g, e.id, l => [...l, String(++maxnum)]))
+      edges_new.forEach(
+        e =>
+          strmax(e.labels) ||
+          graph.modify(g => G.modify_labels(g, e.id, l => [...l, String(++maxnum)]))
       )
     } else if (!value && labels.length <= 1) {
       // When there was only one label and we are removing it, revert the connection made before.
