@@ -88,6 +88,12 @@ const topStyle = typestyle.style({
         '&:hover': {
           backgroundColor: 'rgba(0, 0, 0, .1)',
         },
+        '&:disabled': {
+          opacity: 0.5,
+        },
+        '&:disabled:hover': {
+          backgroundColor: 'inherit',
+        },
       },
     },
     '& .CodeMirror': {
