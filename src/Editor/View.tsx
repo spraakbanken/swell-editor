@@ -71,9 +71,24 @@ const topStyle = typestyle.style({
       top: header_height,
       right: 0,
       zIndex: 100,
+      maxWidth: '180px',
     },
     '& .menu button': {
+      appearance: 'none',
+      '-moz-appearance': 'none',
+      '-webkit-appearance': 'none',
+      borderWidth: 0,
+      background: 'none',
       display: 'block',
+      width: '100%',
+      textAlign: 'left',
+      margin: 0,
+      padding: '.2em',
+      $nest: {
+        '&:hover': {
+          backgroundColor: 'rgba(0, 0, 0, .1)',
+        },
+      },
     },
     '& .CodeMirror': {
       border: '1px solid #ddd',
