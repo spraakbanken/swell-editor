@@ -523,7 +523,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
           {main()}
         </DropZone>
       </div>
-      <div className="summary">{Summary(g)}</div>
+      {state.mode == Model.modes.anonymization && <div className="summary">{Summary(g)}</div>}
       <div className="footer box">
         <span style={{opacity: 0.8, fontSize: '0.9em'}}>
           swell-editor{' '}
