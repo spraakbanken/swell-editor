@@ -537,11 +537,16 @@ export function setLabel(store: Store<State>, token_ids: string[], label: string
   const graph = graphStore(store)
   const edge_ids = edges.map(e => e.id)
   const labels = Utils.uniq(Utils.flatMap(edges, e => e.labels))
-  const max_str = (xs: string[]) => Utils.maximum([0, ...xs.map(l => Number(l) || 0)])
+
   // Add/remove label.
-  edge_ids.forEach(id =>
-    graph.modify(g => G.modify_labels(g, id, labels => Utils.set_modify(labels, label, value)))
-  )
+  const is_num = (x: string) => /\d+/.test(x)
+  const single_set_label = (labels: string[]) =>
+    is_num(label)
+      ? // New number replaces old number.
+        labels.filter(l => !is_num(l)).concat(value ? [label] : [])
+      : Utils.set_modify(labels, label, value)
+  edge_ids.forEach(id => graph.modify(g => G.modify_labels(g, id, single_set_label)))
+
   // Auto-group consecutive tokens in anonymization.
   if (store.get().mode == 'anonymization') {
     if (value && label_order(label) == LabelOrder.BASE) {
@@ -555,7 +560,8 @@ export function setLabel(store: Store<State>, token_ids: string[], label: string
       // The selected tokens may have new edges.
       const edges_new = G.token_ids_to_edges(graph.get(), token_ids)
       // Add next number.
-      let maxnum = Utils.maximum(record.traverse(graph.get().edges, e => max_str(e.labels)))
+      const strmax = (xs: string[]) => Utils.maximum([0, ...xs.map(l => Number(l) || 0)])
+      let maxnum = Utils.maximum(record.traverse(graph.get().edges, e => strmax(e.labels)))
       edges_new.forEach(e =>
         graph.modify(g => G.modify_labels(g, e.id, l => [...l, String(++maxnum)]))
       )
