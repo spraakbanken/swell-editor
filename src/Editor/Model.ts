@@ -485,7 +485,7 @@ export function visibleGraph(store: Store<State>) {
   const state = store.get()
   const g = viewGraph(store)
 
-  return state.subspan && !is_target_readonly(state.mode) ? G.subgraph(g, state.subspan) : g
+  return state.subspan && state.mode !== modes.anonymization ? G.subgraph(g, state.subspan) : g
 }
 
 export function onSelect(store: Store<State>, ids: string[], only: boolean) {

@@ -59,7 +59,7 @@ export function App(store: Store<Model.State>): () => VNode {
     mode === Model.modes.anonymization && Model.initPseudonymizations(store)
     // Adjust UI to mode.
     store.at('show').update({
-      target_text: Model.is_target_readonly(mode) ? undefined : true,
+      target_text: mode == Model.modes.anonymization ? undefined : true,
       source_text: undefined,
     })
   })
