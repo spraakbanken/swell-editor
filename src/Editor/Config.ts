@@ -391,6 +391,9 @@ const docs: Record<string, Record<string, string>> = {
     'anonymization guidelines': doc_url('Anonymization_guidelines'),
   },
   normalization: {
+    'normalization guidelines': doc_url('Normalization_guidelines'),
+  },
+  correctannot: {
     'annotation guidelines': doc_url(
       'SweLL correction annotation_guidelines and code book (SweLL-taxonomy)'
     ),
