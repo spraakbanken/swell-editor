@@ -169,47 +169,17 @@ export const normalization: Taxonomy = [
   {
     group: 'Unidentified',
     entries: [
+      {label: 'OBS!', desc: 'Attention'},
       {
         label: 'Uni',
         desc: 'Error that cannot be categorized according to other codes',
       },
-      {label: 'OBS!', desc: 'Attention'},
     ],
   },
 ]
 
 // Julia's updated taxonomy 19 April 2018
 export const correctannot: Taxonomy = [
-  {
-    group: 'Lexical',
-    entries: [
-      {
-        label: 'L',
-        desc:
-          'Wrong word or phrase. Includes even phrasal verbs and reflexives with missing particle/reflexive marker',
-      },
-      {
-        label: 'L-M',
-        desc: 'Missing content word',
-      },
-      {
-        label: 'L-REF',
-        desc: 'Reference error',
-      },
-      {
-        label: 'L-DER',
-        desc: 'Deviant (existisng!) derivational affix used',
-      },
-      {
-        label: 'L-ID',
-        desc: 'Idiomaticity',
-      },
-      {
-        label: 'L-FL',
-        desc: 'Foreign word (not conventionally used in Swedish)',
-      },
-    ],
-  },
   {
     group: 'Orthographic',
     entries: [
@@ -228,76 +198,11 @@ export const correctannot: Taxonomy = [
     ],
   },
   {
-    group: 'Morphological',
+    group: 'Follow-up correction ',
     entries: [
       {
-        label: 'M-CASE',
-        desc: 'Corrections regarding the use of genitive (nouns) and dative forms (pronouns)',
-      },
-      {label: 'M-DEF', desc: 'Deviation in definite/indefinite forms'},
-      {label: 'M-GEND', desc: 'Correction regarding grammatical gender'},
-      {label: 'M-NUM', desc: 'Deviation in number agreement. May apply to groups of words'},
-      {label: 'M-VERB', desc: 'Covers deviations in the verb phrase, i.e. aspect, tense, mode'},
-      {label: 'M-F', desc: 'Deviant paradigm selection, but correct grammatical category'},
-      {
-        label: 'M-ADJ/ADV',
-        desc: 'Corrections concerning the confusions of adjective and adverbial endings',
-      },
-      {
-        label: 'M-Other',
-        desc:
-          'Ambiguous cases with several possible target hypotheses – to be applied when there are no convincing arguments for any other morphological code',
-      },
-    ],
-  },
-  {
-    group: 'Syntactical',
-    entries: [
-      {
-        label: 'S-Msubj',
-        desc: 'Subject missing',
-      },
-      {
-        label: 'S-M',
-        desc:
-          'Grammatical word missing, e.g. particle, reflexive pronoun, connector, auxiliary verbs',
-      },
-      {
-        label: 'S-R',
-        desc: 'Word or phrase redundant',
-      },
-      {
-        label: 'S-adv',
-        desc: 'Word order error involving adverbial placement',
-      },
-      {
-        label: 'S-finV',
-        desc: 'Word order error with finite verb placement',
-      },
-      {
-        label: 'S-WO',
-        desc: 'Word or phrase order – other',
-      },
-    ],
-  },
-  {
-    group: 'Punctuation',
-    entries: [
-      {
-        label: 'P-W',
-        desc: 'Wrong punctuation',
-      },
-      {
-        label: 'P-R',
-        desc: 'Redundant punctuation',
-      },
-      {
-        label: 'P-M',
-        desc: 'Missing punctuation',
-      },
-      {
-        label: 'Sent-Segmentation',
-        desc: 'Merging, or splitting a sentence',
+        label: 'C',
+        desc: 'Consistence',
       },
     ],
   },
@@ -311,74 +216,118 @@ export const correctannot: Taxonomy = [
     ],
   },
   {
-    group: 'Follow-up correction ',
+    group: 'Lexical',
     entries: [
       {
-        label: 'C',
-        desc: 'Consistence',
+        label: 'L',
+        desc:
+          'Wrong word or phrase. Includes even phrasal verbs and reflexives with missing particle/reflexive marker',
+      },
+      {
+        label: 'L-DER',
+        desc: 'Deviant (existisng!) derivational affix used',
+      },
+      {
+        label: 'L-FL',
+        desc: 'Foreign word (not conventionally used in Swedish)',
+      },
+      {
+        label: 'L-ID',
+        desc: 'Idiomaticity',
+      },
+      {
+        label: 'L-M',
+        desc: 'Missing content word',
+      },
+      {
+        label: 'L-REF',
+        desc: 'Reference error',
+      },
+    ],
+  },
+  {
+    group: 'Morphological',
+    entries: [
+      {
+        label: 'M-ADJ/ADV',
+        desc: 'Corrections concerning the confusions of adjective and adverbial endings',
+      },
+      {
+        label: 'M-CASE',
+        desc: 'Corrections regarding the use of genitive (nouns) and dative forms (pronouns)',
+      },
+      {label: 'M-DEF', desc: 'Deviation in definite/indefinite forms'},
+      {label: 'M-F', desc: 'Deviant paradigm selection, but correct grammatical category'},
+      {label: 'M-GEND', desc: 'Correction regarding grammatical gender'},
+      {label: 'M-NUM', desc: 'Deviation in number agreement. May apply to groups of words'},
+      {
+        label: 'M-Other',
+        desc:
+          'Ambiguous cases with several possible target hypotheses – to be applied when there are no convincing arguments for any other morphological code',
+      },
+      {label: 'M-VERB', desc: 'Covers deviations in the verb phrase, i.e. aspect, tense, mode'},
+    ],
+  },
+  {
+    group: 'Punctuation',
+    entries: [
+      {
+        label: 'P-M',
+        desc: 'Missing punctuation',
+      },
+      {
+        label: 'P-R',
+        desc: 'Redundant punctuation',
+      },
+      {
+        label: 'P-W',
+        desc: 'Wrong punctuation',
+      },
+      {
+        label: 'Sent-Segmentation',
+        desc: 'Merging, or splitting a sentence',
+      },
+    ],
+  },
+  {
+    group: 'Syntactical',
+    entries: [
+      {
+        label: 'S-adv',
+        desc: 'Word order error involving adverbial placement',
+      },
+      {
+        label: 'S-finV',
+        desc: 'Word order error with finite verb placement',
+      },
+      {
+        label: 'S-M',
+        desc:
+          'Grammatical word missing, e.g. particle, reflexive pronoun, connector, auxiliary verbs',
+      },
+      {
+        label: 'S-Msubj',
+        desc: 'Subject missing',
+      },
+      {
+        label: 'S-R',
+        desc: 'Word or phrase redundant',
+      },
+      {
+        label: 'S-WO',
+        desc: 'Word or phrase order – other',
       },
     ],
   },
   {
     group: 'Unidentified',
     entries: [
+      {label: 'OBS!', desc: 'Attention'},
       {
         label: 'Uni',
         desc: 'Error that cannot be categorized according to other codes',
       },
-      {label: 'OBS!', desc: 'Attention'},
     ],
-  },
-]
-
-const november_2017_pilot_taxonomy: Taxonomy = [
-  {
-    group: 'Lexical',
-    entries: [
-      {label: 'W', desc: 'Wrong word or punctuation'},
-      {label: 'W-REF', desc: 'Reference error'},
-      {label: 'ORT', desc: 'Orthographic/spelling error'},
-      {label: 'PART', desc: 'Overcompounding'},
-      {label: 'SPL', desc: 'Oversplitting'},
-      {label: 'DER', desc: 'Deviant derivational affix used'},
-      {label: 'CAP', desc: 'Deviant letter case (upper/lower)'},
-      {label: 'ID', desc: 'Idiomaticity'},
-      {label: 'FL', desc: 'Non-Swedish word'},
-    ],
-  },
-  {
-    group: 'Morphological',
-    entries: [
-      {label: 'F', desc: 'Deviant selection of morphosyntactic category'},
-      {label: 'F-DEF', desc: 'Deviation in definite/indefinite forms'},
-      {label: 'F-TENSE', desc: 'Covers all deviations with verbs and verb groups, incl aspect'},
-      {label: 'F-NUM', desc: 'Deviation in number agreement'},
-      {label: 'F-AGR', desc: 'Agreement error (kongruensfel)'},
-      {label: 'INFL', desc: 'Deviant paradigm selection; overgeneralization'},
-    ],
-  },
-  {
-    group: 'Syntactical',
-    entries: [
-      {label: 'M', desc: 'Word, phrase or punctuation missing'},
-      {label: 'M-SUBJ', desc: 'Subject missing'},
-      {label: 'R', desc: 'Word or phrase redundant'},
-      {label: 'R-PREP', desc: 'Preposition redundant'},
-      {label: 'R-PUNC', desc: 'Punctuation mark redundant'},
-      {label: 'O', desc: 'Word or phrase order'},
-      {label: 'INV', desc: 'Non-application of subject/verb inversion '},
-      {label: 'OINV', desc: 'Application of subject/verb inversion in inappropriate contexts'},
-      {label: 'MCA', desc: 'Incorrect position for main clause adverbial'},
-      {label: 'SCA', desc: 'Incorrect position for subsidiary clause adverbial'},
-    ],
-  },
-  {
-    group: 'Intelligibility',
-    entries: [{label: 'X', desc: "impossible to interpret writer's intention"}],
-  },
-  {
-    group: 'Agreement',
-    entries: [{label: 'AGR', desc: 'Agreement errors'}],
   },
 ]
 
