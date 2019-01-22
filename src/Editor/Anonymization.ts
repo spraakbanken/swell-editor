@@ -64,7 +64,7 @@ export function anonymize(graph: G.Graph, pstore: Store<Pseudonyms>): G.Graph {
       const pp = pstore.at(anonLabels.join(' '))
       if (pp.get() === undefined) pp.set(pseudonymize(source_text, anonLabels))
       const t = G.Token(Utils.end_with_space(pp.get()), 't' + i++)
-      edges.push(G.Edge([...pi(e).source.map(s => s.id), t.id], e.labels, true))
+      edges.push(G.Edge([...pi(e).source.map(s => s.id), t.id], e.labels, true, e.comment))
       target.push(t)
     } else {
       edges.push(e)

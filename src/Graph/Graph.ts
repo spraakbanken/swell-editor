@@ -40,19 +40,31 @@ export interface Edge {
   readonly labels: string[]
   /** is this manually or automatically aligned */
   readonly manual: boolean
+  readonly comment?: string
 }
 
-export function Edge(ids: string[], labels: string[], manual = false): Edge {
+// TODO: Search for usages and add comment.
+export function Edge(ids: string[], labels: string[], manual = false, comment?: string): Edge {
   const ids_sorted = ids.sort()
   const labels_nub = Utils.uniq(labels)
-  return {id: 'e-' + ids_sorted.join('-'), ids: ids_sorted, labels: labels_nub, manual}
+  return {
+    id: 'e-' + ids_sorted.join('-'),
+    ids: ids_sorted,
+    labels: labels_nub,
+    manual,
+    ...(comment ? {comment} : {}),
+  }
 }
 
 export function merge_edges(...es: Edge[]) {
   return Edge(
     Utils.flatMap(es, e => e.ids),
     Utils.flatMap(es, e => e.labels),
-    es.some(e => !!e.manual)
+    es.some(e => !!e.manual),
+    es
+      .filter(e => e.comment)
+      .map(e => e.comment)
+      .join('\n\n')
   )
 }
 
@@ -655,7 +667,7 @@ export function disconnect(g: Graph, ids: string[]): Graph {
   const em = edge_map(g)
   const edge = em.get(id)
   if (edge) {
-    const edge_without = Edge(edge.ids.filter(i => i != id), edge.labels, edge.manual)
+    const edge_without = Edge(edge.ids.filter(i => i != id), edge.labels, edge.manual, edge.comment)
     const edge_with = Edge([id], [], true)
     const edges = record.filter(g.edges, (_, id) => id != edge.id)
     edges[edge_with.id] = edge_with
@@ -763,10 +775,11 @@ export function align(g: Graph): Graph {
       if (!e_repr.manual) {
         // Use the labels from the old edge.
         const labels = first(e_repr.id) ? e_repr.labels : []
+        const comment = first(e_repr.id) ? e_repr.comment : undefined
         // New edges are temporarily keyed by the "root" token id.
         // Merge a single-token edge into the edge that has the same "root" token.
         // Or add as a new edge if there is no such edge yet.
-        const e_token = Edge([token.id], labels, false)
+        const e_token = Edge([token.id], labels, false, comment)
         record.modify(proto_edges, uf.find(token.id), zero_edge, e => merge_edges(e, e_token))
       }
     })
@@ -1201,7 +1214,14 @@ export function used_labels(g: Graph): string[] {
 export function modify_labels(g: Graph, edge_id: string, k: (labels: string[]) => string[]): Graph {
   const store = Store.init(g)
   const edge = edge_store(store, edge_id)
-  edge.modify(e => Edge(e.ids, k(e.labels), e.manual))
+  edge.modify(e => Edge(e.ids, k(e.labels), e.manual, e.comment))
+  return store.get()
+}
+
+export function comment_edge(g: Graph, edge_id: string, comment?: string) {
+  const store = Store.init(g)
+  const edge = edge_store(store, edge_id)
+  edge.modify(e => Edge(e.ids, e.labels, e.manual, comment))
   return store.get()
 }
 
@@ -1260,7 +1280,8 @@ export function normalize(
       const E = Edge(
         e.ids.map(new_id),
         e.labels.sort(),
-        set_manual_to === 'keep' ? e.manual : set_manual_to
+        set_manual_to === 'keep' ? e.manual : set_manual_to,
+        e.comment
       )
       return [E.id, E] as [string, Edge]
     })
@@ -1278,7 +1299,7 @@ export function normalize_whitespace(g: Graph, ws = ' '): Graph {
   return {...g, source: g.source.map(on_tok), target: g.target.map(on_tok)}
 }
 
-/** Sets the target text to the source text, but preserving all labels */
+/** Sets the target text to the source text, but preserving all labels and comments */
 export function source_to_target(g: Graph, make_manual: boolean = true): Graph {
   let i = next_id(g)
   const rename_map: Record<string, string> = {}
@@ -1297,7 +1318,7 @@ export function source_to_target(g: Graph, make_manual: boolean = true): Graph {
       }
     })
     if (ids.length > 0) {
-      return [Edge(ids, e.labels, make_manual)]
+      return [Edge(ids, e.labels, make_manual, e.comment)]
     } else {
       return []
     }
@@ -1307,5 +1328,5 @@ export function source_to_target(g: Graph, make_manual: boolean = true): Graph {
 
 /* Sort edge labels according to some order */
 export function sort_edge_labels(g: Graph, order: (label: string) => number): Graph {
-  return {...g, edges: record.map(g.edges, e => Edge(e.ids, R.sortBy(order, e.labels), e.manual))}
+  return {...g, edges: record.map(g.edges, e => Edge(e.ids, R.sortBy(order, e.labels), e.manual, e.comment))}
 }

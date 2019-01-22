@@ -347,6 +347,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
           />
         </div>
         {ShowMessages(store.at('validation_messages'))}
+        {ShowComment(store)}
         {state.show.image_link && ImageWebserviceAddresses(visible_graph, Model.inAnonMode(store))}
         {state.show.graph && <pre className="box pre-box">{Utils.show(visibleGraph)}</pre>}
         {state.show.diff && (
@@ -603,6 +604,22 @@ function ShowMessages(store: Store<Model.Message[]>) {
 
       {message.message}
     </div>
+  ))
+}
+
+function ShowComment(store: Store<Model.State>) {
+  return G.token_ids_to_edges(
+    Model.currentGraph(store),
+    Object.keys(store.at('selected').get())
+  ).map(edge => (
+    <textarea
+      onMouseDown={ev => ev.stopPropagation()}
+      onChange={ev =>
+        Model.graphStore(store).modify(g => G.comment_edge(g, edge.id, ev.target.value))
+      }
+      key={edge.id}>
+      {edge.comment}
+    </textarea>
   ))
 }
 
