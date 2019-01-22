@@ -74,7 +74,7 @@ export function GraphEditingCM(
   defaultTabBehaviour(cm)
   cm.setValue(G.get_side_text(Model.viewGraph(store), side))
 
-  const {Index} = PositionUtils(cm, graph, side)
+  const {Index} = PositionUtils(cm, store, side)
 
   function transpose(d: number) {
     return () => {
@@ -235,7 +235,7 @@ export function GraphEditingCM(
   return {node, cm}
 }
 
-function PositionUtils(cm: CodeMirror.Editor, graph: Store<G.Graph>, side: G.Side) {
+function PositionUtils(cm: CodeMirror.Editor, store: Store<Model.State>, side: G.Side) {
   class Edge {
     constructor(public readonly edge: G.Edge | null) {}
   }
@@ -245,7 +245,7 @@ function PositionUtils(cm: CodeMirror.Editor, graph: Store<G.Graph>, side: G.Sid
 
     toEdge() {
       if (this.token) {
-        const g = graph.get()
+        const g = Model.viewGraph(store)
         const em = G.edge_map(g)
         const edge = em.get(this.token.id)
         if (edge) {
@@ -268,7 +268,6 @@ function PositionUtils(cm: CodeMirror.Editor, graph: Store<G.Graph>, side: G.Sid
     static fromCoords(e: {pageX: number; pageY: number}): Index {
       const coord = cm.coordsChar({left: e.pageX, top: e.pageY})
       if (!(('outside' in coord) as any)) {
-        const g = graph.get()
         return new Index(cm.getDoc().indexFromPos(coord))
       } else {
         return new Index(null)
@@ -281,7 +280,7 @@ function PositionUtils(cm: CodeMirror.Editor, graph: Store<G.Graph>, side: G.Sid
 
     toToken(): Token {
       if (this.index != null) {
-        const g = graph.get()
+        const g = Model.viewGraph(store)
         const {token} = G.token_at(G.get_side_texts(g, side), this.index)
         if (token in g[side]) {
           return new Token(token, g[side][token])

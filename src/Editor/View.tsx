@@ -337,8 +337,8 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
             side={state.side_restriction}
             orderChangingLabel={s => config.order_changing_labels[s]}
             graph={visible_graph}
-            hoverId={readonly ? undefined : state.hover_id}
-            onHover={readonly ? undefined : hover_id => store.update({hover_id})}
+            hoverId={state.hover_id}
+            onHover={hover_id => store.update({hover_id})}
             selectedIds={Object.keys(state.selected)}
             generation={state.generation}
             labelMode={label_taxonomy}
