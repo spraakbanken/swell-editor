@@ -291,7 +291,7 @@ const validationRules: Rule<{state: State; graph: G.Graph}>[] = [
   Rule(
     'Normalization missing a label',
     edge_check(
-      state => state.mode == modes.normalization,
+      state => state.mode == modes.correctannot,
       (edge, source, target) => G.text(source) != G.text(target) && edge.labels.length == 0,
       Severity.WARNING
     )
