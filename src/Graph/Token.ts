@@ -43,6 +43,8 @@ export function texts(ts: Text[]): string[] {
   punc(', ')    // => false
   punc('apa. ') // => true
   punc('?.., ') // => false
+  // t. ex
+  punc('t. ') // => false
 
 */
 export function punc(s: string): boolean {

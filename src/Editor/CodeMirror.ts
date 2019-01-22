@@ -44,13 +44,15 @@ export interface Cursor {
 }
 
 // Functions for testing whether a given change is allowed.
-export type ChangeCheck = (change: CodeMirror.EditorChangeCancellable) => boolean
+export type Change =
+  | {type: 'editor'; change: CodeMirror.EditorChangeCancellable}
+  | {type: 'transpose'}
+export type ChangeCheck = (change: Change) => boolean
 
 export function GraphEditingCM(
   store: Store<Model.State>,
   side: G.Side,
-  checkChange?: ChangeCheck,
-  readOnly = false
+  checkChange?: ChangeCheck
 ): CMVN {
   /* Note that we don't show the last character of the graph in the code mirror.
   It must necessarily be whitespace anyway. */
@@ -70,7 +72,7 @@ export function GraphEditingCM(
     'Cmd-Left': transpose(-1),
   }
 
-  const {cm, node} = CM({extraKeys, tabindex: 3, readOnly})
+  const {cm, node} = CM({extraKeys, tabindex: 3})
   defaultTabBehaviour(cm)
   cm.setValue(G.get_side_text(Model.viewGraph(store), side))
 
@@ -78,11 +80,9 @@ export function GraphEditingCM(
 
   function transpose(d: number) {
     return () => {
-      if (side === 'source') {
-        // rearrange always operates on the target text
+      if ((checkChange && !checkChange({type: 'transpose'}))) {
         return
       }
-      const doc = cm.getDoc()
       const h = Index.cursor('head').toToken().index
       const a = Index.cursor('anchor').toToken().index
       if (h != null && a != null) {
@@ -126,7 +126,7 @@ export function GraphEditingCM(
         .split('\n')
     }
     // Only check manual user-made changes. Programmatic changes should set the origin to @ignore.
-    if (checkChange && change.origin !== '@ignore' && !checkChange(change)) {
+    if (checkChange && change.origin !== '@ignore' && !checkChange({type: 'editor', change})) {
       change.cancel()
     }
   })
