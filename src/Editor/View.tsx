@@ -12,7 +12,7 @@ import {Close, Button, VNode} from '../ReactUtils'
 import * as Model from './Model'
 import {DropZone} from './DropZone'
 import * as CM from './CodeMirror'
-import {config, label_sort, label_taxonomy} from './Config'
+import {config, label_sort, taxonomy_has_label} from './Config'
 
 import * as EditorTypes from '../EditorTypes'
 
@@ -341,7 +341,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
             onHover={hover_id => store.update({hover_id})}
             selectedIds={Object.keys(state.selected)}
             generation={state.generation}
-            labelMode={label_taxonomy}
+            labelMode={taxonomy_has_label}
             labelSort={label_sort}
             onSelect={(ids, only) => Model.onSelect(store, ids, only)}
           />

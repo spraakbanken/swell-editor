@@ -1,14 +1,14 @@
 import * as G from '../Graph'
 import * as record from '../record'
 import * as Utils from '../Utils'
-import {label_taxonomy, label_sort} from './Config'
+import {label_sort, taxonomy_has_label} from './Config'
 import {pseudonymize} from 'pseudonymization'
 import {Store} from 'reactive-lens'
 
 export type Pseudonyms = Record<string, string>
 
 export function is_anon_label(label: string): boolean {
-  return label_taxonomy(label) === 'anonymization'
+  return taxonomy_has_label('anonymization', label)
 }
 
 export function sort_anon_labels(labels: string[]): string[] {

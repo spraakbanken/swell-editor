@@ -7,7 +7,7 @@ import * as record from '../record'
 
 import * as Manual from '../Doc/Manual'
 
-import {Taxonomy, config, label_order, LabelOrder, label_taxonomy} from './Config'
+import {Taxonomy, config, label_order, LabelOrder} from './Config'
 import {Severity, Rule, edge_check} from './Validate'
 import {init_pstore, anonymize, Pseudonyms, is_anon_label} from './Anonymization'
 
@@ -301,9 +301,7 @@ const validationRules: Rule<{state: State; graph: G.Graph}>[] = [
     edge_check(
       state => state.mode == modes.anonymization,
       edge =>
-        edge.labels.filter(
-          l => label_taxonomy(l) === 'anonymization' && label_order(l) == LabelOrder.BASE
-        ).length > 1
+        edge.labels.filter(l => is_anon_label(l) && label_order(l) == LabelOrder.BASE).length > 1
     )
   ),
   Rule(

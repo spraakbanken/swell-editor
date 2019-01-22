@@ -166,7 +166,7 @@ const GraphViewStyle = style(
       },
 
       '& .label.blurred': {
-        color: '#ccc',
+        opacity: 0.4,
       },
     },
   }
@@ -322,7 +322,7 @@ export interface GraphViewProps {
   selectedIds?: string[]
   mode?: string
   side?: G.Side
-  labelMode?: (label: string) => string | null
+  labelMode?: (mode: string, label: string) => boolean
   labelSort?: (a: string, b: string) => number
   /** for hot module reloading, bumped at each reload and used to make sure thunked components get updated */
   generation?: number
@@ -449,7 +449,7 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
                         <span
                           key={i}
                           className={
-                            'label ' + (labelMode && labelMode(l) !== mode ? 'blurred' : '')
+                            'label ' + (labelMode && !labelMode(String(mode), l) ? 'blurred' : '')
                           }>
                           {l}
                         </span>

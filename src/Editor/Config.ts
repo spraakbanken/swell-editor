@@ -391,3 +391,10 @@ export function find_label(label: string): TaxonomyFind | undefined {
 export function label_taxonomy(label: string): string | null {
   return find_label(label) ? find_label(label)!.taxonomy : null
 }
+
+/** Does the named taxonomy include the given label? */
+export function taxonomy_has_label(taxonomy: string, label: string): boolean {
+  if (!(taxonomy in config.taxonomy)) return false
+  const tax: Record<string, TaxonomyGroup[]> = config.taxonomy
+  return !!tax[taxonomy].find(g => !!g.entries.find(l => l.label == label))
+}
