@@ -7,6 +7,7 @@ import * as T from './Token'
 import {Lens, Store} from 'reactive-lens'
 
 import * as D from './Diff'
+import {label_order, LabelOrder} from '../Editor/Config'
 
 export type Side = 'source' | 'target'
 
@@ -114,6 +115,13 @@ export function check_invariant(g: Graph): 'ok' | {violation: string; g: Graph} 
       g.edges,
       e =>
         e.ids.length > 0 || Utils.raise(`Edge without any associated identifiers ${Utils.show(e)}`)
+    )
+    record.forEach(
+      g.edges,
+      e =>
+        !e.comment ||
+        e.labels.some(l => label_order(l) == LabelOrder.TEMP) ||
+        Utils.raise(`Edge with comment but no comment label: ${Utils.show(e)}`)
     )
     record.forEach(
       g.edges,
@@ -1210,7 +1218,11 @@ export function used_labels(g: Graph): string[] {
 export function modify_labels(g: Graph, edge_id: string, k: (labels: string[]) => string[]): Graph {
   const store = Store.init(g)
   const edge = edge_store(store, edge_id)
-  edge.modify(e => Edge(e.ids, k(e.labels), e.manual, e.comment))
+  edge.modify(e => {
+    const labels = k(e.labels)
+    const comment = labels.some(l => label_order(l) == LabelOrder.TEMP) ? e.comment : undefined
+    return Edge(e.ids, labels, e.manual, comment)
+  })
   return store.get()
 }
 
