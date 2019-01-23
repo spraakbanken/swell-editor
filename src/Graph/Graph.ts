@@ -43,7 +43,6 @@ export interface Edge {
   readonly comment?: string
 }
 
-// TODO: Search for usages and add comment.
 export function Edge(ids: string[], labels: string[], manual = false, comment?: string): Edge {
   const ids_sorted = ids.sort()
   const labels_nub = Utils.uniq(labels)
@@ -52,7 +51,7 @@ export function Edge(ids: string[], labels: string[], manual = false, comment?: 
     ids: ids_sorted,
     labels: labels_nub,
     manual,
-    ...(comment ? {comment} : {}),
+    ...(comment && labels_nub.some(is_comment_label) ? {comment} : {}),
   }
 }
 
@@ -671,8 +670,8 @@ export function disconnect(g: Graph, ids: string[]): Graph {
   const em = edge_map(g)
   const edge = em.get(id)
   if (edge) {
-    const edge_without = Edge(edge.ids.filter(i => i != id), edge.labels, edge.manual, edge.comment)
-    const edge_with = Edge([id], [], true)
+    const edge_without = Edge(edge.ids.filter(i => i != id), edge.labels, true, edge.comment)
+    const edge_with = Edge([id], edge.labels, true, edge.comment)
     const edges = record.filter(g.edges, (_, id) => id != edge.id)
     edges[edge_with.id] = edge_with
     if (edge_without.ids.length > 0) {

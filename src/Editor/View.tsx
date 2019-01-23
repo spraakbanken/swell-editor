@@ -621,7 +621,7 @@ function ShowComment(store: Store<Model.State>) {
         <textarea
           // Avoid deselecting.
           onMouseDown={ev => ev.stopPropagation()}
-          onBlur={ev =>
+          onChange={ev =>
             Model.graphStore(store).modify(g => G.comment_edge(g, edge.id, ev.target.value))
           }
           key={edge.id}

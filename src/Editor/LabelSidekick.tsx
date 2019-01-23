@@ -175,7 +175,6 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
       <input
         ref={e => {
           if (e && !['TEXTAREA', 'INPUT'].includes(document.activeElement.tagName)) {
-            console.log(document.activeElement.tagName)
             const x = window.scrollX
             const y = window.scrollY
             e.focus()
