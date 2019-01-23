@@ -174,14 +174,16 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
     const input = (
       <input
         ref={e => {
-          if (e) {
+          if (e && !['TEXTAREA', 'INPUT'].includes(document.activeElement.tagName)) {
             const x = window.scrollX
             const y = window.scrollY
             e.focus()
             window.scrollTo(x, y)
           }
         }}
-        placeholder={mode == 'normalization' ? 'Enter filter text' : 'Filter / numeric label'}
+        placeholder={
+          mode == Model.modes.anonymization ? 'Filter / numeric label' :  'Enter filter text'
+        }
         onKeyDown={e => {
           const t = e.target as HTMLInputElement
           if (e.key === 'Enter' || e.key === ' ') {

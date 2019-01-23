@@ -665,7 +665,7 @@ const act_on_selected: {
       ...graph,
       edges: record.map(graph.edges, e => {
         if (edge_ids.some(id => id == e.id)) {
-          return G.Edge(e.ids, e.labels, false)
+          return G.Edge(e.ids, e.labels, false, e.comment)
         } else {
           return e
         }
