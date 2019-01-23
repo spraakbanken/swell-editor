@@ -72,7 +72,6 @@ export function GraphEditingCM(
 
   const {cm, node} = CM({extraKeys, tabindex: 3, readOnly})
   defaultTabBehaviour(cm)
-  cm.setValue(G.get_side_text(Model.viewGraph(store), side))
 
   const {Index} = PositionUtils(cm, graph, side)
 
