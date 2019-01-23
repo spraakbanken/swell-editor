@@ -166,20 +166,10 @@ const topStyle = typestyle.style({
       border: '1px solid #8886',
     },
     '& .cm-hovering span.hover': {
-      color: '#222f',
+      background: 'hsla(220,65%,65%, .2)',
     },
-    '& .cm-hovering span': {
-      color: '#2228',
-    },
-    '& .hovering .hover span, & .hovering path.hover, & .hovering .hover path': {
-      opacity: 1.0,
-      strokeOpacity: 1.0,
-      fillOpacity: 1.0,
-    },
-    '& .hovering span, & .hovering path': {
-      opacity: 0.6,
-      strokeOpacity: 0.8,
-      fillOpacity: 0.8,
+    '& .hovering .hover .Selectable, & .hovering path.hover, & .hovering .hover path': {
+      background: 'hsla(220,65%,65%, .2)',
     },
     '& button': {
       fontSize: '0.85em',
@@ -335,7 +325,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
           </div>
         )}
         <div
-          className={(hovering ? ' hovering' : '') + (readonly ? 'NoManualBlue' : '')}
+          className={(hovering ? ' hovering' : '') + (readonly ? ' NoManualBlue' : '')}
           style={{minHeight: '10em'}}>
           <GV.GraphView
             mode={state.mode}
