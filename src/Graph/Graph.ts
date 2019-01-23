@@ -7,7 +7,6 @@ import * as T from './Token'
 import {Lens, Store} from 'reactive-lens'
 
 import * as D from './Diff'
-import {label_order, LabelOrder} from '../Editor/Config'
 
 export type Side = 'source' | 'target'
 
@@ -120,7 +119,7 @@ export function check_invariant(g: Graph): 'ok' | {violation: string; g: Graph} 
       g.edges,
       e =>
         !e.comment ||
-        e.labels.some(l => label_order(l) == LabelOrder.TEMP) ||
+        e.labels.some(is_comment_label) ||
         Utils.raise(`Edge with comment but no comment label: ${Utils.show(e)}`)
     )
     record.forEach(
@@ -1207,6 +1206,15 @@ export function used_labels(g: Graph): string[] {
   return Utils.uniq(Utils.flatMap(Object.values(g.edges), e => e.labels))
 }
 
+/** Whether a label permits a comment.
+
+  is_comment_label('pl') // => false
+  is_comment_label('!') // => true
+ */
+export function is_comment_label(label: string): boolean {
+  return label.indexOf('!') != -1
+}
+
 /** Modify the labels at an identifier
 
   const g = init('word')
@@ -1220,7 +1228,7 @@ export function modify_labels(g: Graph, edge_id: string, k: (labels: string[]) =
   const edge = edge_store(store, edge_id)
   edge.modify(e => {
     const labels = k(e.labels)
-    const comment = labels.some(l => label_order(l) == LabelOrder.TEMP) ? e.comment : undefined
+    const comment = labels.some(is_comment_label) ? e.comment : undefined
     return Edge(e.ids, labels, e.manual, comment)
   })
   return store.get()

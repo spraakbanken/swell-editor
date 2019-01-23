@@ -12,7 +12,7 @@ import {Close, Button, VNode} from '../ReactUtils'
 import * as Model from './Model'
 import {DropZone} from './DropZone'
 import * as CM from './CodeMirror'
-import {config, label_sort, taxonomy_has_label, LabelOrder, label_order} from './Config'
+import {config, label_sort, taxonomy_has_label} from './Config'
 
 import * as EditorTypes from '../EditorTypes'
 
@@ -614,7 +614,7 @@ function ShowMessages(store: Store<Model.Message[]>) {
 
 function ShowComment(store: Store<Model.State>) {
   return G.token_ids_to_edges(Model.currentGraph(store), Object.keys(store.at('selected').get()))
-    .filter(edge => edge.labels.some(l => label_order(l) == LabelOrder.TEMP))
+    .filter(edge => edge.labels.some(G.is_comment_label))
     .map(edge => (
       <div className={'comment-pane'}>
         <em>Comment:</em>
