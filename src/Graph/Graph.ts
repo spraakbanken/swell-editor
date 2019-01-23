@@ -61,10 +61,7 @@ export function merge_edges(...es: Edge[]) {
     Utils.flatMap(es, e => e.ids),
     Utils.flatMap(es, e => e.labels),
     es.some(e => !!e.manual),
-    es
-      .filter(e => e.comment)
-      .map(e => e.comment)
-      .join('\n\n')
+    Utils.uniq(es.map(e => e.comment).filter(Boolean)).join('\n\n')
   )
 }
 
@@ -775,11 +772,10 @@ export function align(g: Graph): Graph {
       if (!e_repr.manual) {
         // Use the labels from the old edge.
         const labels = first(e_repr.id) ? e_repr.labels : []
-        const comment = first(e_repr.id) ? e_repr.comment : undefined
         // New edges are temporarily keyed by the "root" token id.
         // Merge a single-token edge into the edge that has the same "root" token.
         // Or add as a new edge if there is no such edge yet.
-        const e_token = Edge([token.id], labels, false, comment)
+        const e_token = Edge([token.id], labels, false, e_repr.comment)
         record.modify(proto_edges, uf.find(token.id), zero_edge, e => merge_edges(e, e_token))
       }
     })
@@ -1328,5 +1324,8 @@ export function source_to_target(g: Graph, make_manual: boolean = true): Graph {
 
 /* Sort edge labels according to some order */
 export function sort_edge_labels(g: Graph, order: (label: string) => number): Graph {
-  return {...g, edges: record.map(g.edges, e => Edge(e.ids, R.sortBy(order, e.labels), e.manual, e.comment))}
+  return {
+    ...g,
+    edges: record.map(g.edges, e => Edge(e.ids, R.sortBy(order, e.labels), e.manual, e.comment)),
+  }
 }

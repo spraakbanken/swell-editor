@@ -12,7 +12,7 @@ import {Close, Button, VNode} from '../ReactUtils'
 import * as Model from './Model'
 import {DropZone} from './DropZone'
 import * as CM from './CodeMirror'
-import {config, label_sort, taxonomy_has_label} from './Config'
+import {config, label_sort, taxonomy_has_label, LabelOrder, label_order} from './Config'
 
 import * as EditorTypes from '../EditorTypes'
 
@@ -96,7 +96,7 @@ const topStyle = typestyle.style({
         },
       },
     },
-    '& .CodeMirror': {
+    '& .CodeMirror, & textarea': {
       border: '1px solid #ddd',
       height: 'auto',
       paddingBottom: '1em',
@@ -205,6 +205,11 @@ const topStyle = typestyle.style({
       backgroundColor: '#f2e9de',
       borderColor: '#ebebd1',
       color: '#a99942',
+    },
+    '& .comment-pane textarea': {
+      display: 'block',
+      width: '100%',
+      resize: 'vertical',
     },
     '& .float_right > *': {
       float: 'right',
@@ -608,19 +613,22 @@ function ShowMessages(store: Store<Model.Message[]>) {
 }
 
 function ShowComment(store: Store<Model.State>) {
-  return G.token_ids_to_edges(
-    Model.currentGraph(store),
-    Object.keys(store.at('selected').get())
-  ).map(edge => (
-    <textarea
-      onMouseDown={ev => ev.stopPropagation()}
-      onChange={ev =>
-        Model.graphStore(store).modify(g => G.comment_edge(g, edge.id, ev.target.value))
-      }
-      key={edge.id}>
-      {edge.comment}
-    </textarea>
-  ))
+  return G.token_ids_to_edges(Model.currentGraph(store), Object.keys(store.at('selected').get()))
+    .filter(edge => edge.labels.some(l => label_order(l) == LabelOrder.TEMP))
+    .map(edge => (
+      <div className={'comment-pane'}>
+        <em>Comment:</em>
+        <textarea
+          // Avoid deselecting.
+          onMouseDown={ev => ev.stopPropagation()}
+          onBlur={ev =>
+            Model.graphStore(store).modify(g => G.comment_edge(g, edge.id, ev.target.value))
+          }
+          key={edge.id}
+          defaultValue={edge.comment}
+        />
+      </div>
+    ))
 }
 
 function ImageWebserviceAddresses(g: G.Graph, anon_mode: boolean) {
