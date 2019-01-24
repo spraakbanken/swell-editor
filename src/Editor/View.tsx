@@ -154,6 +154,7 @@ const topStyle = typestyle.style({
     '& .graphView': {
       overflowY: 'auto',
       resize: 'vertical',
+      marginTop: '1em',
     },
     '& .graphView ul': {
       zIndex: 10,
@@ -475,6 +476,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
               {toggle_button('source_text')}
               {toggle_button('target_text')}
               {RestrictionButtons(store.at('side_restriction'))}
+              {Button('fit graph', 'adjust the height of the graph view', () => fitGraph())}
               <hr />
               {Button('validate', '', () => Model.validateState(store))}
               {mode_switcher(Model.modes.anonymization, true)}
@@ -552,6 +554,18 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
       </div>
     </div>
   )
+}
+
+/** Auto-size the spaghetti. */
+function fitGraph() {
+  const gv = document.querySelector('.graphView') as HTMLElement | null
+  const content = document.querySelector('.content') as HTMLElement | null
+  if (!gv || !content) return
+  // First collapse to 0, to measure .content height correctly.
+  gv.style.height = '0'
+  // Pull spaghetti bottom down to wrapper bottom.
+  // Subtracting a few pixels is necessary for some reason.
+  gv.style.height = `${content.offsetTop + content.offsetHeight - gv.offsetTop - 5}px`
 }
 
 function show_hide_str(b: boolean | undefined) {
