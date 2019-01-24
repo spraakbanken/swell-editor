@@ -151,6 +151,10 @@ const topStyle = typestyle.style({
       fontFamily: 'inherit',
       color: 'inherit',
     },
+    '& .graphView': {
+      overflowY: 'auto',
+      resize: 'vertical',
+    },
     '& .graphView ul': {
       zIndex: 10,
       cursor: 'pointer',
