@@ -117,6 +117,8 @@ const topStyle = typestyle.style({
     },
     [`& .${CM.ManualMarkClassName}`]: {
       color: '#26a',
+    },
+    [`& .${CM.SelectedMarkClassName}`]: {
       background: '#e6e6e6',
     },
     '& .box': {

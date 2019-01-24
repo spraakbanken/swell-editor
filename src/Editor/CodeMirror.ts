@@ -16,6 +16,7 @@ interface cmResize {
 const cmResize: cmResize = require('cm-resize').default
 
 export const ManualMarkClassName = 'ManualMark'
+export const SelectedMarkClassName = 'SelectedMark'
 export const HoverClassName = 'Hover'
 
 export interface CMVN {
@@ -195,6 +196,10 @@ export function GraphEditingCM(
     })
   })
 
+  cm.getWrapperElement().addEventListener('mouseleave', e => {
+    store.at('hover_id').set(undefined)
+  })
+
   function set_marks() {
     Utils.timeit('set_marks', () => {
       cm.operation(() => {
@@ -212,8 +217,9 @@ export function GraphEditingCM(
             const to = doc.posFromIndex(i + n - (tok.text.match(/\s$/) || '').length)
             doc.markText(from, to, opts)
           }
-          e && e.manual && mark_me({className: ManualMarkClassName})
+          tok.id in store.get().selected && mark_me({className: SelectedMarkClassName})
           if (e) {
+            e.manual && mark_me({className: ManualMarkClassName})
             const className = GV.hoverClass(hover_id, e.id)
             className && mark_me({className})
           }

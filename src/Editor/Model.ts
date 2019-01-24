@@ -425,7 +425,7 @@ export function setSubspanIncluding(store: Store<State>, indicies: G.SidedIndex[
 
 export function isHovering(store: Store<State>) {
   const state = store.get()
-  return state.hover_id !== undefined && Object.keys(state.selected).length == 0
+  return state.hover_id !== undefined
 }
 
 export function inAnonMode(store: Store<State>) {
