@@ -79,7 +79,7 @@ export function GraphEditingCM(
 
   function transpose(d: number) {
     return () => {
-      if ((checkChange && !checkChange({type: 'transpose'}))) {
+      if (checkChange && !checkChange({type: 'transpose'})) {
         return
       }
       const h = Index.cursor('head').toToken().index
@@ -231,6 +231,20 @@ export function GraphEditingCM(
   store.on(sync)
   sync()
 
+  store.at('selected').ondiff(token_ids => {
+    if (!Object.keys(token_ids).length) return
+    // Create fake edge in order to use partition_ids.
+    const idp = G.partition_ids(graph.get())(G.Edge(Object.keys(token_ids).sort(), []))[side]
+    if (!idp.length) return
+    // Turn first and last token indexes to CM positions.
+    const [from, to] = [idp[0], idp.slice(-1)[0]].map(t => {
+      const ti = graph.get()[side].findIndex(ft => ft.id == t.id)
+      const i = Index.fromTokenIndex(ti).index
+      return i ? cm.getDoc().posFromIndex(i) : null
+    })
+    from && to && cm.scrollIntoView({from, to}, 0)
+  })
+
   return {node, cm}
 }
 
@@ -271,6 +285,14 @@ function PositionUtils(cm: CodeMirror.Editor, store: Store<Model.State>, side: G
       } else {
         return new Index(null)
       }
+    }
+
+    static fromTokenIndex(tok_i: number): Index {
+      const g = Model.viewGraph(store)
+      const i = G.get_side_texts(g, side)
+        .slice(0, tok_i)
+        .join('').length
+      return new Index(i)
     }
 
     toEdge() {
