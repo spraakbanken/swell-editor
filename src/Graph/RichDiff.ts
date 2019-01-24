@@ -1,7 +1,7 @@
 import * as D from './Diff'
 import * as T from './Token'
 import * as Utils from '../Utils'
-import {Graph, calculate_diff, init, modify, partition_ids, rearrange, Side, target_text} from './Graph'
+import {Graph, calculate_diff, partition_ids, Side} from './Graph'
 
 export type RichDiff =
   | D.Edited & {index: number} & {target_diffs: Utils.TokenDiff[]; source_diffs: Utils.TokenDiff[]}
@@ -45,7 +45,7 @@ export function enrichen(
         }
 
       case 'Dragged': {
-        const {source, target} = partition(g.edges[d.id])
+        const {source, target} = partition(g.edges[d.id].ids)
         const source_diff = Utils.multi_token_diff(T.texts(source), T.text(target))
         const i = source.findIndex(s => s.id == d.source.id)
         return {
@@ -55,7 +55,7 @@ export function enrichen(
       }
 
       case 'Dropped': {
-        const {source, target} = partition(g.edges[d.id])
+        const {source, target} = partition(g.edges[d.id].ids)
         const target_diff = Utils.multi_token_diff(T.texts(target), T.text(source)).map(
           Utils.invert_token_diff
         )

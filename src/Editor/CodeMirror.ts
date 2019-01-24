@@ -231,17 +231,15 @@ export function GraphEditingCM(
   store.on(sync)
   sync()
 
-  store.at('selected').ondiff(token_ids => {
-    if (!Object.keys(token_ids).length) return
-    // Create fake edge in order to use partition_ids.
-    const idp = G.partition_ids(graph.get())(G.Edge(Object.keys(token_ids).sort(), []))[side]
-    if (!idp.length) return
+  store.at('selected').ondiff(selected => {
+    const g = graph.get()
+    const tokens = G.partition_ids(g)(Object.keys(selected))[side].sort()
+    if (!tokens.length) return
     // Turn first and last token indexes to CM positions.
-    const [from, to] = [idp[0], idp.slice(-1)[0]].map(t => {
-      const ti = graph.get()[side].findIndex(ft => ft.id == t.id)
-      const i = Index.fromTokenIndex(ti).index
-      return i ? cm.getDoc().posFromIndex(i) : null
-    })
+    const [from, to] = Utils.ends(tokens).map(t =>
+      Index.fromTokenIndex(Utils.getUnsafe(G.token_map(g), t.id).index).toPos()
+    )
+    // TODO: Doesn't work with source in anon, because t token not selected. Try selecting.
     from && to && cm.scrollIntoView({from, to}, 0)
   })
 
@@ -308,6 +306,10 @@ function PositionUtils(cm: CodeMirror.Editor, store: Store<Model.State>, side: G
         }
       }
       return new Token(null, null)
+    }
+
+    toPos(): CodeMirror.Position | null {
+      return this.index ? cm.getDoc().posFromIndex(this.index) : null
     }
   }
   return {Edge, Token, Index}
