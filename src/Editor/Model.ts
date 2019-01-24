@@ -406,8 +406,8 @@ export function setSelection(store: Store<State>, ids: string[]) {
   })
 }
 
-export function deselect_removed_ids(graph: G.Graph, selected0: Record<string, true>) {
-  const em = G.edge_map(graph)
+export function deselect_removed_ids(store: Store<State>, selected0: Record<string, true>) {
+  const em = G.edge_map(viewGraph(store))
   const present = (s: string) => em.has(s)
   const selected = record.filter(selected0, (_, id) => present(id))
   const n_keys = (o: Object) => Object.keys(o).length
@@ -417,7 +417,7 @@ export function deselect_removed_ids(graph: G.Graph, selected0: Record<string, t
 }
 
 export function setSubspanIncluding(store: Store<State>, indicies: G.SidedIndex[]) {
-  const g = store.get().graph.now
+  const g = visibleGraph(store)
   const tm = G.token_map(g)
   const selected = Object.keys(store.get().selected).map(token_id => Utils.getUnsafe(tm, token_id))
   Utils.setIfChanged(store.at('subspan'), G.sentences_around(g, [...indicies, ...selected]))
@@ -487,21 +487,11 @@ export function visibleGraph(store: Store<State>) {
 }
 
 export function onSelect(store: Store<State>, ids: string[], only: boolean) {
-  const g = currentGraph(store)
-  const visible_graph = visibleGraph(store)
-  const tmg = G.token_map(g)
-  const tmv = G.token_map(visible_graph)
-  const emv = G.edge_map(visible_graph)
+  const emv = G.edge_map(visibleGraph(store))
   const involved_ids = Utils.flatMap(ids, id => {
     if (inAnonMode(store)) {
-      const t = tmv.get(id)
-      if (t && t.side == 'target') {
-        return visible_graph.edges[Utils.getUnsafe(emv, id).id].ids.filter(
-          id => Utils.getUnsafe(tmv, id).side === 'source'
-        )
-      } else {
-        return [id]
-      }
+      // Select full edge.
+      return Utils.getUnsafe(emv, id).ids
     } else {
       return [id]
     }

@@ -236,10 +236,10 @@ export function GraphEditingCM(
     const tokens = G.partition_ids(g)(Object.keys(selected))[side].sort()
     if (!tokens.length) return
     // Turn first and last token indexes to CM positions.
-    const [from, to] = Utils.ends(tokens).map(t =>
-      Index.fromTokenIndex(Utils.getUnsafe(G.token_map(g), t.id).index).toPos()
-    )
-    // TODO: Doesn't work with source in anon, because t token not selected. Try selecting.
+    const [from, to] = Utils.ends(tokens).map(t => {
+      const sided_index = G.token_map(g).get(t.id)
+      return sided_index ? Index.fromTokenIndex(sided_index.index).toPos() : null
+    })
     from && to && cm.scrollIntoView({from, to}, 0)
   })
 
