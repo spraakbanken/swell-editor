@@ -9,7 +9,6 @@ import * as ReactUtils from './ReactUtils'
 
 const intended_font_size = 16
 const px = (i: number) => `${i / intended_font_size}em`
-const autosizedClassName = 'autosized'
 
 export const BorderCell = style(
   Utils.debugName('BorderCell'),
@@ -363,19 +362,7 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
         ReactUtils.Unselectable,
         mode,
         'graphView',
-      ].join(' ')}
-      ref={e => {
-        // Auto-size the spaghetti once.
-        if (!e || e.classList.contains(autosizedClassName)) return
-        // First collapse to 0, to measure .content height correctly.
-        e.style.height = '0'
-        const content = document.querySelector('.content') as HTMLElement | null
-        if (!content) return
-        // Pull spaghetti bottom down to wrapper bottom.
-        // Subtracting a few pixels is necessary for some reason.
-        e.style.height = `${content.offsetTop + content.offsetHeight - e.offsetTop - 5}px`
-        e.classList.add(autosizedClassName)
-      }}>
+      ].join(' ')}>
       {rd.map((d, i) =>
         ReactUtils.thunk(
           {
