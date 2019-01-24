@@ -41,19 +41,6 @@ export function App(store: Store<Model.State>): () => VNode {
 
   Store.location_connect(Model.locationStore(store))
 
-  {
-    const state = store.get()
-    const page = state.manual
-    page && Model.setManualTo(store, page)
-
-    if (state.start_mode) {
-      // Inflate a shortname like "anon" to a real mode.
-      Object.values(Model.modes)
-        .filter(m => m.indexOf(state.start_mode!) === 0)
-        .forEach(m => console.log(m) || store.update({start_mode: m, mode: m}))
-    }
-  }
-
   store.at('mode').ondiff(mode => {
     // Reset/detect pseudonyms when switching to anonymization mode.
     mode === Model.modes.anonymization && Model.initPseudonymizations(store)
@@ -63,6 +50,19 @@ export function App(store: Store<Model.State>): () => VNode {
       source_text: undefined,
     })
   })
+
+  {
+    const state = store.get()
+    const page = state.manual
+    page && Model.setManualTo(store, page)
+
+    if (state.start_mode) {
+      // Inflate a shortname like "anon" to a real mode.
+      Object.values(Model.modes)
+        .filter(m => m.indexOf(state.start_mode!) === 0)
+        .forEach(m => store.update({start_mode: m, mode: m}))
+    }
+  }
 
   const load = (url: string) => remote_doc(url, content => store.at('doc_node').set(content))
   store.at('doc').ondiff(url => (url ? load(url) : store.at('doc_node').set(undefined)))
