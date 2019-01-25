@@ -238,8 +238,16 @@ export function GraphEditingCM(
   sync()
 
   store.at('selected').ondiff(selected => {
+    scrollTokensIntoView(Object.keys(selected))
+  })
+
+  store.at('hover_id').ondiff(hover_id => {
+    hover_id && scrollTokensIntoView(graph.get().edges[hover_id].ids)
+  })
+
+  function scrollTokensIntoView(token_ids: string[]) {
     const g = graph.get()
-    const tokens = G.partition_ids(g)(Object.keys(selected))[side].sort()
+    const tokens = G.partition_ids(g)(token_ids)[side].sort()
     if (!tokens.length) return
     // Turn first and last token indexes to CM positions.
     const [from, to] = Utils.ends(tokens).map(t => {
@@ -247,7 +255,7 @@ export function GraphEditingCM(
       return sided_index ? Index.fromTokenIndex(sided_index.index).toPos() : null
     })
     from && to && cm.scrollIntoView({from, to}, 0)
-  })
+  }
 
   return {node, cm}
 }
