@@ -154,6 +154,7 @@ const topStyle = typestyle.style({
       color: 'inherit',
     },
     '& .graphView': {
+      position: 'relative',
       overflowY: 'auto',
       resize: 'vertical',
       marginTop: '1em',
@@ -233,6 +234,13 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
   const advance = Model.make_history_advance_function(store)
 
   const manual_page = state.manual !== undefined && Manual.manual[state.manual]
+
+  store.at('hover_id').ondiff(hover_id => {
+    const graphViewElement = document.querySelector<HTMLElement>('.graphView')
+    if (!graphViewElement) return
+    const edgeElement = graphViewElement.querySelector<HTMLElement>(`[data-edge=${hover_id}]`)
+    edgeElement && Utils.scrollIntoView(graphViewElement, edgeElement)
+  })
 
   const manual_part = () =>
     manual_page && (

@@ -461,6 +461,7 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
             const on_hover: OnHover = id => onHover && hoverId !== id && onHover(id)
             return (
               <ul
+                data-edge={d.id}
                 onMouseDown={e => {
                   //console.log('ul mousedown')
                   if (onSelect) {
