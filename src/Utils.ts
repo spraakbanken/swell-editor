@@ -1169,9 +1169,10 @@ export function any(...bs: boolean[]): boolean {
 
 Parent must have `position: relative`. */
 export function scrollIntoView(parent: HTMLElement, child: HTMLElement) {
+  const scrollY = (top: number) => parent.scroll({top, behavior: 'smooth'})
   // If child bottom is below parent bottom, align bottoms.
   if (child.offsetTop + child.offsetHeight > parent.scrollTop + parent.offsetHeight)
-    parent.scrollTop = child.offsetTop + child.offsetHeight - parent.offsetHeight
+    scrollY(child.offsetTop + child.offsetHeight - parent.offsetHeight)
   // If child top is above parent top, align tops.
-  if (child.offsetTop < parent.scrollTop) parent.scrollTop = child.offsetTop
+  if (child.offsetTop < parent.scrollTop) scrollY(child.offsetTop)
 }
