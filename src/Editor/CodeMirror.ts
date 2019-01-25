@@ -241,10 +241,6 @@ export function GraphEditingCM(
     scrollTokensIntoView(Object.keys(selected))
   })
 
-  store.at('hover_id').ondiff(hover_id => {
-    hover_id && scrollTokensIntoView(graph.get().edges[hover_id].ids)
-  })
-
   function scrollTokensIntoView(token_ids: string[]) {
     const g = graph.get()
     const tokens = G.partition_ids(g)(token_ids)[side].sort()

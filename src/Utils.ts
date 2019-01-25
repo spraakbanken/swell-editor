@@ -1164,15 +1164,3 @@ export function any(...bs: boolean[]): boolean {
   }
   return false
 }
-
-/** Scroll a parent element vertically to include a child element.
-
-Parent must have `position: relative`. */
-export function scrollIntoView(parent: HTMLElement, child: HTMLElement) {
-  const scrollY = (top: number) => parent.scroll({top, behavior: 'smooth'})
-  // If child bottom is below parent bottom, align bottoms.
-  if (child.offsetTop + child.offsetHeight > parent.scrollTop + parent.offsetHeight)
-    scrollY(child.offsetTop + child.offsetHeight - parent.offsetHeight)
-  // If child top is above parent top, align tops.
-  if (child.offsetTop < parent.scrollTop) scrollY(child.offsetTop)
-}
