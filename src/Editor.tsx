@@ -29,17 +29,22 @@ export function App(store: Store<Model.State>): () => VNode {
   global.Utils = Utils
   global.stress = () => stress(store)
   store.at('generation').modify(i => i + 1)
-  store
-    .at('graph')
-    .at('now')
-    .storage_connect('swell-spaghetti-7')
+
+  Store.location_connect(Model.locationStore(store))
+
+  // Store graph in local storage unless there is a backend.
+  // This facilitates development and playing around.
+  // Using both backend and local storage is pointless and prone to bugs.
+  store.at('backend').get() ||
+    store
+      .at('graph')
+      .at('now')
+      .storage_connect('swell-spaghetti-7')
 
   store
     .at('graph')
     .at('now')
     .ondiff(Model.check_invariant(store))
-
-  Store.location_connect(Model.locationStore(store))
 
   {
     const state = store.get()
