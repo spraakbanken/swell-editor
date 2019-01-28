@@ -239,7 +239,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
     const graphViewElement = document.querySelector<HTMLElement>('.graphView')
     if (!graphViewElement) return
     const edgeElement = graphViewElement.querySelector<HTMLElement>(`[data-edge=${hover_id}]`)
-    edgeElement && edgeElement.scrollIntoView({behavior: 'smooth', block: 'nearest'})
+    edgeElement && Utils.scrollIntoView(graphViewElement, edgeElement)
   })
 
   const manual_part = () =>
