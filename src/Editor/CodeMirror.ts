@@ -16,6 +16,7 @@ interface cmResize {
 const cmResize: cmResize = require('cm-resize').default
 
 export const ManualMarkClassName = 'ManualMark'
+export const SelectedMarkClassName = 'SelectedMark'
 export const HoverClassName = 'Hover'
 
 export interface CMVN {
@@ -79,7 +80,7 @@ export function GraphEditingCM(
 
   function transpose(d: number) {
     return () => {
-      if ((checkChange && !checkChange({type: 'transpose'}))) {
+      if (checkChange && !checkChange({type: 'transpose'})) {
         return
       }
       const h = Index.cursor('head').toToken().index
@@ -195,6 +196,10 @@ export function GraphEditingCM(
     })
   })
 
+  cm.getWrapperElement().addEventListener('mouseleave', e => {
+    store.at('hover_id').set(undefined)
+  })
+
   function set_marks() {
     Utils.timeit('set_marks', () => {
       cm.operation(() => {
@@ -212,8 +217,9 @@ export function GraphEditingCM(
             const to = doc.posFromIndex(i + n - (tok.text.match(/\s$/) || '').length)
             doc.markText(from, to, opts)
           }
-          e && e.manual && mark_me({className: ManualMarkClassName})
+          tok.id in store.get().selected && mark_me({className: SelectedMarkClassName})
           if (e) {
+            e.manual && mark_me({className: ManualMarkClassName})
             const className = GV.hoverClass(hover_id, e.id)
             className && mark_me({className})
           }
@@ -230,6 +236,22 @@ export function GraphEditingCM(
 
   store.on(sync)
   sync()
+
+  store.at('selected').ondiff(selected => {
+    scrollTokensIntoView(Object.keys(selected))
+  })
+
+  function scrollTokensIntoView(token_ids: string[]) {
+    const g = graph.get()
+    const tokens = G.partition_ids(g)(token_ids)[side].sort()
+    if (!tokens.length) return
+    // Turn first and last token indexes to CM positions.
+    const [from, to] = Utils.ends(tokens).map(t => {
+      const sided_index = G.token_map(g).get(t.id)
+      return sided_index ? Index.fromTokenIndex(sided_index.index).toPos() : null
+    })
+    from && to && cm.scrollIntoView({from, to}, 0)
+  }
 
   return {node, cm}
 }
@@ -273,6 +295,14 @@ function PositionUtils(cm: CodeMirror.Editor, store: Store<Model.State>, side: G
       }
     }
 
+    static fromTokenIndex(tok_i: number): Index {
+      const g = Model.viewGraph(store)
+      const i = G.get_side_texts(g, side)
+        .slice(0, tok_i)
+        .join('').length
+      return new Index(i)
+    }
+
     toEdge() {
       return this.toToken().toEdge()
     }
@@ -286,6 +316,10 @@ function PositionUtils(cm: CodeMirror.Editor, store: Store<Model.State>, side: G
         }
       }
       return new Token(null, null)
+    }
+
+    toPos(): CodeMirror.Position | null {
+      return this.index ? cm.getDoc().posFromIndex(this.index) : null
     }
   }
   return {Edge, Token, Index}

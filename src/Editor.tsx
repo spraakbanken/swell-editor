@@ -79,7 +79,7 @@ export function App(store: Store<Model.State>): () => VNode {
   }
 
   store.ondiff(state => {
-    const restricted = Model.deselect_removed_ids(state.graph.now, state.selected)
+    const restricted = Model.deselect_removed_ids(store, state.selected)
     restricted && store.update(restricted)
   })
 

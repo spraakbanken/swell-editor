@@ -494,6 +494,16 @@ export function uniq<A>(xs: A[]): A[] {
   })
 }
 
+/** First and last elements of an array.
+
+  ends(['one', 'two', 'three']) // => ['one', 'three']
+  ends(['one']) // => ['one', 'one']
+  ends([]) // => [undefined, undefined]
+ */
+export function ends<A>(xs: A[]): [A, A] {
+  return [xs[0], xs.slice(-1)[0]]
+}
+
 /** Considers the array a set and modifies the membership at some point (equality via toString)
 
   const abc = 'abc'.split('')

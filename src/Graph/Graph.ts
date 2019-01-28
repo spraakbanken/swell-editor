@@ -254,22 +254,21 @@ export function token_ids_to_edge_ids(g: Graph, ids: string[]): string[] {
   return token_ids_to_edges(g, ids).map(e => e.id)
 }
 
-/**
+/** Find tokens by token ids and split by source or target.
 
   const g = init('a b c')
-  const e = Edge(['s1', 't1'], [])
-  const source = [g.source[1]]
-  const target = [g.target[1]]
-  partition_ids(g)(e) // => {source, target}
+  const source = [g.source[1], g.source[2]]
+  const target = [g.target[1], g.target[0]]
+  partition_ids(g)(['s1', 't1', 's2', 't0']) // => {source, target}
 
 */
-export function partition_ids(g: Graph): (edge: Edge) => SourceTarget<Token[]> {
+export function partition_ids(g: Graph): (ids: string[]) => SourceTarget<Token[]> {
   const sm = source_map(g)
   const tm = target_map(g)
-  return (edge: Edge) => {
+  return ids => {
     const source = [] as Token[]
     const target = [] as Token[]
-    edge.ids.forEach(id => {
+    ids.forEach(id => {
       const s = sm.get(id)
       if (s !== undefined) {
         source.push(g.source[s])

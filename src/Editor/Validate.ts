@@ -36,7 +36,7 @@ export function edge_check<S>(
     // Emit an error for each edge where the edge condition fails.
     const emits: Result[] = []
     record.map(graph.edges, edge => {
-      const {source, target} = G.partition_ids(graph)(edge)
+      const {source, target} = G.partition_ids(graph)(edge.ids)
       if (edge && check(edge, source, target)) {
         // Use the supplied resulter, or create an Error by default.
         emits.push({message: `"${G.text(source).trim()}"`, severity})

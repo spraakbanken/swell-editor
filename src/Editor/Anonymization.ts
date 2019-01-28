@@ -21,7 +21,7 @@ export function init_pstore(graph: G.Graph): Pseudonyms {
   const out: Pseudonyms = {}
   // Go through anonymized edges.
   record.forEach(record.filter(graph.edges, e => e.labels.some(is_anon_label)), edge => {
-    const st = partition(edge)
+    const st = partition(edge.ids)
     // Add the target text for each label combination.
     out[sort_anon_labels(edge.labels).join(' ')] = G.target_text(st)
   })
@@ -59,16 +59,16 @@ export function anonymize(graph: G.Graph, pstore: Store<Pseudonyms>): G.Graph {
       return
     }
     if (anonLabels.length) {
-      const source_text = G.text(pi(e).source)
+      const source_text = G.text(pi(e.ids).source)
       // Ensure a pseudonymization in the store.
       const pp = pstore.at(anonLabels.join(' '))
       if (pp.get() === undefined) pp.set(pseudonymize(source_text, anonLabels))
       const t = G.Token(Utils.end_with_space(pp.get()), 't' + i++)
-      edges.push(G.Edge([...pi(e).source.map(s => s.id), t.id], e.labels, true, e.comment))
+      edges.push(G.Edge([...pi(e.ids).source.map(s => s.id), t.id], e.labels, true, e.comment))
       target.push(t)
     } else {
       edges.push(e)
-      target.push(...pi(e).target)
+      target.push(...pi(e.ids).target)
     }
   })
   return {source: g.source, target, edges: G.edge_record(edges)}
@@ -87,7 +87,7 @@ export function anonfixGraph(graph: G.Graph) {
   const tm = G.token_map(g)
   // For new anonymizations, overwrite source with pseudonymized target.
   record.forEach(record.filter(g.edges, e => e.labels.some(is_anon_label)), (edge, eid) => {
-    const st = p(edge)
+    const st = p(edge.ids)
     // If source and target differ, this is a new anonymization.
     if (!Utils.shallow_array_eq(G.source_texts(st), G.target_texts(st))) {
       // Replace the first token with the pseudonymization.
