@@ -21,7 +21,7 @@ import * as GV from '../GraphView'
 
 import * as Manual from '../Doc/Manual'
 import {Severity} from './Validate'
-import {anonymize_when, anonfixGraph} from './Anonymization'
+import {anonymize_when, anonfixGraph, is_anon_label} from './Anonymization'
 
 typestyle.cssRaw(`
 body > div {
@@ -316,6 +316,8 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
     const hovering = Model.isHovering(store)
     const visible_graph = Model.visibleGraph(store)
     const units = Model.compactStore(store)
+    const label_mode = (mode: string, label: string) =>
+      mode == Model.modes.anonymization ? is_anon_label(label) : taxonomy_has_label(mode, label)
 
     return (
       <div className="content">
@@ -351,7 +353,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
             onHover={hover_id => store.update({hover_id})}
             selectedIds={Object.keys(state.selected)}
             generation={state.generation}
-            labelMode={taxonomy_has_label}
+            labelMode={label_mode}
             labelSort={label_sort}
             onSelect={(ids, only) => Model.onSelect(store, ids, only)}
           />

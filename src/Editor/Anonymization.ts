@@ -8,7 +8,7 @@ import {Store} from 'reactive-lens'
 export type Pseudonyms = Record<string, string>
 
 export function is_anon_label(label: string): boolean {
-  return taxonomy_has_label('anonymization', label)
+  return !isNaN(Number(label)) || taxonomy_has_label('anonymization', label)
 }
 
 export function sort_anon_labels(labels: string[]): string[] {
