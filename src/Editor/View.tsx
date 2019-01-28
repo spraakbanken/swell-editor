@@ -360,7 +360,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
         </div>
         {ShowMessages(store.at('validation_messages'))}
         {ShowComment(store)}
-        {state.show.image_link && ImageWebserviceAddresses(visible_graph, Model.inAnonMode(store))}
+        {state.show.image_link && ImageWebserviceAddresses(visible_graph, Model.inAnonMode(state))}
         {state.show.graph && <pre className="box pre-box">{Utils.show(visibleGraph)}</pre>}
         {state.show.diff && (
           <pre className="box pre-box">{Utils.show(G.enrichen(visibleGraph))}</pre>
@@ -440,7 +440,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
       Button(
         `switch to ${Model.mode_label(mode)}`,
         '',
-        Model.inAnonfixMode(store)
+        Model.inAnonfixMode(state)
           ? () => exit_reanonymization(mode)
           : () => store.at('mode').set(mode),
         state.mode !== mode && (!state.backend || state.start_mode == mode || enable_in_any_mode)
@@ -475,7 +475,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
               </a>
             )}
             {state.done !== undefined &&
-              !Model.inAnonfixMode(store) &&
+              !Model.inAnonfixMode(state) &&
               Button(state.done ? 'not done' : 'done', 'toggle between done and not done', () =>
                 Model.validation_transaction(store, s => s.at('done').modify(b => !b))
               )}

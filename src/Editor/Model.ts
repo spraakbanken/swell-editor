@@ -161,7 +161,7 @@ export function report(store: Store<State>, message: string) {
 
 export function savePeriodicallyToBackend(store: Store<State>) {
   const debounced_save = Utils.debounce(1000, () => {
-    !inAnonfixMode(store) && save(store)
+    !inAnonfixMode(store.get()) && save(store)
   })
   store
     .at('graph')
@@ -284,7 +284,7 @@ const validationRules: Rule<{state: State; graph: G.Graph}>[] = [
   Rule(
     'Temporary tags not allowed when done',
     edge_check(
-      state => !!state.done,
+      state => !!state.done && !inAnonfixMode(state),
       edge => edge.labels.filter(l => label_order(l) == LabelOrder.TEMP).length > 0
     )
   ),
@@ -428,13 +428,13 @@ export function isHovering(store: Store<State>) {
   return state.hover_id !== undefined
 }
 
-export function inAnonMode(store: Store<State>) {
-  return store.get().mode === modes.anonymization
+export function inAnonMode(state: State) {
+  return state.mode === modes.anonymization
 }
 
-export function inAnonfixMode(store: Store<State>) {
-  const start_mode = store.get().start_mode as string
-  return start_mode && start_mode != modes.anonymization && inAnonMode(store)
+export function inAnonfixMode(state: State) {
+  const start_mode = state.start_mode as string
+  return start_mode && start_mode != modes.anonymization && inAnonMode(state)
 }
 
 export function history(store: Store<State>) {
@@ -473,7 +473,7 @@ export function initPseudonymizations(store: Store<State>): void {
 
 /** The graph, possibly transformed to be viewed (anonymized). */
 export function viewGraph(store: Store<State>) {
-  return inAnonMode(store)
+  return inAnonMode(store.get())
     ? anonymize(G.sort_edge_labels(currentGraph(store), label_order), store.at('pseudonyms'))
     : currentGraph(store)
 }
@@ -489,7 +489,7 @@ export function visibleGraph(store: Store<State>) {
 export function onSelect(store: Store<State>, ids: string[], only: boolean) {
   const emv = G.edge_map(visibleGraph(store))
   const involved_ids = Utils.flatMap(ids, id => {
-    if (inAnonMode(store)) {
+    if (inAnonMode(store.get())) {
       // Select full edge.
       return Utils.getUnsafe(emv, id).ids
     } else {
