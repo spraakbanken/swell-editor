@@ -498,7 +498,6 @@ export function uniq<A>(xs: A[]): A[] {
 
   ends(['one', 'two', 'three']) // => ['one', 'three']
   ends(['one']) // => ['one', 'one']
-  ends('foobar') // => ['f', 'r']
   ends([]) // => [undefined, undefined]
  */
 export function ends<A>(xs: A[]): [A, A] {
