@@ -417,7 +417,7 @@ export function deselect_removed_ids(store: Store<State>, selected0: Record<stri
 }
 
 export function setSubspanIncluding(store: Store<State>, indicies: G.SidedIndex[]) {
-  const g = visibleGraph(store)
+  const g = viewGraph(store)
   const tm = G.token_map(g)
   const selected = Object.keys(store.get().selected).map(token_id => Utils.getUnsafe(tm, token_id))
   Utils.setIfChanged(store.at('subspan'), G.sentences_around(g, [...indicies, ...selected]))
