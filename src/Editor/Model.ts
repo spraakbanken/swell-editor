@@ -77,7 +77,7 @@ export function initialBackendFetch(store: Store<State>) {
           try {
             h(JSON.parse(res_str))
           } catch (e) {
-            flagError(store, `Error ${e.toString} when extracting state from ${res_str}`)
+            flagError(store, `Error ${e.toString()} when extracting state from ${res_str}`)
           }
         },
         (err, code) => flagError(store, `${code}: ${Utils.show(err)}`)

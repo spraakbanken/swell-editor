@@ -636,7 +636,7 @@ function ShowComment(store: Store<Model.State>) {
   return G.token_ids_to_edges(Model.currentGraph(store), Object.keys(store.at('selected').get()))
     .filter(edge => edge.labels.some(G.is_comment_label))
     .map(edge => (
-      <div className={'comment-pane'}>
+      <div className={'comment-pane'} key={edge.id}>
         <em>Comment:</em>
         <textarea
           // Avoid deselecting.
