@@ -676,7 +676,7 @@ function ImageWebserviceAddresses(g: G.Graph, anon_mode: boolean) {
 export function Summary(g: G.Graph) {
   return (
     <div>
-      {record.traverse(G.label_edge_map(g, l => /^\d+$/.test(l)), (es, label) => (
+      {record.traverse(Model.number_edge_map(g), (es, label) => (
         <div key={label} className="box vsep">
           <div className={GV.BorderCell}>
             <div>{label}</div>
