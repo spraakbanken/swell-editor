@@ -260,7 +260,7 @@ export function check_invariant(store: Store<State>): (g: G.Graph) => void {
   validationRules[0].check({graph, state: {...init, mode: 'anonymization', done: false}}) // => []
 
   const graph = G.unaligned_modify_tokens(G.init('x'), 0, 1, 'y ')
-  validationRules[1].check({graph, state: {...init}}) // => [{severity: Severity.WARNING, message: '"x"'}]
+  validationRules[1].check({graph, state: {...init, mode: 'correctannot'}}) // => [{severity: Severity.WARNING, message: '"x"'}]
 
   const graph = G.modify_labels(G.init('x'), 'e-s0-t0', () => ['firstname:female', 'region', 'OBS!', 'gen', 'ort'])
   validationRules[2].check({graph, state: {...init, mode: 'anonymization'}}) // => [{severity: Severity.ERROR, message: '"x"'}]
@@ -400,7 +400,8 @@ export function modifySelection(store: Store<State>, ids: string[], value: boole
 
 export function setSelection(store: Store<State>, ids: string[]) {
   store.transaction(() => {
-    store.update({selected: record.create<string, true>(ids, () => true)})
+    const selected = record.create<string, true>(ids, () => true)
+    store.at('selected').modify(prev => (record.equals(prev, selected) ? {} : selected))
     const subspan = store.get().subspan
     setSubspanIncluding(store, (subspan && G.subspan_to_indicies(subspan)) || [])
   })

@@ -40,7 +40,7 @@ export function map<K extends string, A, B>(x: Record<K, A>, k: (a: A, id: K) =>
 
 export function filter<K extends string, A>(
   x: Record<K, A>,
-  k: (a: A, id: string) => boolean
+  k: (a: A, id: K) => boolean
 ): Record<K, A> {
   const out = {} as Record<K, A>
   forEach(x, (a, id) => k(a, id) && (out[id] = a))
@@ -61,4 +61,23 @@ export function reverse_lookup<K extends string, V extends string>(
   v: V
 ): K | undefined {
   return traverse(filter(x, v2 => v == v2), (v, k: K) => k)[0]
+}
+
+/** Are the records equal?
+
+  equals({a: 1, b: 2}, {b: 2, a: 1}) // => true
+  equals({a: 1, b: 2}, {b: 2, a: 3}) // => false
+ */
+export function equals<K extends string, V>(a: Record<K, V>, b: Record<K, V>) {
+  try {
+    forEach(a, (v, k) => {
+      if (b[k] !== v) throw new Error()
+    })
+    forEach(b, (v, k) => {
+      if (a[k] !== v) throw new Error()
+    })
+  } catch (e) {
+    return false
+  }
+  return true
 }
