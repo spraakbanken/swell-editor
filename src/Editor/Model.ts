@@ -7,7 +7,7 @@ import * as record from '../record'
 
 import * as Manual from '../Doc/Manual'
 
-import {Taxonomy, config, label_order, LabelOrder} from './Config'
+import {Taxonomy, config, label_order, LabelOrder, taxonomy_has_label} from './Config'
 import {Severity, Rule, edge_check} from './Validate'
 import {init_pstore, anonymize, Pseudonyms, is_anon_label} from './Anonymization'
 
@@ -528,11 +528,15 @@ export function setLabel(store: Store<State>, token_ids: string[], label: string
   const labels = Utils.uniq(Utils.flatMap(edges, e => e.labels))
 
   // Add/remove label.
-  const is_num = (x: string) => /^\d+$/.test(x)
+  // For numbers and main anon labels, replace existing ones.
+  const replace_conds = [
+    (x: string) => /^\d+$/.test(x),
+    (x: string) => taxonomy_has_label(modes.anonymization, x) && label_order(x) == LabelOrder.BASE,
+  ]
+  const replace_cond = replace_conds.find(cond => cond(label))
   const single_set_label = (labels: string[]) =>
-    is_num(label)
-      ? // New number replaces old number.
-        labels.filter(l => !is_num(l)).concat(value ? [label] : [])
+    replace_cond
+      ? labels.filter(l => !replace_cond(l)).concat(value ? [label] : [])
       : Utils.set_modify(labels, label, value)
   edge_ids.forEach(id => graph.modify(g => G.modify_labels(g, id, single_set_label)))
 
