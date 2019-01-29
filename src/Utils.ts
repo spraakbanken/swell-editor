@@ -1087,6 +1087,14 @@ export function chain<A, B>(a: A, f: (a: A) => B): B {
   return f(a)
 }
 
+/** Push an object to a record of lists.
+
+  const a = {}
+  push(a, 'a', 'A')
+  a // => {a: ['A']}
+  push(a, 'a', 'B')
+  a // => {a: ['A', 'B']}
+ */
 export function push<K extends string, V>(obj: Record<K, V[]>, k: string, ...vs: V[]) {
   const _obj = (obj as any) as Record<string, V[]>
   ;(_obj[k] || (_obj[k] = [])).push(...vs)

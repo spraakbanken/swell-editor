@@ -674,36 +674,22 @@ function ImageWebserviceAddresses(g: G.Graph, anon_mode: boolean) {
 }
 
 export function Summary(g: G.Graph) {
-  const label_edge_map: Record<string, G.Edge[]> = {}
-  record.forEach(g.edges, e => e.labels.forEach(l => Utils.push(label_edge_map, l, e)))
-  const m = G.token_map(g)
   return (
     <div>
-      {record.traverse(
-        label_edge_map,
-        (es, label) =>
-          /^\d+$/.test(label) && (
-            <div key={label} className="box vsep">
-              <div className={GV.BorderCell}>
-                <div>{label}</div>
-              </div>
-              <ul>
-                {es.map(e => (
-                  <li key={e.id}>
-                    {e.ids.map(id => {
-                      const si = Utils.getUnsafe(m, id)
-                      return (
-                        si.side === 'source' && (
-                          <span key={si.index}>{g[si.side][si.index].text}</span>
-                        )
-                      )
-                    })}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )
-      )}
+      {record.traverse(G.label_edge_map(g, l => /^\d+$/.test(l)), (es, label) => (
+        <div key={label} className="box vsep">
+          <div className={GV.BorderCell}>
+            <div>{label}</div>
+          </div>
+          <ul>
+            {es.map(e => (
+              <li key={e.id}>
+                {G.partition_ids(g)(e.ids)['source'].map(t => <span key={t.id}>{t.text}</span>)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </div>
   )
 }
