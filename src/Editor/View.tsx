@@ -173,10 +173,10 @@ const topStyle = typestyle.style({
       padding: '2px',
       border: '1px solid #8886',
     },
-    '& .cm-hovering span.hover': {
+    [`& .cm-hovering span.hover:not(.${CM.SelectedMarkClassName})`]: {
       background: 'hsla(220,65%,65%, .2)',
     },
-    '& .hovering .hover .Selectable, & .hovering path.hover, & .hovering .hover path': {
+    '& .hovering .hover .Selectable:not(.Selected), & .hovering path.hover, & .hovering .hover path': {
       background: 'hsla(220,65%,65%, .2)',
     },
     '& button': {
