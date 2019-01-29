@@ -548,19 +548,30 @@ export function setLabel(store: Store<State>, token_ids: string[], label: string
       )
       // The selected tokens may have new edges.
       const edges_new = G.token_ids_to_edges(graph.get(), token_ids)
-      // Add next number.
+
+      // Number magic: For each new edge, if the source text matches an already number-labeled
+      // source text, use that number, otherwise use the maximum + 1.
+      const nem = number_edge_map(graph.get())
+      const partition = G.partition_ids(graph.get())
+      const edge_source = (e: G.Edge) => G.text(partition(e.ids)['source'])
       const strmax = (xs: string[]) => Utils.maximum([0, ...xs.map(l => Number(l) || 0)])
-      let maxnum = Utils.maximum(record.traverse(graph.get().edges, e => strmax(e.labels)))
-      edges_new.forEach(
-        e =>
-          strmax(e.labels) ||
-          graph.modify(g => G.modify_labels(g, e.id, l => [...l, String(++maxnum)]))
-      )
+      let maxnum = strmax(Object.keys(nem))
+      edges_new.forEach(e => {
+        const match = Object.keys(
+          record.filter(nem, nes => nes.some(ne => edge_source(ne) == edge_source(e)))
+        )[0]
+        graph.modify(g => G.modify_labels(g, e.id, l => [...l, String(match ? match : ++maxnum)]))
+      })
     } else if (!value && labels.length <= 1) {
       // When there was only one label and we are removing it, revert the connection made before.
       graph.modify(g => G.revert(g, edge_ids))
     }
   }
+}
+
+/** Map numeric labels to edges where they are used. */
+export function number_edge_map(g: G.Graph) {
+  return G.label_edge_map(g, l => /^\d+$/.test(l))
 }
 
 export type ActionOnSelected =

@@ -1347,3 +1347,17 @@ export function sort_edge_labels(g: Graph, order: (label: string) => number): Gr
     edges: record.map(g.edges, e => Edge(e.ids, R.sortBy(order, e.labels), e.manual, e.comment)),
   }
 }
+
+/** Map from labels to edges where they are used.
+
+  const g = modify_labels(init('apa bepa'), 'e-s1-t1', () => ['L', 'LL'])
+  label_edge_map(g, l => l.length > 1) // => {'LL': [g.edges['e-s1-t1']]}
+  label_edge_map(g) // => {'L': [g.edges['e-s1-t1']], 'LL': [g.edges['e-s1-t1']]}
+ */
+export function label_edge_map(g: Graph, filter?: (l: string) => boolean): Record<string, Edge[]> {
+  const label_edge_map: Record<string, Edge[]> = {}
+  record.forEach(g.edges, e =>
+    e.labels.forEach(l => (!filter || filter(l)) && Utils.push(label_edge_map, l, e))
+  )
+  return label_edge_map
+}
