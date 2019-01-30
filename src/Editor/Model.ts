@@ -402,8 +402,7 @@ export function setSelection(store: Store<State>, ids: string[]) {
   store.transaction(() => {
     const selected = record.create<string, true>(ids, () => true)
     store.at('selected').modify(prev => (record.equals(prev, selected) ? {} : selected))
-    const subspan = store.get().subspan
-    setSubspanIncluding(store, (subspan && G.subspan_to_indicies(subspan)) || [])
+    setSubspanIncluding(store, [])
   })
 }
 
@@ -417,6 +416,7 @@ export function deselect_removed_ids(store: Store<State>, selected0: Record<stri
   }
 }
 
+/** Updates subspan to include selection as well as any other indices. */
 export function setSubspanIncluding(store: Store<State>, indicies: G.SidedIndex[]) {
   const g = viewGraph(store)
   const tm = G.token_map(g)
