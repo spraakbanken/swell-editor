@@ -167,14 +167,17 @@ const anonymization: Taxonomy = [
 
 export const normalization: Taxonomy = [
   {
-    group: 'Unidentified',
+    group: 'Intelligibility',
     entries: [
-      {label: 'OBS!', desc: 'Attention'},
       {
-        label: 'Uni',
-        desc: 'Error that cannot be categorized according to other codes',
+        label: 'X',
+        desc: 'Impossible to interpret the writer’s intention',
       },
     ],
+  },
+  {
+    group: 'Unidentified',
+    entries: [{label: 'OBS!', desc: 'Attention'}],
   },
 ]
 
@@ -295,6 +298,10 @@ export const correctannot: Taxonomy = [
       {
         label: 'S-adv',
         desc: 'Word order error involving adverbial placement',
+      },
+      {
+        label: 'S-CON',
+        desc: 'Problematic syntactical construction',
       },
       {
         label: 'S-finV',
