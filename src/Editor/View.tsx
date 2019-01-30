@@ -342,7 +342,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
           </div>
         )}
         <div
-          className={(hovering ? ' hovering' : '') + (readonly ? ' NoManualBlue' : '')}
+          className={'vsep' + (hovering ? ' hovering' : '') + (readonly ? ' NoManualBlue' : '')}
           style={{minHeight: '10em'}}>
           <GV.GraphView
             mode={state.mode}
@@ -358,8 +358,8 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
             onSelect={(ids, only) => Model.onSelect(store, ids, only)}
           />
         </div>
-        {ShowMessages(store.at('validation_messages'))}
         {ShowComment(store)}
+        {ShowMessages(store.at('validation_messages'))}
         {state.show.image_link && ImageWebserviceAddresses(visible_graph, Model.inAnonMode(state))}
         {state.show.graph && <pre className="box pre-box">{Utils.show(visibleGraph)}</pre>}
         {state.show.diff && (
@@ -636,7 +636,7 @@ function ShowComment(store: Store<Model.State>) {
   return G.token_ids_to_edges(Model.currentGraph(store), Object.keys(store.at('selected').get()))
     .filter(edge => edge.labels.some(G.is_comment_label))
     .map(edge => (
-      <div className={'comment-pane'} key={edge.id}>
+      <div className={'comment-pane vsep'} key={edge.id}>
         <em>Comment:</em>
         <textarea
           // Avoid deselecting.
