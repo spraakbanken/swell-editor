@@ -639,6 +639,8 @@ function ShowComment(store: Store<Model.State>) {
       <div className={'comment-pane vsep'} key={edge.id}>
         <em>Comment:</em>
         <textarea
+          // Prevent refocusing to label filter field.
+          className={'keepfocus'}
           // Avoid deselecting.
           onMouseDown={ev => ev.stopPropagation()}
           onChange={ev =>

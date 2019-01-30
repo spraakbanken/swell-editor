@@ -174,7 +174,7 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
     const input = (
       <input
         ref={e => {
-          if (e && !['TEXTAREA', 'INPUT'].includes(document.activeElement.tagName)) {
+          if (e && !/\bkeepfocus\b/.test(document.activeElement.className)) {
             const x = window.scrollX
             const y = window.scrollY
             e.focus()
@@ -182,7 +182,7 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
           }
         }}
         placeholder={
-          mode == Model.modes.anonymization ? 'Filter / numeric label' :  'Enter filter text'
+          mode == Model.modes.anonymization ? 'Filter / numeric label' : 'Enter filter text'
         }
         onKeyDown={e => {
           const t = e.target as HTMLInputElement
