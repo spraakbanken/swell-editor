@@ -222,11 +222,6 @@ export const correctannot: Taxonomy = [
     group: 'Lexical',
     entries: [
       {
-        label: 'L',
-        desc:
-          'Wrong word or phrase. Includes even phrasal verbs and reflexives with missing particle/reflexive marker',
-      },
-      {
         label: 'L-DER',
         desc: 'Deviant (existisng!) derivational affix used',
       },
@@ -245,6 +240,10 @@ export const correctannot: Taxonomy = [
       {
         label: 'L-REF',
         desc: 'Reference error',
+      },
+      {
+        label: 'L-W',
+        desc: 'Wrong content word or phrase.',
       },
     ],
   },
@@ -319,6 +318,10 @@ export const correctannot: Taxonomy = [
       {
         label: 'S-R',
         desc: 'Word or phrase redundant',
+      },
+      {
+        label: 'S-W',
+        desc: 'Wrong function word.',
       },
       {
         label: 'S-WO',
