@@ -584,13 +584,11 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
 /** Auto-size the spaghetti. */
 function fitGraph() {
   const gv = document.querySelector('.graphView') as HTMLElement | null
-  const content = document.querySelector('.content') as HTMLElement | null
-  if (!gv || !content) return
-  // First collapse to 0, to measure .content height correctly.
-  gv.style.height = '0'
+  const footer = document.querySelector('.footer') as HTMLElement | null
+  if (!gv || !footer) return
   // Pull spaghetti bottom down to wrapper bottom.
   // Subtracting a few pixels is necessary for some reason.
-  gv.style.height = `${content.offsetTop + content.offsetHeight - gv.offsetTop - 5}px`
+  gv.style.height = `${window.innerHeight - footer.offsetHeight - gv.offsetTop - 5}px`
 }
 
 function show_hide_str(b: boolean | undefined) {
