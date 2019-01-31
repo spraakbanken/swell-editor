@@ -590,8 +590,8 @@ export type ActionOnSelected =
   | 'prev_mod'
 
 export const actionButtons: Record<Mode, ActionOnSelected[]> = {
-  normalization: ['prev', 'next', 'prev_mod', 'next_mod', 'group', 'orphan', 'auto', 'revert'],
-  correctannot: ['prev', 'next', 'prev_mod', 'next_mod', 'group', 'orphan', 'auto', 'revert'],
+  normalization: ['prev', 'next', 'prev_mod', 'next_mod', 'group', 'orphan', 'auto' /*, 'revert'*/],
+  correctannot: ['prev', 'next', 'prev_mod', 'next_mod', 'group', 'orphan', 'auto' /*, 'revert'*/],
   anonymization: ['prev', 'next', 'prev_mod', 'next_mod'],
 }
 
