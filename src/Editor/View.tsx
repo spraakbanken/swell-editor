@@ -495,7 +495,12 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
               {Button(
                 'show full graph',
                 'render the full graph (may be slow, please have patience)',
-                () => Model.setSelection(store, [])
+                () => {
+                  store.transaction(() => {
+                    Model.setSelection(store, [])
+                    Model.setSubspanIncluding(store, [])
+                  })
+                }
               )}
               <hr />
               {Button('validate', '', () => Model.validateState(store))}
