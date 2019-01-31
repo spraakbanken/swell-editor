@@ -222,6 +222,10 @@ export const correctannot: Taxonomy = [
     group: 'Lexical',
     entries: [
       {
+        label: 'L',
+        desc: 'Wrong word or phrase. Deprecated!',
+      },
+      {
         label: 'L-DER',
         desc: 'Deviant (existisng!) derivational affix used',
       },

@@ -84,9 +84,8 @@ export function App(store: Store<Model.State>): () => VNode {
     }, 1000)
   }
 
-  // TODO: Change to at('graph') to execute less often?
-  store.ondiff(state => {
-    const restricted = Model.deselect_removed_ids(store, state.selected)
+  store.at('graph').ondiff(() => {
+    const restricted = Model.deselect_removed_ids(store, store.get().selected)
     restricted && store.update(restricted)
   })
 
