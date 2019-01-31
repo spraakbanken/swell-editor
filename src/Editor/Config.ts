@@ -243,7 +243,8 @@ export const correctannot: Taxonomy = [
       },
       {
         label: 'L-W',
-        desc: 'Wrong content word or phrase.',
+        desc:
+          'Wrong content word/phrase. Includes even phrasal verbs, reflexives with missing particle/reflexive marker, and multiword prepositions.',
       },
     ],
   },
@@ -321,7 +322,8 @@ export const correctannot: Taxonomy = [
       },
       {
         label: 'S-W',
-        desc: 'Wrong function word.',
+        desc:
+          'Wrong function word, e.g. preposition (also multiword presposition), auxilary verb; particle and reflexive marker.',
       },
       {
         label: 'S-WO',
