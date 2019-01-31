@@ -489,6 +489,11 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
               {toggle_button('target_text')}
               {RestrictionButtons(store.at('side_restriction'))}
               {Button('fit graph', 'adjust the height of the graph view', () => fitGraph())}
+              {Button(
+                'show full graph',
+                'render the full graph (may be slow, please have patience)',
+                () => Model.setSelection(store, [])
+              )}
               <hr />
               {Button('validate', '', () => Model.validateState(store))}
               {mode_switcher(Model.modes.anonymization, true)}
@@ -665,8 +670,7 @@ function ImageWebserviceAddresses(g: G.Graph, anon_mode: boolean) {
   return (
     <pre
       className={'box pre-box'}
-      style={{whiteSpace: 'normal', wordBreak: 'break-all', overflowX: 'hidden'}}
-      >
+      style={{whiteSpace: 'normal', wordBreak: 'break-all', overflowX: 'hidden'}}>
       {url}
     </pre>
   )
