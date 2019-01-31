@@ -878,7 +878,7 @@ export function request(
     if (r.readyState == 4 && r.status == 200) {
       k(r.response)
     }
-    if (r.readyState == 4 && r.status > 200) {
+    if (r.readyState == 4 && r.status >= 300) {
       k_err(r.response, r.status)
     }
   }
