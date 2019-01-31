@@ -139,6 +139,9 @@ const topStyle = typestyle.style({
 
       padding: '0.25em',
     },
+    '& pre': {
+      whiteSpace: 'pre-wrap',
+    },
     '& .doc img': {
       maxWidth: '100%',
     },
