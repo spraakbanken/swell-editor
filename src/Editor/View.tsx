@@ -118,9 +118,6 @@ const topStyle = typestyle.style({
     [`& .${CM.ManualMarkClassName}`]: {
       color: '#26a',
     },
-    [`& .${CM.SelectedMarkClassName}`]: {
-      background: '#e6e6e6',
-    },
     '& .box': {
       background: 'hsl(0,0%,96%)',
       borderTop: '2px hsl(220,65%,65%) solid',
@@ -166,21 +163,23 @@ const topStyle = typestyle.style({
       zIndex: 10,
       cursor: 'pointer',
     },
-    '& .Selected, & .Selectable': {
-      padding: '3px',
-    },
-    '& .Selected': {
-      background: '#8883',
-      color: '#222',
-      borderRadius: '3px',
+    '& .Selectable': {
       padding: '2px',
-      border: '1px solid #8886',
-    },
-    [`& .cm-hovering span.hover:not(.${CM.SelectedMarkClassName})`]: {
-      background: 'hsla(220,65%,65%, .2)',
+      border: '1px solid transparent',
+      borderRadius: '3px',
     },
     '& .hovering .hover .Selectable:not(.Selected), & .hovering path.hover, & .hovering .hover path': {
-      background: 'hsla(220,65%,65%, .2)',
+      background: '#8882',
+    },
+    '& .Selected': {
+      background: 'hsla(220,65%,65%, .3)',
+      borderColor: 'hsl(220,65%,65%)',
+    },
+    [`& .cm-hovering span.hover:not(.${CM.SelectedMarkClassName})`]: {
+      background: '#8882',
+    },
+    [`& .${CM.SelectedMarkClassName}`]: {
+      background: 'hsla(220,65%,65%, .3)',
     },
     '& button': {
       fontSize: '0.85em',
