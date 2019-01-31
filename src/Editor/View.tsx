@@ -497,6 +497,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
               <hr />
               {toggle_button('graph')}
               {toggle_button('diff')}
+              {toggle_button('image_link')}
               {// Examples destroy essays.
               toggle_button('examples', !state.backend)}
               <hr />
