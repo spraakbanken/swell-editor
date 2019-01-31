@@ -72,6 +72,7 @@ export function App(store: Store<Model.State>): () => VNode {
   const load = (url: string) => remote_doc(url, content => store.at('doc_node').set(content))
   store.at('doc').ondiff(url => (url ? load(url) : store.at('doc_node').set(undefined)))
   store.at('mode').ondiff(() => store.at('doc').set(undefined))
+  store.at('selected').ondiff(s => record.size(s) && Model.setSubspanIncluding(store, []))
 
   Model.check_invariant(store)(store.get().graph.now)
 
@@ -83,6 +84,7 @@ export function App(store: Store<Model.State>): () => VNode {
     }, 1000)
   }
 
+  // TODO: Change to at('graph') to execute less often?
   store.ondiff(state => {
     const restricted = Model.deselect_removed_ids(store, state.selected)
     restricted && store.update(restricted)

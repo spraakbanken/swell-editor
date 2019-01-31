@@ -10,6 +10,16 @@ export function init<K extends string, V>(kvs: {k: K; v: V}[]): Record<K, V> {
   return obj
 }
 
+/** Number of elements in a record.
+
+  size({a: 'A'})         // => 1
+  size({})               // => 0
+  size({a: 'A', b: 'B'}) // => 2
+ */
+export function size<K extends string, V>(x: Record<K, V>): number {
+  return Object.keys(x).length
+}
+
 export function flatten<O extends Record<string, any>>(oss: O[]): O {
   const obj = {} as O
   oss.forEach(os => forEach(os, (v: string, k: any) => (obj[k] = v)))

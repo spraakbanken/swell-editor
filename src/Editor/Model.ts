@@ -122,7 +122,7 @@ export function save(store: Store<State>) {
     state.version !== undefined &&
     state.backend &&
     state.essay &&
-    Object.keys(state.errors).length == 0
+    record.size(state.errors) == 0
   ) {
     console.log('saving...')
     store.update({version: undefined})
@@ -170,7 +170,7 @@ export function savePeriodicallyToBackend(store: Store<State>) {
   store.at('done').ondiff((done, old_done) => {
     done && !old_done && validateState(store)
     const state = store.get()
-    if (state.backend && state.essay && Object.keys(state.errors).length == 0) {
+    if (state.backend && state.essay && record.size(state.errors) == 0) {
       Utils.POST(
         `${state.backend}${state.essay}/status`,
         {done},
@@ -401,7 +401,6 @@ export function modifySelection(store: Store<State>, ids: string[], value: boole
 export function setSelection(store: Store<State>, ids: string[]) {
   store.transaction(() => {
     store.at('selected').set(record.create<string, true>(ids, () => true))
-    setSubspanIncluding(store, [])
   })
 }
 
@@ -409,8 +408,7 @@ export function deselect_removed_ids(store: Store<State>, selected0: Record<stri
   const em = G.edge_map(viewGraph(store))
   const present = (s: string) => em.has(s)
   const selected = record.filter(selected0, (_, id) => present(id))
-  const n_keys = (o: Object) => Object.keys(o).length
-  if (n_keys(selected) < n_keys(selected0)) {
+  if (record.size(selected) < record.size(selected0)) {
     return {selected}
   }
 }
@@ -472,6 +470,7 @@ export function initPseudonymizations(store: Store<State>): void {
 }
 
 /** The graph, possibly transformed to be viewed (anonymized). */
+// TODO Store result in store, to avoid executing often?
 export function viewGraph(store: Store<State>) {
   return inAnonMode(store.get())
     ? anonymize(G.sort_edge_labels(currentGraph(store), label_order), store.at('pseudonyms'))
