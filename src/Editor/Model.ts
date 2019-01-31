@@ -400,8 +400,7 @@ export function modifySelection(store: Store<State>, ids: string[], value: boole
 
 export function setSelection(store: Store<State>, ids: string[]) {
   store.transaction(() => {
-    const selected = record.create<string, true>(ids, () => true)
-    store.at('selected').modify(prev => (record.equals(prev, selected) ? {} : selected))
+    store.at('selected').set(record.create<string, true>(ids, () => true))
     setSubspanIncluding(store, [])
   })
 }
