@@ -662,16 +662,12 @@ function ImageWebserviceAddresses(g: G.Graph, anon_mode: boolean) {
   const data: EditorTypes.Data = EditorTypes.graph_to_data(g, anon_mode)
   const st = EditorTypes.data_to_string(data)
   const url = `${config.image_ws_url}/png?${escape(st)}`
-  const md = `![](${url})`
   return (
     <pre
-      className={'box pre-box ' + ReactUtils.Unselectable}
+      className={'box pre-box'}
       style={{whiteSpace: 'normal', wordBreak: 'break-all', overflowX: 'hidden'}}
-      draggable={true}
-      onDragStart={e => {
-        e.dataTransfer.setData('text/plain', md)
-      }}>
-      {md}
+      >
+      {url}
     </pre>
   )
 }
