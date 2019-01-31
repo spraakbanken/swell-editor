@@ -47,7 +47,7 @@ const topStyle = typestyle.style({
     "footer   footer footer"  ${footer_height}
   / 185px     1fr    180px
   `,
-  height: '100%',
+  minHeight: '100%',
 
   $nest: {
     ...record.flatten(
@@ -59,12 +59,22 @@ const topStyle = typestyle.style({
       }))
     ),
     '& .header': {
-      position: 'relative',
+      position: 'sticky',
+      top: 0,
+      zIndex: 20,
       paddingBottom: '5px',
       marginBottom: '5px',
     },
+    '& .sidekick > div': {
+      top: `${header_height}`,
+    },
     '& .content': {
       height: '100%',
+    },
+    '& .footer': {
+      position: 'sticky',
+      bottom: 0,
+      zIndex: 20,
     },
     '& .menu .box': {
       position: 'absolute',
