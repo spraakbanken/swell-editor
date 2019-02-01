@@ -124,7 +124,11 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
       return (
         <span
           className={'entry' + classes}
-          onMouseOver={evt => c && this.setState({cursor: c})}
+          onMouseOver={evt => {
+            // Only on mouse move, not when triggered by scroll.
+            if (c && (evt.nativeEvent.movementX || evt.nativeEvent.movementY))
+              this.setState({cursor: c})
+          }}
           onMouseDown={e => {
             toggle(label)
             e.preventDefault()
