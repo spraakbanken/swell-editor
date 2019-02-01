@@ -242,6 +242,10 @@ export const correctannot: Taxonomy = [
         desc: 'Missing content word',
       },
       {
+        label: 'L-R',
+        desc: 'Redundant content word',
+      },
+      {
         label: 'L-REF',
         desc: 'Reference error',
       },
