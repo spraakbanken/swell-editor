@@ -187,18 +187,10 @@ export type Show =
   | 'diff'
   | 'image_link'
   | 'examples'
+  | 'validation'
   | 'source_text'
   | 'target_text'
   | 'options'
-
-export const shows = [
-  'graph',
-  'diff',
-  'image_link',
-  'examples',
-  'source_text',
-  'target_text',
-] as Show[]
 
 export type Mode = 'anonymization' | 'normalization' | 'correctannot'
 
@@ -325,7 +317,7 @@ const validationRules: Rule<{state: State; graph: G.Graph}>[] = [
 ]
 
 /** Go through our rules and flag errors for any invalidations. */
-export function validateState(store: Store<State>) {
+export function validateState(store: Store<State>, show?: boolean) {
   clearValidationMessages(store)
   const state = store.get()
   const graph = state.graph.now
@@ -334,6 +326,7 @@ export function validateState(store: Store<State>) {
       flagValidationMessage(store, `${rule.name}: ${result.message}`, result.severity)
     })
   })
+  show !== undefined && store.at('show').update({validation: show ? true : undefined})
 }
 
 /** Make changes, validate new state and revert changes if the result is invalid. */

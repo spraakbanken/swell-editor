@@ -371,7 +371,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
           />
         </div>
         {ShowComment(store)}
-        {ShowMessages(store.at('validation_messages'))}
+        {state.show.validation && ShowMessages(store.at('validation_messages'))}
         {state.show.image_link && ImageWebserviceAddresses(visible_graph, Model.inAnonMode(state))}
         {state.show.graph && <pre className="box pre-box">{Utils.show(visibleGraph)}</pre>}
         {state.show.diff && (
@@ -474,7 +474,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
                 style={{margin: '3px 8px', fontSize: '0.9em', opacity: 0.8}}
                 href={state.backurl}
                 onClick={e => {
-                  Model.validateState(store)
+                  Model.validateState(store, true)
                   const messages = store.at('validation_messages').get()
                   if (
                     messages.length &&
@@ -512,7 +512,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
                 }
               )}
               <hr />
-              {Button('validate', '', () => Model.validateState(store))}
+              {Button('validate', '', () => Model.validateState(store, true))}
               {mode_switcher(Model.modes.anonymization, true)}
               {mode_switcher(Model.modes.normalization)}
               {mode_switcher(Model.modes.correctannot)}
