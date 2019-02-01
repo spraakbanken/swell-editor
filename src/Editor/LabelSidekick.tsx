@@ -117,7 +117,7 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
       return cursor
     }
 
-    const liberal_re = (s: string) => new RegExp(Utils.str_map(s, c => c + '-?').join(''), 'i')
+    const liberal_re = (s: string) => new RegExp('^' + Utils.str_map(s, c => c + '-?').join(''), 'i')
 
     const entry_span = (label: string, c?: number) => {
       const classes = (cursor == c ? ' cursor' : '') + (isSelected(label) ? ' selected' : '')
