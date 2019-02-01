@@ -57,12 +57,9 @@ const GraphViewStyle = style(
       },
       '& > ul > li': {
         height: `${px(20)}`,
-        width: '100%',
         marginRight: `${px(3)}`,
         marginLeft: `${px(3)}`,
-        ...csstips.selfCenter,
-        ...csstips.horizontal,
-        ...csstips.centerJustified,
+        textAlign: 'center',
       },
       '& > ul > .bottom, & > ul > .top': {
         marginTop: `${px(3)}`,
