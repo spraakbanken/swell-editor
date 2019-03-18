@@ -27,6 +27,7 @@ export interface SourceTarget<A> {
 
 export interface Graph extends SourceTarget<Token[]> {
   readonly edges: Edges
+  readonly comment?: string
 }
 
 export type Edges = Record<string, Edge>
@@ -170,6 +171,20 @@ export function init_from(tokens: string[], manual = false): Graph {
     target: T.identify(tokens, 't'),
     edges: edge_record(tokens.map((_, i) => Edge(['s' + i, 't' + i], [], manual))),
   })
+}
+
+/** Change or remove the graph-wide comment.
+
+  const g0 = init('apa bepa')
+  const g1 = set_comment(g, 'foo')
+  g1.comment // => 'foo'
+  const g2 = set_comment(g)
+  g2.comment // => undefined
+  const g3 = set_comment(g, '')
+  g3.comment // => undefined
+ */
+export function set_comment(g: Graph, c?: string): Graph {
+  return c ? {...g, comment: c} : {source: g.source, target: g.target, edges: g.edges}
 }
 
 /** Clone a graph

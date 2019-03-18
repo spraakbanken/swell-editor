@@ -659,32 +659,47 @@ function Summary(store: Store<Model.State>) {
     <div className="summary">
       {store.get().mode == Model.modes.anonymization
         ? AnonEntities(Model.currentGraph(store))
-        : ShowComment(store)}
+        : ShowComments(store)}
     </div>
   )
 }
 
-function ShowComment(store: Store<Model.State>) {
-  return G.token_ids_to_edges(Model.currentGraph(store), Object.keys(store.at('selected').get()))
-    .filter(edge => edge.labels.some(G.is_comment_label))
-    .map(edge => (
-      <div className="comment-pane box vsep" key={edge.id}>
-        <p>Comment:</p>
+function ShowComments(store: Store<Model.State>) {
+  const g = Model.currentGraph(store)
+  const setGraphComment = Utils.debounce(1000, (comment: string) =>
+    Model.graphStore(store).modify(g => G.set_comment(g, comment))
+  )
+  const setEdgeComment = Utils.debounce(1000, (edgeId: string, comment: string) =>
+    Model.graphStore(store).modify(g => G.comment_edge(g, edgeId, comment))
+  )
+  return (
+    <div>
+      <div className="comment-pane box vsep">
+        <p>Document comment:</p>
         <textarea
           // Prevent refocusing to label filter field.
           className={'keepfocus'}
           // Avoid deselecting.
           onMouseDown={ev => ev.stopPropagation()}
-          onChange={ev =>
-            Utils.debounce(500, () =>
-              Model.graphStore(store).modify(g => G.comment_edge(g, edge.id, ev.target.value))
-            )
-          }
-          key={edge.id}
-          defaultValue={edge.comment}
+          onChange={ev => setGraphComment(ev.target.value)}
+          defaultValue={g.comment}
         />
       </div>
-    ))
+      {G.token_ids_to_edges(g, Object.keys(store.at('selected').get()))
+        .filter(edge => edge.labels.some(G.is_comment_label))
+        .map(edge => (
+          <div className="comment-pane box vsep" key={edge.id}>
+            <p>Edge comment:</p>
+            <textarea
+              className={'keepfocus'}
+              onMouseDown={ev => ev.stopPropagation()}
+              onChange={ev => setEdgeComment(edge.id, ev.target.value)}
+              defaultValue={edge.comment}
+            />
+          </div>
+        ))}
+    </div>
+  )
 }
 
 function ImageWebserviceAddresses(g: G.Graph, anon_mode: boolean) {
