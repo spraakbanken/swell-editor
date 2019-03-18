@@ -328,6 +328,7 @@ export interface GraphViewProps {
 }
 
 export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewProps> {
+  console.log('GraphView redraw');
   const {
     graph,
     richDiff,
