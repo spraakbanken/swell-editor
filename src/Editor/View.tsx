@@ -672,6 +672,7 @@ function ShowComments(store: Store<Model.State>) {
   const setEdgeComment = Utils.debounce(1000, (edgeId: string, comment: string) =>
     Model.graphStore(store).modify(g => G.comment_edge(g, edgeId, comment))
   )
+  if (G.empty(g)) return null
   return (
     <div>
       <div className="comment-pane box vsep">

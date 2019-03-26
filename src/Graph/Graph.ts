@@ -173,6 +173,10 @@ export function init_from(tokens: string[], manual = false): Graph {
   })
 }
 
+export function empty(g: Graph): boolean {
+  return !g.source.length || !g.target.length
+}
+
 /** Change or remove the graph-wide comment.
 
   const g0 = init('apa bepa')
@@ -201,6 +205,7 @@ export function clone(graph: Graph): Graph {
     source: graph.source.map(x => x),
     target: graph.target.map(x => x),
     edges: record.map(graph.edges, x => ({...x})),
+    ...(graph.comment ? {comment: graph.comment} : {}),
   }
 }
 
@@ -564,6 +569,7 @@ export function unaligned_rearrange(g: Graph, begin: number, end: number, dest: 
     new_edges[id] = merge_edges(g.edges[id], Edge([], [], true))
   })
   return {
+    ...g,
     source: g.source,
     target: Utils.rearrange(g.target, begin, end, dest),
     edges: {...g.edges, ...new_edges},
@@ -613,8 +619,7 @@ export function get_side_texts(g: Graph, side: Side): string[] {
 
 /** Invert the graph: swap source and target, without aligning */
 export function unaligned_invert(g: Graph): Graph {
-  const {source, target, edges} = g
-  return {source: target, target: source, edges}
+  return {...g, source: g.target, target: g.source}
 }
 
 /** Invert the graph: swap source and target.
@@ -655,7 +660,7 @@ export function unaligned_revert(g: Graph, edge_ids: string[]): Graph {
       },
     })
   )
-  return from_dnd_diff(reverted, edges)
+  return {...g, ...from_dnd_diff(reverted, edges)}
 }
 
 /** Revert at an edge id */
@@ -1315,7 +1320,7 @@ export function normalize(
       return [E.id, E] as [string, Edge]
     })
   )
-  return {source, target, edges}
+  return {source, target, edges, ...(g.comment ? {comment: g.comment} : {})}
 }
 
 export function equal(g1: Graph, g2: Graph, set_manual_to: boolean | 'keep' = true): boolean {
