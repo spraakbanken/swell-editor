@@ -13,6 +13,7 @@ import {init_pstore, anonymize, Pseudonyms, is_anon_label} from './Anonymization
 
 export interface State {
   readonly graph: Undo<G.Graph>
+  readonly rich_diff?: G.RichDiff[]
   readonly hover_id?: string
   readonly selected: Record<string, true>
   readonly subspan?: G.Subspan
@@ -211,6 +212,7 @@ export function is_target_readonly(mode: Mode): boolean {
 
 export const init: State = {
   graph: Undo.init(G.init('')),
+  rich_diff: undefined,
   hover_id: undefined,
   selected: {},
   subspan: undefined,

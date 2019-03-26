@@ -313,6 +313,7 @@ function Column(column: G.Line<LineMeta>[], rel: VNode | null | false = null): V
 
 export interface GraphViewProps {
   graph: G.Graph
+  richDiff?: G.RichDiff[]
   orderChangingLabel?: (label: string) => boolean
   onHover?: OnHover
   onSelect?: OnSelect
@@ -329,6 +330,7 @@ export interface GraphViewProps {
 export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewProps> {
   const {
     graph,
+    richDiff,
     orderChangingLabel,
     onHover,
     onSelect,
@@ -342,7 +344,8 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
   } = props
   const selected_ids = selectedIds || []
   const edges = graph.edges
-  const rd0 = G.enrichen(graph, orderChangingLabel)
+  // The rich diff can be calculated outside and given as a prop to reduce redraw cost.
+  const rd0 = richDiff || G.enrichen(graph, orderChangingLabel)
   const rd = G.restrict_to_side(rd0, side)
   const grids = G.mapGrids(G.DiffToGrid(rd), ({id}) => ({
     id,

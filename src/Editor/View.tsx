@@ -327,6 +327,8 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
   function main() {
     const hovering = Model.isHovering(store)
     const visible_graph = Model.visibleGraph(store)
+    // Limit the rich diff to the visible graph.
+    const rich_diff = state.rich_diff && state.rich_diff.filter(d => visible_graph.edges[d.id])
     const units = Model.compactStore(store)
     const label_mode = (mode: string, label: string) =>
       mode == Model.modes.anonymization ? is_anon_label(label) : taxonomy_has_label(mode, label)
@@ -361,6 +363,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
             side={state.side_restriction}
             orderChangingLabel={s => config.order_changing_labels[s]}
             graph={visible_graph}
+            richDiff={rich_diff}
             hoverId={state.hover_id}
             onHover={hover_id => store.update({hover_id})}
             selectedIds={Object.keys(state.selected)}

@@ -14,6 +14,7 @@ import * as Model from './Editor/Model'
 import * as CM from './Editor/CodeMirror'
 import {View} from './Editor/View'
 import {remote_doc} from './Doc/RemoteDoc'
+import {config} from './Editor/Config'
 
 export const init = Model.init
 
@@ -30,6 +31,22 @@ export function App(store: Store<Model.State>): () => VNode {
   global.stress = () => stress(store)
   store.at('generation').modify(i => i + 1)
 
+  const update_rich_diff = () => {
+    const rd = G.enrichen(Model.viewGraph(store), s => config.order_changing_labels[s])
+    store.at('rich_diff').set(rd)
+  }
+
+  store
+    .at('graph')
+    .at('now')
+    .ondiff(g => {
+      Model.check_invariant(store)(g)
+      const restricted = Model.deselect_removed_ids(store, store.get().selected)
+      restricted && store.update(restricted)
+      // Enrichen is expensive. Run once at every graph change and keep the result in state.
+      update_rich_diff()
+    })
+
   Store.location_connect(Model.locationStore(store))
 
   // Store graph in local storage unless there is a backend.
@@ -41,11 +58,6 @@ export function App(store: Store<Model.State>): () => VNode {
       .at('now')
       .storage_connect('swell-spaghetti-7')
 
-  store
-    .at('graph')
-    .at('now')
-    .ondiff(Model.check_invariant(store))
-
   store.at('mode').ondiff(mode => {
     // Reset/detect pseudonyms when switching to anonymization mode.
     mode === Model.modes.anonymization && Model.initPseudonymizations(store)
@@ -54,6 +66,8 @@ export function App(store: Store<Model.State>): () => VNode {
       target_text: mode == Model.modes.anonymization ? undefined : true,
       source_text: undefined,
     })
+    // Mode affects the viewed graph, so refresh rich diff.
+    update_rich_diff()
   })
 
   {
@@ -83,11 +97,6 @@ export function App(store: Store<Model.State>): () => VNode {
       store.update({graph: Undo.init(g)})
     }, 1000)
   }
-
-  store.at('graph').ondiff(() => {
-    const restricted = Model.deselect_removed_ids(store, store.get().selected)
-    restricted && store.update(restricted)
-  })
 
   Model.initialBackendFetch(store)
   Model.savePeriodicallyToBackend(store)
