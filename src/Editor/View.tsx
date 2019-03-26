@@ -45,7 +45,7 @@ const topStyle = typestyle.style({
     "header   header header"  ${header_height}
     "sidekick main   summary" 1fr
     "footer   footer footer"  ${footer_height}
-  / 185px     1fr    180px
+  / 185px     3fr    minmax(180px, 1fr)
   `,
   minHeight: '100%',
 
@@ -240,7 +240,6 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
   const graph = Model.graphStore(store)
   const readonly = Model.is_target_readonly(state.mode)
 
-  const g = Model.currentGraph(store)
   const visibleGraph = Model.visibleGraph(store)
 
   const advance = Model.make_history_advance_function(store)
@@ -373,7 +372,6 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
             onSelect={(ids, only) => Model.onSelect(store, ids, only)}
           />
         </div>
-        {ShowComment(store)}
         {state.show.validation && ShowMessages(store.at('validation_messages'))}
         {state.show.image_link && ImageWebserviceAddresses(visible_graph, Model.inAnonMode(state))}
         {state.show.graph && <pre className="box pre-box">{Utils.show(visibleGraph)}</pre>}
@@ -569,7 +567,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
           {main()}
         </DropZone>
       </div>
-      {state.mode == Model.modes.anonymization && <div className="summary">{Summary(g)}</div>}
+      {Summary(store)}
       <div className="footer box">
         <span style={{opacity: 0.8, fontSize: '0.9em'}}>
           swell-editor{' '}
@@ -656,25 +654,53 @@ function ShowMessages(store: Store<Model.Message[]>) {
   ))
 }
 
-function ShowComment(store: Store<Model.State>) {
-  return G.token_ids_to_edges(Model.currentGraph(store), Object.keys(store.at('selected').get()))
-    .filter(edge => edge.labels.some(G.is_comment_label))
-    .map(edge => (
-      <div className={'comment-pane vsep'} key={edge.id}>
-        <em>Comment:</em>
+function Summary(store: Store<Model.State>) {
+  return (
+    <div className="summary">
+      {store.get().mode == Model.modes.anonymization
+        ? AnonEntities(Model.currentGraph(store))
+        : ShowComments(store)}
+    </div>
+  )
+}
+
+function ShowComments(store: Store<Model.State>) {
+  const g = Model.currentGraph(store)
+  const setGraphComment = Utils.debounce(1000, (comment: string) =>
+    Model.graphStore(store).modify(g => G.set_comment(g, comment))
+  )
+  const setEdgeComment = Utils.debounce(1000, (edgeId: string, comment: string) =>
+    Model.graphStore(store).modify(g => G.comment_edge(g, edgeId, comment))
+  )
+  if (G.empty(g)) return null
+  return (
+    <div>
+      <div className="comment-pane box vsep">
+        <p>Document comment:</p>
         <textarea
           // Prevent refocusing to label filter field.
           className={'keepfocus'}
           // Avoid deselecting.
           onMouseDown={ev => ev.stopPropagation()}
-          onChange={ev =>
-            Model.graphStore(store).modify(g => G.comment_edge(g, edge.id, ev.target.value))
-          }
-          key={edge.id}
-          defaultValue={edge.comment}
+          onChange={ev => setGraphComment(ev.target.value)}
+          defaultValue={g.comment}
         />
       </div>
-    ))
+      {G.token_ids_to_edges(g, Object.keys(store.at('selected').get()))
+        .filter(edge => edge.labels.some(G.is_comment_label))
+        .map(edge => (
+          <div className="comment-pane box vsep" key={edge.id}>
+            <p>Edge comment:</p>
+            <textarea
+              className={'keepfocus'}
+              onMouseDown={ev => ev.stopPropagation()}
+              onChange={ev => setEdgeComment(edge.id, ev.target.value)}
+              defaultValue={edge.comment}
+            />
+          </div>
+        ))}
+    </div>
+  )
 }
 
 function ImageWebserviceAddresses(g: G.Graph, anon_mode: boolean) {
@@ -694,7 +720,7 @@ function ImageWebserviceAddresses(g: G.Graph, anon_mode: boolean) {
   )
 }
 
-export function Summary(g: G.Graph) {
+export function AnonEntities(g: G.Graph) {
   return (
     <div>
       {record.traverse(Model.number_edge_map(g), (es, label) => (
