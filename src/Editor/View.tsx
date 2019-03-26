@@ -659,8 +659,8 @@ function Summary(store: Store<Model.State>) {
     <div className="summary">
       {ShowComments(store)}
       {store.get().mode === Model.modes.anonymization
-        ? AnonEntities(Model.currentGraph(store))
-        : LabelUsage(store)}
+        ? LabelUsage(store, l => /^\d+$/.test(l), 'source')
+        : LabelUsage(store, l => label_taxonomy(l) !== Model.modes.anonymization)}
     </div>
   )
 }
@@ -721,40 +721,23 @@ function ImageWebserviceAddresses(g: G.Graph, anon_mode: boolean) {
   )
 }
 
-export function AnonEntities(g: G.Graph) {
-  return (
-    <div>
-      {record.traverse(Model.number_edge_map(g), (es, label) => (
-        <div key={label} className="box vsep">
-          <div className={GV.BorderCell}>
-            <div>{label}</div>
-          </div>
-          <ul>
-            {es.map(e => (
-              <li key={e.id}>
-                {G.partition_ids(g)(e.ids)['source'].map(t => <span key={t.id}>{t.text}</span>)}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 /** Lists edges for each non-anonymization label in use. */
-export function LabelUsage(store: Store<Model.State>) {
+export function LabelUsage(
+  store: Store<Model.State>,
+  label_filter?: (l: string) => boolean,
+  side?: G.Side
+) {
   const g = Model.currentGraph(store)
   return (
     <div>
       {record.traverse(
-        G.label_edge_map(g, l => label_taxonomy(l) !== Model.modes.anonymization),
+        G.label_edge_map(g, label_filter),
         (es, label) => (
           <div key={label} className="box vsep">
             <div className={GV.BorderCell}>
               <div>{label}</div>
             </div>
-            <ul>{es.map(e => <li key={e.id}>{Edge(store, e.id)}</li>)}</ul>
+            <ul>{es.map(e => <li key={e.id}>{Edge(store, e.id, side)}</li>)}</ul>
           </div>
         ),
         true
@@ -764,13 +747,17 @@ export function LabelUsage(store: Store<Model.State>) {
 }
 
 /** Visualizes an edge. */
-export function Edge(store: Store<Model.State>, id: string) {
+export function Edge(store: Store<Model.State>, id: string, side?: G.Side) {
   const g = Model.currentGraph(store)
-  const e = g.edges[id]
-  const text = (ts: G.Token[]) => G.text(ts.filter(t => e.ids.includes(t.id)))
+  const in_edge = (t: G.Token) => g.edges[id].ids.includes(t.id)
+  const tokens = {
+    source: g.source.filter(in_edge),
+    target: g.target.filter(in_edge),
+  }
+  const tids = side ? tokens[side].map(t => t.id) : g.edges[id].ids
   return (
-    <span onClick={() => Model.setSelection(store, e.ids)}>
-      {text(g.source)} — {text(g.target)}
+    <span onClick={() => Model.setSelection(store, tids)}>
+      {side ? G.text(tokens[side]) : `${G.text(tokens.source).trim()}—${G.text(tokens.target)}`}
     </span>
   )
 }
