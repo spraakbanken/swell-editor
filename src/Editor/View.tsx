@@ -12,7 +12,7 @@ import {Close, Button, VNode} from '../ReactUtils'
 import * as Model from './Model'
 import {DropZone} from './DropZone'
 import * as CM from './CodeMirror'
-import {config, label_sort, taxonomy_has_label} from './Config'
+import {config, label_sort, taxonomy_has_label, label_taxonomy} from './Config'
 
 import * as EditorTypes from '../EditorTypes'
 
@@ -657,9 +657,10 @@ function ShowMessages(store: Store<Model.Message[]>) {
 function Summary(store: Store<Model.State>) {
   return (
     <div className="summary">
-      {store.get().mode == Model.modes.anonymization
+      {ShowComments(store)}
+      {store.get().mode === Model.modes.anonymization
         ? AnonEntities(Model.currentGraph(store))
-        : ShowComments(store)}
+        : LabelUsage(store)}
     </div>
   )
 }
@@ -738,5 +739,38 @@ export function AnonEntities(g: G.Graph) {
         </div>
       ))}
     </div>
+  )
+}
+
+/** Lists edges for each non-anonymization label in use. */
+export function LabelUsage(store: Store<Model.State>) {
+  const g = Model.currentGraph(store)
+  return (
+    <div>
+      {record.traverse(
+        G.label_edge_map(g, l => label_taxonomy(l) !== Model.modes.anonymization),
+        (es, label) => (
+          <div key={label} className="box vsep">
+            <div className={GV.BorderCell}>
+              <div>{label}</div>
+            </div>
+            <ul>{es.map(e => <li key={e.id}>{Edge(store, e.id)}</li>)}</ul>
+          </div>
+        ),
+        true
+      )}
+    </div>
+  )
+}
+
+/** Visualizes an edge. */
+export function Edge(store: Store<Model.State>, id: string) {
+  const g = Model.currentGraph(store)
+  const e = g.edges[id]
+  const text = (ts: G.Token[]) => G.text(ts.filter(t => e.ids.includes(t.id)))
+  return (
+    <span onClick={() => Model.setSelection(store, e.ids)}>
+      {text(g.source)} — {text(g.target)}
+    </span>
   )
 }
