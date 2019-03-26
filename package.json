@@ -79,7 +79,7 @@
     "build":
       "rm -rf dist/*; parcel build --public-url ./ $(ts-node src/generate_index.ts ${App:-Editor})",
     "deploy":
-      "yarn run build && scp dist/* fkswell@k2.spraakdata.gu.se:/export/htdocs_sb/swell/dev",
+      "yarn run build && rsync -avzc --delete-after dist/ fkswell@k2.spraakdata.gu.se:/export/htdocs_sb/swell/dev",
     "doctest:generate": "doctest-ts src/*ts* src/*/*ts* --mocha",
     "pretest": "yarn run doctest:clean && yarn run doctest:generate",
     "test": "mocha --require ts-node/register {src,src/*,test}/*test.ts*",
