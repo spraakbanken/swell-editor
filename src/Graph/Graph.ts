@@ -185,11 +185,11 @@ export function empty(g: Graph): boolean {
 /** Change or remove the graph-wide comment.
 
   const g0 = init('apa bepa')
-  const g1 = set_comment(g, 'foo')
+  const g1 = set_comment(g0, 'foo')
   g1.comment // => 'foo'
-  const g2 = set_comment(g)
+  const g2 = set_comment(g1)
   g2.comment // => undefined
-  const g3 = set_comment(g, '')
+  const g3 = set_comment(g1, '')
   g3.comment // => undefined
  */
 export function set_comment(g: Graph, c?: string): Graph {
