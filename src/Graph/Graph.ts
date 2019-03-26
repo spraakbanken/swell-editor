@@ -143,6 +143,11 @@ export function check_invariant(g: Graph): 'ok' | {violation: string; g: Graph} 
       })
     }
     R.equals(g, align(g)) || Utils.raise('Graph not automatically aligned')
+    g.comment !== '' || Utils.raise('Graph comment must not be empty string')
+    record.forEach(
+      g.edges,
+      e => e.comment !== '' || Utils.raise('Edge comment must not be empty string')
+    )
   } catch (e) {
     // console.error(e)
     // console.error(JSON.stringify(g, undefined, 2))

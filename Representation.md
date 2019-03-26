@@ -7,6 +7,7 @@ interface Graph {
   source: Token[]
   target: Token[]
   edges: Record<string, Edge>
+  comment?: string
 }
 
 interface Token {
@@ -24,6 +25,7 @@ interface Edge {
   labels: string[]
   /** is this manually or automatically aligned */
   manual: boolean
+  comment?: string
 }
 ```
 
@@ -36,6 +38,7 @@ The graph is subject to an invariant (checked with the function `check_invariant
 * each tokens is referenced in one edge
 * text tokens match the regex `/\s*\S+\s+/`
 * the graph is aligned
+* each of the graph comment and edge comments are non-empty strings if present
 
 ## Example
 
