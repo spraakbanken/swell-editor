@@ -396,8 +396,12 @@ export interface TaxonomyFind {
 }
 
 export function find_label(label: string): TaxonomyFind | undefined {
-  if (!isNaN(Number(label))) {
+  const order = label_order(label)
+  if (order === LabelOrder.NUM) {
     return {taxonomy: 'anonymization', group: 'Number', entry: {label, desc: 'number'}}
+  }
+  if (order === LabelOrder.TEMP) {
+    return undefined
   }
   for (let taxonomy in config.taxonomy) {
     for (let group of (config.taxonomy as {[mode: string]: Taxonomy})[taxonomy]) {

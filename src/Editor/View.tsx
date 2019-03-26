@@ -728,13 +728,14 @@ export function LabelUsage(
   side?: G.Side
 ) {
   const g = Model.currentGraph(store)
+  const obs_class = (labels: string[]) => (labels.some(l => -1 != l.indexOf('!')) ? ' OBS ' : '')
   return (
     <div>
       {record.traverse(
         G.label_edge_map(g, label_filter),
         (es, label) => (
           <div key={label} className="box vsep">
-            <div className={GV.BorderCell}>
+            <div className={GV.BorderCell + obs_class([label])}>
               <div>{label}</div>
             </div>
             <ul>{es.map(e => <li key={e.id}>{Edge(store, e.id, side)}</li>)}</ul>
