@@ -117,7 +117,7 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
       return cursor
     }
 
-    const liberal_re = (s: string) => new RegExp('^' + Utils.str_map(s, c => c + '-?').join(''), 'i')
+    const liberal_re = (s: string) => new RegExp('^' + s.split('').join('-?'), 'i')
 
     const entry_span = (label: string, c?: number) => {
       const classes = (cursor == c ? ' cursor' : '') + (isSelected(label) ? ' selected' : '')
@@ -126,7 +126,7 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
           className={'entry' + classes}
           onMouseOver={evt => {
             // Only on mouse move, not when triggered by scroll.
-            if (c && (evt.nativeEvent.movementX || evt.nativeEvent.movementY))
+            if (c && (!evt || evt.nativeEvent.movementX || evt.nativeEvent.movementY))
               this.setState({cursor: c})
           }}
           onMouseDown={e => {
