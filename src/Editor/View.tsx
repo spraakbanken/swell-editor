@@ -110,11 +110,9 @@ const topStyle = typestyle.style({
       border: '1px solid #ddd',
       height: 'auto',
       paddingBottom: '1em',
+      minWidth: '250px',
       lineHeight: '1.5em',
       fontFamily: "'Lato', sans-serif",
-    },
-    '& .CodeMirror': {
-      minWidth: '250px',
     },
     '& .CodeMirror .cm-resize-handle': {
       display: 'block',

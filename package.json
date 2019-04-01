@@ -59,7 +59,7 @@
     "lato-font": "^3.0.0",
     "mocha": "^5.1.1",
     "nyc": "^11.7.1",
-    "parcel-bundler": "1.10.0",
+    "parcel-bundler": "1.7.0",
     "parcel-plugin-typescript": "^0.7.0",
     "prettier": "^1.12.1",
     "proptest": "^0.0.4",
