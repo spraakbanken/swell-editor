@@ -168,10 +168,10 @@ export function savePeriodicallyToBackend(store: Store<State>) {
     .at('graph')
     .at('now')
     .ondiff((g1, g2) => G.equal(g1, g2) || debounced_save())
-  store.at('done').ondiff((done, old_done) => {
-    done && !old_done && validateState(store)
+  store.at('done').ondiff(done => {
+    done && validateState(store)
     const state = store.get()
-    if (state.backend && state.essay && record.size(state.errors) == 0) {
+    if (state.backend && state.essay && record.size(state.errors) == 0 && !inAnonfixMode(state)) {
       Utils.POST(
         `${state.backend}${state.essay}/status`,
         {done},
