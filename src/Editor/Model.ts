@@ -176,8 +176,10 @@ export function savePeriodicallyToBackend(store: Store<State>) {
         `${state.backend}${state.essay}/status`,
         {done},
         () => void 0,
-        (err, code) =>
+        (err, code) => {
           flagError(store, `Error ${code} when setting done status: ${Utils.show(err)}`)
+          store.at('done').set(!done)
+        }
       )
     }
   })
