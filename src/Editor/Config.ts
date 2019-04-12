@@ -363,9 +363,7 @@ const docs: Record<string, Record<string, string>> = {
     'normalization guidelines': doc_url('Normalization_guidelines'),
   },
   correctannot: {
-    'annotation guidelines': doc_url(
-      'SweLL correction annotation_guidelines and code book (SweLL-taxonomy)'
-    ),
+    'annotation guidelines': doc_url('Correction-annotation_guidelines-and-codebook'),
   },
 }
 
