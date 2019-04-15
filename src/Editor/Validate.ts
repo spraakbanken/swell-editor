@@ -16,8 +16,8 @@ export function Rule<T>(name: string, check: Check<T>): Rule<T> {
 /** The validation check function takes the data to validate and a context object. */
 type Check<T> = (data: T) => Result[]
 
-/** The validation will either pass, or fail with a message. */
-export type Result = {severity: Severity; message: string}
+/** The validation will either pass, or fail with a pointer to the subject. */
+export type Result = {severity: Severity; subject: string}
 
 export enum Severity {
   WARNING = 'warning',
@@ -35,11 +35,11 @@ export function edge_check<S>(
     if (!cond(state)) return []
     // Emit an error for each edge where the edge condition fails.
     const emits: Result[] = []
+    const partition_ids = G.partition_ids(graph)
     record.map(graph.edges, edge => {
-      const {source, target} = G.partition_ids(graph)(edge.ids)
+      const {source, target} = partition_ids(edge.ids)
       if (edge && check(edge, source, target)) {
-        // Use the supplied resulter, or create an Error by default.
-        emits.push({message: `"${G.text(source).trim()}"`, severity})
+        emits.push({subject: edge.id, severity})
       }
     })
     return emits

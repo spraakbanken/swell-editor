@@ -372,7 +372,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
             onSelect={(ids, only) => Model.onSelect(store, ids, only)}
           />
         </div>
-        {state.show.validation && ShowMessages(store.at('validation_messages'))}
+        {state.show.validation && ShowMessages(store)}
         {state.show.image_link && ImageWebserviceAddresses(visible_graph, Model.inAnonMode(state))}
         {state.show.graph && <pre className="box pre-box">{Utils.show(visibleGraph)}</pre>}
         {state.show.diff && (
@@ -634,8 +634,9 @@ function ShowErrors(store: Store<Record<string, true>>) {
   ))
 }
 
-function ShowMessages(store: Store<Model.Message[]>) {
-  return store.get().map((message, i) => (
+function ShowMessages(store: Store<Model.State>) {
+  const messageStore = store.at('validation_messages')
+  return messageStore.get().map((message, i) => (
     <div className={message.severity} key={i}>
       {// Errors should prevent action, so error messages indicate an error that has not actually happened.
       // They will disappear on the next validation, but we should also let the user dismiss them manually.
@@ -643,13 +644,15 @@ function ShowMessages(store: Store<Model.Message[]>) {
         <Close
           title="dismiss"
           onMouseDown={e => {
-            store.modify(ms => ms.slice(0, i).concat(ms.slice(i + 1)))
+            messageStore.modify(ms => ms.slice(0, i).concat(ms.slice(i + 1)))
             e.preventDefault()
           }}
         />
       )}
 
       {message.message}
+
+      {String(message.subject).indexOf('e-') === 0 && <span>: {Edge(store, message.subject)}</span>}
     </div>
   ))
 }
@@ -721,7 +724,7 @@ function ImageWebserviceAddresses(g: G.Graph, anon_mode: boolean) {
   )
 }
 
-/** Lists edges for each non-anonymization label in use. */
+/** Lists edges for each label in use. */
 export function LabelUsage(
   store: Store<Model.State>,
   label_filter?: (l: string) => boolean,
@@ -757,8 +760,12 @@ export function Edge(store: Store<Model.State>, id: string, side?: G.Side) {
   }
   const tids = side ? tokens[side].map(t => t.id) : g.edges[id].ids
   return (
-    <span onClick={() => Model.setSelection(store, tids)}>
-      {side ? G.text(tokens[side]) : `${G.text(tokens.source).trim()}—${G.text(tokens.target)}`}
+    <span
+      onClick={() => Model.setSelection(store, tids)}
+      style={{cursor: 'pointer', textDecoration: 'underline'}}>
+      {side
+        ? G.text(tokens[side])
+        : `${G.text(tokens.source).trim()}—${G.text(tokens.target).trim()}`}
     </span>
   )
 }

@@ -53,6 +53,7 @@ export interface State {
 
 export interface Message {
   message: string
+  subject?: any
   severity: Severity
 }
 
@@ -327,7 +328,7 @@ export function validateState(store: Store<State>, show?: boolean) {
   const graph = state.graph.now
   validationRules.forEach(rule => {
     rule.check({state, graph}).forEach(result => {
-      flagValidationMessage(store, `${rule.name}: ${result.message}`, result.severity)
+      flagValidationMessage(store, rule.name, result.severity, result.message)
     })
   })
   show !== undefined && store.at('show').update({validation: show ? true : undefined})
@@ -356,8 +357,13 @@ export function flagError(store: Store<State>, msg: string) {
   store.at('errors').update({[msg]: true})
 }
 
-export function flagValidationMessage(store: Store<State>, message: string, severity: Severity) {
-  store.at('validation_messages').modify(msgs => [...msgs, {message, severity}])
+export function flagValidationMessage(
+  store: Store<State>,
+  message: string,
+  severity: Severity,
+  subject?: any
+) {
+  store.at('validation_messages').modify(msgs => [...msgs, {message, severity, subject}])
 }
 
 export function clearValidationMessages(store: Store<State>) {
