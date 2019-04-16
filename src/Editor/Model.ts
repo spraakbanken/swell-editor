@@ -328,7 +328,7 @@ export function validateState(store: Store<State>, show?: boolean) {
   const graph = state.graph.now
   validationRules.forEach(rule => {
     rule.check({state, graph}).forEach(result => {
-      flagValidationMessage(store, rule.name, result.severity, result.message)
+      flagValidationMessage(store, rule.name, result.severity, result.subject)
     })
   })
   show !== undefined && store.at('show').update({validation: show ? true : undefined})
