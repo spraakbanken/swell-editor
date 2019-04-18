@@ -78,7 +78,12 @@ export function anonymize(graph: G.Graph, pstore: Store<Pseudonyms>): G.Graph {
       target.push(...pi(e.ids).target)
     }
   })
-  return {source: g.source, target, edges: G.edge_record(edges)}
+  return {
+    ...G.clone(g),
+    source: g.source,
+    target,
+    edges: G.edge_record(edges),
+  }
 }
 
 export function anonymize_when(
