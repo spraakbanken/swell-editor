@@ -330,7 +330,8 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
     const rich_diff = state.rich_diff && state.rich_diff.filter(d => visible_graph.edges[d.id])
     const units = Model.compactStore(store)
     const label_mode = (mode: string, label: string) =>
-      mode == Model.modes.anonymization ? is_anon_label(label) : taxonomy_has_label(mode, label)
+      G.is_comment_label(label) ||
+      (mode == Model.modes.anonymization ? is_anon_label(label) : taxonomy_has_label(mode, label))
 
     return (
       <div className="content">
