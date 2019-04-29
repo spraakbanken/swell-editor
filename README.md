@@ -1,6 +1,6 @@
 # SweLL normalization editor
 
-This is an editor for normalising, i.e. error annotating, learner texts.
+This is an editor for pseudonymizing, normalising, and correction annotating learner texts.
 
 Actually it is a glorified diff editor which makes a word-aligned parallel text, like this:
 
