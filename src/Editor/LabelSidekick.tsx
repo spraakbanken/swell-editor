@@ -9,7 +9,7 @@ import * as record from '../record'
 import * as ReactUtils from '../ReactUtils'
 
 import * as Model from './Model'
-import {Taxonomy, label_order, LabelOrder} from './Config'
+import {Taxonomy} from './Config'
 
 const LabelSidekickStyle = style({
   ...Utils.debugName('LabelSidekickStyle'),
@@ -59,6 +59,7 @@ interface DropdownProps {
   onChange(label: string, value: boolean): void
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
   mode: Model.Mode
+  extraInput?: {get: () => string | undefined; set: (value: string) => void}
 }
 interface DropdownState {
   cursor: number
@@ -176,6 +177,7 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
 
     const input = (
       <input
+        onMouseDown={e => e.currentTarget.focus()}
         ref={e => {
           if (e && !/\bkeepfocus\b/.test(document.activeElement.className)) {
             const x = window.scrollX
@@ -233,9 +235,21 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
       />
     )
 
+    const extraInput = this.props.extraInput ? (
+      <input
+        className={'keepfocus'}
+        placeholder="Extra input"
+        ref={e => e && !/\bkeepfocus\b/.test(document.activeElement.className) && e.focus()}
+        onMouseDown={e => e.currentTarget.focus()}
+        onChange={e => this.props.extraInput!.set(e.target.value)}
+        defaultValue={this.props.extraInput.get()}
+      />
+    ) : null
+
     return (
       <React.Fragment>
         {input}
+        {extraInput}
         {list}
       </React.Fragment>
     )
@@ -246,10 +260,12 @@ export function LabelSidekick({
   store,
   taxonomy,
   mode,
+  extraInput,
 }: {
   store: Store<Model.State>
   taxonomy: Taxonomy
   mode: Model.Mode
+  extraInput?: {get: () => string | undefined; set: (value: string) => void}
 }) {
   const graph = store.at('graph').at('now')
   const selected = Object.keys(store.get().selected)
@@ -294,6 +310,7 @@ export function LabelSidekick({
             }
             // e.preventDefault()
           }}
+          extraInput={extraInput}
         />
       </div>
     )

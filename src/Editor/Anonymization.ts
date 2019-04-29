@@ -46,7 +46,11 @@ export function init_pstore(graph: G.Graph): Pseudonyms {
   ptexts[3] !== ptexts[0] // => true
   Utils.shallow_array_eq(g.source, p.source) // => true
 */
-export function anonymize(graph: G.Graph, pstore: Store<Pseudonyms>): G.Graph {
+export function anonymize(
+  graph: G.Graph,
+  pstore: Store<Pseudonyms>,
+  pmod?: (edge_id: string, src: string, labels: string[]) => {src: string; labels: string[]}
+): G.Graph {
   const g = G.clone(graph)
   let i = G.next_id(g)
   const em = G.edge_map(g)
@@ -64,8 +68,11 @@ export function anonymize(graph: G.Graph, pstore: Store<Pseudonyms>): G.Graph {
     if (anonLabels.length) {
       const source_text = G.text(pi(e.ids).source)
       // Ensure a pseudonymization in the store.
-      const pp = pstore.at(anonLabels.join(' '))
-      if (pp.get() === undefined) pp.set(pseudonymize(source_text, anonLabels))
+      const {src, labels} = pmod
+        ? pmod(source_token.id, source_text, anonLabels)
+        : {src: source_text, labels: anonLabels}
+      const pp = pstore.at(labels.join(' '))
+      if (pp.get() === undefined) pp.set(pseudonymize(src, labels))
       const ts = G.tokenize(pp.get()).map(text => G.Token(Utils.end_with_space(text), 't' + i++))
       edges.push(
         G.Edge(
@@ -91,8 +98,12 @@ export function anonymize(graph: G.Graph, pstore: Store<Pseudonyms>): G.Graph {
 
 export function anonymize_when(
   b?: boolean
-): (graph: G.Graph, pstore: Store<Pseudonyms>) => G.Graph {
-  return (graph, pstore) => (b ? anonymize(graph, pstore) : graph)
+): (
+  graph: G.Graph,
+  pstore: Store<Pseudonyms>,
+  pmod?: (edge_id: string, src: string, labels: string[]) => {src: string; labels: string[]}
+) => G.Graph {
+  return (graph, pstore, pmod?) => (b ? anonymize(graph, pstore, pmod) : graph)
 }
 
 /** Apply anonymization fix-up, by copying new pseudonymizations to source. */

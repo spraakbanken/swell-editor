@@ -39,6 +39,8 @@ export interface State {
 
   /** Pseudonyms are remembered by label combination, e.g. "city 2" => "Zürich". */
   readonly pseudonyms: Pseudonyms
+  /** Extra arguments for pseudonymization, which are not labels. */
+  readonly pseudonym_args: Record<string, string[]>
 
   readonly backurl?: string
   readonly backend?: string
@@ -229,6 +231,7 @@ export const init: State = {
     target_text: true,
   },
   pseudonyms: {},
+  pseudonym_args: {},
 }
 
 export function check_invariant(store: Store<State>): (g: G.Graph) => void {
@@ -334,10 +337,10 @@ export function validateState(store: Store<State>, show?: boolean) {
   show !== undefined && store.at('show').update({validation: show ? true : undefined})
 }
 
-/** Make changes, validate new state and revert changes if the result is invalid. */
-export function validation_transaction(store: Store<State>, f: (s: Store<State>) => void): void {
+/** Make changes, validate new state and revert changes if the result is invalid, returns whether it is valid. */
+export function validation_transaction(store: Store<State>, f: (s: Store<State>) => void): boolean {
   // Avoid triggering listeners until we're done.
-  store.transaction(() => {
+  return store.transaction(() => {
     // Remember ingoing state.
     const prev = store.get()
     // Perform changes.
@@ -350,6 +353,7 @@ export function validation_transaction(store: Store<State>, f: (s: Store<State>)
     if (errors.length > 0) {
       store.set({...prev, validation_messages})
     }
+    return errors.length === 0
   })
 }
 
@@ -475,8 +479,12 @@ export function initPseudonymizations(store: Store<State>): void {
 /** The graph, possibly transformed to be viewed (anonymized). */
 // TODO Store result in store, to avoid executing often?
 export function viewGraph(store: Store<State>) {
+  const pmod = (token_id: string, src: string, labels: string[]) => ({
+    src,
+    labels: labels.concat(store.get().pseudonym_args[token_id] || []),
+  })
   return inAnonMode(store.get())
-    ? anonymize(G.sort_edge_labels(currentGraph(store), label_order), store.at('pseudonyms'))
+    ? anonymize(G.sort_edge_labels(currentGraph(store), label_order), store.at('pseudonyms'), pmod)
     : currentGraph(store)
 }
 

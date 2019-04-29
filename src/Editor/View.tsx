@@ -12,7 +12,7 @@ import {Close, Button, VNode} from '../ReactUtils'
 import * as Model from './Model'
 import {DropZone} from './DropZone'
 import * as CM from './CodeMirror'
-import {config, label_sort, taxonomy_has_label, label_taxonomy} from './Config'
+import {config, label_sort, taxonomy_has_label, label_taxonomy, label_args} from './Config'
 
 import * as EditorTypes from '../EditorTypes'
 
@@ -541,6 +541,12 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
     )
   }
 
+  const selected_edges = G.token_ids_to_edges(visibleGraph, Object.keys(store.get().selected))
+  const selected_only_edge = selected_edges.length === 1 ? selected_edges[0] : undefined
+  const selected_only_source = selected_only_edge
+    ? G.partition_ids(visibleGraph)(selected_only_edge.ids).source[0].id
+    : undefined
+
   return state.manual === 'print' ? (
     full_manual()
   ) : (
@@ -550,7 +556,26 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
       onMouseDown={() => show_store('options').set(undefined)}>
       <div className="header box">{header()}</div>
       <div className="sidekick">
-        <LabelSidekick store={store} taxonomy={state.taxonomy[state.mode]} mode={state.mode} />
+        <LabelSidekick
+          store={store}
+          taxonomy={state.taxonomy[state.mode]}
+          mode={state.mode}
+          extraInput={
+            selected_only_edge &&
+            selected_only_source &&
+            selected_only_edge.labels.some(l => !!label_args[l])
+              ? {
+                  get: () => {
+                    const args = store.get().pseudonym_args[selected_only_source]
+                    return args ? args.join(' ') : undefined
+                  },
+                  set: (value: string) => {
+                    store.at('pseudonym_args').update({[selected_only_source]: value.split(' ')})
+                  },
+                }
+              : undefined
+          }
+        />
       </div>
       <div className="main" onMouseDown={e => Model.deselect(store)}>
         <DropZone

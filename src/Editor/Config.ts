@@ -33,6 +33,10 @@ const order_changing_labels: Record<string, true> = {
   OINV: true,
 }
 
+export const label_args: Record<string, number> = {
+  age_string: 1,
+}
+
 export type TaxonomyGroup = {
   group: string
   entries: {
