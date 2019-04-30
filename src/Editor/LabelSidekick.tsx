@@ -9,7 +9,7 @@ import * as record from '../record'
 import * as ReactUtils from '../ReactUtils'
 
 import * as Model from './Model'
-import {Taxonomy, label_order, LabelOrder} from './Config'
+import {Taxonomy} from './Config'
 
 const LabelSidekickStyle = style({
   ...Utils.debugName('LabelSidekickStyle'),
@@ -59,6 +59,7 @@ interface DropdownProps {
   onChange(label: string, value: boolean): void
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
   mode: Model.Mode
+  extraInput?: {get: () => string | undefined; set: (value: string) => void}
 }
 interface DropdownState {
   cursor: number
@@ -176,6 +177,7 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
 
     const input = (
       <input
+        onMouseDown={e => e.currentTarget.focus()}
         ref={e => {
           if (e && !/\bkeepfocus\b/.test(document.activeElement.className)) {
             const x = window.scrollX
@@ -185,12 +187,19 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
           }
         }}
         placeholder={
-          mode == Model.modes.anonymization ? 'Filter / numeric label' : 'Enter filter text'
+          mode == Model.modes.anonymization
+            ? this.props.extraInput
+              ? 'Extra input'
+              : 'Filter / numeric label'
+            : 'Enter filter text'
         }
         onKeyDown={e => {
           const t = e.target as HTMLInputElement
           if (e.key === 'Enter' || e.key === ' ') {
-            if (isDigit(t.value)) {
+            if (this.props.extraInput) {
+              this.props.extraInput.set(t.value)
+              t.value = ''
+            } else if (isDigit(t.value)) {
               toggle(t.value)
               t.value = ''
             } else {
@@ -246,10 +255,12 @@ export function LabelSidekick({
   store,
   taxonomy,
   mode,
+  extraInput,
 }: {
   store: Store<Model.State>
   taxonomy: Taxonomy
   mode: Model.Mode
+  extraInput?: {get: () => string | undefined; set: (value: string) => void}
 }) {
   const graph = store.at('graph').at('now')
   const selected = Object.keys(store.get().selected)
@@ -294,6 +305,7 @@ export function LabelSidekick({
             }
             // e.preventDefault()
           }}
+          extraInput={extraInput}
         />
       </div>
     )
