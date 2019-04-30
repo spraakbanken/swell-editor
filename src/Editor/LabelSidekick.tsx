@@ -187,12 +187,19 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
           }
         }}
         placeholder={
-          mode == Model.modes.anonymization ? 'Filter / numeric label' : 'Enter filter text'
+          mode == Model.modes.anonymization
+            ? this.props.extraInput
+              ? 'Extra input'
+              : 'Filter / numeric label'
+            : 'Enter filter text'
         }
         onKeyDown={e => {
           const t = e.target as HTMLInputElement
           if (e.key === 'Enter' || e.key === ' ') {
-            if (isDigit(t.value)) {
+            if (this.props.extraInput) {
+              this.props.extraInput.set(t.value)
+              t.value = ''
+            } else if (isDigit(t.value)) {
               toggle(t.value)
               t.value = ''
             } else {
@@ -235,21 +242,9 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
       />
     )
 
-    const extraInput = this.props.extraInput ? (
-      <input
-        className={'keepfocus'}
-        placeholder="Extra input"
-        ref={e => e && !/\bkeepfocus\b/.test(document.activeElement.className) && e.focus()}
-        onMouseDown={e => e.currentTarget.focus()}
-        onChange={e => this.props.extraInput!.set(e.target.value)}
-        defaultValue={this.props.extraInput.get()}
-      />
-    ) : null
-
     return (
       <React.Fragment>
         {input}
-        {extraInput}
         {list}
       </React.Fragment>
     )
