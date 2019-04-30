@@ -70,6 +70,8 @@ export function App(store: Store<Model.State>): () => VNode {
     update_rich_diff()
   })
 
+  store.at('pseudonym_args').ondiff(() => update_rich_diff())
+
   {
     const state = store.get()
     const page = state.manual

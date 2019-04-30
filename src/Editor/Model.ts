@@ -7,7 +7,7 @@ import * as record from '../record'
 
 import * as Manual from '../Doc/Manual'
 
-import {Taxonomy, config, label_order, LabelOrder, taxonomy_has_label} from './Config'
+import {Taxonomy, config, label_order, LabelOrder, taxonomy_has_label, label_args} from './Config'
 import {Severity, Rule, edge_check} from './Validate'
 import {init_pstore, anonymize, Pseudonyms, is_anon_label} from './Anonymization'
 
@@ -573,7 +573,8 @@ export function setLabel(store: Store<State>, token_ids: string[], label: string
         const match = Object.keys(
           record.filter(nem, nes => nes.some(ne => edge_source(ne) == edge_source(e)))
         )[0]
-        graph.modify(g => G.modify_labels(g, e.id, l => [...l, String(match ? match : ++maxnum)]))
+        label_args[label] ||
+          graph.modify(g => G.modify_labels(g, e.id, l => [...l, String(match ? match : ++maxnum)]))
       })
     } else if (!value && labels.length <= 1) {
       // When there was only one label and we are removing it, revert the connection made before.
