@@ -207,7 +207,11 @@ export const modes: Record<Mode, Mode> = {
 }
 
 export function mode_label(mode: Mode): string {
-  return mode == modes.correctannot ? 'correction annotation' : mode
+  return {
+    [modes.anonymization]: 'pseudonymization',
+    [modes.normalization]: 'normalization',
+    [modes.correctannot]: 'correction annotation',
+  }[mode]
 }
 
 /** Are we limited to tagging, and not allowed to edit target text? */
