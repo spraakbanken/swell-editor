@@ -468,7 +468,8 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
             {Button('redo', '', history.redo, history.canRedo())}
           </div>
           <div style={{fontWeight: 'bold'}}>
-            Svala {Model.mode_label(state.mode)} {state.essay ? `– essay ${state.essay}` : ''}
+            Svala {Model.mode_label(state.mode)} {state.essay ? `– essay ${state.essay}` : ''}{' '}
+            {!Model.can_modify(state).state && '(read-only)'}
           </div>
           <div>
             {!!state.backurl && (
@@ -575,6 +576,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
                 }
               : undefined
           }
+          disabled={!Model.can_modify(state).state}
         />
       </div>
       <div className="main" onMouseDown={e => Model.deselect(store)}>
@@ -714,6 +716,7 @@ function ShowComments(store: Store<Model.State>) {
           onMouseDown={ev => ev.stopPropagation()}
           onChange={ev => setGraphComment(ev.target.value)}
           defaultValue={g.comment}
+          disabled={!Model.can_modify(store.get()).state}
         />
       </div>
       {G.token_ids_to_edges(g, Object.keys(store.at('selected').get()))
@@ -726,6 +729,7 @@ function ShowComments(store: Store<Model.State>) {
               onMouseDown={ev => ev.stopPropagation()}
               onChange={ev => setEdgeComment(edge.id, ev.target.value)}
               defaultValue={edge.comment}
+              disabled={!Model.can_modify(store.get()).state}
             />
           </div>
         ))}

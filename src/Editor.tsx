@@ -100,8 +100,7 @@ export function App(store: Store<Model.State>): () => VNode {
     }, 1000)
   }
 
-  Model.initialBackendFetch(store)
-  Model.savePeriodicallyToBackend(store)
+  Model.initialBackendFetch(store, () => Model.savePeriodicallyToBackend(store))
 
   const allowWhitespace: CM.ChangeCheck = change =>
     change.type == 'editor' &&

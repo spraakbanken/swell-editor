@@ -45,9 +45,10 @@ export interface State {
   readonly backurl?: string
   readonly backend?: string
   readonly essay?: string
+  readonly user?: number
 
   readonly start_mode?: Mode
-
+  readonly readonly?: boolean
   readonly version?: number
 
   readonly done?: boolean
@@ -71,12 +72,20 @@ export function disconnectBackend(store: Store<State>, k: () => void) {
   })
 }
 
-export function initialBackendFetch(store: Store<State>) {
+const essay_url = (state: State, endpoint = '') =>
+  `${state.backend}${state.essay}${state.user ? '/' + state.user : ''}${endpoint}`
+
+export const can_modify = (state: State) => ({
+  state: !state.readonly && !state.done,
+  done: !state.readonly,
+})
+
+export function initialBackendFetch(store: Store<State>, then: () => void) {
   const state = store.get()
   if (state.backend && state.essay) {
     function get(last_route: string, h: (res: any) => void) {
       Utils.GET(
-        `${state.backend}${state.essay}${last_route}`,
+        essay_url(state, last_route),
         res_str => {
           try {
             h(JSON.parse(res_str))
@@ -99,15 +108,16 @@ export function initialBackendFetch(store: Store<State>) {
         let state
         const graph =
           try_raw(res.raw) || ((state = JSON.parse(res.state)), try_raw(state.raw) || state)
-        console.log({version})
         store.update({
           graph: Undo.init(graph),
           version,
         })
+        store.update({readonly: !res.access_write})
         get('/status', res => {
           const done = res.done
           if (done !== undefined && typeof done == 'boolean') {
             store.update({done})
+            then()
           } else {
             flagError(store, `Invalid status in ${Utils.show(res)}`)
           }
@@ -131,7 +141,7 @@ export function save(store: Store<State>) {
     console.log('saving...')
     store.update({version: undefined})
     Utils.POST(
-      `${state.backend}${state.essay}/${state.version + 1}`,
+      essay_url(state, `/version/${state.version + 1}`),
       graph,
       res_str => {
         try {
@@ -156,7 +166,7 @@ export function save(store: Store<State>) {
 export function report(store: Store<State>, message: string) {
   const state = store.get()
   Utils.POST(
-    `${state.backend}${state.essay}/report`,
+    essay_url(state, '/report'),
     {message},
     () => {},
     (err, code) => flagError(store, `Error ${code} when reporting "${message}": ${Utils.show(err)}`)
@@ -165,7 +175,7 @@ export function report(store: Store<State>, message: string) {
 
 export function savePeriodicallyToBackend(store: Store<State>) {
   const debounced_save = Utils.debounce(1000, () => {
-    !inAnonfixMode(store.get()) && save(store)
+    !inAnonfixMode(store.get()) && !store.get().readonly && save(store)
   })
   store
     .at('graph')
@@ -176,9 +186,12 @@ export function savePeriodicallyToBackend(store: Store<State>) {
     const state = store.get()
     if (state.backend && state.essay && record.size(state.errors) == 0 && !inAnonfixMode(state)) {
       Utils.POST(
-        `${state.backend}${state.essay}/status`,
+        essay_url(state, '/status'),
         {done},
-        () => void 0,
+        res_str => {
+          const res = JSON.parse(res_str)
+          store.update({readonly: !res.access_write})
+        },
         (err, code) => {
           flagError(store, `Error ${code} when setting done status: ${Utils.show(err)}`)
           store.at('done').set(!done)
@@ -724,7 +737,7 @@ export function performAction(store: Store<State>, action: ActionOnSelected) {
 }
 
 const subkeys = <K extends string>(...ks: K[]): K[] => ks
-const location_keys = subkeys('manual', 'backurl', 'backend', 'essay', 'start_mode')
+const location_keys = subkeys('manual', 'backurl', 'backend', 'essay', 'start_mode', 'user')
 const base64_keys = subkeys('backurl', 'backend')
 const id = (s: string) => s
 
@@ -745,7 +758,7 @@ export function locationStore(store: Store<State>): Store<string> {
             const i = s.indexOf('=')
             if (i) {
               const k = s.slice(0, i)
-              const v = s.slice(i + 1)
+              const v = decodeURIComponent(s.slice(i + 1))
               return {[k]: v}
             } else {
               return {}
@@ -755,11 +768,7 @@ export function locationStore(store: Store<State>): Store<string> {
         const r = {} as Record<string, string | undefined>
         location_keys.map(k => {
           if (k in obj) {
-            try {
-              r[k] = decode(k)(obj[k])
-            } catch (e) {
-              //pass
-            }
+            r[k] = decode(k)(obj[k])
           }
         })
         return r as any

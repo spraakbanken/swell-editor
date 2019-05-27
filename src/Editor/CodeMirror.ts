@@ -59,6 +59,8 @@ export function GraphEditingCM(
   It must necessarily be whitespace anyway. */
   const graph = Model.graphStore(store)
   const advance = Model.make_history_advance_function(store)
+  const realCheckChange: ChangeCheck = change =>
+    !Model.can_modify(store.get()).state ? false : checkChange ? checkChange(change) : true
 
   const {undo, redo} = Model.history(store)
 
@@ -80,7 +82,7 @@ export function GraphEditingCM(
 
   function transpose(d: number) {
     return () => {
-      if (checkChange && !checkChange({type: 'transpose'})) {
+      if (!realCheckChange({type: 'transpose'})) {
         return
       }
       const h = Index.cursor('head').toToken().index
@@ -126,7 +128,7 @@ export function GraphEditingCM(
         .split('\n')
     }
     // Only check manual user-made changes. Programmatic changes should set the origin to @ignore.
-    if (checkChange && change.origin !== '@ignore' && !checkChange({type: 'editor', change})) {
+    if (change.origin !== '@ignore' && !realCheckChange({type: 'editor', change})) {
       change.cancel()
     }
   })

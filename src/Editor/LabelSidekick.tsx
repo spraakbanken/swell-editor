@@ -256,11 +256,13 @@ export function LabelSidekick({
   taxonomy,
   mode,
   extraInput,
+  disabled,
 }: {
   store: Store<Model.State>
   taxonomy: Taxonomy
   mode: Model.Mode
   extraInput?: {get: () => string | undefined; set: (value: string) => void}
+  disabled?: boolean
 }) {
   const graph = store.at('graph').at('now')
   const selected = Object.keys(store.get().selected)
@@ -291,6 +293,7 @@ export function LabelSidekick({
           selected={labels}
           mode={mode}
           onChange={(label, value) =>
+            !disabled &&
             Model.validation_transaction(store, store =>
               advance(() => {
                 Model.setLabel(store, selected, label, value)
