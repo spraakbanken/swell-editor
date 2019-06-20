@@ -544,9 +544,10 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
 
   const selected_edges = G.token_ids_to_edges(visibleGraph, Object.keys(store.get().selected))
   const selected_only_edge = selected_edges.length === 1 ? selected_edges[0] : undefined
-  const selected_only_source = selected_only_edge
-    ? G.partition_ids(visibleGraph)(selected_only_edge.ids).source[0].id
-    : undefined
+  const selected_source = selected_only_edge
+    ? G.partition_ids(visibleGraph)(selected_only_edge.ids).source
+    : []
+  const selected_only_source = selected_source.length ? selected_source[0].id : undefined
 
   return state.manual === 'print' ? (
     full_manual()
