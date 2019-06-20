@@ -22,6 +22,7 @@ import * as GV from '../GraphView'
 import * as Manual from '../Doc/Manual'
 import {Severity} from './Validate'
 import {anonymize_when, anonfixGraph, is_anon_label} from './Anonymization'
+import {anonService} from '../AnonService'
 
 typestyle.cssRaw(`
 body > div {
@@ -515,6 +516,12 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
                 }
               )}
               <hr />
+              {state.mode == Model.modes.anonymization &&
+                Button(
+                  'use pseudonymizer service',
+                  'Add pseudonymization labels using the automatic rule-based pseudonymizer',
+                  () => anonService(Model.graphStore(store))
+                )}
               {Button('validate', '', () => Model.validateState(store, true))}
               {mode_switcher(Model.modes.anonymization, true)}
               {mode_switcher(Model.modes.normalization)}
