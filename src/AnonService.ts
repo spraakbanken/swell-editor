@@ -35,18 +35,11 @@ export function applyPseuws(
     Utils.raise('Pseudonymizer result has different length than input; tokenization problem?')
 
   toks.forEach((tok, i) => {
-    const clean_labels = tok.label.map(l => labelMap[l] || l).filter(is_anon_label)
+    const clean_labels = tok.label.filter(is_anon_label)
+    clean_labels.length < tok.label.length && clean_labels.unshift('extra')
     const edge = G.edge_at(graphStore.get(), i, 'source')
     const edgeStore = G.edge_store(graphStore, edge.id)
     edgeStore.modify(e => ({...e, labels: clean_labels, manual: !!clean_labels.length}))
     clean_labels && pseudonymsStore.update({[clean_labels.join(' ')]: tok.string})
   })
-}
-
-// TODO: Temporary.
-const labelMap: Record<string, string> = {
-  country_name: 'country',
-  city_name: 'city',
-  fornamn_kvinnor: 'firstname:female',
-  fornamn_man: 'firstname:male',
 }
