@@ -520,7 +520,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
                 Button(
                   'use pseudonymizer service',
                   'Add pseudonymization labels using the automatic rule-based pseudonymizer',
-                  () => anonService(Model.graphStore(store))
+                  () => anonService(Model.graphStore(store), store.at('pseudonyms'))
                 )}
               {Button('validate', '', () => Model.validateState(store, true))}
               {mode_switcher(Model.modes.anonymization, true)}
