@@ -357,9 +357,9 @@ export function target_map(g: SourceTarget<Token[]>): Map<string, number> {
   edge_at(g, 1) // => Edge(['s1', 't1'], [])
 
 */
-export function edge_at(g: Graph, index: number): Edge {
-  const target_id = g.target[index].id
-  return edge_map(g).get(target_id) || Utils.raise('Out of bounds: ' + JSON.stringify({g, index}))
+export function edge_at(g: Graph, index: number, side: Side = 'target'): Edge {
+  const token_id = g[side][index].id
+  return edge_map(g).get(token_id) || Utils.raise('Out of bounds: ' + JSON.stringify({g, index}))
 }
 
 /** The related ids at a position (in the target text)

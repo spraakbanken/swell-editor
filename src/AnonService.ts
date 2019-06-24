@@ -18,9 +18,7 @@ export function anonService(
     response => {
       const toks: PseuwsText = [].concat(...JSON.parse(response))
       try {
-        const {graph, pseudonyms} = applyPseuws(graphStore.get(), toks)
-        pseudonymsStore.update(pseudonyms)
-        graphStore.set(graph)
+        applyPseuws(graphStore, pseudonymsStore, toks)
       } catch (e) {
         handleError(e)
       }
@@ -28,21 +26,21 @@ export function anonService(
   )
 }
 
-export function applyPseuws(graph: G.Graph, toks: PseuwsText) {
-  if (toks.length != graph.source.length) {
-    Utils.raise('Pseudonymizer result has wrong length')
-  }
+export function applyPseuws(
+  graphStore: Store<G.Graph>,
+  pseudonymsStore: Store<Pseudonyms>,
+  toks: PseuwsText
+) {
+  toks.length == graphStore.get().source.length ||
+    Utils.raise('Pseudonymizer result has different length than input; tokenization problem?')
 
-  const pseudonyms: Pseudonyms = {}
-  const em = G.edge_map(graph)
   toks.forEach((tok, i) => {
     const clean_labels = tok.label.map(l => labelMap[l] || l).filter(is_anon_label)
-    const e = Utils.getUnsafe(em, graph.source[i].id)
-    graph = G.modify_labels(graph, e.id, labels => clean_labels)
-    clean_labels && (pseudonyms[clean_labels.join(' ')] = tok.string)
+    const edge = G.edge_at(graphStore.get(), i, 'source')
+    const edgeStore = G.edge_store(graphStore, edge.id)
+    edgeStore.modify(e => ({...e, labels: clean_labels, manual: !!clean_labels.length}))
+    clean_labels && pseudonymsStore.update({[clean_labels.join(' ')]: tok.string})
   })
-
-  return {graph, pseudonyms}
 }
 
 // TODO: Temporary.
