@@ -7,22 +7,29 @@ const URL = 'https://ws.spraakbanken.gu.se/ws/larka/pseuws'
 
 type PseuwsText = {string: string; label: string[]}[]
 
-export function anonService(graphStore: Store<G.Graph>, pseudonymsStore: Store<Pseudonyms>): void {
+export function anonService(
+  graphStore: Store<G.Graph>,
+  pseudonymsStore: Store<Pseudonyms>,
+  handleError: (err: string) => void
+): void {
   Utils.request(
     URL,
     {method: 'POST', data: `text=${encodeURIComponent(G.source_text(graphStore.get()))}`},
     response => {
       const toks: PseuwsText = [].concat(...JSON.parse(response))
-      const {graph, pseudonyms} = applyPseuws(graphStore.get(), toks)
-      pseudonymsStore.update(pseudonyms)
-      graphStore.set(graph)
+      try {
+        const {graph, pseudonyms} = applyPseuws(graphStore.get(), toks)
+        pseudonymsStore.update(pseudonyms)
+        graphStore.set(graph)
+      } catch (e) {
+        handleError(e)
+      }
     }
   )
 }
 
 export function applyPseuws(graph: G.Graph, toks: PseuwsText) {
   if (toks.length != graph.source.length) {
-    console.error(toks.length, toks)
     Utils.raise('Pseudonymizer result has wrong length')
   }
 
@@ -42,6 +49,6 @@ export function applyPseuws(graph: G.Graph, toks: PseuwsText) {
 const labelMap: Record<string, string> = {
   country_name: 'country',
   city_name: 'city',
-  fornamn_kvinna: 'firstname:female',
+  fornamn_kvinnor: 'firstname:female',
   fornamn_man: 'firstname:male',
 }
