@@ -492,7 +492,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
             {state.done !== undefined &&
               !Model.inAnonfixMode(state) &&
               Button(state.done ? 'not done' : 'done', 'toggle between done and not done', () =>
-                Model.validation_transaction(store, s => s.at('done').modify(b => !b))
+                Model.validation_transaction(store, s => s.at('done').modify(b => !b), true)
               )}
             {toggle_button('options')}
           </div>

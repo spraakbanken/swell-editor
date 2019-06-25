@@ -355,7 +355,11 @@ export function validateState(store: Store<State>, show?: boolean) {
 }
 
 /** Make changes, validate new state and revert changes if the result is invalid, returns whether it is valid. */
-export function validation_transaction(store: Store<State>, f: (s: Store<State>) => void): boolean {
+export function validation_transaction(
+  store: Store<State>,
+  f: (s: Store<State>) => void,
+  show?: boolean
+): boolean {
   // Avoid triggering listeners until we're done.
   return store.transaction(() => {
     // Remember ingoing state.
@@ -363,12 +367,16 @@ export function validation_transaction(store: Store<State>, f: (s: Store<State>)
     // Perform changes.
     f(store)
     // Validate new state.
-    validateState(store)
+    validateState(store, show)
     const validation_messages = store.at('validation_messages').get()
     const errors = validation_messages.filter(msg => msg.severity == Severity.ERROR)
     // If the changes result in invalid state, revert to ingoing state but with messages added.
     if (errors.length > 0) {
       store.set({...prev, validation_messages})
+      store
+        .at('show')
+        .via(Lens.key('validation'))
+        .set(show || undefined)
     }
     return errors.length === 0
   })
