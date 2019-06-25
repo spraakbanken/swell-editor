@@ -299,10 +299,11 @@ export function check_invariant(store: Store<State>): (g: G.Graph) => void {
 */
 const validationRules: Rule<{state: State; graph: G.Graph}>[] = [
   Rule(
-    'Temporary tags not allowed when done',
+    'Temporary/comment tags remaining when done',
     edge_check(
       state => !!state.done && !inAnonfixMode(state),
-      edge => edge.labels.filter(l => label_order(l) == LabelOrder.TEMP).length > 0
+      edge => edge.labels.filter(l => label_order(l) == LabelOrder.TEMP).length > 0,
+      Severity.WARNING
     )
   ),
   Rule(
