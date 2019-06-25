@@ -22,6 +22,11 @@ export function anonService(
       } catch (e) {
         handleError(e)
       }
+    },
+    (response, code) => {
+      code
+        ? handleError(`Pseudonymizer error ${code}: ${response}`)
+        : handleError('Pseudonymizer error')
     }
   )
 }
