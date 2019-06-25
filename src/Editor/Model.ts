@@ -734,9 +734,8 @@ const act_on_selected: {
 
 export function performAction(store: Store<State>, action: ActionOnSelected) {
   const graph_store = store.at('graph').at('now')
-  const graph = graph_store.get()
   const selected = Object.keys(store.get().selected)
-  const res = act_on_selected[action]({graph, selected})
+  const res = act_on_selected[action]({graph: viewGraph(store), selected})
   if ('type' in res) {
     setSelection(store, res.selected)
   } else {
