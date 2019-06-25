@@ -1,7 +1,7 @@
 import * as G from '../Graph'
 import * as record from '../record'
 import * as Utils from '../Utils'
-import {label_sort, taxonomy_has_label} from './Config'
+import {label_sort, taxonomy_has_label, label_order, LabelOrder} from './Config'
 import {pseudonymize} from 'pseudonymization'
 import {Store} from 'reactive-lens'
 
@@ -71,9 +71,11 @@ export function anonymize(
       const {src, labels} = pmod
         ? pmod(source_token.id, source_text, anonLabels)
         : {src: source_text, labels: anonLabels}
-      const pp = pstore.at(labels.join(' '))
-      if (pp.get() === undefined) pp.set(pseudonymize(src, labels))
-      const ts = G.tokenize(pp.get()).map(text => G.Token(Utils.end_with_space(text), 't' + i++))
+      const [affixes, main_labels] = Utils.usandthem(labels, label_order, LabelOrder.EXTRA)
+      const pp = pstore.at(main_labels.join(' '))
+      pp.get() || pp.set(pseudonymize(src, main_labels))
+      const pseudonym = [pp.get(), ...affixes].join('-')
+      const ts = G.tokenize(pseudonym).map(text => G.Token(Utils.end_with_space(text), 't' + i++))
       edges.push(
         G.Edge(
           [...pi(e.ids).source.map(s => s.id), ...ts.map(t => t.id)],

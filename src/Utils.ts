@@ -494,6 +494,30 @@ export function uniq<A>(xs: A[]): A[] {
   })
 }
 
+/** Order into the result of some function.
+
+  filterthese(['foo', 'bar', 'baz', 'qux'], w => w[0], ['f', 'b']) // => [['foo'], ['bar', 'baz']]
+*/
+export function filterthese<A, B>(xs: A[], filter: (x: A) => B, outs: B[]): A[][] {
+  return outs.map(b => xs.filter(x => filter(x) === b))
+}
+
+/** Group into returning true and false respectively.
+
+  yesorno(['foo', 'bar', 'baz', 'qux'], x => x.indexOf('a') > -1) // => [['bar', 'baz'], ['foo', 'qux']]
+*/
+export function yesorno<A>(xs: A[], filter: (x: A) => any): A[][] {
+  return filterthese(xs, x => !!filter(x), [true, false])
+}
+
+/** Group into same and different.
+
+  usandthem(['foo', 'bar', 'baz', 'qux'], x => x.indexOf('a'), -1) // => [['foo', 'qux'], ['bar', 'baz']]
+*/
+export function usandthem<A, B>(xs: A[], filter: (x: A) => B, we: B): [A[], A[]] {
+  return yesorno(xs, x => filter(x) == we) as [A[], A[]]
+}
+
 /** First and last elements of an array.
 
   ends(['one', 'two', 'three']) // => ['one', 'three']
@@ -878,7 +902,7 @@ export function request(
     if (r.readyState == 4 && r.status == 200) {
       k(r.response)
     }
-    if (r.readyState == 4 && r.status >= 300) {
+    if (r.readyState == 4 && (r.status >= 300 || r.status == 0)) {
       k_err(r.response, r.status)
     }
   }
