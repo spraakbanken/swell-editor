@@ -411,6 +411,14 @@ export function flatMap<A, B>(xs: A[], f: (a: A, index: number) => B[]): B[] {
   return flatten(xs.map(f))
 }
 
+/** Get the same index of multiple arrays
+
+  across(1, [1, 2, 3], ['a', 'b', 'c']) // [2, 'b']
+ */
+export function across(i: number, ...xss: any[][]): any[] {
+  return xss.map(xs => xs[i])
+}
+
 /** Split an array into three pieces
 
   splitAt3('0123456'.split(''), 2, 4).map(xs => xs.join('')) // => ['01', '23', '456']

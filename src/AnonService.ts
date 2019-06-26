@@ -1,7 +1,8 @@
-import * as G from './Graph/Graph'
+import * as G from './Graph'
 import * as Utils from './Utils'
 import {Store} from 'reactive-lens'
 import {Pseudonyms, is_anon_label} from './Editor/Anonymization'
+import * as record from './record'
 
 const URL = 'https://ws.spraakbanken.gu.se/ws/larka/pseuws'
 
@@ -36,15 +37,23 @@ export function applyPseuws(
   pseudonymsStore: Store<Pseudonyms>,
   toks: PseuwsText
 ) {
-  toks.length == graphStore.get().source.length ||
-    Utils.raise('Pseudonymizer result has different length than input; tokenization problem?')
-
-  toks.forEach((tok, i) => {
-    const clean_labels = tok.label.filter(is_anon_label)
-    clean_labels.length < tok.label.length && clean_labels.unshift('extra')
-    const edge = G.edge_at(graphStore.get(), i, 'source')
-    const edgeStore = G.edge_store(graphStore, edge.id)
-    edgeStore.modify(e => ({...e, labels: clean_labels, manual: !!clean_labels.length}))
-    clean_labels && pseudonymsStore.update({[clean_labels.join(' ')]: tok.string})
+  graphStore.modify(g => {
+    let si = 0 // Source tokens cursor
+    const edges = toks.map((tok, i) => {
+      const labels = tok.label.filter(is_anon_label)
+      labels.length < tok.label.length && labels.unshift('extra')
+      const token_ids = [g.source[si].id, g.target[si].id]
+      si++
+      if (labels.length && !toks[i + 1].label.length) {
+        // Include subsequent tokens.
+        while (g.source[si] && g.source[si].text.trim() != toks[i + 1].string.trim()) {
+          token_ids.push(g.source[si].id, g.target[si].id)
+          si++
+        }
+      }
+      labels && pseudonymsStore.update({[labels.join(' ')]: tok.string})
+      return G.Edge(token_ids, labels, !!labels.length)
+    })
+    return {...g, edges: record.init(edges.map(edge => ({k: edge.id, v: edge})))}
   })
 }
