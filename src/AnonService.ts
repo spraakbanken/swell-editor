@@ -6,7 +6,7 @@ import * as record from './record'
 
 const URL = 'https://ws.spraakbanken.gu.se/ws/larka/pseuws'
 
-type PseuwsText = {string: string; label: string[]}[]
+type PseuwsToken = {string: string; label: string[]}
 
 export function anonService(
   graphStore: Store<G.Graph>,
@@ -17,12 +17,18 @@ export function anonService(
     URL,
     {method: 'POST', data: `text=${encodeURIComponent(G.source_text(graphStore.get()))}`},
     response => {
-      const toks: PseuwsText = [].concat(...JSON.parse(response))
-      try {
-        applyPseuws(graphStore, pseudonymsStore, toks)
-      } catch (e) {
-        handleError(e)
-      }
+      // Join sentences and skip empty tokens resulting from repeated whitespace.
+      const toks: PseuwsToken[] = []
+        .concat(...JSON.parse(response))
+        .filter((tok: PseuwsToken) => tok.string)
+      graphStore.transaction(() => {
+        try {
+          applyPseuws(graphStore, pseudonymsStore, toks)
+        } catch (e) {
+          console.error(e)
+          handleError(e)
+        }
+      })
     },
     (response, code) => {
       code
@@ -35,9 +41,9 @@ export function anonService(
 export function applyPseuws(
   graphStore: Store<G.Graph>,
   pseudonymsStore: Store<Pseudonyms>,
-  toks: PseuwsText
+  toks: PseuwsToken[]
 ) {
-  graphStore.modify(g => {
+  graphStore.modify(G.source_to_target).modify(g => {
     let si = 0 // Source tokens cursor
     const edges = toks.map((tok, i) => {
       const labels = tok.label.filter(is_anon_label)
