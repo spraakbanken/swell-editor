@@ -40,6 +40,7 @@ export function texts(ts: Text[]): string[] {
   punc('... ') // => true
   punc(' !')   // => true
   punc('!?')   // => true
+  punc('␤ ')   // => true
   punc(', ')    // => false
   punc('apa. ') // => true
   punc('?.., ') // => false
@@ -48,9 +49,7 @@ export function texts(ts: Text[]): string[] {
 
 */
 export function punc(s: string): boolean {
-  return (
-    !!s.match(/^\s*[.!?]+\s*$/) || (!!s.match(/\.\s*$/) && !s.match(/^t\./)) || !!s.match(/^\.\s/)
-  )
+  return !!s.match(/^\s*[.!?␤]+\s*$/) || (!!s.match(/\.\s*$/) && !s.match(/^t\./))
 }
 
 /** Where is the previous punctuation token?
