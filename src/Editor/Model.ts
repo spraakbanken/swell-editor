@@ -279,19 +279,19 @@ export function check_invariant(store: Store<State>): (g: G.Graph) => void {
   const graph = G.unaligned_modify_tokens(G.init('x'), 0, 1, 'y ')
   validationRules[1].check({graph, state: {...init, mode: 'correctannot'}}) // => [{severity: Severity.WARNING, message: '"x"'}]
 
-  const graph = G.modify_labels(G.init('x'), 'e-s0-t0', () => ['firstname:female', 'region', 'OBS!', 'gen', 'ort'])
+  const graph = G.modify_labels(G.init('x'), 'e-s0-t0', () => ['firstname_female', 'region', 'OBS!', 'gen', 'ort'])
   validationRules[2].check({graph, state: {...init, mode: 'anonymization'}}) // => [{severity: Severity.ERROR, message: '"x"'}]
 
   const g0 = G.init('x y')
-  const g1 = G.modify_labels(g0, 'e-s0-t0', () => ['firstname:female'])
-  const graph = G.modify_labels(g1, 'e-s1-t1', () => ['firstname:female', '1'])
+  const g1 = G.modify_labels(g0, 'e-s0-t0', () => ['firstname_female'])
+  const graph = G.modify_labels(g1, 'e-s1-t1', () => ['firstname_female', '1'])
   validationRules[3].check({graph, state: {...init, mode: 'anonymization', done: true}}) // => [{severity: Severity.ERROR, message: '"x"'}]
   validationRules[3].check({graph, state: {...init, mode: 'anonymization'}}) // => []
   validationRules[3].check({graph, state: {...init, done: true}}) // => []
 
   const g0 = G.init('x y')
   const g1 = G.modify_labels(g0, 'e-s0-t0', () => ['1'])
-  const graph = G.modify_labels(g1, 'e-s1-t1', () => ['firstname:female', '1'])
+  const graph = G.modify_labels(g1, 'e-s1-t1', () => ['firstname_female', '1'])
   validationRules[4].check({graph, state: {...init, mode: 'anonymization', done: true}}) // => [{severity: Severity.ERROR, message: '"x"'}]
   validationRules[4].check({graph, state: {...init, done: true}}) // => []
   validationRules[4].check({graph, state: {...init, mode: 'anonymization'}}) // => []

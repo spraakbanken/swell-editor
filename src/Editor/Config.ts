@@ -10,7 +10,7 @@ export interface Example {
 const ex = (source: string, target: string): Example => ({source, target})
 
 const examples: Example[] = `
-Alice and Bob went to Paris . Alice's wallet was stolen . // Alice:1:'firstname:female' and Bob:2:'firstname:male' went to Paris:city . Alice's:1:'firstname:female':gen wallet was stolen .
+Alice and Bob went to Paris . Alice's wallet was stolen . // Alice:1:'firstname_female' and Bob:2:'firstname_male' went to Paris:city . Alice's:1:'firstname_female':gen wallet was stolen .
 
 Their was a problem yesteray . // There was a problem yesterday .
 
@@ -92,9 +92,9 @@ const anonymization: Taxonomy = [
   {
     group: 'Names',
     entries: [
-      {label: 'firstname:male', desc: ''},
-      {label: 'firstname:female', desc: ''},
-      {label: 'firstname:unknown', desc: ''},
+      {label: 'firstname_male', desc: ''},
+      {label: 'firstname_female', desc: ''},
+      {label: 'firstname_unknown', desc: ''},
       {label: 'surname', desc: ''},
       {label: 'middlename', desc: ''},
       {label: 'initials', desc: ''},
@@ -107,7 +107,7 @@ const anonymization: Taxonomy = [
       {label: 'country', desc: 'except Sweden'},
       {label: 'zip_code', desc: ''},
       {label: 'region', desc: ''},
-      {label: 'city-SWE', desc: ''},
+      {label: 'city_swe', desc: ''},
       {label: 'city', desc: 'city including villages'},
       {label: 'area', desc: ''},
       {label: 'place', desc: ''},
@@ -139,8 +139,8 @@ const anonymization: Taxonomy = [
     group: 'Dates',
     entries: [
       {label: 'day', desc: ''},
-      {label: 'month-digit', desc: ''},
-      {label: 'month-word', desc: ''},
+      {label: 'month_digit', desc: ''},
+      {label: 'month_word', desc: ''},
       {label: 'year', desc: ''},
       {label: 'date_digits', desc: 'numerical date represenation, delimiters are retained'},
     ],
