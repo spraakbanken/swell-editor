@@ -10,7 +10,7 @@ export interface Example {
 const ex = (source: string, target: string): Example => ({source, target})
 
 const examples: Example[] = `
-Alice and Bob went to Paris . Alice's wallet was stolen . // Alice:1:'firstname_female' and Bob:2:'firstname_male' went to Paris:city . Alice's:1:'firstname_female':gen wallet was stolen .
+Alice and Bob went to Paris . Alice's wallet was stolen . // Alice:1:'firstname_female' and Bob:2:'firstname_male' went to Paris:3:city . Alice's:1:'firstname_female':gen wallet was stolen .
 
 Their was a problem yesteray . // There was a problem yesterday .
 

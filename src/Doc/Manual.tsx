@@ -230,7 +230,7 @@ actually reads as anonymized.
   `,
   G.compact_to_graph(`
 Alice and Bob went to Paris . Alice's wallet was stolen . //
-Alice:firstname_female:1 and Bob:firstname_male:2 went to Paris:city:3 . Alice's:firstname_female:1:gen wallet was stolen .
+Alice:'firstname_female':1 and Bob:'firstname_male':2 went to Paris:city:3 . Alice's:'firstname_female':1:gen wallet was stolen .
 `),
   undefined,
   'anonymization'
