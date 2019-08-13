@@ -521,8 +521,13 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
                   'use pseudonymizer service',
                   'Add pseudonymization labels using the automatic rule-based pseudonymizer',
                   () =>
-                    anonService(Model.graphStore(store), store.at('pseudonyms'), e =>
-                      Model.flagError(store, e)
+                    anonService(
+                      state.backend
+                        ? state.backend.replace(/tasks\/.*/, 'annotation/pseuws')
+                        : config.pseuws_url,
+                      Model.graphStore(store),
+                      store.at('pseudonyms'),
+                      e => Model.flagError(store, e)
                     )
                 )}
               {Button('validate', '', () => Model.validateState(store, true))}

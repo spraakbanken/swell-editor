@@ -1,6 +1,7 @@
 import {chain_cmps, mkcmp, cmp_order, Comparator} from '../Utils'
 
 const image_ws_url = 'https://ws.spraakbanken.gu.se/ws/swell'
+const pseuws_url = 'https://ws.spraakbanken.gu.se/ws/larka/pseuws'
 
 export interface Example {
   source: string
@@ -375,6 +376,7 @@ export const config = {
   order_changing_labels,
   examples,
   image_ws_url,
+  pseuws_url,
   taxonomy: {anonymization, normalization, correctannot},
   docs,
 }

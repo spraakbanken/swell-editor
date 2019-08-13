@@ -4,17 +4,16 @@ import {Store} from 'reactive-lens'
 import {Pseudonyms, is_anon_label} from './Editor/Anonymization'
 import * as record from './record'
 
-const URL = 'https://ws.spraakbanken.gu.se/ws/larka/pseuws'
-
 type PseuwsToken = {string: string; label: string[]}
 
 export function anonService(
+  url: string,
   graphStore: Store<G.Graph>,
   pseudonymsStore: Store<Pseudonyms>,
   handleError: (err: string) => void
 ): void {
   Utils.request(
-    URL,
+    url,
     {method: 'POST', data: `text=${encodeURIComponent(G.source_text(graphStore.get()))}`},
     response => {
       // Join sentences and skip empty tokens resulting from repeated whitespace.
