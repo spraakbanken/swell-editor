@@ -22,7 +22,7 @@ export function size<K extends string, V>(x: Record<K, V>): number {
 
 export function flatten<O extends Record<string, any>>(oss: O[]): O {
   const obj = {} as O
-  oss.forEach(os => forEach(os, (v: string, k: any) => (obj[k] = v)))
+  oss.forEach(os => forEach(os, (v: any, k: keyof O) => (obj[k] = v)))
   return obj
 }
 

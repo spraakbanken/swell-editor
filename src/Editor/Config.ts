@@ -23,7 +23,7 @@ We wrote down the number . // We wrote the number down~down .
 `
   .trim()
   .split(/\n\n+/gm)
-  .map(line => ex.apply({}, line.split('//').map(side => side.trim())))
+  .map(line => ex.apply({}, line.split('//').map(side => side.trim()) as [string, string]))
 
 const order_changing_labels: Record<string, true> = {
   'S-adv': true,

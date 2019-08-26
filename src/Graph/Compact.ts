@@ -138,9 +138,11 @@ const link = pchar
 
 type Attribute = Partial<Attributes>
 
-function flatten<K extends string, T extends Record<K, any[]>>(keys: K[], parts: Partial<T>[]): T {
-  const out: T = {} as any
-  keys.forEach(k => (out[k] = []))
+function flatten<K extends string>(
+  keys: K[],
+  parts: Partial<Record<K, any[]>>[]
+): Record<K, any[]> {
+  const out = record.init(keys.map(k => ({k, v: [] as any[]})))
   parts.forEach(part => {
     for (const k in part) {
       const v = part[k]
@@ -338,23 +340,25 @@ export function proto_graph_to_units(g: G.Graph): SourceTargetUnits {
   )
   const first = Utils.unique_check<string>()
   return G.mapSides(g, tokens =>
-    tokens.map((token): Unit => {
-      const e = em(token.id)
-      const labels = first(e.id) ? e.labels : []
-      const links = Utils.expr(() => {
-        if (!e.manual) {
-          return []
-        }
-        if (e.ids.length === 1) {
-          return [unlinked]
-        }
-        // we sort because we want 's0' to be chosen instead of 't0'
-        // in prefer_text_links because linked words always refer
-        // to the source text
-        return [idLink(e.ids.sort()[0])]
-      })
-      return Unit(token.text, [{ids: [token.id], links, labels}])
-    })
+    tokens.map(
+      (token): Unit => {
+        const e = em(token.id)
+        const labels = first(e.id) ? e.labels : []
+        const links = Utils.expr(() => {
+          if (!e.manual) {
+            return []
+          }
+          if (e.ids.length === 1) {
+            return [unlinked]
+          }
+          // we sort because we want 's0' to be chosen instead of 't0'
+          // in prefer_text_links because linked words always refer
+          // to the source text
+          return [idLink(e.ids.sort()[0])]
+        })
+        return Unit(token.text, [{ids: [token.id], links, labels}])
+      }
+    )
   )
 }
 

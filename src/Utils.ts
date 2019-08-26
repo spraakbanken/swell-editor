@@ -6,6 +6,10 @@ export const dmp = new Dmp.diff_match_patch() as Dmp.diff_match_patch
 
 export type TokenDiff = [number, string][]
 
+interface Stringable {
+  toString: () => string
+}
+
 export function capitalize_head(s: string) {
   return s.slice(0, 1).toUpperCase() + s.slice(1)
 }
@@ -58,7 +62,7 @@ export type ChangeInt = -1 | 0 | 1
   raw_diff(range(n), range(2*n)) // => range(2*n).map(i => R.pair(i < n ? 0 : 1, i))
 
 */
-export function raw_diff<A>(
+export function raw_diff<A extends Stringable>(
   xs: A[],
   ys: A[],
   cmp: (a: A) => string = a => a.toString()
@@ -107,7 +111,7 @@ export type Change<A, B> = Deleted<A> | Constant<A, B> | Inserted<B>
   hdiff(abcca, BACC, lower, lower) // => expect
 
 */
-export function hdiff<A, B>(
+export function hdiff<A extends Stringable, B extends Stringable>(
   xs: A[],
   ys: B[],
   a_cmp: (a: A) => string = a => a.toString(),
@@ -391,7 +395,7 @@ export function contiguous(xs: number[]): boolean {
   group_contiguous(['d', 'a', 'b'], t => t.charCodeAt(0)) // => [['a', 'b'], ['d']]
 
 */
-export function group_contiguous<A>(xs: A[], cmp: ((x: A) => number)) {
+export function group_contiguous<A>(xs: A[], cmp: (x: A) => number) {
   const groups: A[][] = []
   xs.sort((a, b) => cmp(a) - cmp(b)).forEach(x => {
     let g = groups[groups.length - 1]
@@ -492,7 +496,7 @@ export function maximumBy<A>(inj: (a: A) => R.Ordered, [hd, ...tl]: A[]): A {
 }
 
 /** Returns a copy of the array with duplicates removed, via toString */
-export function uniq<A>(xs: A[]): A[] {
+export function uniq<A extends Stringable>(xs: A[]): A[] {
   const seen = {} as Record<string, boolean>
   return xs.filter(x => {
     const s = x.toString()
@@ -545,7 +549,7 @@ export function ends<A>(xs: A[]): [A, A] {
   set_modify(abc, 'd', false) // => abc
 
 */
-export function set_modify<A>(members: A[], point: A, value: boolean) {
+export function set_modify<A extends Stringable>(members: A[], point: A, value: boolean) {
   if (value) {
     return uniq([...members, point])
   } else {

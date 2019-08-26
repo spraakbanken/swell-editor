@@ -61,7 +61,7 @@ export function merge_edges(...es: Edge[]) {
     Utils.flatMap(es, e => e.ids),
     Utils.flatMap(es, e => e.labels),
     es.some(e => !!e.manual),
-    Utils.uniq(es.map(e => e.comment).filter(Boolean)).join('\n\n')
+    Utils.uniq(es.map(e => e.comment).filter(Boolean) as string[]).join('\n\n')
   )
 }
 

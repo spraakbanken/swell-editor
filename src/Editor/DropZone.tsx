@@ -82,7 +82,7 @@ export class DropZone extends React.Component<
         log('readyState', r.readyState)
         if (r.readyState === 2) {
           try {
-            const buf = new Buffer(r.result)
+            const buf = Buffer.from(r.result as ArrayBuffer)
             const data: Data = png.onBuffer.get(key, buf)
             log({data})
             this.props.onDrop(data)

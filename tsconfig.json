@@ -1,22 +1,20 @@
 {
-    "compilerOptions": {
-        "outDir": "./dist",
-        "sourceMap": true,
-        "noImplicitAny": true,
-        "strict": true,
-        "target": "es6",
-        "module": "commonjs",
-        "moduleResolution": "node",
-        "jsx": "react",
-        "lib": ["es2017", "dom"],
-        "noEmitOnError": true,
-        "allowUnreachableCode": true
-    },
-    "include": [
-        "src",
-        "test"
-    ],
-    "parcelTsPluginOptions": {
-        "transpileOnly": false
-    }
+  "compilerOptions": {
+    "outDir": "./dist",
+    "sourceMap": true,
+    "noImplicitAny": true,
+    "strict": true,
+    "target": "es6",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "jsx": "react",
+    "lib": ["es2017", "dom"],
+    "noEmitOnError": true,
+    "allowUnreachableCode": true,
+    "keyofStringsOnly": true
+  },
+  "include": ["src", "test"],
+  "parcelTsPluginOptions": {
+    "transpileOnly": false
+  }
 }
