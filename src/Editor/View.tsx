@@ -1,5 +1,5 @@
 import * as React from 'react'
-import {Store, Lens} from 'reactive-lens'
+import {Store, Lens, Undo} from 'reactive-lens'
 import * as typestyle from 'typestyle'
 
 import * as G from '../Graph'
@@ -142,7 +142,7 @@ const topStyle = typestyle.style({
     '& .inline': {
       display: 'inline-block',
     },
-    '& pre.pre-box': {
+    '& pre.pre-box, & .pre-box pre': {
       fontSize: '0.85em',
 
       padding: '0.25em',
@@ -376,7 +376,20 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
         </div>
         {state.show.validation && ShowMessages(store)}
         {state.show.image_link && ImageWebserviceAddresses(visible_graph, Model.inAnonMode(state))}
-        {state.show.graph && <pre className="box pre-box">{Utils.show(visibleGraph)}</pre>}
+        {state.show.graph && (
+          <div className="box pre-box">
+            <pre>{Utils.show(visibleGraph)}</pre>
+            <h3>Paste graph</h3>
+            <input
+              onChange={e => {
+                try {
+                  const g = JSON.parse(e.currentTarget.value)
+                  G.is_graph(g) && store.at('graph').modify(Undo.advance_to(g))
+                  e.currentTarget.value = 'ok!'
+                } catch { }
+              }}></input>
+          </div>
+        )}
         {state.show.diff && (
           <pre className="box pre-box">{Utils.show(G.enrichen(visibleGraph))}</pre>
         )}
@@ -433,8 +446,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
       // Overwrite source tokens, then save.
       Model.validation_transaction(store, s => {
         s.at('done').set(true)
-        s
-          .at('graph')
+        s.at('graph')
           .at('now')
           .set(anonfixGraph(Model.visibleGraph(store)))
       })
@@ -621,15 +633,14 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
           <a href="https://github.com/spraakbanken/swell-editor/issues" target="_blank">
             issues
           </a>
-          {state.essay &&
-            state.backend && (
-              <span style={{float: 'right', opacity: 0.9}}>
-                {`${state.version ? 'revision ' + state.version + ' of' : 'saving'} essay ${
-                  state.essay
-                } at `}
-                <code style={{fontSize: '0.95em'}}>{state.backend}</code>
-              </span>
-            )}
+          {state.essay && state.backend && (
+            <span style={{float: 'right', opacity: 0.9}}>
+              {`${state.version ? 'revision ' + state.version + ' of' : 'saving'} essay ${
+                state.essay
+              } at `}
+              <code style={{fontSize: '0.95em'}}>{state.backend}</code>
+            </span>
+          )}
         </span>
       </div>
     </div>
@@ -787,7 +798,11 @@ export function LabelUsage(
             <div className={GV.BorderCell + obs_class([label])}>
               <div>{label}</div>
             </div>
-            <ul>{es.map(e => <li key={e.id}>{Edge(store, e.id, side)}</li>)}</ul>
+            <ul>
+              {es.map(e => (
+                <li key={e.id}>{Edge(store, e.id, side)}</li>
+              ))}
+            </ul>
           </div>
         ),
         true

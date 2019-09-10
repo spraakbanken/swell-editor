@@ -156,6 +156,15 @@ export function check_invariant(g: Graph): 'ok' | {violation: string; g: Graph} 
   return 'ok'
 }
 
+/** Whether the object is a valid graph.
+
+  is_graph('foo') // => false
+  is_graph(init('apa bepa')) // => true
+ */
+export function is_graph(g: any): g is Graph {
+  return check_invariant(g) === 'ok'
+}
+
 /** Makes spans from an original text by tokenizing it and assumes no changes
 
   const g = init('w1 w2')
