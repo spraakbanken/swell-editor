@@ -626,7 +626,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
       {Summary(store)}
       <div className="footer box">
         <span style={{opacity: 0.8, fontSize: '0.9em'}}>
-          swell-editor{' '}
+          SVALA{' '}
           <a href="https://github.com/spraakbanken/swell-editor" target="_blank">
             repo
           </a>{' '}
