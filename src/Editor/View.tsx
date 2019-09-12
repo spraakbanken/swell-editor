@@ -111,7 +111,6 @@ const topStyle = typestyle.style({
       border: '1px solid #ddd',
       height: 'auto',
       paddingBottom: '1em',
-      minWidth: '250px',
       lineHeight: '1.5em',
       fontFamily: "'Lato', sans-serif",
     },
@@ -386,7 +385,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
                   const g = JSON.parse(e.currentTarget.value)
                   G.is_graph(g) && store.at('graph').modify(Undo.advance_to(g))
                   e.currentTarget.value = 'ok!'
-                } catch { }
+                } catch {}
               }}></input>
           </div>
         )}
@@ -481,7 +480,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
             {Button('redo', '', history.redo, history.canRedo())}
           </div>
           <div style={{fontWeight: 'bold'}}>
-            Svala {Model.mode_label(state.mode)} {state.essay ? `– essay ${state.essay}` : ''}{' '}
+            SVALA {Model.mode_label(state.mode)} {state.essay ? `– essay ${state.essay}` : ''}{' '}
             {!Model.can_modify(state).state && '(read-only)'}
           </div>
           <div>
