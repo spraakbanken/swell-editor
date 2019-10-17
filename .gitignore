@@ -14,3 +14,5 @@ test/snapshots/*md
 index.html
 src/index.ts
 pilot_data.json
+dist/
+node_modules/
