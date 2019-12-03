@@ -196,30 +196,12 @@ export const correctannot: Taxonomy = [
         desc: 'Orthographic/spelling error',
       },
       {
-        label: 'O-CAP',
+        label: 'O-Cap',
         desc: 'Error with capitalization (upper/lower)',
       },
       {
-        label: 'O-COMP',
+        label: 'O-Comp',
         desc: 'Error within compounds (oversplitting, overcompounding)',
-      },
-    ],
-  },
-  {
-    group: 'Follow-up correction ',
-    entries: [
-      {
-        label: 'C',
-        desc: 'Consistence',
-      },
-    ],
-  },
-  {
-    group: 'Intelligibility',
-    entries: [
-      {
-        label: 'X',
-        desc: 'Impossible to interpret the writer’s intention',
       },
     ],
   },
@@ -227,11 +209,7 @@ export const correctannot: Taxonomy = [
     group: 'Lexical',
     entries: [
       {
-        label: 'L',
-        desc: 'Wrong word or phrase. Deprecated!',
-      },
-      {
-        label: 'L-DER',
+        label: 'L-Der',
         desc: 'Deviant (existisng!) derivational affix used',
       },
       {
@@ -239,19 +217,7 @@ export const correctannot: Taxonomy = [
         desc: 'Foreign word (not conventionally used in Swedish)',
       },
       {
-        label: 'L-ID',
-        desc: 'Idiomaticity',
-      },
-      {
-        label: 'L-M',
-        desc: 'Missing content word',
-      },
-      {
-        label: 'L-R',
-        desc: 'Redundant content word',
-      },
-      {
-        label: 'L-REF',
+        label: 'L-Ref',
         desc: 'Reference error',
       },
       {
@@ -265,23 +231,23 @@ export const correctannot: Taxonomy = [
     group: 'Morphological',
     entries: [
       {
-        label: 'M-ADJ/ADV',
+        label: 'M-Adj/adv',
         desc: 'Corrections concerning the confusions of adjective and adverbial endings',
       },
       {
-        label: 'M-CASE',
+        label: 'M-Case',
         desc: 'Corrections regarding the use of genitive (nouns) and dative forms (pronouns)',
       },
-      {label: 'M-DEF', desc: 'Deviation in definite/indefinite forms'},
+      {label: 'M-Def', desc: 'Deviation in definite/indefinite forms'},
       {label: 'M-F', desc: 'Deviant paradigm selection, but correct grammatical category'},
-      {label: 'M-GEND', desc: 'Correction regarding grammatical gender'},
-      {label: 'M-NUM', desc: 'Deviation in number agreement. May apply to groups of words'},
+      {label: 'M-Gend', desc: 'Correction regarding grammatical gender'},
+      {label: 'M-Num', desc: 'Deviation in number agreement. May apply to groups of words'},
       {
         label: 'M-Other',
         desc:
           'Ambiguous cases with several possible target hypotheses – to be applied when there are no convincing arguments for any other morphological code',
       },
-      {label: 'M-VERB', desc: 'Covers deviations in the verb phrase, i.e. aspect, tense, mode'},
+      {label: 'M-Verb', desc: 'Covers deviations in the verb phrase, i.e. aspect, tense, mode'},
     ],
   },
   {
@@ -296,12 +262,12 @@ export const correctannot: Taxonomy = [
         desc: 'Redundant punctuation',
       },
       {
-        label: 'P-W',
-        desc: 'Wrong punctuation',
+        label: 'P-Sent',
+        desc: 'Merging, or splitting a sentence',
       },
       {
-        label: 'Sent-Segmentation',
-        desc: 'Merging, or splitting a sentence',
+        label: 'P-W',
+        desc: 'Wrong punctuation',
       },
     ],
   },
@@ -309,15 +275,15 @@ export const correctannot: Taxonomy = [
     group: 'Syntactical',
     entries: [
       {
-        label: 'S-adv',
+        label: 'S-Adv',
         desc: 'Word order error involving adverbial placement',
       },
       {
-        label: 'S-CON',
+        label: 'S-Comp',
         desc: 'Problematic syntactical construction',
       },
       {
-        label: 'S-finV',
+        label: 'S-FinV',
         desc: 'Word order error with finite verb placement',
       },
       {
@@ -330,13 +296,13 @@ export const correctannot: Taxonomy = [
         desc: 'Subject missing',
       },
       {
-        label: 'S-R',
-        desc: 'Word or phrase redundant',
-      },
-      {
-        label: 'S-W',
+        label: 'S-Other',
         desc:
           'Wrong function word, e.g. preposition (also multiword presposition), auxilary verb; particle and reflexive marker.',
+      },
+      {
+        label: 'S-R',
+        desc: 'Word or phrase redundant',
       },
       {
         label: 'S-WO',
@@ -345,12 +311,31 @@ export const correctannot: Taxonomy = [
     ],
   },
   {
-    group: 'Unidentified',
+    group: 'Other',
     entries: [
-      {label: 'OBS!', desc: 'Attention'},
       {
-        label: 'Uni',
+        label: 'C',
+        desc: 'Consistence',
+      },
+      {
+        label: 'Cit-FL',
+        desc: 'Citation for a language',
+      },
+      {
+        label: 'Com!',
+        desc: 'Comment'
+      },
+      {
+        label: 'OBS!',
+        desc: 'Attention'
+      },
+      {
+        label: 'Unid',
         desc: 'Error that cannot be categorized according to other codes',
+      },
+      {
+        label: 'X',
+        desc: 'Impossible to interpret the writer’s intention',
       },
     ],
   },

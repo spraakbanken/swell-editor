@@ -625,12 +625,28 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
       {Summary(store)}
       <div className="footer box">
         <span style={{opacity: 0.8, fontSize: '0.9em'}}>
-          SVALA{' '}
+          <b>SVALA:</b>{' '}
           <a href="https://github.com/spraakbanken/swell-editor" target="_blank">
-            repo
+            <i>Repo</i>
           </a>{' '}
           <a href="https://github.com/spraakbanken/swell-editor/issues" target="_blank">
-            issues
+            <i>Issues</i>
+          </a>{' '}
+          <b>Link to Articles:</b>{' '}
+          <a
+            href="http://www.ep.liu.se/ecp/159/023/ecp18159023.pdf"
+            target="_blank">
+            <i>Svala</i>
+          </a>{' '}
+          <a
+            href="https://spraakbanken.gu.se/sites/spraakbanken.gu.se/files/Annotation_of_learner_corpora_SweLL.pdf"
+            target="_blank">
+            <i>Swell</i>
+          </a>{' '}
+          <a
+            href="http://www.diva-portal.org/smash/get/diva2:1266934/FULLTEXT01.pdf"
+            target="_blank">
+            <i>Anonymization</i>
           </a>
           {state.essay && state.backend && (
             <span style={{float: 'right', opacity: 0.9}}>
