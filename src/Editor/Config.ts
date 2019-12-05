@@ -128,8 +128,8 @@ const anonymization: Taxonomy = [
   {
     group: 'Transportation',
     entries: [
-      {label: 'transport', desc: 'bus, metro, tram, train, express'},
-      {label: 'transport_line', desc: 'number, color'},
+      {label: 'transport_name', desc: 'bus, metro, tram, train, express'},
+      {label: 'transport_nr', desc: 'number, color'},
     ],
   },
   {
@@ -164,6 +164,7 @@ const anonymization: Taxonomy = [
     entries: [
       {label: 'prof', desc: 'profession'},
       {label: 'edu', desc: 'education, courses'},
+      {label: 'fam', desc: 'family members'},
       {label: 'sensitive', desc: ''},
       {label: 'OBS!', desc: 'Attention'},
     ],
