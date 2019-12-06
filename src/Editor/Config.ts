@@ -104,7 +104,6 @@ const anonymization: Taxonomy = [
   {
     group: 'Geographic data',
     entries: [
-      {label: 'country_of_origin', desc: ''},
       {label: 'country', desc: 'except Sweden'},
       {label: 'zip_code', desc: ''},
       {label: 'region', desc: ''},
@@ -119,7 +118,6 @@ const anonymization: Taxonomy = [
   {
     group: 'Institutions',
     entries: [
-      {label: 'institution', desc: ''},
       {label: 'school', desc: ''},
       {label: 'work', desc: ''},
       {label: 'other_institution', desc: ''},
