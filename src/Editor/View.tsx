@@ -355,6 +355,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
             <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
           </div>
         )}
+        <br></br><em>Spaghetti mode:</em> {Button(click_replace(store.at('automatic_rendering').get()) , '', () => store.at('automatic_rendering').modify(b => !b))}
         <div
           className={'vsep' + (hovering ? ' hovering' : '') + (readonly ? ' NoManualBlue' : '')}
           style={{minHeight: '10em'}}>
@@ -674,6 +675,10 @@ function fitGraph() {
 
 function show_hide_str(b: boolean | undefined) {
   return b ? 'hide ' : 'show '
+}
+
+function click_replace(b: boolean | undefined) {
+  return b ? 'enable' : 'disable'
 }
 
 function RestrictionButtons(store: Store<G.Side | undefined>): VNode[] {

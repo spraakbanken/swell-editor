@@ -44,7 +44,8 @@ export function App(store: Store<Model.State>): () => VNode {
       const restricted = Model.deselect_removed_ids(store, store.get().selected)
       restricted && store.update(restricted)
       // Enrichen is expensive. Run once at every graph change and keep the result in state.
-      update_rich_diff()
+      if (store.at('automatic_rendering').get())
+        update_rich_diff()
     })
 
   Store.location_connect(Model.locationStore(store))

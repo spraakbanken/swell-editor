@@ -20,6 +20,7 @@ export interface State {
   readonly side_restriction?: G.Side
   readonly mode: Mode
   readonly taxonomy: Record<Mode, Taxonomy>
+  readonly automatic_rendering: boolean
 
   /** Error messages stay until manually closed. */
   readonly errors: Record<string, true>
@@ -244,6 +245,7 @@ export const init: State = {
   validation_messages: [],
   mode: modes.normalization,
   taxonomy: config.taxonomy,
+  automatic_rendering: true,
   show: {
     target_text: true,
   },

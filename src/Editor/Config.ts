@@ -164,6 +164,13 @@ const anonymization: Taxonomy = [
       {label: 'edu', desc: 'education, courses'},
       {label: 'fam', desc: 'family members'},
       {label: 'sensitive', desc: ''},
+    ],
+  },
+  {
+    group: 'Other',
+    entries: [
+      {label: 'Cit-FL', desc: 'Citation for a language'},
+      {label: 'Com!', desc: 'Comment'},
       {label: 'OBS!', desc: 'Attention'},
     ],
   },
@@ -171,17 +178,25 @@ const anonymization: Taxonomy = [
 
 export const normalization: Taxonomy = [
   {
-    group: 'Intelligibility',
+    group: 'Other',
     entries: [
       {
         label: 'X',
         desc: 'Impossible to interpret the writer’s intention',
       },
-    ],
+      {
+        label: 'Cit-FL',
+        desc: 'Citation for a language'
   },
   {
-    group: 'Unidentified',
-    entries: [{label: 'OBS!', desc: 'Attention'}],
+        label: 'Com!',
+        desc: 'Comment'
+      },
+      {
+        label: 'OBS!',
+        desc: 'Attention'
+      },
+    ],
   },
 ]
 
