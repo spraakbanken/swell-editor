@@ -49,7 +49,7 @@ export type TaxonomyGroup = {
 export type Taxonomy = TaxonomyGroup[]
 
 const extra = 'gen def pl'.split(' ')
-const temporary = 'OBS!'.split(' ')
+const temporary = 'OBS! foreign'.split(' ')
 const digits = /^\d+$/
 
 /** An ordered set of label categories. */
@@ -107,7 +107,7 @@ const anonymization: Taxonomy = [
       {label: 'country', desc: 'except Sweden'},
       {label: 'zip_code', desc: ''},
       {label: 'region', desc: ''},
-      {label: 'city_swe', desc: ''},
+      {label: 'foreign', desc: ''},
       {label: 'city', desc: 'city including villages'},
       {label: 'area', desc: ''},
       {label: 'place', desc: ''},
@@ -181,10 +181,6 @@ export const normalization: Taxonomy = [
     group: 'Other',
     entries: [
       {
-        label: 'X',
-        desc: 'Impossible to interpret the writer’s intention',
-      },
-      {
         label: 'Cit-FL',
         desc: 'Citation for a language'
   },
@@ -195,6 +191,10 @@ export const normalization: Taxonomy = [
       {
         label: 'OBS!',
         desc: 'Attention'
+      },
+      {
+        label: 'X',
+        desc: 'Impossible to interpret the writer’s intention',
       },
     ],
   },

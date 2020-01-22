@@ -355,7 +355,8 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
             <div className={hovering ? 'cm-hovering' : ''}>{cms.target.node}</div>
           </div>
         )}
-        <br></br><em>Spaghetti mode:</em> {Button(click_replace(store.at('automatic_rendering').get()) , '', () => store.at('automatic_rendering').modify(b => !b))}
+        <br></br>
+        {Button(click_replace(store.at('automatic_rendering').get()), '', () => store.at('automatic_rendering').modify(b => !b))}
         <div
           className={'vsep' + (hovering ? ' hovering' : '') + (readonly ? ' NoManualBlue' : '')}
           style={{minHeight: '10em'}}>
@@ -678,7 +679,7 @@ function show_hide_str(b: boolean | undefined) {
 }
 
 function click_replace(b: boolean | undefined) {
-  return b ? 'enable' : 'disable'
+  return b ? 'Spaghetti mode disable' : 'Spaghetti mode enable'
 }
 
 function RestrictionButtons(store: Store<G.Side | undefined>): VNode[] {
