@@ -74,7 +74,7 @@ export function anonymize(
       const [affixes, main_labels] = Utils.usandthem(labels, label_order, LabelOrder.EXTRA)
       const pp = pstore.at(main_labels.join(' '))
       pp.get() || pp.set(pseudonymize(src, main_labels))
-      const pseudonym = [pp.get(), ...affixes].join('-')
+      const pseudonym = affixes.includes('foreign') ? [pp.get()].join('') : [pp.get(), ...affixes].join('-')
       const ts = G.tokenize(pseudonym).map(text => G.Token(Utils.end_with_space(text), 't' + i++))
       edges.push(
         G.Edge(

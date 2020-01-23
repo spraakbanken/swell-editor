@@ -48,8 +48,8 @@ export type TaxonomyGroup = {
 
 export type Taxonomy = TaxonomyGroup[]
 
-const extra = 'gen def pl'.split(' ')
-const temporary = 'OBS! foreign'.split(' ')
+const extra = 'gen def pl foreign'.split(' ')
+const temporary = 'OBS!'.split(' ')
 const digits = /^\d+$/
 
 /** An ordered set of label categories. */
