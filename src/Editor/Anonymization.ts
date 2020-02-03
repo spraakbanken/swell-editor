@@ -73,9 +73,29 @@ export function anonymize(
         : {src: source_text, labels: anonLabels}
       const [affixes, main_labels] = Utils.usandthem(labels, label_order, LabelOrder.EXTRA)
       const pp = pstore.at(main_labels.join(' '))
-      pp.get() || pp.set(pseudonymize(src, main_labels))
-      const pseudonym = affixes.includes('foreign') ? [pp.get()].join('') : [pp.get(), ...affixes].join('-')
-      const ts = G.tokenize(pseudonym).map(text => G.Token(Utils.end_with_space(text), 't' + i++))
+      if (affixes.includes('foreign') && main_labels.includes('city'))
+      {
+        pp.get() || pp.set(pseudonymize(src, ['city_foreign', main_labels[1]]))
+      }
+      else if (affixes.includes('foreign') && main_labels.includes('area'))
+      {
+        pp.get() || pp.set(pseudonymize(src, ['area_foreign', main_labels[1]]))
+      }
+      else if (affixes.includes('foreign') && main_labels.includes('place'))
+      {
+        pp.get() || pp.set(pseudonymize(src, ['place_foreign', main_labels[1]]))
+      }
+      else if (affixes.includes('foreign') && main_labels.includes('region'))
+      {
+      pp.get() || pp.set(pseudonymize(src, ['region_foreign', main_labels[1]]))
+      }
+      else
+      {
+        pp.get() || pp.set(pseudonymize(src, main_labels))
+      }
+      const pseudonym = [pp.get(), ...affixes].join('-')
+      const new_pseudonym = pseudonym.replace('-foreign', '')
+      const ts = G.tokenize(new_pseudonym).map(text => G.Token(Utils.end_with_space(text), 't' + i++))
       edges.push(
         G.Edge(
           [...pi(e.ids).source.map(s => s.id), ...ts.map(t => t.id)],
