@@ -49,7 +49,7 @@ export type TaxonomyGroup = {
 export type Taxonomy = TaxonomyGroup[]
 
 const extra = 'gen def pl foreign'.split(' ')
-const temporary = 'OBS!'.split(' ')
+const temporary = 'OBS! Cit-FL Com!'.split(' ')
 const digits = /^\d+$/
 
 /** An ordered set of label categories. */
