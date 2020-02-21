@@ -35,7 +35,7 @@ const order_changing_labels: Record<string, true> = {
 }
 
 export const label_args: Record<string, number> = {
-  age_string: 1,
+  /*age_string: 1,*/
 }
 
 export type TaxonomyGroup = {
@@ -297,7 +297,11 @@ export const correctannot: Taxonomy = [
         desc: 'Problematic syntactical construction',
       },
       {
-        label: 'S-Con',
+        label: 'S-Clause',
+        desc: '',
+      },
+      {
+        label: 'S-Ext',
         desc: '',
       },
       {
@@ -321,6 +325,10 @@ export const correctannot: Taxonomy = [
       {
         label: 'S-R',
         desc: 'Word or phrase redundant',
+      },
+      {
+        label: 'S-Type',
+        desc: '',
       },
       {
         label: 'S-WO',

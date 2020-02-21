@@ -99,7 +99,7 @@ export function anonymize(
       edges.push(
         G.Edge(
           [...pi(e.ids).source.map(s => s.id), ...ts.map(t => t.id)],
-          e.labels.includes('age_string') ? ["age_string", "99"] : e.labels,
+          e.labels,
           true,
           e.comment
         )
