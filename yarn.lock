@@ -5990,7 +5990,7 @@ pseudomap@^1.0.2:
 
 "pseudonymization@https://github.com/spraakbanken/swell-pseudonymize-js.git":
   version "1.0.0"
-  resolved "https://github.com/spraakbanken/swell-pseudonymize-js.git#9bf7eaeffdf1cda1cf3a03ba3ee9ad4421133538"
+  resolved "https://github.com/spraakbanken/swell-pseudonymize-js.git#d87e1f5feccf1d4d18c4e5a716c92e70d693d62c"
 
 public-encrypt@^4.0.0:
   version "4.0.3"
