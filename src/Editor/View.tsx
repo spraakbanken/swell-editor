@@ -335,6 +335,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
 
     return (
       <div className="content">
+        <div style={{textAlign: 'center'}}>foo = {state.foo}</div>
         {ShowErrors(store.at('errors'))}
         {manual_part()}
         {state.show.source_text && (
