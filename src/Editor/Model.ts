@@ -10,6 +10,8 @@ import * as Manual from '../Doc/Manual'
 import {Taxonomy, config, label_order, LabelOrder, taxonomy_has_label, label_args} from './Config'
 import {Severity, Rule, edge_check} from './Validate'
 import {init_pstore, anonymize, Pseudonyms, is_anon_label} from './Anonymization'
+import {configSwell} from './swellData'
+
 
 export interface State {
   readonly graph: Undo<G.Graph>
@@ -51,6 +53,7 @@ export interface State {
   readonly start_mode?: Mode
   readonly readonly?: boolean
   readonly version?: number
+  readonly svlink?: string
 
   readonly done?: boolean
 }
@@ -418,6 +421,17 @@ export function setManualTo(store: Store<State>, slug: string | undefined) {
   }
 }
 
+export function setSvlink(store: Store<State>, slug: string | undefined) {
+  if (slug === undefined) {
+    store.at('svlink').set(undefined)
+  } else {
+        store.update({ mode: 'correctannot'})
+        const g = JSON.parse(configSwell.corrAnno[slug])
+        G.is_graph(g) && store.at('graph').modify(Undo.advance_to(g))
+        store.update({ svlink: 'swell'})
+      }
+    }
+
 export function deselect(store: Store<State>) {
   store.update({selected: {}, hover_id: undefined})
 }
@@ -747,7 +761,7 @@ export function performAction(store: Store<State>, action: ActionOnSelected) {
 }
 
 const subkeys = <K extends string>(...ks: K[]): K[] => ks
-const location_keys = subkeys('manual', 'backurl', 'backend', 'essay', 'start_mode', 'user')
+const location_keys = subkeys('manual', 'backurl', 'backend', 'essay', 'start_mode', 'user', 'svlink')
 const base64_keys = subkeys('backurl', 'backend')
 const id = (s: string) => s
 

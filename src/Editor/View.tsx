@@ -13,6 +13,7 @@ import * as Model from './Model'
 import {DropZone} from './DropZone'
 import * as CM from './CodeMirror'
 import {config, label_sort, taxonomy_has_label, label_taxonomy, label_args} from './Config'
+import {configSwell} from './swellData'
 
 import * as EditorTypes from '../EditorTypes'
 
@@ -246,6 +247,8 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
 
   const manual_page = state.manual !== undefined && Manual.manual[state.manual]
 
+  const svlink_data = state.svlink !== undefined && configSwell.corrAnno[state.svlink]
+
   store.at('hover_id').ondiff(hover_id => {
     const graphViewElement = document.querySelector<HTMLElement>('.graphView')
     if (!graphViewElement) return
@@ -253,6 +256,10 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
     edgeElement && Utils.scrollIntoView(graphViewElement, edgeElement)
   })
 
+  const sv_part = () =>
+    svlink_data && (
+      Model.setSvlink(store, state.svlink))
+    
   const manual_part = () =>
     manual_page && (
       <div className="main" style={{minHeight: '18em'}}>
@@ -337,6 +344,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
       <div className="content">
         {ShowErrors(store.at('errors'))}
         {manual_part()}
+        {sv_part()}
         {state.show.source_text && (
           <div className="TopPad">
             <em>Source text:</em>

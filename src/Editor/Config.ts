@@ -207,15 +207,15 @@ export const correctannot: Taxonomy = [
     entries: [
       {
         label: 'O',
-        desc: 'Orthographic/spelling error',
+        desc: 'Spelling',
       },
       {
         label: 'O-Cap',
-        desc: 'Error with capitalization (upper/lower)',
+        desc: 'Upper/lower case',
       },
       {
         label: 'O-Comp',
-        desc: 'Error within compounds (oversplitting, overcompounding)',
+        desc: 'Spaces and hyphens between words',
       },
     ],
   },
@@ -224,20 +224,20 @@ export const correctannot: Taxonomy = [
     entries: [
       {
         label: 'L-Der',
-        desc: 'Deviant (existisng!) derivational affix used',
+        desc: 'Word formation (derivation and compounding)',
       },
       {
         label: 'L-FL',
-        desc: 'Foreign word (not conventionally used in Swedish)',
+        desc: 'Non-Swedish word corrected to Swedish word',
       },
       {
         label: 'L-Ref',
-        desc: 'Reference error',
+        desc: 'Choice of anaphoric expression',
       },
       {
         label: 'L-W',
         desc:
-          'Wrong content word/phrase. Includes even phrasal verbs, reflexives with missing particle/reflexive marker, and multiword prepositions.',
+          'Wrong word or phrase, other',
       },
     ],
   },
@@ -246,22 +246,22 @@ export const correctannot: Taxonomy = [
     entries: [
       {
         label: 'M-Adj/adv',
-        desc: 'Corrections concerning the confusions of adjective and adverbial endings',
+        desc: 'Adjective form of word corrected to adverb form',
       },
       {
         label: 'M-Case',
-        desc: 'Corrections regarding the use of genitive (nouns) and dative forms (pronouns)',
+        desc: 'Nominative vs genitive/accusative',
       },
-      {label: 'M-Def', desc: 'Deviation in definite/indefinite forms'},
-      {label: 'M-F', desc: 'Deviant paradigm selection, but correct grammatical category'},
-      {label: 'M-Gend', desc: 'Correction regarding grammatical gender'},
-      {label: 'M-Num', desc: 'Deviation in number agreement. May apply to groups of words'},
+      {label: 'M-Def', desc: 'Definiteness: articles; forms of nouns and adjectives'},
+      {label: 'M-F', desc: 'Grammatical category kept, form changed'},
+      {label: 'M-Gend', desc: 'Gender'},
+      {label: 'M-Num', desc: 'Number'},
       {
         label: 'M-Other',
         desc:
-          'Ambiguous cases with several possible target hypotheses – to be applied when there are no convincing arguments for any other morphological code',
+          'Other morphological corrections, including change between different comparational forms of adjectives',
       },
-      {label: 'M-Verb', desc: 'Covers deviations in the verb phrase, i.e. aspect, tense, mode'},
+      {label: 'M-Verb', desc: 'Verb forms; use of ha, komma and skola auxiliaries'},
     ],
   },
   {
@@ -269,15 +269,15 @@ export const correctannot: Taxonomy = [
     entries: [
       {
         label: 'P-M',
-        desc: 'Missing punctuation',
+        desc: 'Punctuation missing (added)',
       },
       {
         label: 'P-R',
-        desc: 'Redundant punctuation',
+        desc: 'Punctuation redundant (removed)',
       },
       {
         label: 'P-Sent',
-        desc: 'Merging, or splitting a sentence',
+        desc: 'Sentence segmentation',
       },
       {
         label: 'P-W',
@@ -290,49 +290,49 @@ export const correctannot: Taxonomy = [
     entries: [
       {
         label: 'S-Adv',
-        desc: 'Word order error involving adverbial placement',
+        desc: 'Adverbial placement',
       },
       {
         label: 'S-Comp',
-        desc: 'Problematic syntactical construction',
+        desc: 'Compound vs multi-word expression, and other restructuring of the same lexical morphemes within a phrase',
       },
       {
         label: 'S-Clause',
-        desc: '',
+        desc: 'Change of basic clause structure: syntactic function of components, hierarchical clause structure',
       },
       {
         label: 'S-Ext',
-        desc: '',
+        desc: 'Extensive and complex correction',
       },
       {
         label: 'S-FinV',
-        desc: 'Word order error with finite verb placement',
+        desc: 'Finite verb placement',
       },
       {
         label: 'S-M',
         desc:
-          'Grammatical word missing, e.g. particle, reflexive pronoun, connector, auxiliary verbs',
+          'Word missing (added)',
       },
       {
         label: 'S-Msubj',
-        desc: 'Subject missing',
+        desc: 'Subject missing (added)',
       },
       {
         label: 'S-Other',
         desc:
-          'Wrong function word, e.g. preposition (also multiword presposition), auxilary verb; particle and reflexive marker.',
+          'Other syntactical correction',
       },
       {
         label: 'S-R',
-        desc: 'Word or phrase redundant',
+        desc: 'Word redundant (removed)',
       },
       {
         label: 'S-Type',
-        desc: '',
+        desc: 'Change of phrase type/part of speech',
       },
       {
         label: 'S-WO',
-        desc: 'Word or phrase order – other',
+        desc: 'Word order, other',
       },
     ],
   },
@@ -341,27 +341,27 @@ export const correctannot: Taxonomy = [
     entries: [
       {
         label: 'C',
-        desc: 'Consistence',
+        desc: 'Consistency correction, necessitated by other correction',
       },
       {
         label: 'Cit-FL',
-        desc: 'Citation for a language',
+        desc: 'Non-Swedish word kept, i.e. not corrected',
       },
       {
         label: 'Com!',
-        desc: 'Comment'
+        desc: 'Comments for the corpus user'
       },
       {
         label: 'OBS!',
-        desc: 'Attention'
+        desc: 'Internal and temporary comments for the annotators'
       },
       {
         label: 'Unid',
-        desc: 'Error that cannot be categorized according to other codes',
+        desc: 'Unidentified correction',
       },
       {
         label: 'X',
-        desc: 'Impossible to interpret the writer’s intention',
+        desc: 'Unintelligible string',
       },
     ],
   },
@@ -379,7 +379,7 @@ const docs: Record<string, Record<string, string>> = {
     'normalization guidelines': doc_url('Normalization_guidelines'),
   },
   correctannot: {
-    'annotation guidelines': doc_url('Correction-annotation_guidelines-and-codebook'),
+    'annotation guidelines': doc_url('Correction-annotation_guidelines'),
   },
 }
 
