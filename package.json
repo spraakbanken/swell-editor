@@ -6,7 +6,7 @@
   "description": "Editor for normalising second-language learner texts",
   "dependencies": {
     "cm-resize": "^0.2.2",
-    "codemirror": "^5.37.0",
+    "codemirror": "^5.58.2",
     "compression": "^1.7.2",
     "csstips": "^0.2.3",
     "dejavu-fonts-ttf": "^2.37.3",
