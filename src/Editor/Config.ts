@@ -373,7 +373,7 @@ function doc_url(title: string): string {
 
 const docs: Record<string, Record<string, string>> = {
   anonymization: {
-    'pseudonymization guidelines': doc_url('Anonymization_guidelines'),
+    'pseudonymization guidelines': doc_url('Pseudonymization_guidelines'),
   },
   normalization: {
     'normalization guidelines': doc_url('Normalization_guidelines'),
