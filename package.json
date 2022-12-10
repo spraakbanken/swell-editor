@@ -11,7 +11,7 @@
     "csstips": "^0.2.3",
     "dejavu-fonts-ttf": "^2.37.3",
     "diff-match-patch": "^1.0.0",
-    "express": "^4.16.3",
+    "express": "^4.17.3",
     "express-throttle": "^2.0.0",
     "generic-pool": "^3.4.2",
     "json-stringify-pretty-compact": "^1.2.0",
