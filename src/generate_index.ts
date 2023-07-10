@@ -24,7 +24,7 @@ write(
         <link rel="shortcut icon" href="favicon.ico" type="image/vnd.microsoft.icon">
     </head>
     <body>
-        <script type="text/javascript" src="${index_ts}"></script>
+        <script type="module" src="${index_ts}"></script>
     </body>
 </html>
 `

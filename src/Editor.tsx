@@ -7,7 +7,6 @@ import {VNode} from './ReactUtils'
 
 import 'codemirror/lib/codemirror.css'
 import 'lato-font/css/lato-font.min.css'
-import 'dejavu-fonts-ttf/ttf/DejaVuSans.ttf'
 
 import {State} from './Editor/Model'
 import * as Model from './Editor/Model'
