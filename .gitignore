@@ -16,3 +16,5 @@ src/index.ts
 pilot_data.json
 dist/
 node_modules/
+*.log
+.DS_Store
