@@ -12,7 +12,6 @@ import {Severity, Rule, edge_check} from './Validate'
 import {init_pstore, anonymize, Pseudonyms, is_anon_label} from './Anonymization'
 import {configSwell} from './swellData'
 
-
 export interface State {
   readonly graph: Undo<G.Graph>
   readonly rich_diff?: G.RichDiff[]
@@ -277,27 +276,27 @@ export function check_invariant(store: Store<State>): (g: G.Graph) => void {
 /** Validation rules for app state.
 
   const graph = G.modify_labels(G.init('x'), 'e-s0-t0', () => ['OBS!'])
-  validationRules[0].check({graph, state: {...init, mode: 'anonymization', done: true}}) // => [{severity: Severity.ERROR, message: '"x"'}]
-  validationRules[0].check({graph, state: {...init, mode: 'normalization', done: true}}) // => [{severity: Severity.ERROR, message: '"x"'}]
+  validationRules[0].check({graph, state: {...init, mode: 'anonymization', done: true}}) // => [{subject: 'e-s0-t0', severity: Severity.WARNING}]
+  validationRules[0].check({graph, state: {...init, mode: 'normalization', done: true}}) // => [{subject: 'e-s0-t0', severity: Severity.WARNING}]
   validationRules[0].check({graph, state: {...init, mode: 'anonymization', done: false}}) // => []
 
   const graph = G.unaligned_modify_tokens(G.init('x'), 0, 1, 'y ')
-  validationRules[1].check({graph, state: {...init, mode: 'correctannot'}}) // => [{severity: Severity.WARNING, message: '"x"'}]
+  validationRules[1].check({graph, state: {...init, mode: 'correctannot'}}) // => [{subject: 'e-s0-t1', severity: Severity.WARNING}]
 
   const graph = G.modify_labels(G.init('x'), 'e-s0-t0', () => ['firstname_female', 'region', 'OBS!', 'gen', 'ort'])
-  validationRules[2].check({graph, state: {...init, mode: 'anonymization'}}) // => [{severity: Severity.ERROR, message: '"x"'}]
+  validationRules[2].check({graph, state: {...init, mode: 'anonymization'}}) // => [{subject: 'e-s0-t0', severity: Severity.ERROR}]
 
   const g0 = G.init('x y')
   const g1 = G.modify_labels(g0, 'e-s0-t0', () => ['firstname_female'])
   const graph = G.modify_labels(g1, 'e-s1-t1', () => ['firstname_female', '1'])
-  validationRules[3].check({graph, state: {...init, mode: 'anonymization', done: true}}) // => [{severity: Severity.ERROR, message: '"x"'}]
+  validationRules[3].check({graph, state: {...init, mode: 'anonymization', done: true}}) // => [{subject: 'e-s0-t0', severity: Severity.ERROR}]
   validationRules[3].check({graph, state: {...init, mode: 'anonymization'}}) // => []
   validationRules[3].check({graph, state: {...init, done: true}}) // => []
 
   const g0 = G.init('x y')
   const g1 = G.modify_labels(g0, 'e-s0-t0', () => ['1'])
   const graph = G.modify_labels(g1, 'e-s1-t1', () => ['firstname_female', '1'])
-  validationRules[4].check({graph, state: {...init, mode: 'anonymization', done: true}}) // => [{severity: Severity.ERROR, message: '"x"'}]
+  validationRules[4].check({graph, state: {...init, mode: 'anonymization', done: true}}) // => [{subject: 'e-s0-t0', severity: Severity.ERROR}]
   validationRules[4].check({graph, state: {...init, done: true}}) // => []
   validationRules[4].check({graph, state: {...init, mode: 'anonymization'}}) // => []
 
@@ -425,12 +424,12 @@ export function setSvlink(store: Store<State>, slug: string | undefined) {
   if (slug === undefined) {
     store.at('svlink').set(undefined)
   } else {
-        store.update({ mode: 'correctannot'})
-        const g = JSON.parse(configSwell.corrAnno[slug])
-        G.is_graph(g) && store.at('graph').modify(Undo.advance_to(g))
-        store.update({ svlink: 'swell'})
-      }
-    }
+    store.update({mode: 'correctannot'})
+    const g = JSON.parse(configSwell.corrAnno[slug])
+    G.is_graph(g) && store.at('graph').modify(Undo.advance_to(g))
+    store.update({svlink: 'swell'})
+  }
+}
 
 export function deselect(store: Store<State>) {
   store.update({selected: {}, hover_id: undefined})
@@ -708,9 +707,10 @@ function navigate(direction: 'next' | 'prev', kind: G.NavigationKind) {
 }
 
 const act_on_selected: {
-  [K in ActionOnSelected]: (
-    gs: {graph: G.Graph; selected: string[]}
-  ) => G.Graph | {type: 'selection'; selected: string[]}
+  [K in ActionOnSelected]: (gs: {
+    graph: G.Graph
+    selected: string[]
+  }) => G.Graph | {type: 'selection'; selected: string[]}
 } = {
   revert({graph, selected}) {
     const edge_ids = G.token_ids_to_edge_ids(graph, selected)
@@ -761,7 +761,15 @@ export function performAction(store: Store<State>, action: ActionOnSelected) {
 }
 
 const subkeys = <K extends string>(...ks: K[]): K[] => ks
-const location_keys = subkeys('manual', 'backurl', 'backend', 'essay', 'start_mode', 'user', 'svlink')
+const location_keys = subkeys(
+  'manual',
+  'backurl',
+  'backend',
+  'essay',
+  'start_mode',
+  'user',
+  'svlink'
+)
 const base64_keys = subkeys('backurl', 'backend')
 const id = (s: string) => s
 
