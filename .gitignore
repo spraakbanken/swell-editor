@@ -7,7 +7,7 @@ src/**/*doctest*
 *gif
 *woff*
 index.html
-.cache
+.parcel-cache
 .nyc_output
 coverage/
 test/snapshots/*md

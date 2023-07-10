@@ -33,6 +33,8 @@
     "typestyle": "^1.7.2"
   },
   "devDependencies": {
+    "@parcel/config-default": "^2.9.3",
+    "@parcel/transformer-typescript-tsc": "^2.9.3",
     "@types/chai": "^4.1.3",
     "@types/codemirror": "^0.0.56",
     "@types/compression": "^0.0.36",
@@ -51,6 +53,7 @@
     "@types/react": "^16.3.12",
     "@types/react-dom": "^16.0.5",
     "@types/tape": "^4.2.32",
+    "buffer": "^5.5.0||^6.0.0",
     "chai": "^4.1.2",
     "doctest-ts": ">=0.3.0",
     "enzyme": "^3.3.0",
@@ -59,7 +62,7 @@
     "lato-font": "^3.0.0",
     "mocha": "^5.1.1",
     "nyc": "^11.7.1",
-    "parcel-bundler": "1.10.0",
+    "parcel": "^2.9.3",
     "parcel-plugin-typescript": "^0.7.0",
     "prettier": "^1.12.1",
     "proptest": "^0.0.4",
@@ -69,30 +72,31 @@
     "typescript": "^3.0.0"
   },
   "nyc": {
-    "include": ["dist/**/*"],
-    "reporter": ["html", "text"]
+    "include": [
+      "dist/**/*"
+    ],
+    "reporter": [
+      "html",
+      "text"
+    ]
   },
   "scripts": {
     "png-io": "ts-node src/Image/png-io.ts",
     "iosaas": "ts-node src/Image/iosaas.ts --serve",
     "serve": "parcel $(ts-node src/generate_index.ts ${App:-Editor})",
-    "build":
-      "rm -rf dist/*; parcel build --public-url ./ $(ts-node src/generate_index.ts ${App:-Editor})",
-    "deploy":
-      "yarn run build && rsync -avzc --delete-after dist/ fkswell@k2.spraakdata.gu.se:htdocs/dev",
+    "build": "rm -rf dist/*; parcel build --public-url ./ $(ts-node src/generate_index.ts ${App:-Editor})",
+    "deploy": "yarn run build && rsync -avzc --delete-after dist/ fkswell@k2.spraakdata.gu.se:htdocs/dev",
     "doctest:generate": "doctest-ts src/*ts* src/*/*ts* --mocha",
     "pretest": "yarn run doctest:clean && yarn run doctest:generate",
     "test": "mocha --require ts-node/register {src,src/*,test}/*test.ts*",
     "test:e2e": "mocha --require ts-node/register test/e2e.ts --timeout 20000",
-    "coverage":
-      "yarn run pretest && yarn run tsc && for i in dist/**/*.doctest.js; do cp $i $(echo $i | sed s/doctest.//); done && nyc mocha dist/test/*js $(echo dist/**/*.doctest.js | sed s/doctest.//g)",
+    "coverage": "yarn run pretest && yarn run tsc && for i in dist/**/*.doctest.js; do cp $i $(echo $i | sed s/doctest.//); done && nyc mocha dist/test/*js $(echo dist/**/*.doctest.js | sed s/doctest.//g)",
     "test:watch": "mocha --require ts-node/register --watch --watch-extensions ts test/*test.ts*",
-    "doctest:watch":
-      "yarn run doctest:clean && doctest-ts --tape --watch src/*ts* src/**/*ts* | while read file; do echo running tape on $file; ts-node $file | tap-diff; done",
+    "doctest:watch": "yarn run doctest:clean && doctest-ts --tape --watch src/*ts* src/**/*ts* | while read file; do echo running tape on $file; ts-node $file | tap-diff; done",
     "doctest:clean": "rm -f -v src/{,*/}*doctest*",
-    "prettier":
-      "yarn run doctest:clean && prettier --list-different --write src/{,*/}*ts* test/*ts*"
+    "prettier": "yarn run doctest:clean && prettier --list-different --write src/{,*/}*ts* test/*ts*"
   },
+  "browserslist": "> 0.5%, last 2 versions, not dead",
   "prettier": {
     "printWidth": 100,
     "semi": false,
