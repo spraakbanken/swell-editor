@@ -163,6 +163,7 @@ const anonymization: Taxonomy = [
       {label: 'username', desc: 'usernames and @names from online contexts'},
       {label: 'pet_type', desc: 'pet breed or species, for names use name_xyz'},
       {label: 'language', desc: '(foreign) language spoken'},
+      {label: 'ethnicity', desc: ''},
       {label: 'hobby', desc: 'routine and relatively unique activity'},
     ],
   },
