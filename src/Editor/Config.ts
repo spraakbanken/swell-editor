@@ -99,6 +99,7 @@ const anonymization: Taxonomy = [
       {label: 'initials', desc: ''},
       {label: 'middlename', desc: ''},
       {label: 'surname', desc: ''},
+      {label: 'nickname', desc: ''},
     ],
   },
   {
@@ -107,7 +108,7 @@ const anonymization: Taxonomy = [
       {label: 'foreign', desc: ''},
       {label: 'area', desc: ''},
       {label: 'city', desc: 'city including villages'},
-      {label: 'country', desc: 'except Sweden'},
+      {label: 'country', desc: ''},
       {label: 'geo', desc: 'forest, lake, mountain, etc'},
       {label: 'place', desc: ''},
       {label: 'region', desc: ''},
@@ -120,6 +121,7 @@ const anonymization: Taxonomy = [
     entries: [
       {label: 'school', desc: ''},
       {label: 'work', desc: ''},
+      {label: 'public_authority', desc: 'Skatteverket, Socialtänsten, etc.'},
       {label: 'other_institution', desc: ''},
     ],
   },
@@ -142,6 +144,9 @@ const anonymization: Taxonomy = [
       {label: 'month_digit', desc: ''},
       {label: 'month_word', desc: ''},
       {label: 'year', desc: ''},
+      {label: 'past_timepoint', desc: 'yesterday, Friday'},
+      {label: 'future_timepoint', desc: 'tomorrow, Wednesday'},
+      {label: 'time_span', desc: 'two weeks, five months'},
     ],
   },
   {
@@ -155,6 +160,10 @@ const anonymization: Taxonomy = [
       {label: 'phone_nr', desc: ''},
       {label: 'personid_nr', desc: ''},
       {label: 'url', desc: ''},
+      {label: 'username', desc: 'usernames and @names from online contexts'},
+      {label: 'pet_type', desc: 'pet breed or species, for names use name_xyz'},
+      {label: 'language', desc: '(foreign) language spoken'},
+      {label: 'hobby', desc: 'routine and relatively unique activity'},
     ],
   },
   {
