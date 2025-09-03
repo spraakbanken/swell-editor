@@ -166,6 +166,8 @@ const anonymization: Taxonomy = [
       {label: 'ethnicity', desc: ''},
       {label: 'currency', desc: ''},
       {label: 'hobby', desc: 'routine and relatively unique activity'},
+      {label: 'crime', desc: 'a crime perpetrated by or against the person in question'},
+      {label: 'health_condition', desc: 'an illness, injury, or any other condition influencing health'},
     ],
   },
   {
