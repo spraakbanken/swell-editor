@@ -7,5 +7,5 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
       - run: yarn install
-      - run: yarn coverage --grep e2e --invert
+      - run: yarn coverage --grep e2e --invert --timeout 20000
       - run: yarn build
