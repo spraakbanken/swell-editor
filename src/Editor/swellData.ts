@@ -1,6 +1,5 @@
-const corrAnno: Record<string, string> = {
-}
+const corrAnno: Record<string, string> = {}
 
 export const configSwell = {
-    corrAnno,
-  }
+  corrAnno,
+}

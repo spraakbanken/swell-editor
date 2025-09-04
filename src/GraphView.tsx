@@ -442,22 +442,21 @@ export function GraphView(props: GraphViewProps): React.ReactElement<GraphViewPr
             const obs_class = labels.some(l => -1 != l.indexOf('!')) ? ' OBS ' : ''
             const mid = Column(
               line_below_label,
-              labels.length > 0 &&
-                show_label_now && (
-                  <div className={BorderCell + ' ' + hoverClass(hoverId, d.id) + obs_class}>
-                    <div>
-                      {labels.map((l, i) => (
-                        <span
-                          key={i}
-                          className={
-                            'label ' + (labelMode && !labelMode(String(mode), l) ? 'blurred' : '')
-                          }>
-                          {l}
-                        </span>
-                      ))}
-                    </div>
+              labels.length > 0 && show_label_now && (
+                <div className={BorderCell + ' ' + hoverClass(hoverId, d.id) + obs_class}>
+                  <div>
+                    {labels.map((l, i) => (
+                      <span
+                        key={i}
+                        className={
+                          'label ' + (labelMode && !labelMode(String(mode), l) ? 'blurred' : '')
+                        }>
+                        {l}
+                      </span>
+                    ))}
                   </div>
-                )
+                </div>
+              )
             )
             const on_hover: OnHover = id => onHover && hoverId !== id && onHover(id)
             return (

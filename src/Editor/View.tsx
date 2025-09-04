@@ -256,10 +256,8 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
     edgeElement && Utils.scrollIntoView(graphViewElement, edgeElement)
   })
 
-  const sv_part = () =>
-    svlink_data && (
-      Model.setSvlink(store, state.svlink))
-    
+  const sv_part = () => svlink_data && Model.setSvlink(store, state.svlink)
+
   const manual_part = () =>
     manual_page && (
       <div className="main" style={{minHeight: '18em'}}>
@@ -364,7 +362,9 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
           </div>
         )}
         <br></br>
-        {Button(click_replace(store.at('automatic_rendering').get()), '', () => store.at('automatic_rendering').modify(b => !b))}
+        {Button(click_replace(store.at('automatic_rendering').get()), '', () =>
+          store.at('automatic_rendering').modify(b => !b)
+        )}
         <div
           className={'vsep' + (hovering ? ' hovering' : '') + (readonly ? ' NoManualBlue' : '')}
           style={{minHeight: '10em'}}>
@@ -643,9 +643,7 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
             <i>Issues</i>
           </a>{' '}
           <b>Link to Articles:</b>{' '}
-          <a
-            href="http://www.ep.liu.se/ecp/159/023/ecp18159023.pdf"
-            target="_blank">
+          <a href="http://www.ep.liu.se/ecp/159/023/ecp18159023.pdf" target="_blank">
             <i>Svala</i>
           </a>{' '}
           <a

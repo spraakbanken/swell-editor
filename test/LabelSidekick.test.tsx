@@ -19,7 +19,7 @@ describe('Dropdown', () => {
     },
   ]
   // TODO: scrolling the taxonomy window to selected requires reading DOM height / scrollheight
-  // which now needs to be mocked in these tests. 
+  // which now needs to be mocked in these tests.
   // it('cycles on arrow down', () => {
   //   const dom = enzyme.shallow(
   //     <Dropdown mode="anonymization" taxonomy={taxonomy} selected={[]} onChange={() => void 0} />
@@ -88,7 +88,7 @@ describe('Dropdown', () => {
   //   let times = 0
   //   const dom = enzyme.shallow(
   //     <Dropdown
-  //       mode="anonymization"  
+  //       mode="anonymization"
   //       taxonomy={taxonomy}
   //       selected={[]}
   //       onChange={(...args: any[]) => ((called = args), ++times)}

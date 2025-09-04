@@ -37,7 +37,9 @@ export function thunk<D>(dep: D, key: string | number | undefined, child: () => 
 export function Key(nodes: VNode[], s: string | number = ''): VNode {
   return (
     <React.Fragment key={s}>
-      {nodes.map((n, i) => <React.Fragment key={i}>{n}</React.Fragment>)}
+      {nodes.map((n, i) => (
+        <React.Fragment key={i}>{n}</React.Fragment>
+      ))}
     </React.Fragment>
   )
 }

@@ -167,7 +167,10 @@ const anonymization: Taxonomy = [
       {label: 'currency', desc: ''},
       {label: 'hobby', desc: 'routine and relatively unique activity'},
       {label: 'crime', desc: 'a crime perpetrated by or against the person in question'},
-      {label: 'health_condition', desc: 'an illness, injury, or any other condition influencing health'},
+      {
+        label: 'health_condition',
+        desc: 'an illness, injury, or any other condition influencing health',
+      },
     ],
   },
   {
@@ -195,15 +198,15 @@ export const normalization: Taxonomy = [
     entries: [
       {
         label: 'Cit-FL',
-        desc: 'Citation for a language'
-  },
-  {
+        desc: 'Citation for a language',
+      },
+      {
         label: 'Com!',
-        desc: 'Comment'
+        desc: 'Comment',
       },
       {
         label: 'OBS!',
-        desc: 'Attention'
+        desc: 'Attention',
       },
       {
         label: 'X',
@@ -249,8 +252,7 @@ export const correctannot: Taxonomy = [
       },
       {
         label: 'L-W',
-        desc:
-          'Wrong word or phrase, other',
+        desc: 'Wrong word or phrase, other',
       },
     ],
   },
@@ -307,11 +309,13 @@ export const correctannot: Taxonomy = [
       },
       {
         label: 'S-Comp',
-        desc: 'Compound vs multi-word expression, and other restructuring of the same lexical morphemes within a phrase',
+        desc:
+          'Compound vs multi-word expression, and other restructuring of the same lexical morphemes within a phrase',
       },
       {
         label: 'S-Clause',
-        desc: 'Change of basic clause structure: syntactic function of components, hierarchical clause structure',
+        desc:
+          'Change of basic clause structure: syntactic function of components, hierarchical clause structure',
       },
       {
         label: 'S-Ext',
@@ -323,8 +327,7 @@ export const correctannot: Taxonomy = [
       },
       {
         label: 'S-M',
-        desc:
-          'Word missing (added)',
+        desc: 'Word missing (added)',
       },
       {
         label: 'S-Msubj',
@@ -332,8 +335,7 @@ export const correctannot: Taxonomy = [
       },
       {
         label: 'S-Other',
-        desc:
-          'Other syntactical correction',
+        desc: 'Other syntactical correction',
       },
       {
         label: 'S-R',
@@ -362,11 +364,11 @@ export const correctannot: Taxonomy = [
       },
       {
         label: 'Com!',
-        desc: 'Comments for the corpus user'
+        desc: 'Comments for the corpus user',
       },
       {
         label: 'OBS!',
-        desc: 'Internal and temporary comments for the annotators'
+        desc: 'Internal and temporary comments for the annotators',
       },
       {
         label: 'Unid',

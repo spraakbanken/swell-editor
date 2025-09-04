@@ -179,7 +179,11 @@ export class Dropdown extends React.Component<DropdownProps, DropdownState> {
       <input
         onMouseDown={e => e.currentTarget.focus()}
         ref={e => {
-          if (e && document.activeElement && !/\bkeepfocus\b/.test(document.activeElement.className)) {
+          if (
+            e &&
+            document.activeElement &&
+            !/\bkeepfocus\b/.test(document.activeElement.className)
+          ) {
             const x = window.scrollX
             const y = window.scrollY
             e.focus()
