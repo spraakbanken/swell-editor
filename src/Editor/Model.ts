@@ -10,7 +10,6 @@ import * as Manual from '../Doc/Manual'
 import {Taxonomy, config, label_order, LabelOrder, taxonomy_has_label, label_args} from './Config'
 import {Severity, Rule, edge_check} from './Validate'
 import {init_pstore, anonymize, Pseudonyms, is_anon_label} from './Anonymization'
-import {configSwell} from './swellData'
 
 export interface State {
   readonly graph: Undo<G.Graph>
@@ -420,15 +419,10 @@ export function setManualTo(store: Store<State>, slug: string | undefined) {
   }
 }
 
-export function setSvlink(store: Store<State>, slug: string | undefined) {
-  if (slug === undefined) {
-    store.at('svlink').set(undefined)
-  } else {
-    store.update({mode: 'correctannot'})
-    const g = JSON.parse(configSwell.corrAnno[slug])
-    G.is_graph(g) && store.at('graph').modify(Undo.advance_to(g))
-    store.update({svlink: 'swell'})
-  }
+export function setSvlink(store: Store<State>, json: string) {
+  store.update({mode: 'correctannot'})
+  const g = JSON.parse(json)
+  G.is_graph(g) && store.at('graph').modify(Undo.advance_to(g))
 }
 
 export function deselect(store: Store<State>) {

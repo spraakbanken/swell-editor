@@ -247,16 +247,12 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
 
   const manual_page = state.manual !== undefined && Manual.manual[state.manual]
 
-  const svlink_data = state.svlink !== undefined && configSwell.corrAnno[state.svlink]
-
   store.at('hover_id').ondiff(hover_id => {
     const graphViewElement = document.querySelector<HTMLElement>('.graphView')
     if (!graphViewElement) return
     const edgeElement = graphViewElement.querySelector<HTMLElement>(`[data-edge=${hover_id}]`)
     edgeElement && Utils.scrollIntoView(graphViewElement, edgeElement)
   })
-
-  const sv_part = () => svlink_data && Model.setSvlink(store, state.svlink)
 
   const manual_part = () =>
     manual_page && (
@@ -338,11 +334,19 @@ export function View(store: Store<Model.State>, cms: Record<G.Side, CM.CMVN>): V
       G.is_comment_label(label) ||
       (mode == Model.modes.anonymization ? is_anon_label(label) : taxonomy_has_label(mode, label))
 
+    if (state.svlink) {
+      import('./swellData').then(({configSwell}) => {
+        const json = state.svlink && configSwell.corrAnno[state.svlink]
+        if (json) Model.setSvlink(store, json)
+        else console.error('No data found for svlink ' + state.svlink)
+        store.update({svlink: undefined})
+      })
+    }
+
     return (
       <div className="content">
         {ShowErrors(store.at('errors'))}
         {manual_part()}
-        {sv_part()}
         {state.show.source_text && (
           <div className="TopPad">
             <em>Source text:</em>
